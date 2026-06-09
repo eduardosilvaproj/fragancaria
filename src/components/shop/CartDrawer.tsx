@@ -91,23 +91,23 @@ export const CartDrawer = () => {
                     
                     <div className="mt-auto flex justify-between items-center">
                       <div className="flex items-center border border-border rounded-sm">
-                        <button 
+                        <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 flex items-center justify-center hover:bg-muted" 
+                          className="h-8 w-8 flex items-center justify-center hover:bg-muted p-0" 
                           onClick={() => updateQuantity(item.variantId, item.quantity - 1)}
                         >
                           <Minus className="h-3 w-3" />
-                        </button>
+                        </Button>
                         <span className="w-8 text-center text-xs font-medium">{item.quantity}</span>
-                        <button 
+                        <Button 
                           variant="ghost" 
                           size="icon" 
-                          className="h-8 w-8 flex items-center justify-center hover:bg-muted" 
+                          className="h-8 w-8 flex items-center justify-center hover:bg-muted p-0" 
                           onClick={() => updateQuantity(item.variantId, item.quantity + 1)}
                         >
                           <Plus className="h-3 w-3" />
-                        </button>
+                        </Button>
                       </div>
                       <p className="font-medium text-sm">
                         {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(parseFloat(item.price.amount) * item.quantity)}
