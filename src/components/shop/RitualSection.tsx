@@ -26,7 +26,15 @@ export const RitualSection = () => {
           <h2 className="font-serif font-light text-white mb-8">
             Monte seu Ritual <span className="italic text-[#B8955A]">Completo</span>
           </h2>
-          <p className="text-[11px] uppercase tracking-[0.3em] text-white/40 max-w-2xl mx-auto font-bold">
+          <div className="flex flex-col items-center gap-4 mb-10">
+              <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Economize até 15% comprando o ritual completo</span>
+              <div className="flex flex-wrap justify-center gap-6 text-[9px] uppercase tracking-[0.2em] font-bold text-white/40">
+                  <span className="flex items-center gap-2">✔ Produtos compatíveis</span>
+                  <span className="flex items-center gap-2">✔ Resultado potencializado</span>
+                  <span className="flex items-center gap-2">✔ Seleção profissional</span>
+              </div>
+          </div>
+          <p className="text-[11px] uppercase tracking-[0.3em] text-white/40 max-w-2xl mx-auto font-bold opacity-0 h-0 overflow-hidden">
             A combinação exata de ativos para transformar a saúde dos seus fios. Economize até 15% na compra do ritual personalizado.
           </p>
         </div>

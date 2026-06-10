@@ -14,6 +14,11 @@ import { ConsultancySection } from "@/components/shop/ConsultancySection";
 import { AIQuiz } from "@/components/shop/AIQuiz";
 import { Testimonials } from "@/components/shop/Testimonials";
 import { InstagramFeed } from "@/components/shop/InstagramFeed";
+import { HeroRefinement } from "@/components/shop/HeroRefinement";
+import { CampaignBanner } from "@/components/shop/CampaignBanner";
+import { FlashOffer } from "@/components/shop/FlashOffer";
+import { SocialProof } from "@/components/shop/SocialProof";
+import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
@@ -229,11 +234,15 @@ function Index() {
                   Descobrir meu Ritual
                 </button>
               </MotionDiv>
+              
+              <HeroRefinement />
             </div>
           </div>
         </MotionSection>
 
         <BenefitBar />
+
+        <AIQuiz />
 
         {/* BRANDS SECTION */}
         <section className="bg-white">
@@ -312,6 +321,9 @@ function Index() {
           </div>
         </section>
 
+        <CampaignBanner />
+        <ShopByCategory />
+
         {/* PRODUCTS SECTION */}
         <section className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
@@ -320,7 +332,7 @@ function Index() {
                 <span>Destaques</span>
               </div>
               <h2 className="font-serif font-light text-[#1C1C1A]">
-                Produtos <span className="italic text-[#B8955A]">Premium</span>
+                Mais Vendidos da <span className="italic text-[#B8955A]">Semana</span>
               </h2>
             </div>
 
@@ -338,9 +350,52 @@ function Index() {
           </div>
         </section>
 
+        {/* NOVIDADES SECTION */}
+        <section className="bg-[#F8F6F2]">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="section-label">
+                <span>Lançamentos</span>
+              </div>
+              <h2 className="font-serif font-light text-[#1C1C1A]">
+                Novidades <span className="italic text-[#B8955A]">Recém-Chegadas</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {products.slice(0, 4).map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <FlashOffer />
         <RitualSection />
+        {/* BANNER INSTITUCIONAL ENTRE SEÇÕES */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="bg-[#1C1C1A] text-white p-12 md:p-20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
+                    <img 
+                        src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=800" 
+                        className="w-full h-full object-cover"
+                        alt="Background"
+                    />
+                </div>
+                <div className="relative z-10 max-w-xl">
+                    <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-10">Os melhores produtos utilizados pelos principais salões do Brasil.</p>
+                    <Button className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
+                        Conhecer Coleção
+                    </Button>
+                </div>
+            </div>
+          </div>
+        </section>
+
+        <SocialProof />
         <ConsultancySection />
-        <AIQuiz />
         <Testimonials />
         <InstagramFeed />
       </main>
