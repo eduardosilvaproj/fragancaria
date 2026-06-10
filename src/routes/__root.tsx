@@ -1,4 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useAppUpdate } from "../hooks/useAppUpdate";
+
 import {
   Outlet,
   Link,
@@ -121,6 +123,9 @@ function RootShell({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <head>
         <HeadContent />
+        <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+        <meta httpEquiv="Expires" content="0" />
       </head>
       <body className="font-sans antialiased">
         {children}
@@ -133,6 +138,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useCartSync();
+  useAppUpdate();
+
 
   return (
     <QueryClientProvider client={queryClient}>

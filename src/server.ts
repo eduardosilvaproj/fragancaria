@@ -37,12 +37,32 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+const BUILD_VERSION = new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14);
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
-      return await normalizeCatastrophicSsrResponse(response);
+      const normalizedResponse = await normalizeCatastrophicSsrResponse(response);
+
+      // Handle version.json requests
+      const url = new URL(request.url);
+      if (url.pathname === "/version.json") {
+        return new Response(
+          JSON.stringify({
+            version: BUILD_VERSION,
+          }),
+          {
+            headers: {
+              "content-type": "application/json",
+              "cache-control": "no-cache, no-store, must-revalidate",
+            },
+          }
+        );
+      }
+
+      return normalizedResponse;
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {
