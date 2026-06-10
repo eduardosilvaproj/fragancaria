@@ -178,7 +178,7 @@ function Index() {
     : FEATURED_PRODUCTS_MOCK;
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 font-sans">
+    <div className="min-h-screen bg-[#F8F6F2] text-[#1C1C1A] selection:bg-[#B8955A]/20 font-sans">
       <Navbar />
 
       <main>
@@ -330,7 +330,7 @@ function Index() {
         </section>
 
         {/* FEATURED PRODUCTS */}
-        <section className="py-40 bg-white">
+        <section className="py-40 bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
             <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
               <div className="max-w-2xl">
