@@ -87,7 +87,7 @@ export const AIQuiz = () => {
                 <span className="text-[10px] uppercase tracking-widest text-white/40">{step + 1} de {QUESTIONS.length}</span>
               </div>
               <div className="h-[2px] w-full bg-white/10">
-                <motion.div 
+                <MotionDiv 
                     initial={{ width: 0 }}
                     animate={{ width: `${progress}%` }}
                     className="h-full bg-[#B8955A]" 
