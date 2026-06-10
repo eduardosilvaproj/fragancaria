@@ -256,40 +256,75 @@ function Index() {
           </div>
         </section>
 
-        {/* BRANDS SECTION */}
-        <section className="py-32 bg-background">
-          <div className="container mx-auto px-4 md:px-8">
-            <div className="mb-20">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-primary" />
-                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
+        {/* BRANDS SECTION - EDITORIAL LAYOUT */}
+        <section className="py-40 bg-[#F8F6F2]">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="mb-24 text-center">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
                   Curadoria Exclusiva
                 </span>
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
               </div>
-              <h2 className="font-serif text-4xl md:text-5xl font-light">As marcas que os profissionais usam</h2>
+              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">As Maiores Grifes da Beleza</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {BRANDS.map((brand) => (
-                <div key={brand.name} className="group cursor-pointer relative h-[200px] overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              {BRANDS.map((brand, idx) => (
+                <div key={brand.name} className={cn(
+                  "group cursor-pointer relative h-[450px] overflow-hidden bg-[#1C1C1A]",
+                  idx % 2 !== 0 && "md:translate-y-12"
+                )}>
                   <img 
                     src={brand.image} 
                     alt={brand.name}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className="w-full h-full object-cover opacity-60 transition-all duration-[1.5s] ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:scale-110 group-hover:opacity-40"
                   />
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500" />
                   
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <h3 className="font-serif text-3xl text-white tracking-widest mb-2 transform transition-transform duration-500 group-hover:-translate-y-2">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                    <h3 className="font-serif text-4xl text-white tracking-widest mb-6 transition-transform duration-700 group-hover:-translate-y-4">
                       {brand.name}
                     </h3>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/80 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                    <div className="h-[1px] w-0 bg-[#B8955A] mb-6 transition-all duration-700 group-hover:w-16" />
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-y-4 group-hover:translate-y-0 mb-8 font-light">
                       {brand.subtitle}
                     </p>
+                    <Button variant="outline" className="opacity-0 group-hover:opacity-100 transition-all duration-700 border-white/20 text-white text-[9px] uppercase tracking-[0.2em] h-10 px-6 rounded-none hover:bg-white hover:text-black">
+                      Explorar Coleção
+                    </Button>
                   </div>
                 </div>
               ))}
             </div>
+          </div>
+        </section>
+
+        {/* INSTITUTIONAL BANNER - 50/50 */}
+        <section className="flex flex-col md:flex-row min-h-[800px] bg-[#1C1C1A] overflow-hidden">
+          <div className="md:w-1/2 relative h-[500px] md:h-auto overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=1200&auto=format&fit=crop" 
+              alt="Ambiente de luxo Fragranciaria"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[3s] hover:scale-110"
+            />
+          </div>
+          <div className="md:w-1/2 p-16 md:p-32 flex flex-col justify-center bg-[#1C1C1A] text-white border-l border-white/5">
+            <div className="flex items-center gap-6 mb-10">
+              <div className="w-16 h-[1px] bg-[#B8955A]" />
+              <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                Nossa Filosofia
+              </span>
+            </div>
+            <h2 className="font-serif text-4xl md:text-6xl font-light mb-12 leading-tight">
+              Curadoria para quem<br />exige <span className="italic">excelência</span>.
+            </h2>
+            <p className="text-white/60 text-lg md:text-xl font-light leading-relaxed mb-16 max-w-lg">
+              "Nossa seleção reúne apenas produtos utilizados pelos melhores profissionais do mercado mundial, garantindo resultados extraordinários no conforto do seu lar."
+            </p>
+            <Button variant="outline" className="self-start border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+              Conheça Nossa História
+            </Button>
           </div>
         </section>
 
