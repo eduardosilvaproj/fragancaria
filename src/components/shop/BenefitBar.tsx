@@ -13,7 +13,7 @@ const BENEFITS = [
 
 export const BenefitBar = () => {
   return (
-    <section className="bg-white/95 backdrop-blur-sm py-8 border-b border-black/[0.03] overflow-hidden hidden md:block shadow-[0_-15px_30px_rgba(0,0,0,0.04)] mx-4 md:mx-12 lg:mx-24">
+    <section className="bg-white/98 backdrop-blur-xl py-8 border-b border-black/[0.03] overflow-hidden hidden md:block shadow-[0_-20px_50px_rgba(0,0,0,0.03)] mx-4 md:mx-12 lg:mx-32">
       <div className="container mx-auto px-4 md:px-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {BENEFITS.map((item, index) => (
@@ -29,8 +29,8 @@ export const BenefitBar = () => {
                 <item.icon className="h-5 w-5 text-[#B8955A] stroke-[1.5] transition-transform duration-700 group-hover:scale-110" />
               </div>
               <div className="flex flex-col">
-                <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]">{item.text}</h4>
-                <p className="text-[9px] uppercase tracking-widest text-[#1C1C1A]/40">{item.detail}</p>
+                <h4 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1C1C1A] mb-0.5">{item.text}</h4>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#1C1C1A]/40 font-medium">{item.detail}</p>
               </div>
             </MotionDiv>
           ))}

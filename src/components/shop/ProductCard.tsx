@@ -54,7 +54,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       viewport={{ once: true }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full bg-white transition-all duration-700 hover:shadow-[0_15px_30px_rgba(0,0,0,0.02)] p-2"
+      className="group flex flex-col h-full bg-white transition-all duration-1000 hover:shadow-[0_30px_60px_rgba(0,0,0,0.04)] p-2"
     >
       <Link 
         to={`/produto/${product.node.handle}` as any}
@@ -119,7 +119,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
 
         {/* Add to Cart Overlay Button */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-all duration-700 z-10">
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-all duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)] z-10">
           <Button 
             onClick={handleAddToCart}
             disabled={isLoading || !selectedVariant}
@@ -137,7 +137,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       </Link>
 
       <div className="flex flex-col flex-1 px-3 text-center pb-4">
-        <p className="text-[8px] uppercase tracking-[0.4em] text-[#B8955A] font-bold mb-1">
+        <p className="text-[8px] uppercase tracking-[0.5em] text-[#B8955A] font-bold mb-2">
           {product.node.vendor}
         </p>
         

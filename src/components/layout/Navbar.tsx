@@ -79,18 +79,18 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-10">
+          <nav className="hidden md:flex items-center space-x-12">
             {NAV_LINKS.map((link) => (
               <DropdownMenu key={link.label}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500 flex items-center gap-1 group relative outline-none",
-                      isScrolled ? "text-[#1C1C1A]/80 hover:text-[#B8955A]" : "text-white/80 hover:text-[#B8955A]"
+                      "text-[10px] uppercase tracking-[0.45em] font-bold transition-all duration-500 flex items-center gap-1.5 group relative outline-none",
+                      isScrolled ? "text-[#1C1C1A]/90 hover:text-[#B8955A]" : "text-white/90 hover:text-[#B8955A]"
                     )}
                   >
                     {link.label}
-                    {link.hasDropdown && <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180" />}
+                    {link.hasDropdown && <ChevronDown className="h-3 w-3 transition-transform duration-500 group-hover:rotate-180 opacity-40 group-hover:opacity-100" />}
                   </button>
                 </DropdownMenuTrigger>
                 
