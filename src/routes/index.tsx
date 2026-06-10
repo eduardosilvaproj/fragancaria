@@ -9,7 +9,8 @@ import {
   MessageCircle,
   ArrowRight,
   Sparkles,
-  Search
+  Search,
+  Star
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
