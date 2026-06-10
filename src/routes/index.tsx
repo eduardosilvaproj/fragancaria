@@ -332,7 +332,7 @@ function Index() {
                 <span>Destaques</span>
               </div>
               <h2 className="font-serif font-light text-[#1C1C1A]">
-                Produtos <span className="italic text-[#B8955A]">Premium</span>
+                Mais Vendidos da <span className="italic text-[#B8955A]">Semana</span>
               </h2>
             </div>
 
@@ -346,6 +346,26 @@ function Index() {
                 <Button variant="outline" className="border-black/10 hover:border-black px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
                     Ver Toda a Coleção
                 </Button>
+            </div>
+          </div>
+        </section>
+
+        {/* NOVIDADES SECTION */}
+        <section className="bg-[#F8F6F2]">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="section-label">
+                <span>Lançamentos</span>
+              </div>
+              <h2 className="font-serif font-light text-[#1C1C1A]">
+                Novidades <span className="italic text-[#B8955A]">Recém-Chegadas</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+              {products.slice(0, 4).map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
+              ))}
             </div>
           </div>
         </section>
