@@ -374,7 +374,7 @@ function Index() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
               <Link to="/" className="flex items-center group">
-                <span className="font-serif text-4xl tracking-tighter">
+                <span className="font-serif text-5xl tracking-tighter">
                   <span className="text-primary italic">F</span>ragranciaria
                 </span>
               </Link>
