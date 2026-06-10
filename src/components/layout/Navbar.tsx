@@ -30,6 +30,8 @@ const NAV_LINKS = [
   { label: "Novidades", href: "/novidades" },
 ];
 
+const MotionDiv = motion.div as any;
+
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -168,7 +170,7 @@ export const Navbar = () => {
 
       <AnimatePresence>
         {isSearchOpen && (
-          <motion.div 
+          <MotionDiv 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -224,21 +226,21 @@ export const Navbar = () => {
                 </div>
               )}
             </div>
-          </motion.div>
+          </MotionDiv>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div 
+            <MotionDiv 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsMobileMenuOpen(false)}
               className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[70]"
             />
-            <motion.div 
+            <MotionDiv 
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -275,7 +277,7 @@ export const Navbar = () => {
                   <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]">Favoritos</span>
                 </div>
               </div>
-            </motion.div>
+            </MotionDiv>
           </>
         )}
       </AnimatePresence>
