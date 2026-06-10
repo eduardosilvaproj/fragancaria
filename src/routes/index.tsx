@@ -9,7 +9,8 @@ import {
   MessageCircle,
   ArrowRight,
   Sparkles,
-  Search
+  Search,
+  Star
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
@@ -83,9 +84,9 @@ const TRUST_BAR_ITEMS = [
 
 const BRANDS = [
   { name: "Kérastase", subtitle: "Líder mundial em cuidados de luxo", image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=800&auto=format&fit=crop" },
-  { name: "Wella", subtitle: "Excelência alemã em coloração e tratamento", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=800&auto=format&fit=crop" },
-  { name: "Keune", subtitle: "Sofisticação e tecnologia holandesa", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=800&auto=format&fit=crop" },
-  { name: "Sebastian", subtitle: "Vanguarda e inovação no estilo", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=800&auto=format&fit=crop" },
+  { name: "Wella Professional", subtitle: "Excelência em coloração", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=800&auto=format&fit=crop" },
+  { name: "Keune", subtitle: "Tecnologia holandesa", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=800&auto=format&fit=crop" },
+  { name: "Sebastian", subtitle: "Vanguarda no estilo", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=800&auto=format&fit=crop" },
   { name: "L'Oréal Pro", subtitle: "O toque dos melhores salões", image: "https://images.unsplash.com/photo-1633613286848-e6f43bbafb8d?q=80&w=800&auto=format&fit=crop" },
 ];
 
@@ -177,70 +178,78 @@ function Index() {
     : FEATURED_PRODUCTS_MOCK;
 
   return (
-    <div className="min-h-screen bg-background text-foreground selection:bg-primary/20 font-sans">
+    <div className="min-h-screen bg-[#F8F6F2] text-[#1C1C1A] selection:bg-[#B8955A]/20 font-sans">
       <Navbar />
 
       <main>
         {/* HERO SECTION */}
-        <section className="relative h-[90vh] min-h-[700px] flex items-center overflow-hidden">
+        <section className="relative h-screen min-h-[700px] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=2000&auto=format&fit=crop" 
-              alt="Modelo com cabelo impecável"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+            {/* Cinematic Video Placeholder - Usando uma imagem de alta qualidade com zoom lento via CSS */}
+            <div className="w-full h-full overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop" 
+                alt="Boutique de luxo"
+                className="w-full h-full object-cover animate-ken-burns scale-110"
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/30 to-transparent" />
           </div>
 
           <div className="container mx-auto px-4 md:px-12 relative z-10 py-24">
-            <div className="max-w-3xl text-white">
-              <div className="flex items-center gap-4 mb-6 animate-fade-in">
-                <div className="w-12 h-[1px] bg-primary" />
-                <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-medium text-primary">
+            <div className="max-w-4xl text-white">
+              <div className="flex items-center gap-6 mb-8 animate-fade-in opacity-0 fill-mode-forwards">
+                <div className="w-20 h-[1px] bg-[#B8955A]" />
+                <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
                   Especialista em Cabelo Profissional
                 </span>
               </div>
-              <h1 className="font-serif text-5xl md:text-[64px] font-light mb-8 leading-[1.1] animate-slide-up">
-                O produto do seu salão,<br />na sua casa
+              <h1 className="font-serif text-6xl md:text-[84px] font-light mb-10 leading-[1] animate-slide-up opacity-0 fill-mode-forwards">
+                A excelência do salão<br /><span className="italic">na sua intimidade</span>
               </h1>
-              <p className="text-base md:text-lg mb-12 text-white/80 font-light max-w-lg leading-relaxed animate-slide-up animation-delay-200">
-                Kérastase, Wella, Keune, Sebastian — 100% originais com consultoria especializada de quem entende de fios.
+              <p className="text-lg md:text-xl mb-14 text-white/70 font-light max-w-xl leading-relaxed animate-slide-up opacity-0 fill-mode-forwards [animation-delay:200ms]">
+                Curadoria rigorosa de Kérastase, Wella e Keune. Onde a ciência capilar encontra o ritual de luxo absoluto.
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 animate-slide-up animation-delay-300">
-                <Button size="lg" className="px-12 h-14 text-[13px] uppercase tracking-widest font-bold">Explorar marcas</Button>
-                <Button variant="ghost" className="text-white hover:text-primary hover:bg-white/5 group h-14 px-8 text-[13px] uppercase tracking-widest font-bold">
-                  Falar com especialista <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <div className="flex flex-col sm:flex-row gap-8 animate-slide-up opacity-0 fill-mode-forwards [animation-delay:400ms]">
+                <Button size="lg" className="bg-[#B8955A] hover:bg-[#A68449] border-none px-16 h-16 text-[12px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-2xl">
+                  Explorar Coleções
+                </Button>
+                <Button variant="outline" className="border-white/20 text-white hover:bg-white hover:text-black transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+                  Agendar Consultoria
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Floating Badges */}
-          <div className="absolute bottom-16 right-4 md:right-12 hidden md:flex flex-col gap-4 items-end animate-fade-in animation-delay-500">
+          <div className="absolute bottom-20 right-4 md:right-12 hidden md:flex flex-col gap-6 items-end animate-fade-in opacity-0 fill-mode-forwards [animation-delay:600ms]">
             {[
-              "Produtos 100% originais",
-              "Frete grátis acima de R$ 199",
-              "+2.000 avaliações 5 estrelas"
+              { label: "01", text: "Autenticidade Garantida" },
+              { label: "02", text: "Curadoria Especializada" },
+              { label: "03", text: "Entrega Prioritária" }
             ].map((badge) => (
-              <div key={badge} className="bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-white font-medium shadow-2xl">
-                {badge}
+              <div key={badge.text} className="flex items-center gap-6 group">
+                <span className="text-[10px] font-serif italic text-[#B8955A] opacity-50 group-hover:opacity-100 transition-opacity">{badge.label}</span>
+                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 px-8 py-4 text-[10px] uppercase tracking-[0.3em] text-white font-medium shadow-2xl transition-all hover:bg-white/10">
+                  {badge.text}
+                </div>
               </div>
             ))}
           </div>
         </section>
 
         {/* TRUST BAR */}
-        <section className="bg-[#1a1a18] text-white py-12 border-y border-white/5">
+        <section className="bg-[#0A0A0A] text-white py-14 border-y border-white/5 relative z-10 overflow-hidden">
           <div className="container mx-auto px-4 md:px-8">
-            <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-8 md:gap-4">
+            <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-12 md:gap-4">
               {TRUST_BAR_ITEMS.map((item, index) => (
-                <div key={item.text} className="flex flex-1 items-center justify-center gap-4 group min-w-[200px] md:min-w-0">
-                  <div className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5 text-primary stroke-[1.5]" />
-                    <span className="text-[11px] uppercase tracking-[0.15em] font-medium opacity-90 whitespace-nowrap">{item.text}</span>
+                <div key={item.text} className="flex flex-1 items-center justify-center gap-6 group min-w-[200px] md:min-w-0 transition-transform duration-500 hover:-translate-y-1">
+                  <div className="flex items-center gap-4">
+                    <item.icon className="h-4 w-4 text-[#B8955A] stroke-[1] transition-transform duration-500 group-hover:scale-125" />
+                    <span className="text-[10px] uppercase tracking-[0.3em] font-light text-white/60 group-hover:text-white transition-colors">{item.text}</span>
                   </div>
                   {index < TRUST_BAR_ITEMS.length - 1 && (
-                    <div className="hidden md:block h-4 w-[1px] bg-primary/30 ml-auto" />
+                    <div className="hidden md:block h-3 w-[1px] bg-[#B8955A]/20 ml-auto" />
                   )}
                 </div>
               ))}
@@ -248,36 +257,43 @@ function Index() {
           </div>
         </section>
 
-        {/* BRANDS SECTION */}
-        <section className="py-32 bg-background">
-          <div className="container mx-auto px-4 md:px-8">
-            <div className="mb-20">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-primary" />
-                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
+        {/* BRANDS SECTION - EDITORIAL LAYOUT */}
+        <section className="py-40 bg-[#F8F6F2]">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="mb-24 text-center">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
                   Curadoria Exclusiva
                 </span>
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
               </div>
-              <h2 className="font-serif text-4xl md:text-5xl font-light">As marcas que os profissionais usam</h2>
+              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">As Maiores Grifes da Beleza</h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-              {BRANDS.map((brand) => (
-                <div key={brand.name} className="group cursor-pointer relative h-[200px] overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+              {BRANDS.map((brand, idx) => (
+                <div key={brand.name} className={cn(
+                  "group cursor-pointer relative h-[450px] overflow-hidden bg-[#1C1C1A]",
+                  idx % 2 !== 0 && "md:translate-y-12"
+                )}>
                   <img 
                     src={brand.image} 
                     alt={brand.name}
-                    className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+                    className="w-full h-full object-cover opacity-60 transition-all duration-[1.5s] ease-[cubic-bezier(0.19,1,0.22,1)] group-hover:scale-110 group-hover:opacity-40"
                   />
-                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-all duration-500" />
                   
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                    <h3 className="font-serif text-3xl text-white tracking-widest mb-2 transform transition-transform duration-500 group-hover:-translate-y-2">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
+                    <h3 className="font-serif text-4xl text-white tracking-widest mb-6 transition-transform duration-700 group-hover:-translate-y-4">
                       {brand.name}
                     </h3>
-                    <p className="text-[10px] uppercase tracking-[0.2em] text-white/80 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                    <div className="h-[1px] w-0 bg-[#B8955A] mb-6 transition-all duration-700 group-hover:w-16" />
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-y-4 group-hover:translate-y-0 mb-8 font-light">
                       {brand.subtitle}
                     </p>
+                    <Button variant="outline" className="opacity-0 group-hover:opacity-100 transition-all duration-700 border-white/20 text-white text-[9px] uppercase tracking-[0.2em] h-10 px-6 rounded-none hover:bg-white hover:text-black">
+                      Explorar Coleção
+                    </Button>
                   </div>
                 </div>
               ))}
@@ -285,25 +301,53 @@ function Index() {
           </div>
         </section>
 
+        {/* INSTITUTIONAL BANNER - 50/50 */}
+        <section className="flex flex-col md:flex-row min-h-[800px] bg-[#1C1C1A] overflow-hidden">
+          <div className="md:w-1/2 relative h-[500px] md:h-auto overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=1200&auto=format&fit=crop" 
+              alt="Ambiente de luxo Fragranciaria"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[3s] hover:scale-110"
+            />
+          </div>
+          <div className="md:w-1/2 p-16 md:p-32 flex flex-col justify-center bg-[#1C1C1A] text-white border-l border-white/5">
+            <div className="flex items-center gap-6 mb-10">
+              <div className="w-16 h-[1px] bg-[#B8955A]" />
+              <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                Nossa Filosofia
+              </span>
+            </div>
+            <h2 className="font-serif text-4xl md:text-6xl font-light mb-12 leading-tight">
+              Curadoria para quem<br />exige <span className="italic">excelência</span>.
+            </h2>
+            <p className="text-white/60 text-lg md:text-xl font-light leading-relaxed mb-16 max-w-lg">
+              "Nossa seleção reúne apenas produtos utilizados pelos melhores profissionais do mercado mundial, garantindo resultados extraordinários no conforto do seu lar."
+            </p>
+            <Button variant="outline" className="self-start border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+              Conheça Nossa História
+            </Button>
+          </div>
+        </section>
+
         {/* FEATURED PRODUCTS */}
-        <section className="py-32 bg-[#F9F7F3]">
+        <section className="py-40 bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
-              <div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-[1px] bg-primary" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
-                    Destaques da Temporada
+            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="w-16 h-[1px] bg-[#B8955A]" />
+                  <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                    Destaques da Boutique
                   </span>
                 </div>
-                <h2 className="font-serif text-4xl md:text-5xl font-light">Cuidados essenciais para seus fios</h2>
+                <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Rituais de Alta Performance</h2>
               </div>
-              <Button variant="link" className="text-[11px] uppercase tracking-[0.2em] font-bold group h-auto p-0">
-                Ver todos os produtos <ArrowRight className="ml-2 h-3 w-3 transition-transform group-hover:translate-x-1" />
+              <Button variant="link" className="text-[12px] uppercase tracking-[0.3em] font-bold group h-auto p-0 text-[#1C1C1A] hover:text-[#B8955A] transition-colors">
+                Ver Todo o Acervo <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24">
               {products.map((product: any) => (
                 <ProductCard key={product.node.id} product={product} />
               ))}
@@ -311,70 +355,170 @@ function Index() {
           </div>
         </section>
 
-        {/* SPECIALIST SECTION */}
-        <section className="flex flex-col md:flex-row min-h-[700px]">
-          <div className="md:w-1/2 relative h-[500px] md:h-auto">
-            <img 
-              src="https://images.unsplash.com/photo-1595475241949-0f02120dc6b2?q=80&w=1200&auto=format&fit=crop" 
-              alt="Especialista Fragranciaria"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+        {/* SPECIALIST SECTION - 50/50 REFINED */}
+        <section className="flex flex-col md:flex-row min-h-[900px]">
+          <div className="md:w-1/2 bg-[#141414] text-white p-16 md:p-32 flex flex-col justify-center relative overflow-hidden">
+            {/* Background Texture Effect */}
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-6 mb-10">
+                <div className="w-16 h-[1px] bg-[#B8955A]" />
+                <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                  O Especialista
+                </span>
+              </div>
+              <h2 className="font-serif text-4xl md:text-6xl font-light mb-16 leading-tight">
+                Além do comércio.<br /><span className="italic text-[#B8955A]">Uma Consultoria</span>.
+              </h2>
+              <div className="space-y-0 mb-20">
+                {[
+                  "Diagnóstico capilar personalizado via chat",
+                  "Protocolos de uso originais de cada marca",
+                  "Suporte pós-compra com especialistas de salão"
+                ].map((text, idx) => (
+                  <div key={text} className={cn(
+                    "py-10 flex items-start gap-10 group border-b border-white/5",
+                    idx === 0 && "border-t border-white/5"
+                  )}>
+                    <div className="w-10 h-10 rounded-full border border-[#B8955A]/30 flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:bg-[#B8955A] group-hover:border-[#B8955A]">
+                      <Sparkles className="h-4 w-4 text-[#B8955A] transition-colors group-hover:text-white" />
+                    </div>
+                    <span className="text-xl text-white/60 font-light leading-relaxed group-hover:text-white transition-colors">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" className="border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+                <MessageCircle className="mr-4 h-5 w-5" /> Iniciar Diagnóstico
+              </Button>
+            </div>
           </div>
-          <div className="md:w-1/2 bg-[#1a1a18] text-white p-16 md:p-32 flex flex-col justify-center">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-[1px] bg-primary" />
-              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
-                Nosso Diferencial
-              </span>
-            </div>
-            <h2 className="font-serif text-3xl md:text-[32px] font-light mb-12 leading-tight">
-              Não somos um marketplace — somos especialistas
-            </h2>
-            <div className="space-y-0 mb-16">
-              {[
-                "Curadoria feita por quem entende de cabelo",
-                "Produtos 100% originais dos distribuidores oficiais",
-                "Atendimento humano e especializado via WhatsApp"
-              ].map((text, idx) => (
-                <div key={text} className={cn(
-                  "py-8 flex items-start gap-6 group border-b border-white/5",
-                  idx === 0 && "border-t border-white/5"
-                )}>
-                  <Sparkles className="h-5 w-5 text-primary mt-1 flex-shrink-0 transition-transform group-hover:rotate-12" />
-                  <span className="text-lg text-white/70 font-light leading-relaxed">{text}</span>
-                </div>
-              ))}
-            </div>
-            <Button variant="outline" className="bg-transparent border-white/20 hover:bg-white/5 text-white self-start h-16 px-10 text-[13px] uppercase tracking-widest font-bold">
-              <MessageCircle className="mr-3 h-5 w-5" /> Falar com especialista
-            </Button>
+          <div className="md:w-1/2 relative h-[600px] md:h-auto overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop" 
+              alt="Especialista em atendimento"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[5s] hover:scale-110"
+            />
           </div>
         </section>
 
-        {/* HAIR QUIZ CTA */}
-        <section className="py-32 bg-background relative overflow-hidden">
-          <div className="container mx-auto px-4 md:px-8 relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                <Sparkles className="h-8 w-8 text-primary" />
+        {/* TESTIMONIALS - PREMIUM CAROUSEL */}
+        <section className="py-40 bg-white overflow-hidden">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                  Experiências Reais
+                </span>
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
               </div>
-              <h2 className="font-serif text-3xl md:text-5xl font-light mb-6">Qual produto é ideal para o seu cabelo?</h2>
-              <p className="text-muted-foreground text-lg mb-12 font-light">
-                Responda 4 perguntas rápidas e receba uma indicação personalizada baseada na nossa curadoria especialista.
+              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Vozes da <span className="italic">Excelência</span></h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              {[
+                { name: "Helena Soares", city: "São Paulo, SP", text: "A curadoria é impecável. Os produtos da Kérastase chegaram em uma embalagem que exala luxo, e o suporte via WhatsApp foi fundamental para escolher o ritual certo para meu loiro." },
+                { name: "Beatriz Lins", city: "Rio de Janeiro, RJ", text: "Finalmente uma loja que entende a ciência por trás dos fios. A entrega foi surpreendentemente rápida e a qualidade dos produtos Wella é indiscutível. Sou cliente fiel." },
+                { name: "Carolina Mendes", city: "Curitiba, PR", text: "O diagnóstico personalizado mudou minha rotina capilar. Meu cabelo nunca esteve tão saudável. A Fragranciaria não apenas vende, ela educa sobre o luxo capilar." }
+              ].map((item, idx) => (
+                <div key={idx} className="bg-[#F8F6F2] p-12 flex flex-col items-center text-center group hover:bg-[#1C1C1A] hover:text-white transition-all duration-700">
+                  <div className="flex gap-1 mb-8">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />)}
+                  </div>
+                  <p className="font-serif text-xl italic leading-relaxed mb-10 opacity-80">"{item.text}"</p>
+                  <div className="mt-auto">
+                    <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2">{item.name}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] opacity-40">{item.city}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* INSTAGRAM GRID */}
+        <section className="bg-[#F8F6F2] py-40">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-24 gap-8">
+              <div className="text-center md:text-left">
+                <h2 className="font-serif text-4xl md:text-5xl font-light text-[#1C1C1A] mb-4">Siga a @Fragranciaria</h2>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-[#B8955A]">Inspiração Diária para Seus Fios</p>
+              </div>
+              <Button variant="outline" className="border-[#1C1C1A]/20 text-[#1C1C1A] hover:bg-[#1C1C1A] hover:text-white transition-all duration-500 h-14 px-10 text-[11px] uppercase tracking-[0.3em] font-bold">
+                Seguir no Instagram
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              {[
+                "https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1595475241949-0f02120dc6b2?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=400&auto=format&fit=crop"
+              ].map((img, i) => (
+                <div key={i} className="aspect-square overflow-hidden relative group cursor-pointer">
+                  <img src={img} alt="Instagram post" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center">
+                      <div className="w-1 h-1 bg-white rounded-full" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* NEWSLETTER - REFINED */}
+        <section className="py-40 bg-white">
+          <div className="container mx-auto px-4 md:px-12 text-center">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="font-serif text-4xl md:text-5xl font-light mb-8 text-[#1C1C1A]">Mantenha-se <span className="italic">Inspirada</span></h2>
+              <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] mb-16 font-light">Assine nossa newsletter e receba rituais exclusivos e convites para eventos privados.</p>
+              
+              <div className="flex flex-col md:flex-row gap-4">
+                <input 
+                  type="email" 
+                  placeholder="Seu endereço de e-mail" 
+                  className="flex-1 bg-[#F8F6F2] border-none h-16 px-8 text-sm focus:ring-1 focus:ring-[#B8955A] outline-none transition-all placeholder:uppercase placeholder:tracking-[0.2em] placeholder:text-[10px]"
+                />
+                <Button className="bg-[#1C1C1A] text-white hover:bg-primary transition-all duration-500 h-16 px-12 text-[11px] uppercase tracking-[0.3em] font-bold">
+                  Inscrever-se
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* HAIR QUIZ / DIAGNÓSTICO - PREMIUM EXPERIENCE */}
+        <section className="py-40 bg-[#F8F6F2] relative overflow-hidden">
+          <div className="container mx-auto px-4 md:px-8 relative z-10 text-center">
+            <div className="max-w-4xl mx-auto">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-12 shadow-sm border border-[#B8955A]/10">
+                <Sparkles className="h-10 w-10 text-[#B8955A]" />
+              </div>
+              <h2 className="font-serif text-5xl md:text-7xl font-light mb-10 text-[#1C1C1A]">Descubra Seu Ritual<br /><span className="italic text-[#B8955A]">Ideal</span></h2>
+              <p className="text-muted-foreground text-xl mb-16 font-light max-w-2xl mx-auto leading-relaxed">
+                Nossa inteligência artificial, treinada pelos melhores hairstylists, analisará as necessidades únicas dos seus fios em 60 segundos.
               </p>
-              <Button size="lg" className="px-12 h-14 text-[13px] uppercase tracking-widest font-bold">Fazer diagnóstico gratuito</Button>
+              <Button size="lg" className="bg-[#1C1C1A] text-white hover:bg-primary transition-all duration-500 px-16 h-16 text-[12px] uppercase tracking-[0.3em] font-bold shadow-2xl">
+                Começar Experiência
+              </Button>
             </div>
           </div>
         </section>
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#1a1a18] text-white pt-32 pb-16 border-t border-primary/20">
+      <footer className="bg-[#1a1a18] text-white pt-32 pb-16 border-t border-[#B8955A]/30">
         <div className="container mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
               <Link to="/" className="flex items-center group">
-                <span className="font-serif text-4xl tracking-tighter">
+                <span className="font-serif text-5xl tracking-tighter">
                   <span className="text-primary italic">F</span>ragranciaria
                 </span>
               </Link>
