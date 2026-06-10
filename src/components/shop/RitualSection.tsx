@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
-import { ArrowRight, ShoppingBag, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
 
 const MotionDiv = motion.div as any;
+const MotionH2 = motion.h2 as any;
+const MotionP = motion.p as any;
 
 const RITUAL_STEPS = [
   { name: "Shampoo", image: "https://images.unsplash.com/photo-1585232351009-aa87416fca90?q=80&w=400&auto=format&fit=crop", brand: "Kérastase" },
@@ -15,7 +17,6 @@ const RITUAL_STEPS = [
 export const RitualSection = () => {
   return (
     <section className="py-40 bg-[#0A0A0A] text-white overflow-hidden relative">
-      {/* Background patterns */}
       <div className="absolute top-0 right-0 w-1/3 h-full bg-[#B8955A]/5 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2" />
       <div className="absolute bottom-0 left-0 w-1/3 h-full bg-[#B8955A]/5 blur-[120px] rounded-full translate-y-1/2 -translate-x-1/2" />
 
@@ -31,7 +32,7 @@ export const RitualSection = () => {
             <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Experiência de Salão</span>
             <div className="w-16 h-[1px] bg-[#B8955A]" />
           </MotionDiv>
-          <motion.h2 
+          <MotionH2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -39,8 +40,8 @@ export const RitualSection = () => {
             className="font-serif text-5xl md:text-7xl font-light mb-8"
           >
             Monte seu Ritual <span className="italic">Completo</span>
-          </motion.h2>
-          <motion.p 
+          </MotionH2>
+          <MotionP 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
@@ -48,7 +49,7 @@ export const RitualSection = () => {
             className="text-[12px] uppercase tracking-[0.3em] text-white/50 max-w-2xl mx-auto font-medium"
           >
             A combinação exata de ativos para transformar a saúde dos seus fios. Economize até 15% na compra do ritual completo.
-          </motion.p>
+          </MotionP>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-12 mb-24">
@@ -88,8 +89,8 @@ export const RitualSection = () => {
             viewport={{ once: true }}
             className="bg-white/5 border border-white/10 p-12 backdrop-blur-xl flex flex-col md:flex-row items-center gap-12 w-full max-w-4xl"
           >
-            <div className="flex-1">
-              <h3 className="font-serif text-3xl mb-4">Ritual de Reconstrução Absoluta</h3>
+            <div className="flex-1 text-left">
+              <h3 className="font-serif text-3xl mb-4 text-white">Ritual de Reconstrução Absoluta</h3>
               <p className="text-white/40 text-sm mb-6">Combo exclusivo: Kérastase + Wella + Sebastian</p>
               <div className="flex items-center gap-4">
                 <span className="text-[#B8955A] text-3xl font-light">R$ 842,00</span>
