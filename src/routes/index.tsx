@@ -320,9 +320,16 @@ function Index() {
           <BenefitBar />
         </MotionDiv>
 
-        <div ref={quizRef}>
+        <MotionSection
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 1.2 }}
+          ref={quizRef}
+          className="bg-[#F8F6F2]"
+        >
           <AIQuiz />
-        </div>
+        </MotionSection>
 
         {/* BRANDS SECTION */}
         <section ref={brandsRef} className="bg-white">
