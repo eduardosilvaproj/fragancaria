@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { ShoppingBag, Star, Plus, Heart, Eye } from "lucide-react";
+import { Star, Plus, Heart, Eye } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCartStore } from "@/stores/cartStore";
 import { ShopifyProduct } from "@/lib/shopify/client";
