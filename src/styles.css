@@ -140,8 +140,10 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -151,6 +153,20 @@
   .font-serif {
     font-family: 'Cormorant Garamond', serif;
   }
+
+  /* Luxury Utility Classes */
+  .tracking-luxury {
+    letter-spacing: 0.3em;
+  }
+  
+  .tracking-editorial {
+    letter-spacing: -0.02em;
+  }
+
+  .transition-luxury {
+    transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+}
 }
 
 @layer utilities {
