@@ -13,7 +13,7 @@ const BENEFITS = [
 
 export const BenefitBar = () => {
   return (
-    <section className="bg-white py-12 border-b border-black/[0.03] overflow-hidden">
+    <section className="bg-white py-12 border-b border-black/[0.03] overflow-hidden hidden md:block">
       <div className="container mx-auto px-4 md:px-12">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
           {BENEFITS.map((item, index) => (
