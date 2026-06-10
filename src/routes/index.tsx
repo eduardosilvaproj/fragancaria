@@ -310,7 +310,15 @@ function Index() {
           </div>
         </MotionSection>
 
-        <BenefitBar />
+        <MotionDiv 
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="relative z-20 -mt-16"
+        >
+          <BenefitBar />
+        </MotionDiv>
 
         <div ref={quizRef}>
           <AIQuiz />
