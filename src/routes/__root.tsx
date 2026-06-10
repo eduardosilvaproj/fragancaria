@@ -81,9 +81,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Fragranciaria | Especialista em Cabelo Profissional" },
       { name: "description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
-      { property: "og:title", content: "Fragranciaria" },
-      { property: "og:description", content: "Especialista em Cabelo Profissional" },
+      { property: "og:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
+      { property: "og:description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
       { property: "og:type", content: "website" },
+      { name: "twitter:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
+      { name: "twitter:description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7fdd8e15-ebcc-42cd-84cf-31115744a75e/id-preview-d7d45804--715d9b39-8a09-4b5d-ac0b-65864ea1ec4d.lovable.app-1781049688536.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7fdd8e15-ebcc-42cd-84cf-31115744a75e/id-preview-d7d45804--715d9b39-8a09-4b5d-ac0b-65864ea1ec4d.lovable.app-1781049688536.png" },
+      { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
       {
