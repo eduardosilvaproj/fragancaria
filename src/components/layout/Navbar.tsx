@@ -44,8 +44,11 @@ export const Navbar = () => {
           </div>
 
           {/* Logo */}
-          <Link to="/" className="flex items-center group">
-            <span className="font-serif text-3xl tracking-tighter">
+          <Link to="/" className="flex items-center group relative z-10">
+            <span className={cn(
+              "font-serif text-3xl tracking-tighter transition-all duration-500",
+              isScrolled ? "scale-90 text-foreground" : "scale-100 text-white"
+            )}>
               <span className="text-primary italic">F</span>ragranciaria
             </span>
           </Link>
@@ -56,32 +59,47 @@ export const Navbar = () => {
               <Link
                 key={link.label}
                 to={link.href as any}
-                className="text-[13px] uppercase tracking-[0.12em] font-medium text-foreground/80 hover:text-primary transition-colors flex items-center gap-1 group"
+                className={cn(
+                  "text-[11px] uppercase tracking-[0.25em] font-medium transition-all duration-500 flex items-center gap-1 group relative",
+                  isScrolled ? "text-foreground/80" : "text-white/90"
+                )}
               >
                 {link.label}
+                <span className="absolute -bottom-1 left-0 w-0 h-[1px] bg-primary transition-all duration-500 group-hover:w-full" />
                 {link.hasDropdown && <ChevronDown className="h-3 w-3 transition-transform group-hover:rotate-180" />}
               </Link>
             ))}
           </nav>
 
           {/* Icons */}
-          <div className="flex items-center space-x-2 md:space-x-4">
-            <button className="hidden sm:block p-2 text-foreground hover:text-primary transition-colors">
-              <Search className="h-5 w-5 stroke-[1.5]" />
+          <div className="flex items-center space-x-1 md:space-x-2">
+            <button className={cn(
+              "hidden sm:block p-2 transition-colors duration-500",
+              isScrolled ? "text-foreground hover:text-primary" : "text-white hover:text-primary"
+            )}>
+              <Search className="h-5 w-5 stroke-[1.2]" />
             </button>
-            <button className="hidden sm:block p-2 text-foreground hover:text-primary transition-colors">
-              <Heart className="h-5 w-5 stroke-[1.5]" />
+            <button className={cn(
+              "hidden sm:block p-2 transition-colors duration-500",
+              isScrolled ? "text-foreground hover:text-primary" : "text-white hover:text-primary"
+            )}>
+              <Heart className="h-5 w-5 stroke-[1.2]" />
             </button>
-            <button className="p-2 text-foreground hover:text-primary transition-colors">
-              <User className="h-5 w-5 stroke-[1.5]" />
+            <button className={cn(
+              "p-2 transition-colors duration-500",
+              isScrolled ? "text-foreground hover:text-primary" : "text-white hover:text-primary"
+            )}>
+              <User className="h-5 w-5 stroke-[1.2]" />
             </button>
-            <CartDrawer />
+            <div className={cn("transition-colors duration-500", isScrolled ? "text-foreground" : "text-white")}>
+              <CartDrawer />
+            </div>
           </div>
         </div>
       </div>
       
       {/* Bottom Border */}
-      <div className={cn("absolute bottom-0 left-0 right-0 h-[1px] bg-border/40 transition-opacity", isScrolled ? "opacity-100" : "opacity-60")} />
+      <div className={cn("absolute bottom-0 left-0 right-0 h-[1px] bg-white/10 transition-opacity", isScrolled ? "opacity-0" : "opacity-100")} />
     </header>
   );
 };
