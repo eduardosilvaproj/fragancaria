@@ -334,16 +334,16 @@ function Index() {
         {/* BRANDS SECTION */}
         <section ref={brandsRef} className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
               <div className="section-label">
                 <span>Curadoria Exclusiva</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-2xl md:text-3xl">
                 As Marcas Mais <span className="italic text-[#B8955A]">Desejadas</span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {BRANDS.map((brand, i) => (
                 <MotionDiv 
                   key={brand.name}
@@ -374,16 +374,16 @@ function Index() {
         {/* NEEDS SECTION */}
         <section className="bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-16">
+            <div className="text-center mb-12">
               <div className="section-label">
                 <span>Necessidades</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-2xl md:text-3xl">
                 Tratamento por <span className="italic text-[#B8955A]">Desejo</span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {NEEDS.map((need, i) => (
                 <MotionDiv 
                   key={need.label}

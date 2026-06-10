@@ -54,11 +54,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       viewport={{ once: true }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full bg-white transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.03)] p-3"
+      className="group flex flex-col h-full bg-white transition-all duration-700 hover:shadow-[0_15px_30px_rgba(0,0,0,0.02)] p-2"
     >
       <Link 
         to={`/produto/${product.node.handle}` as any}
-        className="relative aspect-[3/4] overflow-hidden bg-[#F8F6F2] mb-6 block"
+        className="relative aspect-[3/4] overflow-hidden bg-[#F8F6F2] mb-4 block"
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -136,14 +136,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         </div>
       </Link>
 
-      <div className="flex flex-col flex-1 px-4 text-center pb-6">
-        <p className="text-[9px] uppercase tracking-[0.4em] text-[#B8955A] font-bold mb-2">
+      <div className="flex flex-col flex-1 px-3 text-center pb-4">
+        <p className="text-[8px] uppercase tracking-[0.4em] text-[#B8955A] font-bold mb-1">
           {product.node.vendor}
         </p>
         
         <Link 
           to={`/produto/${product.node.handle}` as any}
-          className="font-serif text-[20px] leading-tight mb-2 hover:text-[#B8955A] transition-colors text-[#1C1C1A] font-light"
+          className="font-serif text-[18px] leading-tight mb-1 hover:text-[#B8955A] transition-colors text-[#1C1C1A] font-light"
         >
           {product.node.title}
         </Link>
@@ -160,7 +160,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             <span className="text-sm text-[#1C1C1A]/20 line-through font-light">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 1.15)}
             </span>
-            <span className="text-[26px] font-light text-[#1C1C1A] tracking-tighter">
+            <span className="text-[22px] font-light text-[#1C1C1A] tracking-tighter">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
             </span>
           </div>
