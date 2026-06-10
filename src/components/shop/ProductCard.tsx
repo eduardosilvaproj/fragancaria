@@ -12,6 +12,7 @@ interface ProductCardProps {
 }
 
 const MotionDiv = motion.div as any;
+const MotionImg = motion.img as any;
 
 export const ProductCard = ({ product }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
@@ -85,7 +86,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         <div className="w-full h-full relative">
           <AnimatePresence initial={false}>
             {!isHovered ? (
-              <motion.img 
+              <MotionImg 
                 key="main"
                 src={mainImage?.url} 
                 alt={mainImage?.altText || product.node.title}
@@ -96,7 +97,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
                 transition={{ duration: 0.8 }}
               />
             ) : (
-              <motion.img 
+              <MotionImg 
                 key="second"
                 src={secondImage?.url} 
                 alt={secondImage?.altText || product.node.title}
