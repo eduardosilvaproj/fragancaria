@@ -44,8 +44,9 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.19, 1, 0.22, 1] }}
-      className="group flex flex-col h-full bg-white transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)]"
+      viewport={{ once: true }}
+      transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
+      className="group flex flex-col h-full bg-white"
     >
       <Link 
         to={`/produto/${product.node.handle}` as any}
