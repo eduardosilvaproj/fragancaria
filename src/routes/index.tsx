@@ -241,7 +241,7 @@ function Index() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-4 md:gap-6 items-center mb-8 md:mb-12"
+                className="flex flex-col sm:flex-row gap-6 md:gap-6 items-center mb-10 md:mb-12"
               >
                 <Button 
                   size="lg" 
@@ -295,7 +295,7 @@ function Index() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 3.5, duration: 2 }}
-                className="mt-4 text-center px-4"
+                className="mt-4 text-center px-4 hidden md:block"
               >
                 <div className="flex items-center gap-2 justify-center mb-1">
                   {[...Array(5)].map((_, i) => (
