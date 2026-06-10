@@ -7,7 +7,6 @@ declare global {
   }
 }
 
-
 export const useAppUpdate = () => {
   useEffect(() => {
     // Only run in production and in the browser
@@ -17,6 +16,7 @@ export const useAppUpdate = () => {
 
     const CHECK_INTERVAL = 1000 * 60 * 5; // 5 minutes
     let isChecking = false;
+    let initialVersion: string | null = null;
 
     const checkVersion = async () => {
       if (isChecking) return;
@@ -36,10 +36,15 @@ export const useAppUpdate = () => {
 
         const data = await response.json();
         const latestVersion = data.version;
-        const currentVersion = window.__APP_VERSION__;
 
-        if (latestVersion && currentVersion && latestVersion !== currentVersion) {
-          console.log(`[VersionCheck] New version available: ${latestVersion} (current: ${currentVersion})`);
+        if (!initialVersion) {
+          initialVersion = latestVersion;
+          console.log(`[VersionCheck] App initialized with version: ${initialVersion}`);
+          return;
+        }
+
+        if (latestVersion && initialVersion && latestVersion !== initialVersion) {
+          console.log(`[VersionCheck] New version available: ${latestVersion} (current: ${initialVersion})`);
           
           // Show a toast or update automatically
           toast.info("Nova versão disponível", {
@@ -49,7 +54,7 @@ export const useAppUpdate = () => {
 
           // Delay reload slightly to let the user see the message
           setTimeout(() => {
-            // Force reload from server, clearing cache if possible
+            // Force reload
             window.location.reload();
           }, 2000);
         }
