@@ -582,12 +582,12 @@ function Index() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
               <Link to="/" className="flex items-center group">
-                <span className="font-serif text-5xl tracking-tighter">
+                <span className="font-serif text-6xl tracking-tighter">
                   <span className="text-primary italic">F</span>ragranciaria
                 </span>
               </Link>
-              <p className="text-sm text-white/50 leading-relaxed font-light">
-                Sua boutique de beleza profissional. Curadoria exclusiva das melhores marcas mundiais para transformar seus fios em casa.
+              <p className="text-sm text-white/50 leading-relaxed font-light max-w-xs">
+                Sua boutique de beleza profissional. Curadoria exclusiva das melhores marcas mundiais para transformar seus fios em casa com autoridade técnica e luxo.
               </p>
               <div className="flex items-center space-x-4">
                 {[1,2,3].map(i => (
@@ -615,6 +615,7 @@ function Index() {
                 <li className="hover:text-primary transition-colors cursor-pointer">Nossa Curadoria</li>
                 <li className="hover:text-primary transition-colors cursor-pointer">Política de Privacidade</li>
                 <li className="hover:text-primary transition-colors cursor-pointer">Termos de Uso</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">CNPJ: 00.000.000/0001-00</li>
               </ul>
             </div>
 
@@ -622,23 +623,39 @@ function Index() {
               <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-white mb-10">Marcas</h4>
               <ul className="space-y-5 text-[13px] text-white/50 font-light">
                 <li className="hover:text-primary transition-colors cursor-pointer">Kérastase</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">Wella Professional</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Wella Professionals</li>
                 <li className="hover:text-primary transition-colors cursor-pointer">Keune</li>
-                <li className="hover:text-primary transition-colors cursor-pointer">L'Oréal Pro</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">Sebastian Professional</li>
+                <li className="hover:text-primary transition-colors cursor-pointer">L'Oréal Professionnel</li>
               </ul>
             </div>
           </div>
 
           <div className="pt-12 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-10">
-            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">
-              © 2026 Fragranciaria. Todos os direitos reservados.
-            </p>
+            <div className="flex flex-col gap-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-white/30">
+                © 2026 Fragranciaria. Distribuidor Especializado e Autorizado.
+              </p>
+              <div className="flex items-center gap-4">
+                 <div className="flex items-center gap-2 px-3 py-1 border border-white/10 text-[9px] uppercase tracking-widest text-white/40">
+                    <ShieldCheck className="h-3 w-3" /> Compra Segura
+                 </div>
+                 <div className="flex items-center gap-2 px-3 py-1 border border-white/10 text-[9px] uppercase tracking-widest text-white/40">
+                    <ShieldCheck className="h-3 w-3" /> SSL Protegido
+                 </div>
+              </div>
+            </div>
             
             <div className="flex flex-wrap items-center justify-center gap-6">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_Pix.png" alt="Pix" className="h-4 opacity-40 grayscale hover:opacity-100 transition-all cursor-help" />
-               <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-3 opacity-40 grayscale hover:opacity-100 transition-all cursor-help" />
-               <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-6 opacity-40 grayscale hover:opacity-100 transition-all cursor-help" />
-               <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Boleto_Logo.png" alt="Boleto" className="h-4 opacity-40 grayscale hover:opacity-100 transition-all cursor-help" />
+               <div className="flex flex-col items-center gap-2">
+                 <span className="text-[8px] uppercase tracking-widest text-white/30">Pagamento</span>
+                 <div className="flex items-center gap-4 grayscale opacity-60">
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/a/a2/Logo_Pix.png" alt="Pix" className="h-4" />
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/5/5e/Visa_Inc._logo.svg" alt="Visa" className="h-2" />
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/2/2a/Mastercard-logo.svg" alt="Mastercard" className="h-5" />
+                   <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" alt="PayPal" className="h-3" />
+                 </div>
+               </div>
             </div>
           </div>
         </div>
