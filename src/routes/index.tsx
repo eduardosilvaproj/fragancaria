@@ -4,8 +4,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { 
   ArrowRight,
-  Sparkles,
-  ChevronDown
+  Sparkles
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
@@ -21,6 +20,8 @@ import { useRef } from "react";
 
 const MotionDiv = motion.div as any;
 const MotionSection = motion.section as any;
+const MotionH1 = motion.h1 as any;
+const MotionH2 = motion.h2 as any;
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -178,9 +179,9 @@ const FEATURED_PRODUCTS_MOCK = [
 ];
 
 function Index() {
-  const containerRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
-    target: containerRef,
+    target: containerRef as any,
     offset: ["start start", "end start"]
   });
 
@@ -210,7 +211,6 @@ function Index() {
                 alt="Boutique de luxo"
                 className="w-full h-full object-cover animate-ken-burns scale-110"
               />
-              {/* Overlay for cinematic feel */}
               <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/40 to-transparent" />
             </div>
           </MotionDiv>
@@ -229,14 +229,14 @@ function Index() {
                 </span>
               </MotionDiv>
               
-              <motion.h1 
+              <MotionH1 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                className="font-serif text-6xl md:text-[86px] font-light mb-12 leading-[1.1] tracking-tighter"
+                className="font-serif text-6xl md:text-[86px] font-light mb-12 leading-[1.1] tracking-tighter text-white"
               >
                 A excelência do salão<br /><span className="italic underline decoration-[#B8955A]/30">na sua intimidade</span>
-              </motion.h1>
+              </MotionH1>
               
               <MotionDiv 
                 initial={{ opacity: 0, y: 20 }}
@@ -271,7 +271,6 @@ function Index() {
             </div>
           </div>
 
-          {/* Scroll Indicator */}
           <MotionDiv 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -299,14 +298,14 @@ function Index() {
                 <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Curadoria Exclusiva</span>
                 <div className="w-16 h-[1px] bg-[#B8955A]" />
               </MotionDiv>
-              <motion.h2 
+              <MotionH2 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="font-serif text-5xl md:text-7xl font-light text-[#1C1C1A]"
               >
                 As Marcas Mais <span className="italic text-[#B8955A]">Desejadas</span>
-              </motion.h2>
+              </MotionH2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -351,14 +350,14 @@ function Index() {
                 <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Filtro Especializado</span>
                 <div className="w-16 h-[1px] bg-[#B8955A]" />
               </MotionDiv>
-              <motion.h2 
+              <MotionH2 
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]"
               >
                 Qual resultado você <span className="italic text-[#B8955A]">almeja?</span>
-              </motion.h2>
+              </MotionH2>
             </div>
             
             <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
@@ -406,14 +405,14 @@ function Index() {
                   <div className="w-20 h-[1px] bg-[#B8955A]" />
                   <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Destaques da Boutique</span>
                 </MotionDiv>
-                <motion.h2 
+                <MotionH2 
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   className="font-serif text-5xl md:text-[80px] font-light text-[#1C1C1A] leading-tight"
                 >
                   Rituais de Alta <br /><span className="italic">Performance</span>
-                </motion.h2>
+                </MotionH2>
               </div>
               <Button variant="link" className="text-[12px] uppercase tracking-[0.4em] font-black group h-auto p-0 text-[#1C1C1A] hover:text-[#B8955A] transition-colors border-b-2 border-transparent hover:border-[#B8955A] pb-2">
                 Ver Todo o Acervo <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
