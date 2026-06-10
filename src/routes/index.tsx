@@ -206,7 +206,7 @@ function Index() {
                 className="w-full h-full object-cover animate-ken-burns scale-110"
               />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/30 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/40 to-transparent" />
           </div>
 
           <div className="container mx-auto px-4 md:px-12 relative z-10 py-24">
@@ -220,16 +220,22 @@ function Index() {
               <h1 className="font-serif text-6xl md:text-[84px] font-light mb-10 leading-[1] animate-slide-up opacity-0 fill-mode-forwards">
                 A excelência do salão<br /><span className="italic">na sua intimidade</span>
               </h1>
-              <p className="text-lg md:text-xl mb-14 text-white/70 font-light max-w-xl leading-relaxed animate-slide-up opacity-0 fill-mode-forwards [animation-delay:200ms]">
-                Curadoria rigorosa de Kérastase, Wella e Keune. Onde a ciência capilar encontra o ritual de luxo absoluto.
-              </p>
+              
+              <div className="flex flex-wrap gap-x-8 gap-y-4 mb-14 text-[10px] uppercase tracking-[0.2em] font-medium text-white/60 animate-slide-up opacity-0 fill-mode-forwards [animation-delay:200ms]">
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-[#B8955A]" /> Produtos 100% Originais</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-[#B8955A]" /> Curadoria Especializada</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-[#B8955A]" /> Distribuidor Oficial</span>
+                <span className="flex items-center gap-2"><CheckCircle2 className="h-3 w-3 text-[#B8955A]" /> Atendimento Especializado</span>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-8 animate-slide-up opacity-0 fill-mode-forwards [animation-delay:400ms]">
                 <Button size="lg" className="bg-[#B8955A] hover:bg-[#A68449] border-none px-16 h-16 text-[12px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-2xl">
-                  Explorar Coleções
+                  Comprar Agora
                 </Button>
-                <Button variant="outline" className="border-white/20 text-white hover:bg-white hover:text-black transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
-                  Agendar Consultoria
-                </Button>
+                <div className="flex items-center gap-4 px-6 py-2 border border-white/10 backdrop-blur-md bg-white/5">
+                   <Sparkles className="h-5 w-5 text-[#B8955A]" />
+                   <span className="text-[10px] uppercase tracking-widest">+ Milhares de clientes atendidos no Brasil</span>
+                </div>
               </div>
             </div>
           </div>
@@ -237,9 +243,9 @@ function Index() {
           {/* Floating Badges */}
           <div className="absolute bottom-20 right-4 md:right-12 hidden md:flex flex-col gap-6 items-end animate-fade-in opacity-0 fill-mode-forwards [animation-delay:600ms]">
             {[
-              { label: "01", text: "Autenticidade Garantida" },
-              { label: "02", text: "Curadoria Especializada" },
-              { label: "03", text: "Entrega Prioritária" }
+              { label: "KÉRASTASE", text: "Ritual de Luxo" },
+              { label: "WELLA", text: "Cor Profissional" },
+              { label: "KEUNE", text: "Alta Tecnologia" }
             ].map((badge) => (
               <div key={badge.text} className="flex items-center gap-6 group">
                 <span className="text-[10px] font-serif italic text-[#B8955A] opacity-50 group-hover:opacity-100 transition-opacity">{badge.label}</span>

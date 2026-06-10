@@ -143,11 +143,12 @@ export const CartDrawer = () => {
                 "Finalizar Compra"
               )}
             </Button>
-            <div className="flex items-center justify-center gap-4 pt-2 grayscale opacity-50">
-               {/* Simplified payment icons */}
-               <div className="h-4 w-8 bg-foreground/20 rounded-sm" />
-               <div className="h-4 w-8 bg-foreground/20 rounded-sm" />
-               <div className="h-4 w-8 bg-foreground/20 rounded-sm" />
+            <div className="flex flex-wrap items-center justify-center gap-4 pt-2 opacity-60">
+                <img src="https://cdn-icons-png.flaticon.com/512/174/174861.png" alt="PayPal" className="h-4 w-auto grayscale" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" className="h-3 w-auto grayscale" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" className="h-5 w-auto grayscale" />
+                <div className="text-[10px] font-bold tracking-tighter border border-foreground/20 px-1">PIX</div>
+                <div className="text-[10px] font-bold tracking-tighter border border-foreground/20 px-1 text-xs">SSL</div>
             </div>
           </div>
         )}
