@@ -3,7 +3,9 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { 
-  ArrowRight
+  ArrowRight,
+  Mouse,
+  ChevronDown
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
@@ -154,6 +156,16 @@ const FEATURED_PRODUCTS_MOCK = [
 
 function Index() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const brandsRef = useRef<HTMLElement>(null);
+  const quizRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBrands = () => {
+    brandsRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  const scrollToQuiz = () => {
+    quizRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
   const { scrollYProgress } = useScroll({
     target: containerRef as any,
     offset: ["start start", "end start"]
@@ -225,27 +237,71 @@ function Index() {
               >
                 <Button 
                   size="lg" 
+                  onClick={scrollToBrands}
                   className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-14 h-14 text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-2 group"
                 >
-                  Comprar Agora
+                  Explorar Coleções
                   <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
                 </Button>
-                <button className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-white transition-all duration-500 border-b border-white/10 hover:border-white/40 pb-2">
+                <button 
+                  onClick={scrollToQuiz}
+                  className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-white transition-all duration-500 border-b border-white/10 hover:border-white/40 pb-2"
+                >
                   Descobrir meu Ritual
                 </button>
               </MotionDiv>
               
               <HeroRefinement />
             </div>
+
+            {/* SCROLL INDICATOR */}
+            <MotionDiv
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 1, duration: 1.5 }}
+              className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-20"
+            >
+              <button 
+                onClick={scrollToBrands}
+                className="flex flex-col items-center gap-3 group"
+              >
+                <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-white/40 group-hover:text-[#B8955A] transition-colors duration-500">
+                  Explore a experiência
+                </span>
+                <MotionDiv
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ 
+                    duration: 2.5, 
+                    repeat: Infinity, 
+                    ease: "easeInOut" 
+                  }}
+                >
+                  <Mouse className="h-5 w-5 text-[#B8955A]/60 group-hover:text-[#B8955A] transition-colors duration-500" />
+                </MotionDiv>
+              </button>
+
+              <MotionDiv
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 4, duration: 1.5 }}
+                className="mt-2 text-center"
+              >
+                <p className="text-[9px] text-white/30 uppercase tracking-[0.15em] font-medium max-w-[200px] leading-relaxed">
+                  +28 mil clientes já descobriram sua rotina ideal com a Fraganciaria.
+                </p>
+              </MotionDiv>
+            </MotionDiv>
           </div>
         </MotionSection>
 
         <BenefitBar />
 
-        <AIQuiz />
+        <div ref={quizRef}>
+          <AIQuiz />
+        </div>
 
         {/* BRANDS SECTION */}
-        <section className="bg-white">
+        <section ref={brandsRef} className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-16">
               <div className="section-label">
