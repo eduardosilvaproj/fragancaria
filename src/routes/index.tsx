@@ -372,13 +372,13 @@ function Index() {
         </section>
 
         {/* NEEDS SECTION */}
-        <section className="bg-[#F8F6F2]">
+        <section className="bg-[#F8F6F2]/50 py-32">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-12">
+            <div className="text-center mb-24">
               <div className="section-label">
-                <span>Necessidades</span>
+                <span className="tracking-[0.5em]">Necessidades</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A] text-2xl md:text-3xl">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
                 Tratamento por <span className="italic text-[#B8955A]">Desejo</span>
               </h2>
             </div>

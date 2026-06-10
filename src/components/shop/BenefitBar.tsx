@@ -29,8 +29,8 @@ export const BenefitBar = () => {
                 <item.icon className="h-5 w-5 text-[#B8955A] stroke-[1.5] transition-transform duration-700 group-hover:scale-110" />
               </div>
               <div className="flex flex-col">
-                <h4 className="text-[10px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]">{item.text}</h4>
-                <p className="text-[9px] uppercase tracking-widest text-[#1C1C1A]/40">{item.detail}</p>
+                <h4 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1C1C1A] mb-0.5">{item.text}</h4>
+                <p className="text-[9px] uppercase tracking-[0.25em] text-[#1C1C1A]/40 font-medium">{item.detail}</p>
               </div>
             </MotionDiv>
           ))}

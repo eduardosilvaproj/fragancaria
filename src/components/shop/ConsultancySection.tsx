@@ -25,7 +25,7 @@ export const ConsultancySection = () => {
               className="flex items-center gap-6 mb-8"
             >
               <div className="w-16 h-[1px] bg-[#B8955A]" />
-              <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Muito mais que uma loja</span>
+              <span className="text-[11px] uppercase tracking-[0.5em] font-bold text-[#B8955A]">Muito mais que uma loja</span>
             </MotionDiv>
             <MotionH2 
               initial={{ opacity: 0, y: 20 }}
@@ -50,8 +50,8 @@ export const ConsultancySection = () => {
                 >
                   <pillar.icon className="h-6 w-6 text-[#B8955A] shrink-0" />
                   <div>
-                    <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold mb-1">{pillar.title}</h4>
-                    <p className="text-[10px] uppercase tracking-widest text-[#1C1C1A]/40">{pillar.desc}</p>
+                    <h4 className="text-[11px] uppercase tracking-[0.3em] font-bold mb-1.5">{pillar.title}</h4>
+                    <p className="text-[10px] uppercase tracking-[0.25em] text-[#1C1C1A]/40 leading-relaxed">{pillar.desc}</p>
                   </div>
                 </MotionDiv>
               ))}

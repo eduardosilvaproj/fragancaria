@@ -19,11 +19,11 @@ export const RitualSection = () => {
       </div>
 
       <div className="container mx-auto px-4 md:px-12 relative z-10">
-        <div className="text-center mb-16">
+        <div className="text-center mb-24 py-24">
           <div className="section-label !justify-center">
-            <span className="!text-white/40">Experiência de Salão</span>
+            <span className="!text-white/40 tracking-[0.5em]">Experiência de Salão</span>
           </div>
-          <h2 className="font-serif font-light text-white mb-8">
+          <h2 className="font-serif font-light text-white text-4xl md:text-5xl lg:text-7xl mb-12 leading-tight">
             Monte seu Ritual <span className="italic text-[#B8955A]">Completo</span>
           </h2>
           <div className="flex flex-col items-center gap-4 mb-10">
