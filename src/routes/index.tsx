@@ -180,7 +180,7 @@ function Index() {
         {/* HERO SECTION */}
         <MotionSection 
           style={{ opacity: heroOpacity }} 
-          className="relative h-screen flex items-center overflow-hidden bg-black"
+          className="relative h-[80vh] flex items-center overflow-hidden bg-black"
         >
           <MotionDiv style={{ y: heroY }} className="absolute inset-0 z-0">
             <div className="w-full h-full overflow-hidden">
@@ -199,7 +199,7 @@ function Index() {
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
-                className="flex items-center gap-6 mb-10"
+                className="flex items-center gap-6 mb-6"
               >
                 <div className="w-16 h-[1px] bg-[#B8955A]" />
                 <span className="text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#B8955A]">
@@ -211,7 +211,7 @@ function Index() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
-                className="font-serif font-light mb-12 text-white"
+                className="font-serif font-light mb-10 text-white"
               >
                 A excelência do salão<br />
                 na sua <span className="italic underline underline-offset-8 decoration-[#B8955A]/30">intimidade</span>
@@ -221,11 +221,11 @@ function Index() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.6 }}
-                className="flex flex-col sm:flex-row gap-8 items-center"
+                className="flex flex-col sm:flex-row gap-6 items-center"
               >
                 <Button 
                   size="lg" 
-                  className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-16 h-18 text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-2 group"
+                  className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-14 h-14 text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-2 group"
                 >
                   Comprar Agora
                   <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
@@ -247,11 +247,11 @@ function Index() {
         {/* BRANDS SECTION */}
         <section className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
+            <div className="text-center mb-16">
               <div className="section-label">
                 <span>Curadoria Exclusiva</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 As Marcas Mais <span className="italic text-[#B8955A]">Desejadas</span>
               </h2>
             </div>
@@ -287,11 +287,11 @@ function Index() {
         {/* NEEDS SECTION */}
         <section className="bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
+            <div className="text-center mb-16">
               <div className="section-label">
                 <span>Necessidades</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Tratamento por <span className="italic text-[#B8955A]">Desejo</span>
               </h2>
             </div>
@@ -327,11 +327,11 @@ function Index() {
         {/* PRODUCTS SECTION */}
         <section className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
+            <div className="text-center mb-16">
               <div className="section-label">
                 <span>Destaques</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Mais Vendidos da <span className="italic text-[#B8955A]">Semana</span>
               </h2>
             </div>
@@ -353,11 +353,11 @@ function Index() {
         {/* NOVIDADES SECTION */}
         <section className="bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
+            <div className="text-center mb-16">
               <div className="section-label">
                 <span>Lançamentos</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Novidades <span className="italic text-[#B8955A]">Recém-Chegadas</span>
               </h2>
             </div>

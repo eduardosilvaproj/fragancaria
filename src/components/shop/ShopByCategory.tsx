@@ -17,13 +17,13 @@ const CATEGORIES = [
 
 export const ShopByCategory = () => {
   return (
-    <section className="py-24 bg-[#F8F6F2]">
+    <section className="py-16 bg-[#F8F6F2]">
       <div className="container mx-auto px-4 md:px-12">
-        <div className="text-center mb-20">
+        <div className="text-center mb-16">
             <div className="section-label !justify-center">
                 <span>Curadoria Especializada</span>
             </div>
-            <h2 className="font-serif text-4xl md:text-5xl mb-6 font-light">Compre como um <span className="italic">Profissional</span></h2>
+            <h2 className="font-serif text-3xl md:text-4xl mb-4 font-light">Compre como um <span className="italic">Profissional</span></h2>
             <p className="text-[#1C1C1A]/40 text-sm uppercase tracking-[0.3em] font-bold">Qual seu objetivo hoje?</p>
         </div>
 
@@ -35,7 +35,7 @@ export const ShopByCategory = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="group relative bg-white p-8 md:p-12 text-center border border-black/[0.03] hover:border-[#B8955A] transition-all cursor-pointer overflow-hidden"
+              className="group relative bg-white p-6 md:p-10 text-center border border-black/[0.03] hover:border-[#B8955A] transition-all cursor-pointer overflow-hidden"
             >
               <div className="relative z-10">
                 <div className="text-4xl mb-6 grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110">{cat.icon}</div>

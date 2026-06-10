@@ -6,8 +6,8 @@ const MotionDiv = motion.div as any;
 
 export const HeroRefinement = () => {
   return (
-    <div className="flex flex-col items-center gap-8 mt-12 pb-12">
-      <div className="flex flex-wrap justify-center gap-6 text-[10px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]/70">
+    <div className="flex flex-col items-center gap-6 mt-10 pb-10">
+      <div className="flex flex-wrap justify-center gap-5 text-[9px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]/70">
         <div className="flex items-center gap-2">
           <Star className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />
           <span>4.9/5 Avaliações</span>

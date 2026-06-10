@@ -54,11 +54,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       viewport={{ once: true }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full bg-white transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.03)]"
+      className="group flex flex-col h-full bg-white transition-all duration-700 hover:shadow-[0_20px_40px_rgba(0,0,0,0.03)] p-3"
     >
       <Link 
         to={`/produto/${product.node.handle}` as any}
-        className="relative aspect-[3/4] overflow-hidden bg-[#F8F6F2] mb-8 block"
+        className="relative aspect-[3/4] overflow-hidden bg-[#F8F6F2] mb-6 block"
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
@@ -123,7 +123,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           <Button 
             onClick={handleAddToCart}
             disabled={isLoading || !selectedVariant}
-            className="w-full bg-[#1C1C1A] hover:bg-[#B8955A] text-white border-none h-14 text-[11px] uppercase tracking-[0.3em] font-bold transition-all rounded-none"
+            className="w-full bg-[#1C1C1A] hover:bg-[#B8955A] text-white border-none h-12 text-[10px] uppercase tracking-[0.3em] font-bold transition-all rounded-none"
             size="lg"
           >
             {isLoading ? "Processando..." : (
@@ -137,18 +137,18 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       </Link>
 
       <div className="flex flex-col flex-1 px-4 text-center pb-6">
-        <p className="text-[10px] uppercase tracking-[0.4em] text-[#B8955A] font-bold mb-3">
+        <p className="text-[9px] uppercase tracking-[0.4em] text-[#B8955A] font-bold mb-2">
           {product.node.vendor}
         </p>
         
         <Link 
           to={`/produto/${product.node.handle}` as any}
-          className="font-serif text-[22px] leading-tight mb-3 hover:text-[#B8955A] transition-colors text-[#1C1C1A] font-light"
+          className="font-serif text-[20px] leading-tight mb-2 hover:text-[#B8955A] transition-colors text-[#1C1C1A] font-light"
         >
           {product.node.title}
         </Link>
         
-        <div className="flex items-center justify-center gap-1 mb-4">
+        <div className="flex items-center justify-center gap-1 mb-3">
           {[...Array(5)].map((_, i) => (
             <Star key={i} className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />
           ))}

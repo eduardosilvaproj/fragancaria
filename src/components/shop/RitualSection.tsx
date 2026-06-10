@@ -19,7 +19,7 @@ export const RitualSection = () => {
       </div>
 
       <div className="container mx-auto px-4 md:px-12 relative z-10">
-        <div className="text-center mb-24">
+        <div className="text-center mb-16">
           <div className="section-label !justify-center">
             <span className="!text-white/40">Experiência de Salão</span>
           </div>
@@ -39,7 +39,7 @@ export const RitualSection = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12 mb-24">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-10 mb-16">
           {RITUAL_STEPS.map((step, index) => (
             <MotionDiv 
               key={step.name}
