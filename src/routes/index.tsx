@@ -372,6 +372,28 @@ function Index() {
 
         <FlashOffer />
         <RitualSection />
+        {/* BANNER INSTITUCIONAL ENTRE SEÇÕES */}
+        <section className="py-24 bg-white">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="bg-[#1C1C1A] text-white p-12 md:p-20 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
+                    <img 
+                        src="https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=800" 
+                        className="w-full h-full object-cover"
+                        alt="Background"
+                    />
+                </div>
+                <div className="relative z-10 max-w-xl">
+                    <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
+                    <p className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-10">Os melhores produtos utilizados pelos principais salões do Brasil.</p>
+                    <Button className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
+                        Conhecer Coleção
+                    </Button>
+                </div>
+            </div>
+          </div>
+        </section>
+
         <SocialProof />
         <ConsultancySection />
         <Testimonials />
