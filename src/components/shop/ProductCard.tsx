@@ -108,23 +108,33 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           {product.node.title}
         </Link>
         
-        <div className="flex items-center justify-center gap-1 mb-4">
+        <div className="flex items-center justify-center gap-1 mb-2">
           {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-2.5 w-2.5 fill-primary text-primary" />
+            <Star key={i} className="h-2.5 w-2.5 fill-[#B8955A] text-[#B8955A]" />
           ))}
-          <span className="text-[9px] text-muted-foreground ml-1 tracking-widest">(24)</span>
+          <span className="text-[9px] text-muted-foreground ml-1 tracking-widest">({Math.floor(Math.random() * 100) + 40})</span>
+        </div>
+
+        <div className="flex flex-col items-center gap-1 mb-4">
+          <span className="text-[9px] uppercase tracking-widest text-[#B8955A] font-bold">
+            Produto 100% Original
+          </span>
         </div>
         
-        <div className="mt-auto pt-4 flex flex-col items-center gap-2">
+        <div className="mt-auto pt-2 flex flex-col items-center gap-2">
           <div className="flex items-center gap-3">
-            {product.node.vendor === "Kérastase" && (
-              <span className="text-sm text-muted-foreground line-through opacity-60">
-                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 1.2)}
-              </span>
-            )}
-            <span className="text-base font-medium text-[#1C1C1A] tracking-tight">
+            <span className="text-sm text-muted-foreground line-through opacity-60">
+              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 1.15)}
+            </span>
+            <span className="text-lg font-medium text-[#1C1C1A] tracking-tight">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
             </span>
+          </div>
+          <div className="text-[10px] text-muted-foreground uppercase tracking-wider">
+            ou em até 10x sem juros
+          </div>
+          <div className="text-[10px] text-[#B8955A] font-bold uppercase tracking-widest">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 0.95)} no Pix
           </div>
         </div>
       </div>
