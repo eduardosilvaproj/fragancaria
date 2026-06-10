@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Heart, MessageCircle, Instagram } from "lucide-react";
+import { Heart, MessageCircle, Instagram as InstagramIcon } from "lucide-react";
 import { Button } from "../ui/button";
 
 const MotionDiv = motion.div as any;
@@ -49,7 +49,7 @@ export const InstagramFeed = () => {
                     className="w-full h-full object-cover transition-transform duration-[2000ms] group-hover:scale-110 grayscale group-hover:grayscale-0" 
                 />
                 <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-500 flex flex-col items-center justify-center gap-4 text-white">
-                  <Instagram className="h-6 w-6 mb-2 text-[#B8955A]" />
+                  <InstagramIcon className="h-6 w-6 mb-2 text-[#B8955A]" />
                   <div className="flex items-center gap-6">
                     <div className="flex items-center gap-2">
                         <Heart className="h-4 w-4 fill-white" />
