@@ -192,29 +192,36 @@ function Index() {
         {/* HERO SECTION */}
         <MotionSection 
           style={{ opacity: heroOpacity }} 
-          className="relative h-[80vh] flex items-center overflow-hidden bg-black"
+          className="relative min-h-[90vh] md:min-h-screen flex items-center overflow-hidden bg-black"
         >
-          <MotionDiv style={{ y: heroY }} className="absolute inset-0 z-0">
+          <MotionDiv 
+            initial={{ scale: 1.1 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 15, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
+            style={{ y: heroY }} 
+            className="absolute inset-0 z-0"
+          >
             <div className="w-full h-full overflow-hidden">
               <img 
                 src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop" 
                 alt="Boutique de luxo"
-                className="w-full h-full object-cover md:object-[center_right]"
+                className="w-full h-full object-cover md:object-[center_right] transition-transform duration-[20s] ease-out scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent h-1/2 bottom-0" />
             </div>
           </MotionDiv>
 
-          <div className="container mx-auto px-4 md:px-12 relative z-10">
+          <div className="container mx-auto px-4 md:px-12 relative z-10 pt-20 md:pt-0">
             <div className="w-full md:max-w-[55%] flex flex-col items-center md:items-start text-center md:text-left">
               <MotionDiv 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 1.2, ease: "easeOut" }}
-                className="flex items-center gap-6 mb-6"
+                className="flex items-center gap-4 md:gap-6 mb-4 md:mb-6"
               >
-                <div className="w-16 h-[1px] bg-[#B8955A]" />
-                <span className="text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#B8955A]">
+                <div className="w-12 md:w-16 h-[1px] bg-[#B8955A]" />
+                <span className="text-[9px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#B8955A]">
                   Especialista em Cabelo Profissional
                 </span>
               </MotionDiv>
@@ -223,7 +230,7 @@ function Index() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
-                className="font-serif font-light mb-10 text-white"
+                className="font-serif font-light mb-8 md:mb-10 text-white text-4xl md:text-5xl lg:text-7xl leading-[1.1]"
               >
                 A excelência do salão<br />
                 na sua <span className="italic underline underline-offset-8 decoration-[#B8955A]/30">intimidade</span>
@@ -232,20 +239,21 @@ function Index() {
               <MotionDiv 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.6 }}
-                className="flex flex-col sm:flex-row gap-6 items-center"
+                transition={{ duration: 1.2, delay: 0.4 }}
+                className="flex flex-col sm:flex-row gap-4 md:gap-6 items-center mb-8 md:mb-12"
               >
                 <Button 
                   size="lg" 
                   onClick={scrollToBrands}
-                  className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-14 h-14 text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-2 group"
+                  className="w-full sm:w-auto bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-10 md:px-14 h-12 md:h-14 text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-1 group relative overflow-hidden"
                 >
-                  Explorar Coleções
-                  <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
+                  <span className="relative z-10">Explorar Coleções</span>
+                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
+                  <ArrowRight className="relative z-10 ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
                 </Button>
                 <button 
                   onClick={scrollToQuiz}
-                  className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-white transition-all duration-500 border-b border-white/10 hover:border-white/40 pb-2"
+                  className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-white transition-all duration-500 border-b border-white/10 hover:border-white/40 pb-2"
                 >
                   Descobrir meu Ritual
                 </button>
@@ -258,36 +266,43 @@ function Index() {
             <MotionDiv
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 1, duration: 1.5 }}
-              className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-20"
+              transition={{ delay: 1.5, duration: 1.5 }}
+              className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-20"
             >
               <button 
                 onClick={scrollToBrands}
                 className="flex flex-col items-center gap-3 group"
               >
-                <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-white/40 group-hover:text-[#B8955A] transition-colors duration-500">
-                  Explore a experiência
+                <span className="text-[8px] md:text-[9px] uppercase tracking-[0.4em] font-bold text-white/40 group-hover:text-[#B8955A] transition-colors duration-500">
+                  Role para descobrir
                 </span>
                 <MotionDiv
-                  animate={{ y: [0, 8, 0] }}
+                  animate={{ y: [0, 6, 0] }}
                   transition={{ 
-                    duration: 2.5, 
+                    duration: 2, 
                     repeat: Infinity, 
                     ease: "easeInOut" 
                   }}
+                  className="flex flex-col items-center"
                 >
-                  <Mouse className="h-5 w-5 text-[#B8955A]/60 group-hover:text-[#B8955A] transition-colors duration-500" />
+                  <div className="w-[1px] h-10 bg-gradient-to-b from-[#B8955A] to-transparent opacity-60" />
+                  <ChevronDown className="h-4 w-4 text-[#B8955A]/60 -mt-1" />
                 </MotionDiv>
               </button>
 
               <MotionDiv
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 4, duration: 1.5 }}
-                className="mt-2 text-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 3.5, duration: 2 }}
+                className="mt-4 text-center px-4"
               >
-                <p className="text-[9px] text-white/30 uppercase tracking-[0.15em] font-medium max-w-[200px] leading-relaxed">
-                  +28 mil clientes já descobriram sua rotina ideal com a Fraganciaria.
+                <div className="flex items-center gap-2 justify-center mb-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-2 w-2 fill-[#B8955A] text-[#B8955A] opacity-60" />
+                  ))}
+                </div>
+                <p className="text-[8px] md:text-[9px] text-white/30 uppercase tracking-[0.2em] font-medium max-w-[280px] leading-relaxed">
+                  Confiança premium: +28 mil clientes satisfeitos em nossa boutique.
                 </p>
               </MotionDiv>
             </MotionDiv>
