@@ -1,8 +1,9 @@
 import { motion } from "framer-motion";
-import { Instagram, Heart, MessageCircle } from "lucide-react";
+import { Heart, MessageCircle } from "lucide-react";
 import { Button } from "../ui/button";
 
 const MotionDiv = motion.div as any;
+const MotionH2 = motion.h2 as any;
 
 const INSTA_POSTS = [
   "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop",
@@ -28,14 +29,14 @@ export const InstagramFeed = () => {
             <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Comunidade Premium</span>
             <div className="w-16 h-[1px] bg-[#B8955A]" />
           </MotionDiv>
-          <motion.h2 
+          <MotionH2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A] mb-8"
           >
             Siga-nos no <span className="italic">Instagram</span>
-          </motion.h2>
+          </MotionH2>
           <Button variant="link" className="text-[#B8955A] text-[12px] uppercase tracking-[0.3em] font-bold">
             @fragranciaria_boutique
           </Button>
@@ -53,11 +54,11 @@ export const InstagramFeed = () => {
             >
               <img src={post} alt="Instagram post" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
               <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-6 text-white">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-white">
                   <Heart className="h-5 w-5 fill-white" />
                   <span className="text-xs font-bold">{Math.floor(Math.random() * 500) + 100}</span>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 text-white">
                   <MessageCircle className="h-5 w-5 fill-white" />
                   <span className="text-xs font-bold">{Math.floor(Math.random() * 50) + 10}</span>
                 </div>
