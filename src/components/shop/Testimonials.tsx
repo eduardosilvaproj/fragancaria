@@ -1,16 +1,16 @@
 import { motion } from "framer-motion";
-import { Star, Quote } from "lucide-react";
+import { Star, Quote, CheckCircle2 } from "lucide-react";
 import useEmblaCarousel from "embla-carousel-react";
+import Autoplay from 'embla-carousel-autoplay'
 import { useEffect } from "react";
 
 const MotionDiv = motion.div as any;
-const MotionH2 = motion.h2 as any;
 
 const TESTIMONIALS = [
   {
     name: "Mariana Silva",
     location: "São Paulo, SP",
-    text: "O ritual da Kérastase transformou completamente meu cabelo. A consultoria via WhatsApp foi fundamental para eu escolher os produtos certos.",
+    text: "O ritual da Kérastase transformou completamente meu cabelo. A consultoria foi fundamental para eu escolher os produtos certos.",
     stars: 5,
     image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format&fit=crop"
   },
@@ -24,75 +24,68 @@ const TESTIMONIALS = [
   {
     name: "Camila Oliveira",
     location: "Curitiba, PR",
-    text: "A experiência de compra é maravilhosa. O site é lindo e as recomendações de rituais são perfeitas para quem não sabe o que o cabelo precisa.",
+    text: "A experiência de compra é maravilhosa. O site é lindo e as recomendações de rituais são perfeitas.",
     stars: 5,
     image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format&fit=crop"
+  },
+  {
+    name: "Juliana Costa",
+    location: "Belo Horizonte, MG",
+    text: "Produtos impecáveis e embalagem luxuosa. Sinto que estou em um spa toda vez que uso meu kit Keune.",
+    stars: 5,
+    image: "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?q=80&w=200&auto=format&fit=crop"
   }
 ];
 
 export const Testimonials = () => {
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, align: "center" });
-
-  useEffect(() => {
-    if (emblaApi) {
-      const interval = setInterval(() => {
-        emblaApi.scrollNext();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [emblaApi]);
+  const [emblaRef] = useEmblaCarousel({ loop: true, align: "center" }, [
+    Autoplay({ delay: 5000, stopOnInteraction: false, stopOnMouseEnter: true })
+  ]);
 
   return (
     <section className="py-40 bg-white overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
         <div className="text-center mb-24">
-          <MotionDiv 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center justify-center gap-6 mb-8"
-          >
-            <div className="w-16 h-[1px] bg-[#B8955A]" />
-            <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Vozes da Experiência</span>
-            <div className="w-16 h-[1px] bg-[#B8955A]" />
-          </MotionDiv>
-          <MotionH2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]"
-          >
-            Relatos de <span className="italic text-[#B8955A]">Transformação</span>
-          </MotionH2>
+          <div className="section-label">
+            <span>Vozes da Experiência</span>
+          </div>
+          <h2 className="font-serif font-light text-[#1C1C1A]">Relatos de <span className="italic text-[#B8955A]">Transformação</span></h2>
+          <div className="flex flex-col items-center mt-8 gap-2">
+            <div className="flex gap-1">
+                {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
+                ))}
+            </div>
+            <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]/40">Nota 4.9/5 baseada em +8.500 avaliações</p>
+          </div>
         </div>
 
-        <div className="overflow-hidden" ref={emblaRef}>
+        <div className="overflow-hidden cursor-grab active:cursor-grabbing" ref={emblaRef}>
           <div className="flex">
             {TESTIMONIALS.map((testimonial, i) => (
-              <div key={i} className="flex-[0_0_100%] md:flex-[0_0_50%] lg:flex-[0_0_33.333%] px-6">
+              <div key={i} className="flex-[0_0_100%] md:flex-[0_0_45%] lg:flex-[0_0_30%] px-4">
                 <MotionDiv 
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-[#F8F6F2] p-12 h-full flex flex-col items-center text-center relative"
+                  className="bg-[#F8F6F2] p-12 h-full flex flex-col items-center text-center relative border border-black/[0.02]"
                 >
-                  <Quote className="absolute top-8 left-8 h-12 w-12 text-[#B8955A]/10 stroke-[1]" />
-                  <div className="w-24 h-24 rounded-full overflow-hidden mb-8 border-4 border-white shadow-xl">
+                  <Quote className="absolute top-8 left-8 h-10 w-10 text-[#B8955A]/5 stroke-[1]" />
+                  <div className="w-20 h-20 rounded-full overflow-hidden mb-8 grayscale hover:grayscale-0 transition-all duration-700 shadow-xl border-2 border-white">
                     <img src={testimonial.image} alt={testimonial.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex gap-1 mb-6">
                     {[...Array(testimonial.stars)].map((_, j) => (
-                      <Star key={j} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
+                      <Star key={j} className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />
                     ))}
                   </div>
-                  <p className="font-serif text-xl leading-relaxed text-[#1C1C1A] mb-8 italic">"{testimonial.text}"</p>
+                  <p className="font-serif text-[18px] leading-relaxed text-[#1C1C1A] mb-8 italic font-light">"{testimonial.text}"</p>
                   <div className="mt-auto">
                     <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A] mb-1">{testimonial.name}</h4>
-                    <p className="text-[9px] uppercase tracking-widest text-[#B8955A] font-bold">{testimonial.location}</p>
-                    <div className="mt-4 flex items-center justify-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-green-500" />
-                      <span className="text-[8px] uppercase tracking-widest font-bold text-[#1C1C1A]/40">Compra Verificada</span>
+                    <p className="text-[9px] uppercase tracking-widest text-[#B8955A] font-bold mb-4">{testimonial.location}</p>
+                    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
+                      <CheckCircle2 className="h-3 w-3 text-green-500" />
+                      <span className="text-[8px] uppercase tracking-widest font-bold text-[#1C1C1A]/60">Cliente Autenticado</span>
                     </div>
                   </div>
                 </MotionDiv>
