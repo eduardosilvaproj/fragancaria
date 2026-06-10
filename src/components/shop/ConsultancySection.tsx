@@ -14,7 +14,7 @@ const PILLARS = [
 
 export const ConsultancySection = () => {
   return (
-    <section className="py-40 bg-white overflow-hidden">
+    <section className="py-48 bg-[#F8F6F2]/30 overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
         <div className="flex flex-col lg:flex-row items-center gap-20">
           <div className="flex-1">

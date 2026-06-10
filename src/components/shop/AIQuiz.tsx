@@ -54,7 +54,7 @@ export const AIQuiz = () => {
   return (
     <section className="py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
-        <div className="max-w-5xl mx-auto bg-[#F8F6F2] overflow-hidden flex flex-col md:flex-row shadow-[0_40px_100px_rgba(0,0,0,0.05)] border border-black/[0.03]">
+        <div className="max-w-6xl mx-auto bg-white overflow-hidden flex flex-col md:flex-row shadow-[0_50px_120px_rgba(0,0,0,0.07)] border border-black/[0.04]">
           {/* Left Side: Info & Progress */}
           <div className="md:w-[40%] bg-[#1C1C1A] text-white p-10 md:p-14 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">

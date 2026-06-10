@@ -246,7 +246,7 @@ function Index() {
                 <Button 
                   size="lg" 
                   onClick={scrollToBrands}
-                  className="w-full sm:w-auto bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-10 md:px-14 h-12 md:h-14 text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 rounded-none shadow-[0_20px_50px_rgba(184,149,90,0.2)] hover:-translate-y-1 group relative overflow-hidden"
+                  className="w-full sm:w-auto bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] px-10 md:px-14 h-12 md:h-16 text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-black transition-all duration-1000 rounded-none shadow-[0_30px_60px_rgba(184,149,90,0.25)] hover:-translate-y-1.5 group relative overflow-hidden"
                 >
                   <span className="relative z-10">Explorar Coleções</span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -332,13 +332,13 @@ function Index() {
         </MotionSection>
 
         {/* BRANDS SECTION */}
-        <section ref={brandsRef} className="bg-white">
+        <section ref={brandsRef} className="bg-white py-32">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-12">
+            <div className="text-center mb-24">
               <div className="section-label">
-                <span>Curadoria Exclusiva</span>
+                <span className="tracking-[0.5em]">Curadoria Exclusiva</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A] text-2xl md:text-3xl">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
                 As Marcas Mais <span className="italic text-[#B8955A]">Desejadas</span>
               </h2>
             </div>
