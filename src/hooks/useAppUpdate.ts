@@ -1,6 +1,13 @@
 import { useEffect } from "react";
 import { toast } from "sonner";
 
+declare global {
+  interface Window {
+    __APP_VERSION__?: string;
+  }
+}
+
+
 export const useAppUpdate = () => {
   useEffect(() => {
     // Only run in production and in the browser
