@@ -56,9 +56,9 @@ export const Navbar = () => {
           : "bg-transparent py-4"
       )}
     >
-      <div className="container mx-auto px-4 md:px-12">
-        <div className="flex items-center justify-between">
-          <div className="md:hidden">
+      <div className="mx-auto px-4 sm:px-8 md:px-12 lg:px-16 max-w-[1920px]">
+        <div className="flex items-center justify-between gap-8">
+          <div className="lg:hidden flex-1">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
               className={cn(
@@ -70,7 +70,7 @@ export const Navbar = () => {
             </button>
           </div>
 
-          <Link to="/" className="flex items-center group relative z-10">
+          <Link to="/" className="flex items-center group relative z-10 min-w-[180px] lg:min-w-[240px]">
             <span className={cn(
               "font-serif text-[24px] md:text-[28px] tracking-tighter transition-all duration-1000",
               isScrolled ? "text-[#1C1C1A]" : "text-white"
@@ -79,18 +79,19 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-12">
+          <nav className="hidden lg:flex items-center justify-center flex-1 space-x-10 xl:space-x-14">
             {NAV_LINKS.map((link) => (
               <DropdownMenu key={link.label}>
                 <DropdownMenuTrigger asChild>
                   <button
                     className={cn(
-                      "text-[10px] uppercase tracking-[0.45em] font-bold transition-all duration-500 flex items-center gap-1.5 group relative outline-none",
+                      "text-[10px] uppercase tracking-[0.45em] font-bold transition-all duration-500 flex items-center gap-1.5 group relative outline-none py-2",
                       isScrolled ? "text-[#1C1C1A]/90 hover:text-[#B8955A]" : "text-white/90 hover:text-[#B8955A]"
                     )}
                   >
                     {link.label}
                     {link.hasDropdown && <ChevronDown className="h-3 w-3 transition-transform duration-500 group-hover:rotate-180 opacity-40 group-hover:opacity-100" />}
+                    <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#B8955A] transition-all duration-500 group-hover:w-full" />
                   </button>
                 </DropdownMenuTrigger>
                 
@@ -125,7 +126,7 @@ export const Navbar = () => {
             ))}
           </nav>
 
-          <div className="flex items-center space-x-2 md:space-x-6">
+          <div className="flex items-center justify-end space-x-2 md:space-x-6 min-w-[180px] lg:min-w-[240px]">
             <button 
               onClick={() => setIsSearchOpen(true)}
               className={cn(
