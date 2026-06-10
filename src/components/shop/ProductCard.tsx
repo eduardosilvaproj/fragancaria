@@ -63,13 +63,20 @@ export const ProductCard = ({ product }: ProductCardProps) => {
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {product.node.vendor === "Kérastase" && (
-            <span className="bg-[#1C1C1A] text-white text-[9px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-              Best Seller
+            <span className="bg-[#1C1C1A] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
+              Mais Vendido
             </span>
           )}
-          <span className="bg-[#B8955A] text-white text-[9px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-            Novo
-          </span>
+          {product.node.handle.includes('serum') && (
+            <span className="bg-[#B8955A] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
+              Escolha dos Especialistas
+            </span>
+          )}
+          {!product.node.vendor && (
+            <span className="bg-[#B8955A] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
+              Novo
+            </span>
+          )}
         </div>
 
         {/* Quick Actions */}
