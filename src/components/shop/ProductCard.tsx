@@ -1,6 +1,6 @@
 import { Button } from "../ui/button";
 import { Star, Plus, Heart, Eye } from "lucide-react";
-import * as motion from "framer-motion/client";
+import { motion } from "framer-motion";
 import { useCartStore } from "@/stores/cartStore";
 import { ShopifyProduct } from "@/lib/shopify/client";
 import { toast } from "sonner";
@@ -41,13 +41,14 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const currencyCode = product.node.priceRange.minVariantPrice.currencyCode;
 
   return (
-    <motion.div 
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
-      className="group flex flex-col h-full bg-white"
-    >
+    <div className="group flex flex-col h-full bg-white">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8, ease: [0.19, 1, 0.22, 1] }}
+        className="flex flex-col h-full"
+      >
       <Link 
         to={`/produto/${product.node.handle}` as any}
         className="relative aspect-[4/5] overflow-hidden bg-[#F8F6F2] mb-6 block"
@@ -135,6 +136,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </div>
         </div>
       </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
