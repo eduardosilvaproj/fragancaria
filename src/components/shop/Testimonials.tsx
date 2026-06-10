@@ -50,13 +50,16 @@ export const Testimonials = () => {
             <span>Vozes da Experiência</span>
           </div>
           <h2 className="font-serif font-light text-[#1C1C1A]">Relatos de <span className="italic text-[#B8955A]">Transformação</span></h2>
-          <div className="flex flex-col items-center mt-8 gap-2">
-            <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
-                ))}
+          <div className="flex flex-col items-center mt-12 gap-4">
+            <div className="flex items-center gap-4">
+                <div className="flex gap-1">
+                    {[...Array(5)].map((_, i) => (
+                        <Star key={i} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
+                    ))}
+                </div>
+                <span className="font-serif text-3xl font-light">4.9/5</span>
             </div>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]/40">Nota 4.9/5 baseada em +8.500 avaliações</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1C1C1A]/40">Baseado em milhares de avaliações reais de clientes autenticados</p>
           </div>
         </div>
 
