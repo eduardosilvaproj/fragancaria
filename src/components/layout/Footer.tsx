@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { MessageCircle, ShieldCheck, CheckCircle2, Share2, Mail, Instagram, Facebook, Youtube } from "lucide-react";
+import { MessageCircle, ShieldCheck, CheckCircle2, Share2, Mail, Instagram as InstagramIcon, Facebook as FacebookIcon, Youtube as YoutubeIcon } from "lucide-react";
 import { Button } from "../ui/button";
 
 export const Footer = () => {
@@ -40,9 +40,9 @@ export const Footer = () => {
               A maior boutique de cosméticos profissionais de luxo do Brasil. Curadoria especializada para a saúde dos seus fios.
             </p>
             <div className="flex gap-8 text-[#1C1C1A]/40">
-              <Instagram className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
-              <Facebook className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
-              <Youtube className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
+              <InstagramIcon className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
+              <FacebookIcon className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
+              <YoutubeIcon className="h-5 w-5 hover:text-[#B8955A] cursor-pointer transition-colors" />
             </div>
           </div>
 
