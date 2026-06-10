@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Search, Heart, User, ChevronDown, Sparkles, X, Menu, SearchIcon } from "lucide-react";
+import { Search, Heart, User, ChevronDown, Menu, X, SearchIcon } from "lucide-react";
 import { CartDrawer } from "../shop/CartDrawer";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
@@ -67,7 +67,6 @@ export const Navbar = () => {
     >
       <div className="container mx-auto px-4 md:px-12">
         <div className="flex items-center justify-between">
-          {/* Mobile Menu Toggle */}
           <div className="md:hidden">
             <button 
               onClick={() => setIsMobileMenuOpen(true)}
@@ -80,7 +79,6 @@ export const Navbar = () => {
             </button>
           </div>
 
-          {/* Logo */}
           <Link to="/" className="flex items-center group relative z-10">
             <span className={cn(
               "font-serif text-3xl tracking-tighter transition-all duration-700",
@@ -90,7 +88,6 @@ export const Navbar = () => {
             </span>
           </Link>
 
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-10">
             {NAV_LINKS.map((link) => (
               <DropdownMenu key={link.label}>
@@ -138,7 +135,6 @@ export const Navbar = () => {
             ))}
           </nav>
 
-          {/* Icons */}
           <div className="flex items-center space-x-2 md:space-x-4">
             <button 
               onClick={() => setIsSearchOpen(true)}
@@ -168,10 +164,8 @@ export const Navbar = () => {
         </div>
       </div>
       
-      {/* Bottom Border */}
       <div className={cn("absolute bottom-0 left-0 right-0 h-[1px] bg-white/10 transition-opacity", isScrolled ? "opacity-0" : "opacity-100")} />
 
-      {/* SEARCH OVERLAY */}
       <AnimatePresence>
         {isSearchOpen && (
           <motion.div 
@@ -195,7 +189,7 @@ export const Navbar = () => {
                   type="text"
                   autoFocus
                   placeholder="Pesquisar por marca, produto ou necessidade..."
-                  className="w-full bg-transparent border-b-2 border-[#1C1C1A]/10 py-6 text-2xl md:text-5xl font-serif outline-none focus:border-[#B8955A] transition-colors"
+                  className="w-full bg-transparent border-b-2 border-[#1C1C1A]/10 py-6 text-2xl md:text-5xl font-serif outline-none focus:border-[#B8955A] transition-colors text-[#1C1C1A]"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -210,7 +204,7 @@ export const Navbar = () => {
                       {searchSuggestions.map((suggestion) => (
                         <button 
                           key={suggestion}
-                          className="block text-2xl md:text-3xl font-serif hover:text-[#B8955A] transition-colors"
+                          className="block text-2xl md:text-3xl font-serif hover:text-[#B8955A] transition-colors text-[#1C1C1A]"
                         >
                           {suggestion}
                         </button>
@@ -221,7 +215,7 @@ export const Navbar = () => {
                     <h5 className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#B8955A] mb-8">Mais Buscados</h5>
                     <div className="flex flex-wrap gap-4">
                       {["Kérastase", "Wella", "Sebastian", "Nutrição", "Loiros", "Óleos"].map(tag => (
-                        <span key={tag} className="px-6 py-3 border border-black/5 text-[11px] uppercase tracking-widest hover:border-[#B8955A] hover:text-[#B8955A] transition-all cursor-pointer">
+                        <span key={tag} className="px-6 py-3 border border-black/5 text-[11px] uppercase tracking-widest hover:border-[#B8955A] hover:text-[#B8955A] transition-all cursor-pointer text-[#1C1C1A]">
                           {tag}
                         </span>
                       ))}
@@ -234,7 +228,6 @@ export const Navbar = () => {
         )}
       </AnimatePresence>
 
-      {/* MOBILE MENU */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
@@ -253,9 +246,9 @@ export const Navbar = () => {
               className="fixed inset-y-0 left-0 w-[85%] bg-white z-[80] p-8 flex flex-col"
             >
               <div className="flex justify-between items-center mb-12">
-                <span className="font-serif text-2xl"><span className="text-[#B8955A] italic">F</span>ragranciaria</span>
+                <span className="font-serif text-2xl text-[#1C1C1A]"><span className="text-[#B8955A] italic">F</span>ragranciaria</span>
                 <button onClick={() => setIsMobileMenuOpen(false)}>
-                  <X className="h-6 w-6" />
+                  <X className="h-6 w-6 text-[#1C1C1A]" />
                 </button>
               </div>
 
@@ -263,7 +256,7 @@ export const Navbar = () => {
                 <div className="space-y-8">
                   {NAV_LINKS.map(link => (
                     <div key={link.label}>
-                      <button className="text-2xl font-serif flex items-center justify-between w-full">
+                      <button className="text-2xl font-serif flex items-center justify-between w-full text-[#1C1C1A]">
                         {link.label}
                         {link.hasDropdown && <ChevronDown className="h-5 w-5" />}
                       </button>
@@ -274,12 +267,12 @@ export const Navbar = () => {
 
               <div className="pt-8 border-t border-black/5 mt-auto">
                 <div className="flex items-center gap-6 mb-8">
-                  <User className="h-5 w-5" />
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-bold">Minha Conta</span>
+                  <User className="h-5 w-5 text-[#1C1C1A]" />
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]">Minha Conta</span>
                 </div>
                 <div className="flex items-center gap-6">
-                  <Heart className="h-5 w-5" />
-                  <span className="text-[11px] uppercase tracking-[0.2em] font-bold">Favoritos</span>
+                  <Heart className="h-5 w-5 text-[#1C1C1A]" />
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]">Favoritos</span>
                 </div>
               </div>
             </motion.div>
