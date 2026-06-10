@@ -238,17 +238,17 @@ function Index() {
         </section>
 
         {/* TRUST BAR */}
-        <section className="bg-[#1a1a18] text-white py-12 border-y border-white/5">
+        <section className="bg-[#0A0A0A] text-white py-14 border-y border-white/5 relative z-10 overflow-hidden">
           <div className="container mx-auto px-4 md:px-8">
-            <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-8 md:gap-4">
+            <div className="flex flex-wrap md:flex-nowrap justify-between items-center gap-12 md:gap-4">
               {TRUST_BAR_ITEMS.map((item, index) => (
-                <div key={item.text} className="flex flex-1 items-center justify-center gap-4 group min-w-[200px] md:min-w-0">
-                  <div className="flex items-center gap-3">
-                    <item.icon className="h-5 w-5 text-primary stroke-[1.5]" />
-                    <span className="text-[11px] uppercase tracking-[0.15em] font-medium opacity-90 whitespace-nowrap">{item.text}</span>
+                <div key={item.text} className="flex flex-1 items-center justify-center gap-6 group min-w-[200px] md:min-w-0 transition-transform duration-500 hover:-translate-y-1">
+                  <div className="flex items-center gap-4">
+                    <item.icon className="h-4 w-4 text-[#B8955A] stroke-[1] transition-transform duration-500 group-hover:scale-125" />
+                    <span className="text-[10px] uppercase tracking-[0.3em] font-light text-white/60 group-hover:text-white transition-colors">{item.text}</span>
                   </div>
                   {index < TRUST_BAR_ITEMS.length - 1 && (
-                    <div className="hidden md:block h-4 w-[1px] bg-primary/30 ml-auto" />
+                    <div className="hidden md:block h-3 w-[1px] bg-[#B8955A]/20 ml-auto" />
                   )}
                 </div>
               ))}
