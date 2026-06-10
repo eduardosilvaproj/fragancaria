@@ -369,7 +369,7 @@ function Index() {
       </main>
 
       {/* FOOTER */}
-      <footer className="bg-[#1a1a18] text-white pt-32 pb-16 border-t border-primary/20">
+      <footer className="bg-[#1a1a18] text-white pt-32 pb-16 border-t border-[#B8955A]/30">
         <div className="container mx-auto px-4 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-16 mb-24">
             <div className="space-y-8">
