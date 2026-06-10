@@ -3,16 +3,16 @@ import { MessageCircle, CreditCard, ShieldCheck, CheckCircle2, Share2 } from "lu
 
 export const Footer = () => {
   return (
-    <footer className="bg-white pt-24 pb-12 border-t border-[#B8955A]/20">
+    <footer className="bg-white pt-24 pb-12 border-t-[0.5px] border-[#B8955A]/30">
       <div className="container mx-auto px-4 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16 mb-24">
           <div className="lg:col-span-1">
-            <Link to="/" className="inline-block mb-8">
-              <span className="font-serif text-4xl tracking-tighter text-[#1C1C1A]">
+            <Link to="/" className="inline-block mb-10">
+              <span className="font-serif text-[40px] tracking-tighter text-[#1C1C1A]">
                 <span className="text-[#B8955A] italic">F</span>ragranciaria
               </span>
             </Link>
-            <p className="text-[#1C1C1A]/60 text-sm leading-relaxed mb-8 max-w-xs uppercase tracking-widest font-medium">
+            <p className="text-[#1C1C1A]/60 text-[11px] leading-relaxed mb-8 max-w-xs uppercase tracking-[0.2em] font-bold">
               Boutique especializada em produtos profissionais de alto luxo para o cuidado capilar.
             </p>
             <div className="flex gap-6">

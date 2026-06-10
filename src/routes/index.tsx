@@ -203,82 +203,97 @@ function Index() {
 
       <main>
         {/* HERO SECTION */}
-        <MotionSection style={{ opacity: heroOpacity }} className="relative h-screen min-h-[800px] flex items-center overflow-hidden">
+        <MotionSection 
+          style={{ opacity: heroOpacity }} 
+          className="relative h-[100vh] min-h-[700px] md:min-h-[800px] flex items-center overflow-hidden bg-black"
+        >
+          {/* Background Image with Parallax & Ken Burns */}
           <MotionDiv style={{ y: heroY }} className="absolute inset-0 z-0">
             <div className="w-full h-full overflow-hidden">
               <img 
                 src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop" 
                 alt="Boutique de luxo"
-                className="w-full h-full object-cover animate-ken-burns scale-110"
+                className="w-full h-full object-cover animate-ken-burns scale-110 md:object-[center_right]"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/40 to-transparent" />
+              {/* Dynamic Overlay: Darker on the left for text legibility */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/40 to-transparent md:from-black/85 md:via-black/30 md:to-transparent" />
             </div>
           </MotionDiv>
 
-          <div className="container mx-auto px-4 md:px-12 relative z-10 py-24">
-            <div className="max-w-4xl text-white">
+          <div className="container mx-auto px-6 md:px-12 relative z-10 py-20 md:py-24">
+            <div className="w-full md:max-w-[45%] flex flex-col items-center md:items-start text-center md:text-left">
+              {/* Subtitle with gold line */}
               <MotionDiv 
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1, ease: "easeOut" }}
-                className="flex items-center gap-6 mb-8"
+                transition={{ duration: 1.2, ease: "easeOut" }}
+                className="flex items-center gap-4 md:gap-6 mb-6 md:mb-8"
               >
-                <div className="w-20 h-[1.5px] bg-[#B8955A]" />
-                <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">
+                <div className="hidden md:block w-16 md:w-20 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">
                   Especialista em Cabelo Profissional
                 </span>
               </MotionDiv>
               
+              {/* Main Headline - Editorial Style */}
               <MotionH1 
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
-                className="font-serif text-6xl md:text-[86px] font-light mb-12 leading-[1.1] tracking-tighter text-white"
+                transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
+                className="font-serif text-[40px] md:text-[64px] lg:text-[86px] font-light mb-8 md:mb-12 leading-[1.1] tracking-tighter text-white"
               >
-                A excelência do salão<br /><span className="italic underline decoration-[#B8955A]/30">na sua intimidade</span>
+                A excelência do salão<br />
+                <span className="md:block">na sua <span className="italic underline decoration-[#B8955A]/30">intimidade</span></span>
               </MotionH1>
               
+              {/* Benefits List - Single axis alignment */}
               <MotionDiv 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.4 }}
-                className="flex flex-wrap gap-x-12 gap-y-6 mb-16"
+                transition={{ duration: 1.2, delay: 0.4 }}
+                className="flex flex-col md:flex-row flex-wrap md:items-center gap-y-4 md:gap-x-10 mb-12 md:mb-16"
               >
                 {[
                   "Produtos Originais", "Distribuidor Oficial", "Atendimento Especializado", "Curadoria Premium"
-                ].map(label => (
-                  <span key={label} className="flex items-center gap-3 text-[10px] uppercase tracking-[0.3em] font-bold text-white/60">
+                ].map((label, idx) => (
+                  <span key={label} className="flex items-center justify-center md:justify-start gap-3 text-[10px] md:text-[11px] uppercase tracking-[0.3em] font-bold text-white/70">
                     <div className="w-1.5 h-1.5 rounded-full bg-[#B8955A]" />
                     {label}
+                    {idx < 3 && <div className="hidden lg:block ml-10 w-[1px] h-3 bg-white/10" />}
                   </span>
                 ))}
               </MotionDiv>
 
+              {/* Action Buttons */}
               <MotionDiv 
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1, delay: 0.6 }}
-                className="flex flex-col sm:flex-row gap-10 items-center"
+                transition={{ duration: 1.2, delay: 0.6 }}
+                className="flex flex-col sm:flex-row gap-6 md:gap-10 items-center w-full md:w-auto"
               >
-                <Button size="lg" className="bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] border-none px-20 h-18 text-[12px] uppercase tracking-[0.4em] font-black transition-all duration-700 shadow-[0_20px_50px_rgba(184,149,90,0.3)] group rounded-none">
+                <Button 
+                  size="lg" 
+                  className="w-full sm:w-auto bg-[#B8955A] hover:bg-white text-black hover:text-[#1C1C1A] border-none px-12 md:px-20 h-14 md:h-18 text-[11px] md:text-[12px] uppercase tracking-[0.4em] font-black transition-all duration-500 shadow-[0_20px_50px_rgba(184,149,90,0.2)] group rounded-none hover:-translate-y-1"
+                >
                   Comprar Agora
                   <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
                 </Button>
-                <button className="text-[11px] uppercase tracking-[0.4em] font-bold text-white/80 hover:text-white transition-colors border-b border-white/20 pb-2">
+                <button className="text-[10px] md:text-[11px] uppercase tracking-[0.4em] font-bold text-white/60 hover:text-white transition-all duration-300 border-b border-white/10 hover:border-white/40 pb-2">
                   Descobrir meu Ritual
                 </button>
               </MotionDiv>
             </div>
           </div>
 
+          {/* Scroll Indicator */}
           <MotionDiv 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 1.5, duration: 1 }}
-            className="absolute bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 cursor-pointer"
+            transition={{ delay: 1.8, duration: 1.5 }}
+            className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 cursor-pointer hidden sm:flex"
           >
             <span className="text-[9px] uppercase tracking-[0.4em] text-white/40 font-bold">Scroll</span>
-            <div className="w-[1px] h-16 bg-gradient-to-b from-[#B8955A] to-transparent" />
+            <div className="w-[1px] h-12 md:h-16 bg-gradient-to-b from-[#B8955A] to-transparent" />
           </MotionDiv>
         </MotionSection>
 
