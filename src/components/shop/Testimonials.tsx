@@ -4,6 +4,7 @@ import useEmblaCarousel from "embla-carousel-react";
 import { useEffect } from "react";
 
 const MotionDiv = motion.div as any;
+const MotionH2 = motion.h2 as any;
 
 const TESTIMONIALS = [
   {
@@ -55,14 +56,14 @@ export const Testimonials = () => {
             <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Vozes da Experiência</span>
             <div className="w-16 h-[1px] bg-[#B8955A]" />
           </MotionDiv>
-          <motion.h2 
+          <MotionH2 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]"
           >
             Relatos de <span className="italic text-[#B8955A]">Transformação</span>
-          </motion.h2>
+          </MotionH2>
         </div>
 
         <div className="overflow-hidden" ref={emblaRef}>
