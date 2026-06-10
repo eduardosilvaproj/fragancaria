@@ -1,12 +1,29 @@
 import { Link } from "@tanstack/react-router";
-import { Search, Heart, User, ChevronDown } from "lucide-react";
+import { Search, Heart, User, ChevronDown, Sparkles } from "lucide-react";
 import { CartDrawer } from "../shop/CartDrawer";
 import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+
+const MARCAS_PREMIUM = [
+  { name: "Kérastase", image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=200&auto=format&fit=crop", desc: "Líder mundial em luxo" },
+  { name: "Wella Professionals", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=200&auto=format&fit=crop", desc: "Excelência em cor" },
+  { name: "Keune", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=200&auto=format&fit=crop", desc: "Tecnologia holandesa" },
+  { name: "Sebastian", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=200&auto=format&fit=crop", desc: "Vanguarda no estilo" },
+];
+
+const TRATAMENTOS = [
+  "Hidratação", "Nutrição", "Reconstrução", "Loiros", "Frizz", "Química", "Crescimento", "Couro cabeludo", "Coloração"
+];
 
 const NAV_LINKS = [
-  { label: "Marcas", href: "/marcas", hasDropdown: true },
-  { label: "Tratamentos", href: "/tratamentos" },
+  { label: "Marcas", href: "/marcas", hasDropdown: true, type: "marcas" },
+  { label: "Tratamentos", href: "/tratamentos", hasDropdown: true, type: "tratamentos" },
   { label: "Coloração", href: "/coloracao" },
   { label: "Kits", href: "/kits" },
   { label: "Novidades", href: "/novidades" },

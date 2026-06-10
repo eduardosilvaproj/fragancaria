@@ -83,11 +83,24 @@ const TRUST_BAR_ITEMS = [
 ];
 
 const BRANDS = [
-  { name: "Kérastase", subtitle: "Líder mundial em cuidados de luxo", image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=800&auto=format&fit=crop" },
-  { name: "Wella Professional", subtitle: "Excelência em coloração", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=800&auto=format&fit=crop" },
-  { name: "Keune", subtitle: "Tecnologia holandesa", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=800&auto=format&fit=crop" },
-  { name: "Sebastian", subtitle: "Vanguarda no estilo", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=800&auto=format&fit=crop" },
-  { name: "L'Oréal Pro", subtitle: "O toque dos melhores salões", image: "https://images.unsplash.com/photo-1633613286848-e6f43bbafb8d?q=80&w=800&auto=format&fit=crop" },
+  { name: "Kérastase", subtitle: "Líder mundial em cuidados de luxo", image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=800&auto=format&fit=crop", count: 48 },
+  { name: "Keune", subtitle: "Tecnologia holandesa", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=800&auto=format&fit=crop", count: 32 },
+  { name: "Wella Professionals", subtitle: "Excelência em coloração", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=800&auto=format&fit=crop", count: 56 },
+  { name: "Sebastian", subtitle: "Vanguarda no estilo", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=800&auto=format&fit=crop", count: 24 },
+  { name: "L'Oréal Professionnel", subtitle: "O toque dos melhores salões", image: "https://images.unsplash.com/photo-1633613286848-e6f43bbafb8d?q=80&w=800&auto=format&fit=crop", count: 42 },
+];
+
+const NEEDS = [
+  { label: "Hidratação", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=400&auto=format&fit=crop" },
+  { label: "Nutrição", image: "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=400&auto=format&fit=crop" },
+  { label: "Reconstrução", image: "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=400&auto=format&fit=crop" },
+  { label: "Loiros", image: "https://images.unsplash.com/photo-1633613286848-e6f43bbafb8d?q=80&w=400&auto=format&fit=crop" },
+  { label: "Antifrizz", image: "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=400&auto=format&fit=crop" },
+  { label: "Coloração", image: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=400&auto=format&fit=crop" },
+  { label: "Química", image: "https://images.unsplash.com/photo-1559599101-f09722fb4948?q=80&w=400&auto=format&fit=crop" },
+  { label: "Cacheados", image: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=400&auto=format&fit=crop" },
+  { label: "Oleosidade", image: "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?q=80&w=400&auto=format&fit=crop" },
+  { label: "Couro cabeludo", image: "https://images.unsplash.com/photo-1585232351009-aa87416fca90?q=80&w=400&auto=format&fit=crop" },
 ];
 
 const FEATURED_PRODUCTS_MOCK = [
@@ -257,24 +270,95 @@ function Index() {
           </div>
         </section>
 
-        {/* BRANDS SECTION - EDITORIAL LAYOUT */}
+        {/* BRANDS BAR */}
+        <section className="bg-white py-12 border-b border-black/5">
+          <div className="container mx-auto px-4 overflow-hidden">
+            <div className="flex items-center justify-center gap-16 md:gap-24 opacity-40 grayscale hover:grayscale-0 transition-all duration-700 overflow-x-auto pb-4 scrollbar-hide">
+              {BRANDS.map(brand => (
+                <span key={brand.name} className="font-serif text-2xl md:text-3xl tracking-widest whitespace-nowrap">{brand.name}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* NEEDS SECTION */}
+        <section className="py-32 bg-[#F8F6F2]">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-20">
+              <div className="flex items-center justify-center gap-6 mb-6">
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                  Escolha seu Resultado
+                </span>
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+              </div>
+              <h2 className="font-serif text-4xl md:text-5xl font-light text-[#1C1C1A]">Qual resultado você deseja?</h2>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-8">
+              {NEEDS.map((need) => (
+                <Link key={need.label} to="/" className="group flex flex-col items-center">
+                  <div className="relative w-full aspect-square overflow-hidden mb-4 bg-white shadow-sm border border-black/5">
+                    <img 
+                      src={need.image} 
+                      alt={need.label}
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-all duration-700" />
+                  </div>
+                  <span className="text-[11px] uppercase tracking-[0.2em] font-medium text-[#1C1C1A]/80 group-hover:text-[#B8955A] transition-colors">
+                    {need.label}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* FEATURED PRODUCTS */}
+        <section className="py-40 bg-white">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="w-16 h-[1px] bg-[#B8955A]" />
+                  <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                    Destaques da Boutique
+                  </span>
+                </div>
+                <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Rituais de Alta Performance</h2>
+              </div>
+              <Button variant="link" className="text-[12px] uppercase tracking-[0.3em] font-bold group h-auto p-0 text-[#1C1C1A] hover:text-[#B8955A] transition-colors">
+                Ver Todo o Acervo <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-20">
+              {products.map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* BRANDS SECTION - EXCLUSIVE BY BRAND */}
         <section className="py-40 bg-[#F8F6F2]">
           <div className="container mx-auto px-4 md:px-12">
             <div className="mb-24 text-center">
               <div className="flex items-center justify-center gap-6 mb-8">
                 <div className="w-12 h-[1px] bg-[#B8955A]" />
                 <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
-                  Curadoria Exclusiva
+                  Compre por Marca
                 </span>
                 <div className="w-12 h-[1px] bg-[#B8955A]" />
               </div>
-              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">As Maiores Grifes da Beleza</h2>
+              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Curadoria por Grife</h2>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
               {BRANDS.map((brand, idx) => (
                 <div key={brand.name} className={cn(
-                  "group cursor-pointer relative h-[450px] overflow-hidden bg-[#1C1C1A]",
+                  "group cursor-pointer relative h-[500px] overflow-hidden bg-[#1C1C1A]",
                   idx % 2 !== 0 && "md:translate-y-12"
                 )}>
                   <img 
@@ -284,12 +368,12 @@ function Index() {
                   />
                   
                   <div className="absolute inset-0 flex flex-col items-center justify-center p-8 text-center">
-                    <h3 className="font-serif text-4xl text-white tracking-widest mb-6 transition-transform duration-700 group-hover:-translate-y-4">
+                    <h3 className="font-serif text-4xl text-white tracking-widest mb-4 transition-transform duration-700 group-hover:-translate-y-4">
                       {brand.name}
                     </h3>
-                    <div className="h-[1px] w-0 bg-[#B8955A] mb-6 transition-all duration-700 group-hover:w-16" />
-                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-y-4 group-hover:translate-y-0 mb-8 font-light">
-                      {brand.subtitle}
+                    <div className="h-[1px] w-0 bg-[#B8955A] mb-4 transition-all duration-700 group-hover:w-16" />
+                    <p className="text-[10px] uppercase tracking-[0.3em] text-white/60 opacity-0 group-hover:opacity-100 transition-all duration-700 transform translate-y-4 group-hover:translate-y-0 mb-4 font-light">
+                      {brand.count}+ Produtos
                     </p>
                     <Button variant="outline" className="opacity-0 group-hover:opacity-100 transition-all duration-700 border-white/20 text-white text-[9px] uppercase tracking-[0.2em] h-10 px-6 rounded-none hover:bg-white hover:text-black">
                       Explorar Coleção
