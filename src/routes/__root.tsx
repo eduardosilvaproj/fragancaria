@@ -126,11 +126,6 @@ function RootShell({ children }: { children: ReactNode }) {
         <meta httpEquiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
         <meta httpEquiv="Expires" content="0" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `window.__APP_VERSION__ = "${new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14)}";`,
-          }}
-        />
       </head>
       <body className="font-sans antialiased">
         {children}
