@@ -52,8 +52,8 @@ export const Navbar = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-[60] transition-all duration-700",
         isScrolled 
-          ? "bg-white/95 backdrop-blur-xl border-b border-black/[0.03] py-4" 
-          : "bg-transparent py-8"
+          ? "bg-white/95 backdrop-blur-xl border-b border-black/[0.03] py-3" 
+          : "bg-transparent py-6"
       )}
     >
       <div className="container mx-auto px-4 md:px-12">
@@ -72,14 +72,14 @@ export const Navbar = () => {
 
           <Link to="/" className="flex items-center group relative z-10">
             <span className={cn(
-              "font-serif text-[28px] md:text-[32px] tracking-tighter transition-all duration-1000",
+              "font-serif text-[24px] md:text-[28px] tracking-tighter transition-all duration-1000",
               isScrolled ? "text-[#1C1C1A]" : "text-white"
             )}>
               <span className="text-[#B8955A] italic">F</span>ragranciaria
             </span>
           </Link>
 
-          <nav className="hidden md:flex items-center space-x-12">
+          <nav className="hidden md:flex items-center space-x-10">
             {NAV_LINKS.map((link) => (
               <DropdownMenu key={link.label}>
                 <DropdownMenuTrigger asChild>
