@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { 
   ArrowRight,
   Mouse,
-  ChevronDown
+  ChevronDown,
+  Star
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
