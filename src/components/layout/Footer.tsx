@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Instagram, Facebook, Twitter, MessageCircle, CreditCard, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { MessageCircle, CreditCard, ShieldCheck, CheckCircle2, Share2 } from "lucide-react";
 
 export const Footer = () => {
   return (
@@ -16,9 +16,8 @@ export const Footer = () => {
               Boutique especializada em produtos profissionais de alto luxo para o cuidado capilar.
             </p>
             <div className="flex gap-6">
-              <Instagram className="h-5 w-5 text-[#1C1C1A] hover:text-[#B8955A] cursor-pointer transition-colors" />
-              <Facebook className="h-5 w-5 text-[#1C1C1A] hover:text-[#B8955A] cursor-pointer transition-colors" />
-              <Twitter className="h-5 w-5 text-[#1C1C1A] hover:text-[#B8955A] cursor-pointer transition-colors" />
+              <Share2 className="h-5 w-5 text-[#1C1C1A] hover:text-[#B8955A] cursor-pointer transition-colors" />
+              <MessageCircle className="h-5 w-5 text-[#1C1C1A] hover:text-[#B8955A] cursor-pointer transition-colors" />
             </div>
           </div>
 
