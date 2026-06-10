@@ -401,6 +401,97 @@ function Index() {
           </div>
         </section>
 
+        {/* TESTIMONIALS - PREMIUM CAROUSEL */}
+        <section className="py-40 bg-white overflow-hidden">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="flex items-center justify-center gap-6 mb-8">
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+                <span className="text-[10px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                  Experiências Reais
+                </span>
+                <div className="w-12 h-[1px] bg-[#B8955A]" />
+              </div>
+              <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Vozes da <span className="italic">Excelência</span></h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+              {[
+                { name: "Helena Soares", city: "São Paulo, SP", text: "A curadoria é impecável. Os produtos da Kérastase chegaram em uma embalagem que exala luxo, e o suporte via WhatsApp foi fundamental para escolher o ritual certo para meu loiro." },
+                { name: "Beatriz Lins", city: "Rio de Janeiro, RJ", text: "Finalmente uma loja que entende a ciência por trás dos fios. A entrega foi surpreendentemente rápida e a qualidade dos produtos Wella é indiscutível. Sou cliente fiel." },
+                { name: "Carolina Mendes", city: "Curitiba, PR", text: "O diagnóstico personalizado mudou minha rotina capilar. Meu cabelo nunca esteve tão saudável. A Fragranciaria não apenas vende, ela educa sobre o luxo capilar." }
+              ].map((item, idx) => (
+                <div key={idx} className="bg-[#F8F6F2] p-12 flex flex-col items-center text-center group hover:bg-[#1C1C1A] hover:text-white transition-all duration-700">
+                  <div className="flex gap-1 mb-8">
+                    {[...Array(5)].map((_, i) => <Star key={i} className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />)}
+                  </div>
+                  <p className="font-serif text-xl italic leading-relaxed mb-10 opacity-80">"{item.text}"</p>
+                  <div className="mt-auto">
+                    <p className="text-[11px] uppercase tracking-[0.3em] font-bold mb-2">{item.name}</p>
+                    <p className="text-[10px] uppercase tracking-[0.2em] opacity-40">{item.city}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* INSTAGRAM GRID */}
+        <section className="bg-[#F8F6F2] py-40">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="flex flex-col md:flex-row justify-between items-center mb-24 gap-8">
+              <div className="text-center md:text-left">
+                <h2 className="font-serif text-4xl md:text-5xl font-light text-[#1C1C1A] mb-4">Siga a @Fragranciaria</h2>
+                <p className="text-[11px] uppercase tracking-[0.4em] text-[#B8955A]">Inspiração Diária para Seus Fios</p>
+              </div>
+              <Button variant="outline" className="border-[#1C1C1A]/20 text-[#1C1C1A] hover:bg-[#1C1C1A] hover:text-white transition-all duration-500 h-14 px-10 text-[11px] uppercase tracking-[0.3em] font-bold">
+                Seguir no Instagram
+              </Button>
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+              {[
+                "https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1600948836101-f9ffda59d250?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1595475241949-0f02120dc6b2?q=80&w=400&auto=format&fit=crop",
+                "https://images.unsplash.com/photo-1516975080664-ed2fc6a32937?q=80&w=400&auto=format&fit=crop"
+              ].map((img, i) => (
+                <div key={i} className="aspect-square overflow-hidden relative group cursor-pointer">
+                  <img src={img} alt="Instagram post" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" />
+                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full border border-white/40 flex items-center justify-center">
+                      <div className="w-1 h-1 bg-white rounded-full" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* NEWSLETTER - REFINED */}
+        <section className="py-40 bg-white">
+          <div className="container mx-auto px-4 md:px-12 text-center">
+            <div className="max-w-2xl mx-auto">
+              <h2 className="font-serif text-4xl md:text-5xl font-light mb-8 text-[#1C1C1A]">Mantenha-se <span className="italic">Inspirada</span></h2>
+              <p className="text-muted-foreground text-sm uppercase tracking-[0.2em] mb-16 font-light">Assine nossa newsletter e receba rituais exclusivos e convites para eventos privados.</p>
+              
+              <div className="flex flex-col md:flex-row gap-4">
+                <input 
+                  type="email" 
+                  placeholder="Seu endereço de e-mail" 
+                  className="flex-1 bg-[#F8F6F2] border-none h-16 px-8 text-sm focus:ring-1 focus:ring-[#B8955A] outline-none transition-all placeholder:uppercase placeholder:tracking-[0.2em] placeholder:text-[10px]"
+                />
+                <Button className="bg-[#1C1C1A] text-white hover:bg-primary transition-all duration-500 h-16 px-12 text-[11px] uppercase tracking-[0.3em] font-bold">
+                  Inscrever-se
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* HAIR QUIZ / DIAGNÓSTICO - PREMIUM EXPERIENCE */}
         <section className="py-40 bg-[#F8F6F2] relative overflow-hidden">
           <div className="container mx-auto px-4 md:px-8 relative z-10 text-center">
