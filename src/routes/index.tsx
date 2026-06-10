@@ -182,48 +182,56 @@ function Index() {
 
       <main>
         {/* HERO SECTION */}
-        <section className="relative h-[90vh] min-h-[700px] flex items-center overflow-hidden">
+        <section className="relative h-screen min-h-[700px] flex items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1562322140-8baeececf3df?q=80&w=2000&auto=format&fit=crop" 
-              alt="Modelo com cabelo impecável"
-              className="w-full h-full object-cover"
-            />
-            <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+            {/* Cinematic Video Placeholder - Usando uma imagem de alta qualidade com zoom lento via CSS */}
+            <div className="w-full h-full overflow-hidden">
+              <img 
+                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop" 
+                alt="Boutique de luxo"
+                className="w-full h-full object-cover animate-ken-burns scale-110"
+              />
+            </div>
+            <div className="absolute inset-0 bg-gradient-to-r from-black/90 via-black/30 to-transparent" />
           </div>
 
           <div className="container mx-auto px-4 md:px-12 relative z-10 py-24">
-            <div className="max-w-3xl text-white">
-              <div className="flex items-center gap-4 mb-6 animate-fade-in">
-                <div className="w-12 h-[1px] bg-primary" />
-                <span className="text-[10px] md:text-xs uppercase tracking-[0.3em] font-medium text-primary">
+            <div className="max-w-4xl text-white">
+              <div className="flex items-center gap-6 mb-8 animate-fade-in opacity-0 fill-mode-forwards">
+                <div className="w-20 h-[1px] bg-[#B8955A]" />
+                <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
                   Especialista em Cabelo Profissional
                 </span>
               </div>
-              <h1 className="font-serif text-5xl md:text-[64px] font-light mb-8 leading-[1.1] animate-slide-up">
-                O produto do seu salão,<br />na sua casa
+              <h1 className="font-serif text-6xl md:text-[84px] font-light mb-10 leading-[1] animate-slide-up opacity-0 fill-mode-forwards">
+                A excelência do salão<br /><span className="italic">na sua intimidade</span>
               </h1>
-              <p className="text-base md:text-lg mb-12 text-white/80 font-light max-w-lg leading-relaxed animate-slide-up animation-delay-200">
-                Kérastase, Wella, Keune, Sebastian — 100% originais com consultoria especializada de quem entende de fios.
+              <p className="text-lg md:text-xl mb-14 text-white/70 font-light max-w-xl leading-relaxed animate-slide-up opacity-0 fill-mode-forwards [animation-delay:200ms]">
+                Curadoria rigorosa de Kérastase, Wella e Keune. Onde a ciência capilar encontra o ritual de luxo absoluto.
               </p>
-              <div className="flex flex-col sm:flex-row gap-6 animate-slide-up animation-delay-300">
-                <Button size="lg" className="px-12 h-14 text-[13px] uppercase tracking-widest font-bold">Explorar marcas</Button>
-                <Button variant="ghost" className="text-white hover:text-primary hover:bg-white/5 group h-14 px-8 text-[13px] uppercase tracking-widest font-bold">
-                  Falar com especialista <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+              <div className="flex flex-col sm:flex-row gap-8 animate-slide-up opacity-0 fill-mode-forwards [animation-delay:400ms]">
+                <Button size="lg" className="bg-[#B8955A] hover:bg-[#A68449] border-none px-16 h-16 text-[12px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-2xl">
+                  Explorar Coleções
+                </Button>
+                <Button variant="outline" className="border-white/20 text-white hover:bg-white hover:text-black transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+                  Agendar Consultoria
                 </Button>
               </div>
             </div>
           </div>
 
           {/* Floating Badges */}
-          <div className="absolute bottom-16 right-4 md:right-12 hidden md:flex flex-col gap-4 items-end animate-fade-in animation-delay-500">
+          <div className="absolute bottom-20 right-4 md:right-12 hidden md:flex flex-col gap-6 items-end animate-fade-in opacity-0 fill-mode-forwards [animation-delay:600ms]">
             {[
-              "Produtos 100% originais",
-              "Frete grátis acima de R$ 199",
-              "+2.000 avaliações 5 estrelas"
+              { label: "01", text: "Autenticidade Garantida" },
+              { label: "02", text: "Curadoria Especializada" },
+              { label: "03", text: "Entrega Prioritária" }
             ].map((badge) => (
-              <div key={badge} className="bg-white/5 backdrop-blur-xl border border-white/10 px-6 py-3 text-[10px] uppercase tracking-[0.2em] text-white font-medium shadow-2xl">
-                {badge}
+              <div key={badge.text} className="flex items-center gap-6 group">
+                <span className="text-[10px] font-serif italic text-[#B8955A] opacity-50 group-hover:opacity-100 transition-opacity">{badge.label}</span>
+                <div className="bg-white/5 backdrop-blur-2xl border border-white/10 px-8 py-4 text-[10px] uppercase tracking-[0.3em] text-white font-medium shadow-2xl transition-all hover:bg-white/10">
+                  {badge.text}
+                </div>
               </div>
             ))}
           </div>
