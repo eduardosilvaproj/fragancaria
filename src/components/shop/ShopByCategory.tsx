@@ -23,7 +23,7 @@ export const ShopByCategory = () => {
             <div className="section-label !justify-center">
                 <span>Curadoria Especializada</span>
             </div>
-            <h2 className="font-serif text-4xl md:text-5xl mb-6 font-light">Compre como um <span className="italic">Profissional</span></h2>
+            <h2 className="font-serif text-3xl md:text-4xl mb-4 font-light">Compre como um <span className="italic">Profissional</span></h2>
             <p className="text-[#1C1C1A]/40 text-sm uppercase tracking-[0.3em] font-bold">Qual seu objetivo hoje?</p>
         </div>
 

@@ -52,11 +52,11 @@ export const AIQuiz = () => {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   return (
-    <section className="py-40 bg-white overflow-hidden">
+    <section className="py-24 bg-white overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
         <div className="max-w-5xl mx-auto bg-[#F8F6F2] overflow-hidden flex flex-col md:flex-row shadow-[0_40px_100px_rgba(0,0,0,0.05)] border border-black/[0.03]">
           {/* Left Side: Info & Progress */}
-          <div className="md:w-[40%] bg-[#1C1C1A] text-white p-12 md:p-16 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:w-[40%] bg-[#1C1C1A] text-white p-10 md:p-14 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
                 <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-[#B8955A] rounded-full blur-[100px]" />
             </div>
@@ -97,7 +97,7 @@ export const AIQuiz = () => {
           </div>
 
           {/* Right Side: Questions/Result */}
-          <div className="flex-1 p-12 md:p-24 bg-white min-h-[600px] flex flex-col justify-center">
+          <div className="flex-1 p-10 md:p-20 bg-white min-h-[500px] flex flex-col justify-center">
             <AnimatePresence mode="wait">
               {!showResult ? (
                 <MotionDiv 

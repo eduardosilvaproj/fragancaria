@@ -11,14 +11,14 @@ const STATS = [
 
 export const SocialProof = () => {
   return (
-    <section className="py-24 bg-white border-y border-black/[0.03]">
+    <section className="py-16 bg-white border-y border-black/[0.03]">
       <div className="container mx-auto px-4 md:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="section-label">
               <span>Nossa Autoridade</span>
             </div>
-            <h2 className="font-serif text-4xl md:text-5xl mb-8 font-light leading-tight">
+            <h2 className="font-serif text-3xl md:text-4xl mb-6 font-light leading-tight">
               A Boutique de Luxo <span className="italic text-[#B8955A]">Consolidada</span> no Mercado Profissional
             </h2>
             <p className="text-[#1C1C1A]/50 text-sm mb-12 leading-relaxed font-light">

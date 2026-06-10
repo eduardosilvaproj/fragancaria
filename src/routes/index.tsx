@@ -251,7 +251,7 @@ function Index() {
               <div className="section-label">
                 <span>Curadoria Exclusiva</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 As Marcas Mais <span className="italic text-[#B8955A]">Desejadas</span>
               </h2>
             </div>
@@ -291,7 +291,7 @@ function Index() {
               <div className="section-label">
                 <span>Necessidades</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Tratamento por <span className="italic text-[#B8955A]">Desejo</span>
               </h2>
             </div>
@@ -331,7 +331,7 @@ function Index() {
               <div className="section-label">
                 <span>Destaques</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Mais Vendidos da <span className="italic text-[#B8955A]">Semana</span>
               </h2>
             </div>
@@ -357,7 +357,7 @@ function Index() {
               <div className="section-label">
                 <span>Lançamentos</span>
               </div>
-              <h2 className="font-serif font-light text-[#1C1C1A]">
+              <h2 className="font-serif font-light text-[#1C1C1A] text-3xl md:text-4xl">
                 Novidades <span className="italic text-[#B8955A]">Recém-Chegadas</span>
               </h2>
             </div>
