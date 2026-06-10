@@ -1,3 +1,4 @@
+import { createFileRoute } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { 
@@ -11,8 +12,18 @@ import {
   Search
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { storefrontApiRequest, ShopifyProduct } from "@/lib/shopify/client";
+import { storefrontApiRequest } from "@/lib/shopify/client";
 import { ProductCard } from "@/components/shop/ProductCard";
+
+export const Route = createFileRoute("/")({
+  head: () => ({
+    meta: [
+      { title: "Fragranciaria | Especialista em Cabelo Profissional" },
+      { name: "description", content: "Kérastase, Wella, Keune, Sebastian — 100% originais com consultoria especializada." },
+    ],
+  }),
+  component: Index,
+});
 
 const GET_FEATURED_PRODUCTS = `
   query GetFeaturedProducts($first: Int!) {
@@ -77,7 +88,7 @@ const BRANDS = [
   { name: "L'Oréal Pro", subtitle: "O toque dos melhores salões", image: "https://images.unsplash.com/photo-1633613286848-e6f43bbafb8d?q=80&w=800&auto=format&fit=crop" },
 ];
 
-export function Index() {
+function Index() {
   const { data: productsData, isLoading: productsLoading } = useQuery({
     queryKey: ["featured-products"],
     queryFn: () => storefrontApiRequest(GET_FEATURED_PRODUCTS, { first: 6 }),
