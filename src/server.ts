@@ -37,6 +37,8 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
   });
 }
 
+const BUILD_VERSION = new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14);
+
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
@@ -49,7 +51,7 @@ export default {
       if (url.pathname === "/version.json") {
         return new Response(
           JSON.stringify({
-            version: new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14),
+            version: BUILD_VERSION,
           }),
           {
             headers: {
