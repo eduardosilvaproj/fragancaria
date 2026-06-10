@@ -1,6 +1,6 @@
 import { Button } from "../ui/button";
 import { Star, Plus, Heart, Eye } from "lucide-react";
-import { motion } from "framer-motion";
+import * as motion from "framer-motion/client";
 import { useCartStore } from "@/stores/cartStore";
 import { ShopifyProduct } from "@/lib/shopify/client";
 import { toast } from "sonner";
