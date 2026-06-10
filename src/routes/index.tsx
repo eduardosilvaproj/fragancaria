@@ -363,49 +363,90 @@ function Index() {
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
-          <div className="md:w-1/2 bg-[#1a1a18] text-white p-16 md:p-32 flex flex-col justify-center">
-            <div className="flex items-center gap-4 mb-8">
-              <div className="w-12 h-[1px] bg-primary" />
-              <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
-                Nosso Diferencial
-              </span>
-            </div>
-            <h2 className="font-serif text-3xl md:text-[32px] font-light mb-12 leading-tight">
-              Não somos um marketplace — somos especialistas
-            </h2>
-            <div className="space-y-0 mb-16">
-              {[
-                "Curadoria feita por quem entende de cabelo",
-                "Produtos 100% originais dos distribuidores oficiais",
-                "Atendimento humano e especializado via WhatsApp"
-              ].map((text, idx) => (
-                <div key={text} className={cn(
-                  "py-8 flex items-start gap-6 group border-b border-white/5",
-                  idx === 0 && "border-t border-white/5"
-                )}>
-                  <Sparkles className="h-5 w-5 text-primary mt-1 flex-shrink-0 transition-transform group-hover:rotate-12" />
-                  <span className="text-lg text-white/70 font-light leading-relaxed">{text}</span>
+            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-6 mb-8">
+                  <div className="w-16 h-[1px] bg-[#B8955A]" />
+                  <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                    Destaques da Boutique
+                  </span>
                 </div>
+                <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Rituais de Alta Performance</h2>
+              </div>
+              <Button variant="link" className="text-[12px] uppercase tracking-[0.3em] font-bold group h-auto p-0 text-[#1C1C1A] hover:text-[#B8955A] transition-colors">
+                Ver Todo o Acervo <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24">
+              {products.map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
-            <Button variant="outline" className="bg-transparent border-white/20 hover:bg-white/5 text-white self-start h-16 px-10 text-[13px] uppercase tracking-widest font-bold">
-              <MessageCircle className="mr-3 h-5 w-5" /> Falar com especialista
-            </Button>
           </div>
         </section>
 
-        {/* HAIR QUIZ CTA */}
-        <section className="py-32 bg-background relative overflow-hidden">
-          <div className="container mx-auto px-4 md:px-8 relative z-10">
-            <div className="max-w-3xl mx-auto text-center">
-              <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8">
-                <Sparkles className="h-8 w-8 text-primary" />
+        {/* SPECIALIST SECTION - 50/50 REFINED */}
+        <section className="flex flex-col md:flex-row min-h-[900px]">
+          <div className="md:w-1/2 bg-[#141414] text-white p-16 md:p-32 flex flex-col justify-center relative overflow-hidden">
+            {/* Background Texture Effect */}
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] pointer-events-none" />
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-6 mb-10">
+                <div className="w-16 h-[1px] bg-[#B8955A]" />
+                <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
+                  O Especialista
+                </span>
               </div>
-              <h2 className="font-serif text-3xl md:text-5xl font-light mb-6">Qual produto é ideal para o seu cabelo?</h2>
-              <p className="text-muted-foreground text-lg mb-12 font-light">
-                Responda 4 perguntas rápidas e receba uma indicação personalizada baseada na nossa curadoria especialista.
+              <h2 className="font-serif text-4xl md:text-6xl font-light mb-16 leading-tight">
+                Além do comércio.<br /><span className="italic text-[#B8955A]">Uma Consultoria</span>.
+              </h2>
+              <div className="space-y-0 mb-20">
+                {[
+                  "Diagnóstico capilar personalizado via chat",
+                  "Protocolos de uso originais de cada marca",
+                  "Suporte pós-compra com especialistas de salão"
+                ].map((text, idx) => (
+                  <div key={text} className={cn(
+                    "py-10 flex items-start gap-10 group border-b border-white/5",
+                    idx === 0 && "border-t border-white/5"
+                  )}>
+                    <div className="w-10 h-10 rounded-full border border-[#B8955A]/30 flex items-center justify-center flex-shrink-0 transition-all duration-500 group-hover:bg-[#B8955A] group-hover:border-[#B8955A]">
+                      <Sparkles className="h-4 w-4 text-[#B8955A] transition-colors group-hover:text-white" />
+                    </div>
+                    <span className="text-xl text-white/60 font-light leading-relaxed group-hover:text-white transition-colors">{text}</span>
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" className="border-[#B8955A]/30 text-[#B8955A] hover:bg-[#B8955A] hover:text-white transition-all duration-500 h-16 px-12 text-[12px] uppercase tracking-[0.3em] font-bold">
+                <MessageCircle className="mr-4 h-5 w-5" /> Iniciar Diagnóstico
+              </Button>
+            </div>
+          </div>
+          <div className="md:w-1/2 relative h-[600px] md:h-auto overflow-hidden">
+            <img 
+              src="https://images.unsplash.com/photo-1560066984-138dadb4c035?q=80&w=1200&auto=format&fit=crop" 
+              alt="Especialista em atendimento"
+              className="absolute inset-0 w-full h-full object-cover transition-transform duration-[5s] hover:scale-110"
+            />
+          </div>
+        </section>
+
+        {/* HAIR QUIZ / DIAGNÓSTICO - PREMIUM EXPERIENCE */}
+        <section className="py-40 bg-[#F8F6F2] relative overflow-hidden">
+          <div className="container mx-auto px-4 md:px-8 relative z-10 text-center">
+            <div className="max-w-4xl mx-auto">
+              <div className="w-24 h-24 bg-white rounded-full flex items-center justify-center mx-auto mb-12 shadow-sm border border-[#B8955A]/10">
+                <Sparkles className="h-10 w-10 text-[#B8955A]" />
+              </div>
+              <h2 className="font-serif text-5xl md:text-7xl font-light mb-10 text-[#1C1C1A]">Descubra Seu Ritual<br /><span className="italic text-[#B8955A]">Ideal</span></h2>
+              <p className="text-muted-foreground text-xl mb-16 font-light max-w-2xl mx-auto leading-relaxed">
+                Nossa inteligência artificial, treinada pelos melhores hairstylists, analisará as necessidades únicas dos seus fios em 60 segundos.
               </p>
-              <Button size="lg" className="px-12 h-14 text-[13px] uppercase tracking-widest font-bold">Fazer diagnóstico gratuito</Button>
+              <Button size="lg" className="bg-[#1C1C1A] text-white hover:bg-primary transition-all duration-500 px-16 h-16 text-[12px] uppercase tracking-[0.3em] font-bold shadow-2xl">
+                Começar Experiência
+              </Button>
             </div>
           </div>
         </section>
