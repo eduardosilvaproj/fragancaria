@@ -329,40 +329,8 @@ function Index() {
         </section>
 
         {/* FEATURED PRODUCTS */}
-        <section className="py-32 bg-[#F9F7F3]">
+        <section className="py-40 bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-20 gap-8">
-              <div>
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="w-12 h-[1px] bg-primary" />
-                  <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-primary">
-                    Destaques da Temporada
-                  </span>
-                </div>
-                <h2 className="font-serif text-4xl md:text-5xl font-light">Cuidados essenciais para seus fios</h2>
-              </div>
-              <Button variant="link" className="text-[11px] uppercase tracking-[0.2em] font-bold group h-auto p-0">
-                Ver todos os produtos <ArrowRight className="ml-2 h-3 w-3 transition-transform group-hover:translate-x-1" />
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-16">
-              {products.map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* SPECIALIST SECTION */}
-        <section className="flex flex-col md:flex-row min-h-[700px]">
-          <div className="md:w-1/2 relative h-[500px] md:h-auto">
-            <img 
-              src="https://images.unsplash.com/photo-1595475241949-0f02120dc6b2?q=80&w=1200&auto=format&fit=crop" 
-              alt="Especialista Fragranciaria"
-              className="absolute inset-0 w-full h-full object-cover"
-            />
-          </div>
             <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
               <div className="max-w-2xl">
                 <div className="flex items-center gap-6 mb-8">
