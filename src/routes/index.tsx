@@ -419,32 +419,6 @@ function Index() {
           </div>
         </section>
 
-        {/* FEATURED PRODUCTS */}
-        <section className="py-40 bg-[#F8F6F2]">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-24 gap-12">
-              <div className="max-w-2xl">
-                <div className="flex items-center gap-6 mb-8">
-                  <div className="w-16 h-[1px] bg-[#B8955A]" />
-                  <span className="text-[11px] uppercase tracking-[0.4em] font-medium text-[#B8955A]">
-                    Destaques da Boutique
-                  </span>
-                </div>
-                <h2 className="font-serif text-5xl md:text-6xl font-light text-[#1C1C1A]">Rituais de Alta Performance</h2>
-              </div>
-              <Button variant="link" className="text-[12px] uppercase tracking-[0.3em] font-bold group h-auto p-0 text-[#1C1C1A] hover:text-[#B8955A] transition-colors">
-                Ver Todo o Acervo <ArrowRight className="ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-24">
-              {products.map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-
         {/* SPECIALIST SECTION - 50/50 REFINED */}
         <section className="flex flex-col md:flex-row min-h-[900px]">
           <div className="md:w-1/2 bg-[#141414] text-white p-16 md:p-32 flex flex-col justify-center relative overflow-hidden">
