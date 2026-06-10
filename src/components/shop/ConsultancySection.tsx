@@ -3,6 +3,7 @@ import { Sparkles, Brain, ShieldCheck, MessageCircle } from "lucide-react";
 import { Button } from "../ui/button";
 
 const MotionDiv = motion.div as any;
+const MotionH2 = motion.h2 as any;
 
 const PILLARS = [
   { icon: Brain, title: "Diagnóstico IA", desc: "Algoritmos avançados para entender seu fio" },
@@ -26,14 +27,14 @@ export const ConsultancySection = () => {
               <div className="w-16 h-[1px] bg-[#B8955A]" />
               <span className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B8955A]">Muito mais que uma loja</span>
             </MotionDiv>
-            <motion.h2 
+            <MotionH2 
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               className="font-serif text-5xl md:text-7xl font-light text-[#1C1C1A] mb-10 leading-tight"
             >
               Além do comércio.<br /><span className="italic">Uma Consultoria.</span>
-            </motion.h2>
+            </MotionH2>
             <p className="text-[#1C1C1A]/60 text-lg mb-12 max-w-xl font-light leading-relaxed">
               Você não compra apenas um produto. Recebe orientação baseada em protocolos utilizados pelos melhores profissionais do Brasil. Nossa missão é indicar o ritual ideal para transformar seus cabelos.
             </p>
