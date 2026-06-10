@@ -14,6 +14,11 @@ import { ConsultancySection } from "@/components/shop/ConsultancySection";
 import { AIQuiz } from "@/components/shop/AIQuiz";
 import { Testimonials } from "@/components/shop/Testimonials";
 import { InstagramFeed } from "@/components/shop/InstagramFeed";
+import { HeroRefinement } from "@/components/shop/HeroRefinement";
+import { CampaignBanner } from "@/components/shop/CampaignBanner";
+import { FlashOffer } from "@/components/shop/FlashOffer";
+import { SocialProof } from "@/components/shop/SocialProof";
+import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
@@ -229,11 +234,15 @@ function Index() {
                   Descobrir meu Ritual
                 </button>
               </MotionDiv>
+              
+              <HeroRefinement />
             </div>
           </div>
         </MotionSection>
 
         <BenefitBar />
+
+        <AIQuiz />
 
         {/* BRANDS SECTION */}
         <section className="bg-white">
@@ -312,6 +321,9 @@ function Index() {
           </div>
         </section>
 
+        <CampaignBanner />
+        <ShopByCategory />
+
         {/* PRODUCTS SECTION */}
         <section className="bg-white">
           <div className="container mx-auto px-4 md:px-12">
@@ -338,9 +350,10 @@ function Index() {
           </div>
         </section>
 
+        <FlashOffer />
         <RitualSection />
+        <SocialProof />
         <ConsultancySection />
-        <AIQuiz />
         <Testimonials />
         <InstagramFeed />
       </main>
