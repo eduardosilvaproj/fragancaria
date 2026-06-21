@@ -63,38 +63,53 @@
 
 :root {
   --radius: 0.25rem;
-  --background: oklch(0.97 0.005 85); /* #F8F6F2 - Premium Off-White */
-  --foreground: oklch(0.2 0.01 85); /* #1C1C1A - Sofisticado Escuro */
-  --card: oklch(0.95 0.005 85); /* #F2F0EC - Levemente mais escuro */
-  --card-foreground: oklch(0.2 0.01 85);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.2 0.01 85);
-  --primary: oklch(0.65 0.08 65); /* #B8955A - Dourado */
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.92 0.01 85); /* #EBE9E4 - Secundário mais profundo */
-  --secondary-foreground: oklch(0.65 0.08 65);
-  --muted: oklch(0.9 0.01 85);
-  --muted-foreground: oklch(0.5 0.02 85); /* #7D7D7D */
-  --accent: oklch(0.92 0.01 85);
-  --accent-foreground: oklch(0.2 0.01 85);
+
+  /* FRAGRANCIARIA Official Brand Colors */
+  /* Deep Teal Blue - Primary */
+  --teal-primary: #0F3A45;
+  /* Dark Ocean Blue - Secondary */
+  --teal-secondary: #143E4A;
+  /* Champagne Gold - Accent */
+  --gold-accent: #D4AF37;
+  /* Soft Gold - Auxiliary */
+  --gold-soft: #BFA06A;
+  /* Premium White */
+  --white-premium: #F7F5F2;
+  /* Premium Black */
+  --black-premium: #1A1A1A;
+
+  --background: oklch(0.97 0.005 85); /* #F7F5F2 - Premium White */
+  --foreground: oklch(0.15 0.01 200); /* #1A1A1A - Premium Black */
+  --card: oklch(0.96 0.003 85); /* Slightly darker white */
+  --card-foreground: oklch(0.15 0.01 200);
+  --popover: oklch(0.98 0.002 85);
+  --popover-foreground: oklch(0.15 0.01 200);
+  --primary: oklch(0.30 0.06 195); /* #0F3A45 - Deep Teal Blue */
+  --primary-foreground: oklch(0.97 0.005 85);
+  --secondary: oklch(0.32 0.055 195); /* #143E4A - Dark Ocean Blue */
+  --secondary-foreground: oklch(0.97 0.005 85);
+  --accent: oklch(0.75 0.14 85); /* #D4AF37 - Champagne Gold */
+  --accent-foreground: oklch(0.15 0.01 200);
+  --muted: oklch(0.92 0.005 85);
+  --muted-foreground: oklch(0.45 0.02 200);
   --destructive: oklch(0.5 0.2 25);
   --destructive-foreground: oklch(1 0 0);
   --border: oklch(0.88 0.01 85);
-  --input: oklch(0.9 0.01 60);
-  --ring: oklch(0.55 0.04 60);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --sidebar: oklch(0.985 0.005 60);
-  --sidebar-foreground: oklch(0.15 0.01 60);
-  --sidebar-primary: oklch(0.55 0.04 60);
-  --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.95 0.01 60);
-  --sidebar-accent-foreground: oklch(0.55 0.04 60);
-  --sidebar-border: oklch(0.9 0.01 60);
-  --sidebar-ring: oklch(0.55 0.04 60);
+  --input: oklch(0.92 0.005 85);
+  --ring: oklch(0.75 0.14 85); /* Gold ring */
+  --chart-1: oklch(0.30 0.06 195);
+  --chart-2: oklch(0.75 0.14 85);
+  --chart-3: oklch(0.32 0.055 195);
+  --chart-4: oklch(0.70 0.10 85);
+  --chart-5: oklch(0.40 0.05 195);
+  --sidebar: oklch(0.20 0.05 195); /* Dark teal sidebar */
+  --sidebar-foreground: oklch(0.97 0.005 85);
+  --sidebar-primary: oklch(0.75 0.14 85);
+  --sidebar-primary-foreground: oklch(0.15 0.01 200);
+  --sidebar-accent: oklch(0.25 0.05 195);
+  --sidebar-accent-foreground: oklch(0.97 0.005 85);
+  --sidebar-border: oklch(0.25 0.04 195);
+  --sidebar-ring: oklch(0.75 0.14 85);
 }
 
 .dark {
@@ -140,7 +155,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -148,7 +163,7 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Playfair Display', serif;
   }
 
   h1 { font-size: clamp(2.2rem, 5.5vw, 4rem); }
@@ -165,24 +180,59 @@
   }
 
   .font-serif {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Playfair Display', serif;
   }
 
-  .font-serif {
-    font-family: 'Cormorant Garamond', serif;
+  .font-sans {
+    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
   }
+
+  /* Brand Color Utility Classes */
+  .bg-teal-primary { background-color: #0F3A45; }
+  .bg-teal-secondary { background-color: #143E4A; }
+  .bg-gold-accent { background-color: #D4AF37; }
+  .bg-gold-soft { background-color: #BFA06A; }
+  .text-teal-primary { color: #0F3A45; }
+  .text-teal-secondary { color: #143E4A; }
+  .text-gold-accent { color: #D4AF37; }
+  .text-gold-soft { color: #BFA06A; }
+  .border-gold-accent { border-color: #D4AF37; }
+  .border-teal-primary { border-color: #0F3A45; }
 
   /* Luxury Utility Classes */
   .tracking-luxury {
     letter-spacing: 0.3em;
   }
-  
+
   .tracking-editorial {
     letter-spacing: -0.02em;
   }
 
   .transition-luxury {
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Section Label Styling */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .section-label span {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.4em;
+    font-weight: 700;
+    color: #D4AF37;
+  }
+
+  .section-label::before {
+    content: '';
+    width: 2rem;
+    height: 1px;
+    background: #D4AF37;
   }
 }
 

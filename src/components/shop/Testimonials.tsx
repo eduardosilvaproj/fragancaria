@@ -49,17 +49,17 @@ export const Testimonials = () => {
           <div className="section-label">
             <span>Vozes da Experiência</span>
           </div>
-          <h2 className="font-serif font-light text-[#1C1C1A]">Relatos de <span className="italic text-[#B8955A]">Transformação</span></h2>
+          <h2 className="font-serif font-light text-[#1A1A1A]">Relatos de <span className="italic text-[#D4AF37]">Transformação</span></h2>
           <div className="flex flex-col items-center mt-12 gap-4">
             <div className="flex items-center gap-4">
                 <div className="flex gap-1">
                     {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
+                        <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
                     ))}
                 </div>
                 <span className="font-serif text-3xl font-light">4.9/5</span>
             </div>
-            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1C1C1A]/40">Baseado em milhares de avaliações reais de clientes autenticados</p>
+            <p className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#1A1A1A]/40">Baseado em milhares de avaliações reais de clientes autenticados</p>
           </div>
         </div>
 
@@ -73,22 +73,22 @@ export const Testimonials = () => {
                   viewport={{ once: true }}
                   className="bg-[#F8F6F2] p-12 h-full flex flex-col items-center text-center relative border border-black/[0.02]"
                 >
-                  <Quote className="absolute top-8 left-8 h-10 w-10 text-[#B8955A]/5 stroke-[1]" />
+                  <Quote className="absolute top-8 left-8 h-10 w-10 text-[#D4AF37]/10 stroke-[1]" />
                   <div className="w-20 h-20 rounded-full overflow-hidden mb-8 grayscale hover:grayscale-0 transition-all duration-700 shadow-xl border-2 border-white">
                     <img src={testimonial.image} alt={testimonial.name} className="w-full h-full object-cover" />
                   </div>
                   <div className="flex gap-1 mb-6">
                     {[...Array(testimonial.stars)].map((_, j) => (
-                      <Star key={j} className="h-3 w-3 fill-[#B8955A] text-[#B8955A]" />
+                      <Star key={j} className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37]" />
                     ))}
                   </div>
-                  <p className="font-serif text-[18px] leading-relaxed text-[#1C1C1A] mb-8 italic font-light">"{testimonial.text}"</p>
+                  <p className="font-serif text-[18px] leading-relaxed text-[#1A1A1A] mb-8 italic font-light">"{testimonial.text}"</p>
                   <div className="mt-auto">
-                    <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A] mb-1">{testimonial.name}</h4>
-                    <p className="text-[9px] uppercase tracking-widest text-[#B8955A] font-bold mb-4">{testimonial.location}</p>
+                    <h4 className="text-[11px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A] mb-1">{testimonial.name}</h4>
+                    <p className="text-[9px] uppercase tracking-widest text-[#D4AF37] font-bold mb-4">{testimonial.location}</p>
                     <div className="flex items-center justify-center gap-2 px-4 py-2 bg-white rounded-full shadow-sm">
                       <CheckCircle2 className="h-3 w-3 text-green-500" />
-                      <span className="text-[8px] uppercase tracking-widest font-bold text-[#1C1C1A]/60">Cliente Autenticado</span>
+                      <span className="text-[8px] uppercase tracking-widest font-bold text-[#1A1A1A]/60">Cliente Autenticado</span>
                     </div>
                   </div>
                 </MotionDiv>

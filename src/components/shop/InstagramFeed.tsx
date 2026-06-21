@@ -3,12 +3,12 @@ import { motion } from "framer-motion";
 const MotionDiv = motion.div as any;
 
 const POSTS = [
-  "https://images.unsplash.com/photo-1522338242992-e1a54906a8da?q=80&w=400",
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400",
+  "https://images.unsplash.com/photo-1519735777090-ec97162dc266?q=80&w=400",
+  "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?q=80&w=400",
   "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=400",
+  "https://images.unsplash.com/photo-1605497788044-5a32c7078486?q=80&w=400",
   "https://images.unsplash.com/photo-1560869713-7d0a29430803?q=80&w=400",
-  "https://images.unsplash.com/photo-1552046122-03184de85e08?q=80&w=400",
-  "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=400",
-  "https://images.unsplash.com/photo-1535585209827-a15fcdbc4c2d?q=80&w=400",
 ];
 
 export const InstagramFeed = () => {
@@ -24,7 +24,7 @@ export const InstagramFeed = () => {
             </div>
             <div className="flex flex-col items-end">
                 <span className="text-3xl font-serif font-light mb-2">+28.000</span>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-[#1C1C1A]/40 font-bold">Seguidores no Instagram</p>
+                <p className="text-[10px] uppercase tracking-[0.4em] text-[#1A1A1A]/40 font-bold">Seguidores no Instagram</p>
             </div>
         </div>
 
@@ -43,7 +43,7 @@ export const InstagramFeed = () => {
                 alt="Instagram" 
                 className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-110" 
               />
-              <div className="absolute inset-0 bg-[#B8955A]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-[#D4AF37]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             </MotionDiv>
           ))}
         </div>

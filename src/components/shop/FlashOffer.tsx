@@ -15,7 +15,7 @@ const FLASH_PRODUCTS = [
       vendor: "Kérastase",
       description: "Reconstrução profunda para cabelos muito danificados.",
       priceRange: { minVariantPrice: { amount: "258.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1526947425960-945c6e72858f?q=80&w=800&auto=format&fit=crop", altText: "Kérastase Resistance" } }] },
+      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?q=80&w=800&auto=format&fit=crop", altText: "Kérastase Resistance" } }] },
       variants: { edges: [{ node: { id: "vf1", title: "Default", price: { amount: "258.00", currencyCode: "BRL" }, availableForSale: true } }] }
     }
   },
@@ -27,7 +27,7 @@ const FLASH_PRODUCTS = [
       vendor: "Wella Professionals",
       description: "Óleo leve para luminosidade instantânea.",
       priceRange: { minVariantPrice: { amount: "185.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1620916566398-39f1143ab7be?q=80&w=800&auto=format&fit=crop", altText: "Wella Oil" } }] },
+      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1597354984706-fac992d9306f?q=80&w=800&auto=format&fit=crop", altText: "Wella Oil" } }] },
       variants: { edges: [{ node: { id: "vf2", title: "Default", price: { amount: "185.00", currencyCode: "BRL" }, availableForSale: true } }] }
     }
   }
@@ -49,17 +49,17 @@ export const FlashOffer = () => {
   }, []);
 
   return (
-    <section className="py-24 bg-[#F8F6F2]">
+    <section className="py-24 bg-[#F7F5F2]">
       <div className="container mx-auto px-4 md:px-12">
         <div className="bg-white border border-black/[0.03] p-12 md:p-16">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="max-w-md">
-              <div className="flex items-center gap-3 text-[#B8955A] mb-6">
+              <div className="flex items-center gap-3 text-[#D4AF37] mb-6">
                 <Timer className="h-5 w-5" />
                 <span className="text-[10px] uppercase tracking-[0.4em] font-bold">OFERTA RELÂMPAGO</span>
               </div>
               <h2 className="font-serif text-4xl mb-6 font-light">Campanha <span className="italic">Limitada</span></h2>
-              <p className="text-[#1C1C1A]/50 text-sm mb-10 leading-relaxed font-light">
+              <p className="text-[#1A1A1A]/50 text-sm mb-10 leading-relaxed font-light">
                 Seleção exclusiva de produtos profissionais com condições especiais por tempo limitado. 
               </p>
               
@@ -70,15 +70,15 @@ export const FlashOffer = () => {
                   { label: "Seg", value: timeLeft.seconds }
                 ].map(unit => (
                   <div key={unit.label} className="flex flex-col items-center">
-                    <div className="w-16 h-16 bg-[#1C1C1A] text-white flex items-center justify-center font-serif text-2xl font-light">
+                    <div className="w-16 h-16 bg-[#0F3A45] text-white flex items-center justify-center font-serif text-2xl font-light">
                       {unit.value.toString().padStart(2, '0')}
                     </div>
-                    <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-[#1C1C1A]/30 mt-2">{unit.label}</span>
+                    <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]/30 mt-2">{unit.label}</span>
                   </div>
                 ))}
               </div>
-              
-              <Button variant="outline" className="border-black/10 hover:border-black px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all">
+
+              <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all">
                 Ver Todas as Ofertas
                 <ArrowRight className="ml-4 h-4 w-4" />
               </Button>

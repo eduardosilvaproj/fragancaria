@@ -19,9 +19,9 @@ export const SocialProof = () => {
               <span>Nossa Autoridade</span>
             </div>
             <h2 className="font-serif text-3xl md:text-4xl mb-6 font-light leading-tight">
-              A Boutique de Luxo <span className="italic text-[#B8955A]">Consolidada</span> no Mercado Profissional
+              A Boutique de Luxo <span className="italic text-[#D4AF37]">Consolidada</span> no Mercado Profissional
             </h2>
-            <p className="text-[#1C1C1A]/50 text-sm mb-12 leading-relaxed font-light">
+            <p className="text-[#1A1A1A]/50 text-sm mb-12 leading-relaxed font-light">
               Com anos de experiência e milhares de pedidos enviados para todo o Brasil, a Fragranciaria é referência em curadoria de cosméticos profissionais. Unimos a elegância de uma boutique com a solidez de uma grande operação.
             </p>
             
@@ -35,12 +35,12 @@ export const SocialProof = () => {
                   transition={{ delay: i * 0.1 }}
                   className="flex gap-6"
                 >
-                  <div className="w-12 h-12 bg-[#F8F6F2] flex items-center justify-center shrink-0">
-                    <stat.icon className="h-5 w-5 text-[#B8955A] stroke-[1.2]" />
+                  <div className="w-12 h-12 bg-[#F7F5F2] flex items-center justify-center shrink-0">
+                    <stat.icon className="h-5 w-5 text-[#D4AF37] stroke-[1.2]" />
                   </div>
                   <div>
-                    <h4 className="text-xs uppercase tracking-[0.2em] font-bold text-[#1C1C1A] mb-1">{stat.title}</h4>
-                    <p className="text-[11px] text-[#1C1C1A]/40 font-bold uppercase tracking-widest">{stat.detail}</p>
+                    <h4 className="text-xs uppercase tracking-[0.2em] font-bold text-[#1A1A1A] mb-1">{stat.title}</h4>
+                    <p className="text-[11px] text-[#1A1A1A]/40 font-bold uppercase tracking-widest">{stat.detail}</p>
                   </div>
                 </MotionDiv>
               ))}
@@ -55,10 +55,10 @@ export const SocialProof = () => {
                 className="w-full h-full object-cover grayscale opacity-80"
                 />
             </div>
-            <div className="absolute -bottom-10 -left-10 bg-[#1C1C1A] p-12 text-white hidden md:block">
+            <div className="absolute -bottom-10 -left-10 bg-[#0F3A45] p-12 text-white hidden md:block">
                 <div className="flex gap-1 mb-4">
                     {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-[#B8955A] text-[#B8955A]" />
+                        <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
                     ))}
                 </div>
                 <h3 className="font-serif text-3xl mb-2">4.9/5</h3>
