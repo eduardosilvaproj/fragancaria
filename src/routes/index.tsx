@@ -141,8 +141,33 @@ function Index() {
   // Produtos do Shopify
   const allProducts = productsData?.data?.products?.edges || [];
 
-  // Primeiros 4 para "Mais Vendidos"
-  const featuredProducts = allProducts.slice(0, 4);
+  // Marcas premium para priorização na curadoria
+  const PREMIUM_BRANDS = ["Kérastase", "L'Oréal Professionnel", "Wella Professionals", "Keune", "Schwarzkopf", "Redken"];
+
+  // Função para obter preço do produto
+  const getProductPrice = (p: any) => {
+    const variant = p.node.variants?.edges?.[0]?.node;
+    return parseFloat(variant?.price?.amount || "0");
+  };
+
+  // Função para verificar se é marca premium
+  const isPremiumBrand = (p: any) => PREMIUM_BRANDS.includes(p.node.vendor);
+
+  // Curadoria: Priorizar marcas premium, depois ordenar por preço (maior primeiro)
+  const curatedProducts = [...allProducts].sort((a, b) => {
+    const aIsPremium = isPremiumBrand(a);
+    const bIsPremium = isPremiumBrand(b);
+
+    // Marcas premium primeiro
+    if (aIsPremium && !bIsPremium) return -1;
+    if (!aIsPremium && bIsPremium) return 1;
+
+    // Dentro do mesmo grupo, ordenar por preço (maior primeiro)
+    return getProductPrice(b) - getProductPrice(a);
+  });
+
+  // Primeiros 4 para "Mais Vendidos" (curadoria premium)
+  const featuredProducts = curatedProducts.slice(0, 4);
 
   // Produtos com desconto para "Promoções" (compareAtPrice > price)
   const saleProducts = allProducts.filter((p: any) => {
