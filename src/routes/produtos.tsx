@@ -74,6 +74,9 @@ const GET_ALL_PRODUCTS = `
 type ProductsSearch = {
   vendor?: string;
   productType?: string;
+  tag?: string;
+  q?: string;
+  sale?: string;
 };
 
 export const Route = createFileRoute("/produtos")({
@@ -81,6 +84,9 @@ export const Route = createFileRoute("/produtos")({
     return {
       vendor: search.vendor as string | undefined,
       productType: search.productType as string | undefined,
+      tag: search.tag as string | undefined,
+      q: search.q as string | undefined,
+      sale: search.sale as string | undefined,
     };
   },
   head: () => ({
@@ -98,15 +104,21 @@ function ProdutosPage() {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
+  const [selectedTag, setSelectedTag] = useState<string | null>(search.tag || null);
+  const [searchQuery, setSearchQuery] = useState<string>(search.q || "");
+  const [showOnlySale, setShowOnlySale] = useState<boolean>(search.sale === "true");
   const [sortBy, setSortBy] = useState<string>("featured");
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sync state with URL params on mount
+  // Sync state with URL params on mount and when URL changes
   useEffect(() => {
     if (search.vendor) setSelectedBrand(search.vendor);
     if (search.productType) setSelectedCategory(search.productType);
-    if (search.vendor || search.productType) setShowFilters(true);
-  }, [search.vendor, search.productType]);
+    if (search.tag) setSelectedTag(search.tag);
+    if (search.q) setSearchQuery(search.q);
+    if (search.sale === "true") setShowOnlySale(true);
+    if (search.vendor || search.productType || search.tag || search.q || search.sale) setShowFilters(true);
+  }, [search.vendor, search.productType, search.tag, search.q, search.sale]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["all-products"],
@@ -115,7 +127,7 @@ function ProdutosPage() {
 
   const products: ShopifyProduct[] = data?.data?.products?.edges || [];
 
-  // Extrair categorias e marcas únicas dos produtos
+  // Extrair categorias, marcas e tags únicas dos produtos
   const categories = useMemo(() => {
     const types = new Set<string>();
     products.forEach(p => {
@@ -132,15 +144,59 @@ function ProdutosPage() {
     return Array.from(vendors).sort();
   }, [products]);
 
+  const allTags = useMemo(() => {
+    const tags = new Set<string>();
+    products.forEach(p => {
+      if (p.node.tags) {
+        p.node.tags.forEach((tag: string) => tags.add(tag));
+      }
+    });
+    return Array.from(tags).sort();
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
     let filtered = [...products];
 
+    // Filtro por categoria (productType)
     if (selectedCategory) {
       filtered = filtered.filter(p => p.node.productType === selectedCategory);
     }
 
+    // Filtro por marca (vendor)
     if (selectedBrand) {
       filtered = filtered.filter(p => p.node.vendor === selectedBrand);
+    }
+
+    // Filtro por tag
+    if (selectedTag) {
+      filtered = filtered.filter(p =>
+        p.node.tags?.some((tag: string) =>
+          tag.toLowerCase().includes(selectedTag.toLowerCase())
+        )
+      );
+    }
+
+    // Filtro por busca de texto (q)
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.node.title.toLowerCase().includes(query) ||
+        p.node.description?.toLowerCase().includes(query) ||
+        p.node.vendor.toLowerCase().includes(query) ||
+        p.node.productType?.toLowerCase().includes(query) ||
+        p.node.tags?.some((tag: string) => tag.toLowerCase().includes(query))
+      );
+    }
+
+    // Filtro por ofertas (produtos com desconto)
+    if (showOnlySale) {
+      filtered = filtered.filter(p => {
+        const variant = p.node.variants?.edges?.[0]?.node;
+        if (!variant?.compareAtPrice?.amount) return false;
+        const price = parseFloat(variant.price?.amount || "0");
+        const compareAt = parseFloat(variant.compareAtPrice.amount);
+        return compareAt > price;
+      });
     }
 
     // Ordenação
@@ -167,14 +223,17 @@ function ProdutosPage() {
     }
 
     return filtered;
-  }, [products, selectedCategory, selectedBrand, sortBy]);
+  }, [products, selectedCategory, selectedBrand, selectedTag, searchQuery, showOnlySale, sortBy]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand(null);
+    setSelectedTag(null);
+    setSearchQuery("");
+    setShowOnlySale(false);
   };
 
-  const hasActiveFilters = selectedCategory || selectedBrand;
+  const hasActiveFilters = selectedCategory || selectedBrand || selectedTag || searchQuery || showOnlySale;
 
   if (error) {
     return (
@@ -339,6 +398,30 @@ function ProdutosPage() {
                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A45] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
                   {selectedBrand}
                   <button onClick={() => setSelectedBrand(null)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {selectedTag && (
+                <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#D4AF37] text-[#0F3A45] text-[9px] uppercase tracking-[0.2em] font-bold">
+                  #{selectedTag}
+                  <button onClick={() => setSelectedTag(null)}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#143E4A] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
+                  Busca: "{searchQuery}"
+                  <button onClick={() => setSearchQuery("")}>
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+              {showOnlySale && (
+                <span className="inline-flex items-center gap-2 px-3 py-1 bg-red-500 text-white text-[9px] uppercase tracking-[0.2em] font-bold">
+                  Em Oferta
+                  <button onClick={() => setShowOnlySale(false)}>
                     <X className="h-3 w-3" />
                   </button>
                 </span>

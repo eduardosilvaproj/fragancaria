@@ -12,7 +12,15 @@ export interface ShopifyProduct {
     description: string;
     handle: string;
     vendor: string;
+    productType?: string;
+    tags?: string[];
     priceRange: {
+      minVariantPrice: {
+        amount: string;
+        currencyCode: string;
+      };
+    };
+    compareAtPriceRange?: {
       minVariantPrice: {
         amount: string;
         currencyCode: string;
@@ -32,6 +40,10 @@ export interface ShopifyProduct {
           id: string;
           title: string;
           price: {
+            amount: string;
+            currencyCode: string;
+          };
+          compareAtPrice?: {
             amount: string;
             currencyCode: string;
           };
