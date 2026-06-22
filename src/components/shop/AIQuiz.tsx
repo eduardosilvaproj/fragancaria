@@ -1,7 +1,7 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Button } from "../ui/button";
-import { ChevronRight, ArrowLeft, CheckCircle2, ShoppingCart, Sparkles, Clock, Star } from "lucide-react";
+import { ChevronRight, ArrowLeft, CheckCircle2, ShoppingCart, Sparkles, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
@@ -74,10 +74,6 @@ export const AIQuiz = () => {
                 <div className="flex items-center gap-4">
                     <Clock className="h-4 w-4 text-[#D4AF37]/60" />
                     <span className="text-[10px] uppercase tracking-widest text-white/60">Tempo estimado: 45 segundos</span>
-                </div>
-                <div className="flex items-center gap-4">
-                    <Star className="h-4 w-4 text-[#D4AF37]/60" />
-                    <span className="text-[10px] uppercase tracking-widest text-white/60">Baseado em +10.000 diagnósticos</span>
                 </div>
               </div>
             </div>

@@ -348,8 +348,8 @@ export const Navbar = () => {
               <Search className="h-5 w-5 stroke-[1.5]" />
             </button>
 
-            {/* WhatsApp */}
-            <a
+            {/* WhatsApp - desabilitado até ter número real */}
+            {/* <a
               href="https://wa.me/5511999999999"
               target="_blank"
               rel="noopener noreferrer"
@@ -357,7 +357,7 @@ export const Navbar = () => {
               aria-label="WhatsApp"
             >
               <MessageCircle className="h-5 w-5 stroke-[1.5]" />
-            </a>
+            </a> */}
 
             {/* Wishlist */}
             <button
@@ -566,7 +566,8 @@ export const Navbar = () => {
 
               {/* Mobile Footer */}
               <div className="p-6 border-t border-white/10">
-                <a
+                {/* WhatsApp - desabilitado até ter número real */}
+                {/* <a
                   href="https://wa.me/5511999999999"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -574,7 +575,7 @@ export const Navbar = () => {
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Fale conosco no WhatsApp</span>
-                </a>
+                </a> */}
                 <Link
                   to="/contato"
                   onClick={() => setIsMobileMenuOpen(false)}

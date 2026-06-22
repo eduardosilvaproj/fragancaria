@@ -82,15 +82,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Fragranciaria | Especialista em Cabelo Profissional" },
-      { name: "description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
-      { property: "og:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
-      { property: "og:description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
+      { title: "Fragranciaria | Cosméticos Capilares Profissionais" },
+      { name: "description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
+      { property: "og:title", content: "Fragranciaria | Cosméticos Capilares Profissionais" },
+      { property: "og:description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
       { property: "og:type", content: "website" },
-      { name: "twitter:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
-      { name: "twitter:description", content: "Loja premium de produtos capilares profissionais. Kérastase, Wella, Keune, Sebastian e L'Oréal Pro." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7fdd8e15-ebcc-42cd-84cf-31115744a75e/id-preview-d7d45804--715d9b39-8a09-4b5d-ac0b-65864ea1ec4d.lovable.app-1781049688536.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/7fdd8e15-ebcc-42cd-84cf-31115744a75e/id-preview-d7d45804--715d9b39-8a09-4b5d-ac0b-65864ea1ec4d.lovable.app-1781049688536.png" },
+      { name: "twitter:title", content: "Fragranciaria | Cosméticos Capilares Profissionais" },
+      { name: "twitter:description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
+      // TODO: Substituir por imagem própria 1200x630 quando disponível
+      { property: "og:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
+      { name: "twitter:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
@@ -154,7 +155,8 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
-      <WhatsAppButton phoneNumber="5511999999999" />
+      {/* WhatsApp button desabilitado até ter número real */}
+      {/* <WhatsAppButton phoneNumber="5511999999999" /> */}
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

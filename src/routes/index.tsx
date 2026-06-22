@@ -5,8 +5,7 @@ import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
   Mouse,
-  ChevronDown,
-  Star
+  ChevronDown
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
@@ -264,22 +263,6 @@ function Index() {
                   <ChevronDown className="h-4 w-4 text-[#D4AF37]/60 -mt-1" />
                 </MotionDiv>
               </button>
-
-              <MotionDiv
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 3.5, duration: 2 }}
-                className="mt-4 text-center px-4 hidden md:block"
-              >
-                <div className="flex items-center gap-2 justify-center mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-2 w-2 fill-[#D4AF37] text-[#D4AF37] opacity-60" />
-                  ))}
-                </div>
-                <p className="text-[8px] md:text-[9px] text-white/30 uppercase tracking-[0.2em] font-medium max-w-[280px] leading-relaxed">
-                  Confiança premium: +28 mil clientes satisfeitos em nossa boutique.
-                </p>
-              </MotionDiv>
             </MotionDiv>
           </div>
         </MotionSection>
