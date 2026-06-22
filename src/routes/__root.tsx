@@ -1,5 +1,6 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppUpdate } from "../hooks/useAppUpdate";
+import { WhatsAppButton } from "../components/shop/WhatsAppButton";
 
 import {
   Outlet,
@@ -153,6 +154,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <WhatsAppButton phoneNumber="5511999999999" />
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

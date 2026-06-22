@@ -11,6 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { ProductGridSkeleton } from "@/components/shop/ProductSkeleton";
 import { BenefitBar } from "@/components/shop/BenefitBar";
 import { RitualSection } from "@/components/shop/RitualSection";
 import { ConsultancySection } from "@/components/shop/ConsultancySection";
@@ -134,7 +135,7 @@ function Index() {
   const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
 
-  const { data: productsData } = useQuery({
+  const { data: productsData, isLoading: isLoadingProducts } = useQuery({
     queryKey: ["featured-products"],
     queryFn: () => storefrontApiRequest(GET_FEATURED_PRODUCTS, { first: 20 }),
   });
@@ -407,11 +408,15 @@ function Index() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featuredProducts.map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
+            {isLoadingProducts ? (
+              <ProductGridSkeleton count={4} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {featuredProducts.map((product: any) => (
+                  <ProductCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            )}
 
             <div className="mt-20 flex justify-center">
               <Link to="/produtos">
@@ -435,11 +440,15 @@ function Index() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {displaySaleProducts.map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
+            {isLoadingProducts ? (
+              <ProductGridSkeleton count={4} />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                {displaySaleProducts.map((product: any) => (
+                  <ProductCard key={product.node.id} product={product} />
+                ))}
+              </div>
+            )}
           </div>
         </section>
 
