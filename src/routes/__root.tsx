@@ -157,8 +157,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <ScrollToTop />
-      {/* WhatsApp button desabilitado até ter número real */}
-      {/* <WhatsAppButton phoneNumber="5511999999999" /> */}
+      <WhatsAppButton />
       <Toaster position="top-center" />
     </QueryClientProvider>
   );

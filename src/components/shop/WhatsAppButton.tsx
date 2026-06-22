@@ -11,7 +11,7 @@ interface WhatsAppButtonProps {
 }
 
 export const WhatsAppButton = ({
-  phoneNumber = "5511999999999",
+  phoneNumber = "5516997150373",
   message = "Olá! Gostaria de saber mais sobre os produtos da Fragranciaria."
 }: WhatsAppButtonProps) => {
   const [isVisible, setIsVisible] = useState(false);
