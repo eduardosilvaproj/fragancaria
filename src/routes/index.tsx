@@ -4,7 +4,6 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import {
   ArrowRight,
-  Mouse,
   ChevronDown
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -15,7 +14,6 @@ import { BenefitBar } from "@/components/shop/BenefitBar";
 import { RitualSection } from "@/components/shop/RitualSection";
 import { ConsultancySection } from "@/components/shop/ConsultancySection";
 import { AIQuiz } from "@/components/shop/AIQuiz";
-import { Testimonials } from "@/components/shop/Testimonials";
 import { HeroRefinement } from "@/components/shop/HeroRefinement";
 import { CampaignBanner } from "@/components/shop/CampaignBanner";
 import { SocialProof } from "@/components/shop/SocialProof";
@@ -462,7 +460,6 @@ function Index() {
 
         <SocialProof />
         <ConsultancySection />
-        <Testimonials />
       </main>
 
       <Footer />

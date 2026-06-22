@@ -10,7 +10,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
-  Star,
   Heart,
   ShoppingBag,
   Truck,
@@ -317,21 +316,9 @@ function ProductPage() {
               </p>
 
               {/* Title */}
-              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-6">
                 {product.title}
               </h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
-                  ))}
-                </div>
-                <span className="text-[11px] text-[#1A1A1A]/40 tracking-widest font-bold">
-                  4.9/5 (128 avaliações)
-                </span>
-              </div>
 
               {/* Price */}
               <div className="mb-8">

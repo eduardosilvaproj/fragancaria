@@ -78,10 +78,6 @@ export const RitualSection = () => {
               <p className="text-white/30 text-[10px] uppercase tracking-[0.2em] font-bold">Kérastase + Wella + Sebastian</p>
             </div>
             <div className="flex flex-col items-center md:items-end gap-6">
-                <div className="flex items-center gap-6">
-                    <span className="text-white/20 line-through text-lg font-light">R$ 998,00</span>
-                    <span className="text-[#D4AF37] text-4xl font-light">R$ 842,00</span>
-                </div>
                 <Link to="/produtos" search={{ productType: "Kit" }}>
                   <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 w-full md:w-auto shadow-[0_20px_50px_rgba(212,175,55,0.1)]">
                   Ver Kits Completos

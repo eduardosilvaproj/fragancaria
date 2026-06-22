@@ -1,21 +1,20 @@
 import { motion } from "framer-motion";
-import { Truck, ShieldCheck, Star, CreditCard, Gift } from "lucide-react";
+import { Truck, ShieldCheck, CreditCard, Gift } from "lucide-react";
 
 const MotionDiv = motion.div as any;
 
 const BENEFITS = [
   { icon: Truck, text: "Frete Expresso", detail: "Todo o Brasil" },
-  { icon: ShieldCheck, text: "100% Original", detail: "Distribuidor Oficial" },
-  { icon: Star, text: "+28 mil Seguidores", detail: "Comunidade Premium" },
+  { icon: ShieldCheck, text: "Produtos Autênticos", detail: "Garantia de Procedência" },
   { icon: CreditCard, text: "Até 10x sem juros", detail: "Cartão de Crédito" },
-  { icon: Gift, text: "Brindes Exclusivos", detail: "Em campanhas" },
+  { icon: Gift, text: "Embalagem Premium", detail: "Cuidado no envio" },
 ];
 
 export const BenefitBar = () => {
   return (
     <section className="bg-[#0F3A45]/98 backdrop-blur-xl py-8 border-b border-[#D4AF37]/10 overflow-hidden hidden md:block shadow-[0_-20px_50px_rgba(0,0,0,0.1)] mx-4 md:mx-12 lg:mx-32">
       <div className="container mx-auto px-4 md:px-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           {BENEFITS.map((item, index) => (
             <MotionDiv
               key={item.text}

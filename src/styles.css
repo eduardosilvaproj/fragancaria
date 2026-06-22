@@ -78,6 +78,25 @@
   /* Premium Black */
   --black-premium: #1A1A1A;
 
+  /* Typography Scale - Centralized tokens */
+  --text-micro: 9px;      /* Tiny labels, legal text */
+  --text-label: 10px;     /* Button text, nav items */
+  --text-caption: 11px;   /* Secondary info */
+  --text-body: 14px;      /* Body text base */
+  --text-lead: 16px;      /* Lead paragraphs */
+
+  /* Tracking Scale - Centralized */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.2em;
+  --tracking-wider: 0.3em;
+  --tracking-widest: 0.4em;
+
+  /* Contrast-safe opacity values */
+  --opacity-muted: 0.5;      /* WCAG AA safe */
+  --opacity-subtle: 0.6;
+  --opacity-visible: 0.8;
+
   --background: oklch(0.97 0.005 85); /* #F7F5F2 - Premium White */
   --foreground: oklch(0.15 0.01 200); /* #1A1A1A - Premium Black */
   --card: oklch(0.96 0.003 85); /* Slightly darker white */
@@ -159,7 +178,7 @@
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-size: 13px;
+    font-size: var(--text-body);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -199,13 +218,31 @@
   .border-gold-accent { border-color: #D4AF37; }
   .border-teal-primary { border-color: #0F3A45; }
 
+  /* Typography Token Classes */
+  .text-micro { font-size: var(--text-micro); }
+  .text-label { font-size: var(--text-label); }
+  .text-caption { font-size: var(--text-caption); }
+  .text-body { font-size: var(--text-body); }
+  .text-lead { font-size: var(--text-lead); }
+
+  /* Tracking Token Classes */
+  .tracking-tight { letter-spacing: var(--tracking-tight); }
+  .tracking-normal { letter-spacing: var(--tracking-normal); }
+  .tracking-wide { letter-spacing: var(--tracking-wide); }
+  .tracking-wider { letter-spacing: var(--tracking-wider); }
+  .tracking-widest { letter-spacing: var(--tracking-widest); }
+
+  /* Muted text with accessible opacity */
+  .text-muted-safe { opacity: var(--opacity-muted); }
+  .text-subtle { opacity: var(--opacity-subtle); }
+
   /* Luxury Utility Classes */
   .tracking-luxury {
-    letter-spacing: 0.3em;
+    letter-spacing: var(--tracking-wider);
   }
 
   .tracking-editorial {
-    letter-spacing: -0.02em;
+    letter-spacing: var(--tracking-tight);
   }
 
   .transition-luxury {
@@ -221,18 +258,18 @@
   }
 
   .section-label span {
-    font-size: 10px;
+    font-size: var(--text-label);
     text-transform: uppercase;
-    letter-spacing: 0.4em;
+    letter-spacing: var(--tracking-widest);
     font-weight: 700;
-    color: #D4AF37;
+    color: var(--gold-accent);
   }
 
   .section-label::before {
     content: '';
     width: 2rem;
     height: 1px;
-    background: #D4AF37;
+    background: var(--gold-accent);
   }
 }
 

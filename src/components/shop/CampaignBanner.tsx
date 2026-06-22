@@ -8,14 +8,14 @@ const MotionDiv = motion.div as any;
 
 const CAMPAIGNS = [
   {
-    title: "BEAUTY DAYS",
-    subtitle: "Até 40% OFF nas principais marcas profissionais.",
+    title: "COLEÇÃO PROFISSIONAL",
+    subtitle: "As melhores marcas para cuidar dos seus fios em casa.",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop",
-    cta: "Ver ofertas",
+    cta: "Ver produtos",
     link: "/produtos"
   },
   {
-    title: "KÉRASTASE SPECIAL",
+    title: "KÉRASTASE",
     subtitle: "Curadoria exclusiva para nutrição profunda.",
     image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=2000&auto=format&fit=crop",
     cta: "Descobrir",
