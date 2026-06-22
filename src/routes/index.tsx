@@ -17,6 +17,7 @@ import { AIQuiz } from "@/components/shop/AIQuiz";
 import { HeroRefinement } from "@/components/shop/HeroRefinement";
 import { CampaignBanner } from "@/components/shop/CampaignBanner";
 import { SocialProof } from "@/components/shop/SocialProof";
+import { AuthorizedBrands } from "@/components/shop/AuthorizedBrands";
 import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
 import { motion, useScroll, useTransform } from "framer-motion";
@@ -459,6 +460,7 @@ function Index() {
         </section>
 
         <SocialProof />
+        <AuthorizedBrands />
         <ConsultancySection />
       </main>
 
