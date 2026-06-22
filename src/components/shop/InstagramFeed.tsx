@@ -22,10 +22,14 @@ export const InstagramFeed = () => {
                 </div>
                 <h2 className="font-serif text-4xl md:text-5xl font-light">Siga a <span className="italic">Fragranciaria</span></h2>
             </div>
-            <div className="flex flex-col items-end">
-                <span className="text-3xl font-serif font-light mb-2">+28.000</span>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-[#1A1A1A]/40 font-bold">Seguidores no Instagram</p>
-            </div>
+            <a
+              href="https://instagram.com/fragranciaria"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] uppercase tracking-[0.4em] text-[#D4AF37] font-bold hover:underline transition-all"
+            >
+              @fragranciaria
+            </a>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">

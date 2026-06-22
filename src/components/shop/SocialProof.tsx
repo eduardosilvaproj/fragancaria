@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
-import { ShieldCheck, Truck, Package } from "lucide-react";
+import { ShieldCheck, Truck, Package, FileText, Headphones } from "lucide-react";
 
 const MotionDiv = motion.div as any;
 
 const STATS = [
   { icon: ShieldCheck, title: "Produtos Originais", detail: "Garantia de procedência em todos os itens." },
-  { icon: Truck, title: "Entrega para Todo Brasil", detail: "Envio seguro e rastreável." },
+  { icon: FileText, title: "Nota Fiscal", detail: "Emitimos NF-e em todas as compras." },
+  { icon: Truck, title: "Entrega Rastreada", detail: "Acompanhe seu pedido em tempo real." },
   { icon: Package, title: "Embalagem Cuidadosa", detail: "Produtos protegidos para chegarem perfeitos." },
+  { icon: Headphones, title: "Suporte Especializado", detail: "Atendimento personalizado via WhatsApp." },
 ];
 
 export const SocialProof = () => {

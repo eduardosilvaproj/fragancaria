@@ -1,13 +1,13 @@
 import { motion } from "framer-motion";
-import { Truck, ShieldCheck, CreditCard, Gift } from "lucide-react";
+import { Truck, ShieldCheck, CreditCard, Lock } from "lucide-react";
 
 const MotionDiv = motion.div as any;
 
 const BENEFITS = [
-  { icon: Truck, text: "Frete Expresso", detail: "Todo o Brasil" },
+  { icon: Lock, text: "Compra Segura", detail: "Site protegido SSL" },
   { icon: ShieldCheck, text: "Produtos Autênticos", detail: "Garantia de Procedência" },
   { icon: CreditCard, text: "Até 10x sem juros", detail: "Cartão de Crédito" },
-  { icon: Gift, text: "Embalagem Premium", detail: "Cuidado no envio" },
+  { icon: Truck, text: "Frete Rastreável", detail: "Entrega para todo Brasil" },
 ];
 
 export const BenefitBar = () => {
