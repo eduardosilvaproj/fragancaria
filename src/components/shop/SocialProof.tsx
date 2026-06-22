@@ -1,12 +1,12 @@
 import { motion } from "framer-motion";
-import { CheckCircle2, Star, ShieldCheck, Award, Users } from "lucide-react";
+import { ShieldCheck, Truck, Package } from "lucide-react";
 
 const MotionDiv = motion.div as any;
 
 const STATS = [
-  { icon: Users, title: "+28 mil Seguidores", detail: "Comunidade ativa e engajada." },
-  { icon: ShieldCheck, title: "100% Originais", detail: "Produtos com garantia de procedência." },
-  { icon: Award, title: "Distribuidor Oficial", detail: "Parceria direta com as grandes marcas." },
+  { icon: ShieldCheck, title: "Produtos Originais", detail: "Garantia de procedência em todos os itens." },
+  { icon: Truck, title: "Entrega para Todo Brasil", detail: "Envio seguro e rastreável." },
+  { icon: Package, title: "Embalagem Cuidadosa", detail: "Produtos protegidos para chegarem perfeitos." },
 ];
 
 export const SocialProof = () => {
@@ -15,19 +15,22 @@ export const SocialProof = () => {
       <div className="container mx-auto px-4 md:px-12">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
-            <div className="section-label">
-              <span>Nossa Autoridade</span>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-[1px] bg-[#D4AF37]" />
+              <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
+                Por que escolher a Fragranciaria
+              </span>
             </div>
             <h2 className="font-serif text-3xl md:text-4xl mb-6 font-light leading-tight">
-              A Boutique de Luxo <span className="italic text-[#D4AF37]">Consolidada</span> no Mercado Profissional
+              Sua Boutique de <span className="italic text-[#D4AF37]">Cosméticos Profissionais</span>
             </h2>
             <p className="text-[#1A1A1A]/50 text-sm mb-12 leading-relaxed font-light">
-              Com anos de experiência e milhares de pedidos enviados para todo o Brasil, a Fragranciaria é referência em curadoria de cosméticos profissionais. Unimos a elegância de uma boutique com a solidez de uma grande operação.
+              Selecionamos os melhores produtos capilares profissionais para você cuidar dos seus fios em casa com qualidade de salão.
             </p>
-            
+
             <div className="space-y-8">
               {STATS.map((stat, i) => (
-                <MotionDiv 
+                <MotionDiv
                   key={stat.title}
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
@@ -46,23 +49,14 @@ export const SocialProof = () => {
               ))}
             </div>
           </div>
-          
+
           <div className="relative">
             <div className="aspect-[4/5] overflow-hidden">
-                <img 
-                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200&auto=format&fit=crop" 
-                alt="Autoridade"
+              <img
+                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200&auto=format&fit=crop"
+                alt="Cosméticos profissionais"
                 className="w-full h-full object-cover grayscale opacity-80"
-                />
-            </div>
-            <div className="absolute -bottom-10 -left-10 bg-[#0F3A45] p-12 text-white hidden md:block">
-                <div className="flex gap-1 mb-4">
-                    {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
-                    ))}
-                </div>
-                <h3 className="font-serif text-3xl mb-2">4.9/5</h3>
-                <p className="text-[10px] uppercase tracking-[0.4em] text-white/40 font-bold">Baseado em milhares<br />de avaliações reais</p>
+              />
             </div>
           </div>
         </div>

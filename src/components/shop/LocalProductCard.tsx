@@ -1,9 +1,9 @@
 import { Button } from "../ui/button";
-import { Star, Heart, Eye, ShoppingBag } from "lucide-react";
+import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Product } from "@/data/products";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useState } from "react";
 
 interface LocalProductCardProps {
@@ -11,7 +11,6 @@ interface LocalProductCardProps {
 }
 
 const MotionDiv = motion.div as any;
-const MotionImg = motion.img as any;
 
 export const LocalProductCard = ({ product }: LocalProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -25,7 +24,9 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
     });
   };
 
-  const discount = product.originalPrice
+  // Só mostrar desconto se originalPrice vier do Shopify (compare_at_price)
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const discount = hasDiscount && product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
@@ -44,18 +45,13 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {product.featured && (
-            <span className="bg-[#0F3A45] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-              Destaque
-            </span>
-          )}
-          {discount > 0 && (
+          {hasDiscount && discount > 0 && (
             <span className="bg-[#D4AF37] text-[#0F3A45] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
               -{discount}% OFF
             </span>
           )}
           {product.isNew && (
-            <span className="bg-[#D4AF37] text-[#0F3A45] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
+            <span className="bg-[#0F3A45] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
               Novo
             </span>
           )}
@@ -89,7 +85,7 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
           >
             <span className="flex items-center gap-3">
               <ShoppingBag className="h-4 w-4" />
-              Comprar Rápido
+              Adicionar à Sacola
             </span>
           </Button>
         </div>
@@ -102,22 +98,15 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
 
         <Link
           to={`/produto/${product.id}` as any}
-          className="font-serif text-[16px] leading-tight mb-1 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light line-clamp-2"
+          className="font-serif text-[16px] leading-tight mb-4 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light line-clamp-2"
         >
           {product.name}
         </Link>
 
-        <div className="flex items-center justify-center gap-1 mb-3">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37]" />
-          ))}
-          <span className="text-[9px] text-[#1A1A1A]/40 ml-2 tracking-widest font-bold">4.9</span>
-        </div>
-
         <div className="mt-auto pt-4 flex flex-col items-center gap-2">
           <div className="flex items-center gap-4">
-            {product.originalPrice && (
-              <span className="text-sm text-[#1A1A1A]/20 line-through font-light">
+            {hasDiscount && product.originalPrice && (
+              <span className="text-sm text-[#1A1A1A]/30 line-through font-light">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.originalPrice)}
               </span>
             )}
@@ -126,7 +115,7 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
             </span>
           </div>
           <div className="text-[9px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
-            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)}
+            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)} sem juros
           </div>
         </div>
       </div>

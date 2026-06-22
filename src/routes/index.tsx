@@ -17,10 +17,8 @@ import { RitualSection } from "@/components/shop/RitualSection";
 import { ConsultancySection } from "@/components/shop/ConsultancySection";
 import { AIQuiz } from "@/components/shop/AIQuiz";
 import { Testimonials } from "@/components/shop/Testimonials";
-import { InstagramFeed } from "@/components/shop/InstagramFeed";
 import { HeroRefinement } from "@/components/shop/HeroRefinement";
 import { CampaignBanner } from "@/components/shop/CampaignBanner";
-import { FlashOffer } from "@/components/shop/FlashOffer";
 import { SocialProof } from "@/components/shop/SocialProof";
 import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
@@ -35,10 +33,10 @@ const MotionH1 = motion.h1 as any;
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fragranciaria | Boutique de Cosméticos Profissionais de Luxo" },
-      { name: "description", content: "Distribuidor oficial Kérastase, Wella, Keune e Sebastian. Experiência premium com consultoria especializada e produtos 100% originais." },
-      { property: "og:title", content: "Fragranciaria | Boutique Premium" },
-      { property: "og:description", content: "A excelência do salão na sua intimidade." },
+      { title: "Fragranciaria | Cosméticos Capilares Profissionais" },
+      { name: "description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
+      { property: "og:title", content: "Fragranciaria | Cosméticos Capilares Profissionais" },
+      { property: "og:description", content: "Produtos profissionais para cuidar dos seus fios em casa." },
       { property: "og:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
     ],
   }),
@@ -467,7 +465,6 @@ function Index() {
           </div>
         </section>
 
-        <FlashOffer />
         <RitualSection />
         {/* BANNER INSTITUCIONAL ENTRE SEÇÕES */}
         <section className="py-24 bg-white">
@@ -496,7 +493,6 @@ function Index() {
         <SocialProof />
         <ConsultancySection />
         <Testimonials />
-        <InstagramFeed />
       </main>
 
       <Footer />

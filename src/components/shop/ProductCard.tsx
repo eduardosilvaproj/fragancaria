@@ -1,5 +1,5 @@
 import { Button } from "../ui/button";
-import { Star, Heart, Eye, ShoppingBag } from "lucide-react";
+import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { ShopifyProduct } from "@/lib/shopify/client";
 import { toast } from "sonner";
@@ -47,6 +47,12 @@ export const ProductCard = ({ product }: ProductCardProps) => {
   const price = parseFloat(product.node.priceRange.minVariantPrice.amount);
   const currencyCode = product.node.priceRange.minVariantPrice.currencyCode;
 
+  // Usa compareAtPrice do Shopify para preço "de" (se existir)
+  const compareAtPrice = selectedVariant?.compareAtPrice
+    ? parseFloat(selectedVariant.compareAtPrice.amount)
+    : null;
+  const hasDiscount = compareAtPrice && compareAtPrice > price;
+
   return (
     <MotionDiv
       initial={{ opacity: 0, y: 30 }}
@@ -62,19 +68,9 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
-          {product.node.vendor === "Kérastase" && (
-            <span className="bg-[#0F3A45] text-white text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-              Mais Vendido
-            </span>
-          )}
-          {product.node.handle.includes('serum') && (
+          {hasDiscount && (
             <span className="bg-[#D4AF37] text-[#0F3A45] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-              Escolha dos Especialistas
-            </span>
-          )}
-          {!product.node.vendor && (
-            <span className="bg-[#D4AF37] text-[#0F3A45] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
-              Novo
+              Oferta
             </span>
           )}
         </div>
@@ -129,7 +125,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
             {isLoading ? "Processando..." : (
               <span className="flex items-center gap-3">
                 <ShoppingBag className="h-4 w-4" />
-                Comprar Rápido
+                Adicionar à Sacola
               </span>
             )}
           </Button>
@@ -143,29 +139,24 @@ export const ProductCard = ({ product }: ProductCardProps) => {
 
         <Link
           to={`/produto/${product.node.handle}` as any}
-          className="font-serif text-[18px] leading-tight mb-1 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light"
+          className="font-serif text-[18px] leading-tight mb-4 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light"
         >
           {product.node.title}
         </Link>
 
-        <div className="flex items-center justify-center gap-1 mb-3">
-          {[...Array(5)].map((_, i) => (
-            <Star key={i} className="h-3 w-3 fill-[#D4AF37] text-[#D4AF37]" />
-          ))}
-          <span className="text-[9px] text-[#1A1A1A]/40 ml-2 tracking-widest font-bold">4.9/5</span>
-        </div>
-
         <div className="mt-auto pt-4 flex flex-col items-center gap-2">
           <div className="flex items-center gap-4">
-            <span className="text-sm text-[#1A1A1A]/20 line-through font-light">
-              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 1.15)}
-            </span>
+            {hasDiscount && compareAtPrice && (
+              <span className="text-sm text-[#1A1A1A]/30 line-through font-light">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(compareAtPrice)}
+              </span>
+            )}
             <span className="text-[22px] font-light text-[#1A1A1A] tracking-tighter">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
             </span>
           </div>
           <div className="text-[9px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
-            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)}
+            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros
           </div>
         </div>
       </div>
