@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Plus } from "lucide-react";
 import { Button } from "../ui/button";
+import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
 
@@ -81,9 +82,11 @@ export const RitualSection = () => {
                     <span className="text-white/20 line-through text-lg font-light">R$ 998,00</span>
                     <span className="text-[#D4AF37] text-4xl font-light">R$ 842,00</span>
                 </div>
-                <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 w-full md:w-auto shadow-[0_20px_50px_rgba(212,175,55,0.1)]">
-                Comprar Ritual Completo
-                </Button>
+                <Link to="/produtos" search={{ productType: "Kit" }}>
+                  <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-black transition-all duration-700 w-full md:w-auto shadow-[0_20px_50px_rgba(212,175,55,0.1)]">
+                  Ver Kits Completos
+                  </Button>
+                </Link>
             </div>
           </MotionDiv>
         </div>

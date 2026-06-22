@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Sparkles, Brain, ShieldCheck, MessageCircle } from "lucide-react";
 import { Button } from "../ui/button";
+import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
 const MotionH2 = motion.h2 as any;
@@ -56,9 +57,11 @@ export const ConsultancySection = () => {
                 </MotionDiv>
               ))}
             </div>
-            <Button className="bg-[#0F3A45] hover:bg-[#D4AF37] text-white hover:text-[#0F3A45] px-12 h-16 rounded-none text-[12px] uppercase tracking-[0.3em] font-bold transition-all duration-500">
-              Falar com Especialista
-            </Button>
+            <Link to="/contato">
+              <Button className="bg-[#0F3A45] hover:bg-[#D4AF37] text-white hover:text-[#0F3A45] px-12 h-16 rounded-none text-[12px] uppercase tracking-[0.3em] font-bold transition-all duration-500">
+                Falar com Especialista
+              </Button>
+            </Link>
           </div>
           
           <div className="flex-1 relative">

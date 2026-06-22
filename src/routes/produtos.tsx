@@ -1,10 +1,10 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { storefrontApiRequest, ShopifyProduct } from "@/lib/shopify/client";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Filter, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -70,7 +70,19 @@ const GET_ALL_PRODUCTS = `
   }
 `;
 
+// Search params type
+type ProductsSearch = {
+  vendor?: string;
+  productType?: string;
+};
+
 export const Route = createFileRoute("/produtos")({
+  validateSearch: (search: Record<string, unknown>): ProductsSearch => {
+    return {
+      vendor: search.vendor as string | undefined,
+      productType: search.productType as string | undefined,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Produtos | Fragranciaria - Cosméticos Profissionais" },
@@ -81,10 +93,20 @@ export const Route = createFileRoute("/produtos")({
 });
 
 function ProdutosPage() {
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedBrand, setSelectedBrand] = useState<string | null>(null);
+  // Get search params from URL
+  const search = useSearch({ from: "/produtos" });
+
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
+  const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [showFilters, setShowFilters] = useState(false);
+
+  // Sync state with URL params on mount
+  useEffect(() => {
+    if (search.vendor) setSelectedBrand(search.vendor);
+    if (search.productType) setSelectedCategory(search.productType);
+    if (search.vendor || search.productType) setShowFilters(true);
+  }, [search.vendor, search.productType]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["all-products"],

@@ -11,7 +11,6 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
 import { ProductCard } from "@/components/shop/ProductCard";
-import { LocalProductCard } from "@/components/shop/LocalProductCard";
 import { BenefitBar } from "@/components/shop/BenefitBar";
 import { RitualSection } from "@/components/shop/RitualSection";
 import { ConsultancySection } from "@/components/shop/ConsultancySection";
@@ -22,7 +21,6 @@ import { CampaignBanner } from "@/components/shop/CampaignBanner";
 import { SocialProof } from "@/components/shop/SocialProof";
 import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
-import { PRODUCTS, getFeaturedProducts, getNewProducts, getProductsOnSale, BRANDS } from "@/data/products";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
@@ -53,7 +51,15 @@ const GET_FEATURED_PRODUCTS = `
           description
           handle
           vendor
+          productType
+          tags
           priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          compareAtPriceRange {
             minVariantPrice {
               amount
               currencyCode
@@ -73,6 +79,10 @@ const GET_FEATURED_PRODUCTS = `
                 id
                 title
                 price {
+                  amount
+                  currencyCode
+                }
+                compareAtPrice {
                   amount
                   currencyCode
                 }
@@ -98,66 +108,10 @@ const BRANDS_DISPLAY = [
 ];
 
 const NEEDS = [
-  { label: "Coloração", image: "https://http2.mlstatic.com/D_Q_NP_2X_776597-MLA107889014479_032026-E.webp", slug: "coloracao" },
-  { label: "Finalizadores", image: "https://http2.mlstatic.com/D_Q_NP_2X_611634-MLU74610413953_022024-E.webp", slug: "finalizadores" },
-  { label: "Shampoos", image: "https://http2.mlstatic.com/D_Q_NP_2X_774537-MLA112858976689_062026-E.webp", slug: "shampoos" },
-  { label: "Kits", image: "https://http2.mlstatic.com/D_Q_NP_2X_904887-MLA107488640188_032026-E.webp", slug: "kits" },
-];
-
-// Produtos reais do catálogo
-const featuredProducts = PRODUCTS.filter(p => p.featured).slice(0, 4);
-const newProducts = PRODUCTS.filter(p => p.isNew).slice(0, 4);
-const saleProducts = PRODUCTS.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 4);
-
-const FEATURED_PRODUCTS_MOCK = [
-  {
-    node: {
-      id: "1",
-      title: "Nutritive Masquintense Riche",
-      handle: "kerastase-nutritive-masquintense-riche",
-      vendor: "Kérastase",
-      description: "Máscara ultra-nutritiva para cabelos muito ressecados.",
-      priceRange: { minVariantPrice: { amount: "289.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?q=80&w=800&auto=format&fit=crop", altText: "Kérastase Nutritive" } }] },
-      variants: { edges: [{ node: { id: "v1", title: "Default", price: { amount: "289.00", currencyCode: "BRL" }, availableForSale: true } }] }
-    }
-  },
-  {
-    node: {
-      id: "2",
-      title: "Blond Absolu Sérum Cicanuit",
-      handle: "kerastase-blond-absolu-serum-cicanuit",
-      vendor: "Kérastase",
-      description: "Sérum de noite para recuperação intensa de loiros.",
-      priceRange: { minVariantPrice: { amount: "245.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1631729371254-42c2892f0e6e?q=80&w=800&auto=format&fit=crop", altText: "Kérastase Blond Absolu" } }] },
-      variants: { edges: [{ node: { id: "v2", title: "Default", price: { amount: "245.00", currencyCode: "BRL" }, availableForSale: true } }] }
-    }
-  },
-  {
-    node: {
-      id: "3",
-      title: "INVIGO Aqua Pure Shampoo 300ml",
-      handle: "wella-invigo-aqua-pure-shampoo",
-      vendor: "Wella Professionals",
-      description: "Shampoo de limpeza profunda com extrato de lótus.",
-      priceRange: { minVariantPrice: { amount: "134.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1626784215021-2e39ccf971cd?q=80&w=800&auto=format&fit=crop", altText: "Wella INVIGO" } }] },
-      variants: { edges: [{ node: { id: "v3", title: "Default", price: { amount: "134.00", currencyCode: "BRL" }, availableForSale: true } }] }
-    }
-  },
-  {
-    node: {
-      id: "4",
-      title: "Fusion Intense Repair Mask",
-      handle: "wella-fusion-intense-repair-mask",
-      vendor: "Wella Professionals",
-      description: "Tratamento de reparação profunda para cabelos danificados.",
-      priceRange: { minVariantPrice: { amount: "198.00", currencyCode: "BRL" } },
-      images: { edges: [{ node: { url: "https://images.unsplash.com/photo-1597354984706-fac992d9306f?q=80&w=800&auto=format&fit=crop", altText: "Wella Fusion" } }] },
-      variants: { edges: [{ node: { id: "v4", title: "Default", price: { amount: "198.00", currencyCode: "BRL" }, availableForSale: true } }] }
-    }
-  }
+  { label: "Coloração", image: "https://http2.mlstatic.com/D_Q_NP_2X_776597-MLA107889014479_032026-E.webp", slug: "coloracao", productType: "Coloração" },
+  { label: "Finalizadores", image: "https://http2.mlstatic.com/D_Q_NP_2X_611634-MLU74610413953_022024-E.webp", slug: "finalizadores", productType: "Finalizador" },
+  { label: "Shampoos", image: "https://http2.mlstatic.com/D_Q_NP_2X_774537-MLA112858976689_062026-E.webp", slug: "shampoos", productType: "Shampoo" },
+  { label: "Kits", image: "https://http2.mlstatic.com/D_Q_NP_2X_904887-MLA107488640188_032026-E.webp", slug: "kits", productType: "Kit" },
 ];
 
 function Index() {
@@ -182,12 +136,26 @@ function Index() {
 
   const { data: productsData } = useQuery({
     queryKey: ["featured-products"],
-    queryFn: () => storefrontApiRequest(GET_FEATURED_PRODUCTS, { first: 6 }),
+    queryFn: () => storefrontApiRequest(GET_FEATURED_PRODUCTS, { first: 20 }),
   });
 
-  const products = productsData?.data?.products?.edges?.length > 0 
-    ? productsData.data.products.edges 
-    : FEATURED_PRODUCTS_MOCK;
+  // Produtos do Shopify
+  const allProducts = productsData?.data?.products?.edges || [];
+
+  // Primeiros 4 para "Mais Vendidos"
+  const featuredProducts = allProducts.slice(0, 4);
+
+  // Produtos com desconto para "Promoções" (compareAtPrice > price)
+  const saleProducts = allProducts.filter((p: any) => {
+    const variant = p.node.variants?.edges?.[0]?.node;
+    if (!variant?.compareAtPrice?.amount) return false;
+    const price = parseFloat(variant.price?.amount || "0");
+    const compareAt = parseFloat(variant.compareAtPrice.amount);
+    return compareAt > price;
+  }).slice(0, 4);
+
+  // Se não houver produtos com desconto, mostrar outros 4
+  const displaySaleProducts = saleProducts.length > 0 ? saleProducts : allProducts.slice(4, 8);
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] text-[#1A1A1A] selection:bg-[#D4AF37]/20 font-sans" ref={containerRef}>
@@ -350,28 +318,33 @@ function Index() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {BRANDS_DISPLAY.map((brand, i) => (
-                <MotionDiv
+                <Link
                   key={brand.name}
-                  initial={{ opacity: 0, y: 40 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.8 }}
-                  className="group relative aspect-[3/4] overflow-hidden bg-[#143E4A] cursor-pointer"
+                  to="/produtos"
+                  search={{ vendor: brand.name }}
                 >
-                  <img
-                    src={brand.image}
-                    alt={brand.name}
-                    className="w-full h-full object-contain p-8 bg-white transition-all duration-[2000ms] group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-[#0F3A45]/60 group-hover:bg-[#D4AF37]/30 transition-all duration-1000" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                    <h3 className="text-white font-serif text-2xl md:text-3xl text-center mb-2">{brand.name}</h3>
-                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-6">{brand.desc}</p>
-                    <Button className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0">
-                      Explorar Coleção
-                    </Button>
-                  </div>
-                </MotionDiv>
+                  <MotionDiv
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1, duration: 0.8 }}
+                    className="group relative aspect-[3/4] overflow-hidden bg-[#143E4A] cursor-pointer"
+                  >
+                    <img
+                      src={brand.image}
+                      alt={brand.name}
+                      className="w-full h-full object-contain p-8 bg-white transition-all duration-[2000ms] group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-[#0F3A45]/60 group-hover:bg-[#D4AF37]/30 transition-all duration-1000" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                      <h3 className="text-white font-serif text-2xl md:text-3xl text-center mb-2">{brand.name}</h3>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-6">{brand.desc}</p>
+                      <span className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
+                        Explorar Coleção
+                      </span>
+                    </div>
+                  </MotionDiv>
+                </Link>
               ))}
             </div>
           </div>
@@ -391,24 +364,29 @@ function Index() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
               {NEEDS.map((need, i) => (
-                <MotionDiv
+                <Link
                   key={need.label}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="group relative aspect-square overflow-hidden cursor-pointer"
+                  to="/produtos"
+                  search={{ productType: need.productType }}
                 >
-                  <img
-                    src={need.image}
-                    alt={need.label}
-                    className="w-full h-full object-cover transition-transform duration-[1500ms] group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-[#0F3A45]/30 group-hover:bg-[#0F3A45]/60 transition-all duration-700" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#D4AF37]/50 pb-2 transition-all duration-500">{need.label}</span>
-                  </div>
-                </MotionDiv>
+                  <MotionDiv
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group relative aspect-square overflow-hidden cursor-pointer"
+                  >
+                    <img
+                      src={need.image}
+                      alt={need.label}
+                      className="w-full h-full object-cover transition-transform duration-[1500ms] group-hover:scale-110"
+                    />
+                    <div className="absolute inset-0 bg-[#0F3A45]/30 group-hover:bg-[#0F3A45]/60 transition-all duration-700" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#D4AF37]/50 pb-2 transition-all duration-500">{need.label}</span>
+                    </div>
+                  </MotionDiv>
+                </Link>
               ))}
             </div>
           </div>
@@ -430,8 +408,8 @@ function Index() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {featuredProducts.map((product) => (
-                <LocalProductCard key={product.id} product={product} />
+              {featuredProducts.map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
 
@@ -458,8 +436,8 @@ function Index() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {saleProducts.map((product) => (
-                <LocalProductCard key={product.id} product={product} />
+              {displaySaleProducts.map((product: any) => (
+                <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
           </div>

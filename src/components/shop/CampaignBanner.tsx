@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
 
@@ -10,13 +11,15 @@ const CAMPAIGNS = [
     title: "BEAUTY DAYS",
     subtitle: "Até 40% OFF nas principais marcas profissionais.",
     image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop",
-    cta: "Ver ofertas"
+    cta: "Ver ofertas",
+    link: "/produtos"
   },
   {
     title: "KÉRASTASE SPECIAL",
     subtitle: "Curadoria exclusiva para nutrição profunda.",
     image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=2000&auto=format&fit=crop",
-    cta: "Descobrir"
+    cta: "Descobrir",
+    link: "/produtos"
   }
 ];
 
@@ -64,10 +67,12 @@ export const CampaignBanner = () => {
                   <p className="text-[#D4AF37] text-sm uppercase tracking-[0.4em] font-bold mb-10">
                     {CAMPAIGNS[current].subtitle}
                   </p>
-                  <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
-                    {CAMPAIGNS[current].cta}
-                    <ArrowRight className="ml-4 h-4 w-4" />
-                  </Button>
+                  <Link to={CAMPAIGNS[current].link as any}>
+                    <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
+                      {CAMPAIGNS[current].cta}
+                      <ArrowRight className="ml-4 h-4 w-4" />
+                    </Button>
+                  </Link>
                 </MotionDiv>
               </div>
             </MotionDiv>

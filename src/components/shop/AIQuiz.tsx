@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { ChevronRight, ArrowLeft, CheckCircle2, ShoppingCart, Sparkles, Clock, Star } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
 
@@ -163,11 +164,13 @@ export const AIQuiz = () => {
                   </div>
 
                   <div className="flex flex-col sm:flex-row gap-4 w-full">
-                    <Button className="bg-[#1A1A1A] hover:bg-[#D4AF37] text-white flex-1 h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-xl">
-                      <ShoppingCart className="h-4 w-4 mr-3" /> Adicionar à Sacola
-                    </Button>
-                    <Button 
-                      variant="outline" 
+                    <Link to="/produtos" search={{ productType: "Kit" }} className="flex-1">
+                      <Button className="bg-[#1A1A1A] hover:bg-[#D4AF37] text-white w-full h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-xl">
+                        <ShoppingCart className="h-4 w-4 mr-3" /> Ver Kits Recomendados
+                      </Button>
+                    </Link>
+                    <Button
+                      variant="outline"
                       onClick={resetQuiz}
                       className="border-black/10 hover:border-[#1A1A1A] flex-1 h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-500"
                     >

@@ -1,17 +1,18 @@
 import { motion } from "framer-motion";
 import { Droplets, Sparkles, Dna, Palette, Wind, Sun, Scissors, Heart } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 const MotionDiv = motion.div as any;
 
 const CATEGORIES = [
-  { label: "Hidratação", icon: Droplets },
-  { label: "Nutrição", icon: Heart },
-  { label: "Reconstrução", icon: Dna },
-  { label: "Coloração", icon: Palette },
-  { label: "Finalização", icon: Wind },
-  { label: "Proteção Solar", icon: Sun },
-  { label: "Tratamentos", icon: Sparkles },
-  { label: "Corte e Styling", icon: Scissors },
+  { label: "Hidratação", icon: Droplets, productType: "Hidratação" },
+  { label: "Nutrição", icon: Heart, productType: "Nutrição" },
+  { label: "Reconstrução", icon: Dna, productType: "Reconstrução" },
+  { label: "Coloração", icon: Palette, productType: "Coloração" },
+  { label: "Finalização", icon: Wind, productType: "Finalizador" },
+  { label: "Proteção Solar", icon: Sun, productType: "Proteção" },
+  { label: "Tratamentos", icon: Sparkles, productType: "Tratamento" },
+  { label: "Corte e Styling", icon: Scissors, productType: "Styling" },
 ];
 
 export const ShopByCategory = () => {
@@ -31,21 +32,26 @@ export const ShopByCategory = () => {
           {CATEGORIES.map((cat, i) => {
             const IconComponent = cat.icon;
             return (
-              <MotionDiv
+              <Link
                 key={cat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05 }}
-                className="flex flex-col items-center gap-4 group cursor-pointer"
+                to="/produtos"
+                search={{ productType: cat.productType }}
               >
-                <div className="w-20 h-20 bg-white border border-[#0F3A45]/10 flex items-center justify-center group-hover:bg-[#0F3A45] group-hover:border-[#0F3A45] transition-all duration-700">
-                  <IconComponent className="h-7 w-7 text-[#0F3A45] group-hover:text-[#D4AF37] stroke-[1.2] transition-colors duration-500" />
-                </div>
-                <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#1A1A1A] group-hover:text-[#D4AF37] transition-colors text-center">
-                  {cat.label}
-                </span>
-              </MotionDiv>
+                <MotionDiv
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="flex flex-col items-center gap-4 group cursor-pointer"
+                >
+                  <div className="w-20 h-20 bg-white border border-[#0F3A45]/10 flex items-center justify-center group-hover:bg-[#0F3A45] group-hover:border-[#0F3A45] transition-all duration-700">
+                    <IconComponent className="h-7 w-7 text-[#0F3A45] group-hover:text-[#D4AF37] stroke-[1.2] transition-colors duration-500" />
+                  </div>
+                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#1A1A1A] group-hover:text-[#D4AF37] transition-colors text-center">
+                    {cat.label}
+                  </span>
+                </MotionDiv>
+              </Link>
             );
           })}
         </div>
