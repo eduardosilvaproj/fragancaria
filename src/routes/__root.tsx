@@ -90,9 +90,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:type", content: "website" },
       { name: "twitter:title", content: "Fragranciaria | Cosméticos Capilares Profissionais" },
       { name: "twitter:description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
-      // TODO: Substituir por imagem própria 1200x630 quando disponível
-      { property: "og:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
-      { name: "twitter:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
+      { property: "og:image", content: "https://res.cloudinary.com/dg9oqfxoq/image/upload/f_auto,q_auto/ChatGPT_Image_22_de_jun._de_2025_11_34_41_uhvqo0" },
+      { name: "twitter:image", content: "https://res.cloudinary.com/dg9oqfxoq/image/upload/f_auto,q_auto/ChatGPT_Image_22_de_jun._de_2025_11_34_41_uhvqo0" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
     links: [
