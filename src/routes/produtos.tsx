@@ -1,14 +1,74 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { LocalProductCard } from "@/components/shop/LocalProductCard";
-import { PRODUCTS, CATEGORIES, BRANDS } from "@/data/products";
+import { ProductCard } from "@/components/shop/ProductCard";
+import { storefrontApiRequest, ShopifyProduct } from "@/lib/shopify/client";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Filter, X, ChevronDown } from "lucide-react";
+import { Filter, X, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MotionDiv = motion.div as any;
+
+const GET_ALL_PRODUCTS = `
+  query GetAllProducts($first: Int!) {
+    products(first: $first) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          vendor
+          productType
+          tags
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          compareAtPriceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 5) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          variants(first: 10) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                compareAtPrice {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
 
 export const Route = createFileRoute("/produtos")({
   head: () => ({
@@ -26,35 +86,66 @@ function ProdutosPage() {
   const [sortBy, setSortBy] = useState<string>("featured");
   const [showFilters, setShowFilters] = useState(false);
 
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["all-products"],
+    queryFn: () => storefrontApiRequest(GET_ALL_PRODUCTS, { first: 100 }),
+  });
+
+  const products: ShopifyProduct[] = data?.data?.products?.edges || [];
+
+  // Extrair categorias e marcas únicas dos produtos
+  const categories = useMemo(() => {
+    const types = new Set<string>();
+    products.forEach(p => {
+      if (p.node.productType) types.add(p.node.productType);
+    });
+    return Array.from(types).sort();
+  }, [products]);
+
+  const brands = useMemo(() => {
+    const vendors = new Set<string>();
+    products.forEach(p => {
+      if (p.node.vendor) vendors.add(p.node.vendor);
+    });
+    return Array.from(vendors).sort();
+  }, [products]);
+
   const filteredProducts = useMemo(() => {
-    let products = [...PRODUCTS];
+    let filtered = [...products];
 
     if (selectedCategory) {
-      products = products.filter(p => p.category === selectedCategory);
+      filtered = filtered.filter(p => p.node.productType === selectedCategory);
     }
 
     if (selectedBrand) {
-      products = products.filter(p => p.brand === selectedBrand);
+      filtered = filtered.filter(p => p.node.vendor === selectedBrand);
     }
 
     // Ordenação
     switch (sortBy) {
       case "price-asc":
-        products.sort((a, b) => a.price - b.price);
+        filtered.sort((a, b) =>
+          parseFloat(a.node.priceRange.minVariantPrice.amount) -
+          parseFloat(b.node.priceRange.minVariantPrice.amount)
+        );
         break;
       case "price-desc":
-        products.sort((a, b) => b.price - a.price);
+        filtered.sort((a, b) =>
+          parseFloat(b.node.priceRange.minVariantPrice.amount) -
+          parseFloat(a.node.priceRange.minVariantPrice.amount)
+        );
         break;
       case "name":
-        products.sort((a, b) => a.name.localeCompare(b.name));
+        filtered.sort((a, b) => a.node.title.localeCompare(b.node.title));
         break;
       case "featured":
       default:
-        products.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        // Mantém a ordem original (featured first no Shopify)
+        break;
     }
 
-    return products;
-  }, [selectedCategory, selectedBrand, sortBy]);
+    return filtered;
+  }, [products, selectedCategory, selectedBrand, sortBy]);
 
   const clearFilters = () => {
     setSelectedCategory(null);
@@ -62,6 +153,19 @@ function ProdutosPage() {
   };
 
   const hasActiveFilters = selectedCategory || selectedBrand;
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F2]">
+        <Navbar />
+        <div className="container mx-auto px-4 py-40 text-center">
+          <h1 className="font-serif text-4xl mb-4">Erro ao carregar produtos</h1>
+          <p className="text-[#1A1A1A]/60">Tente novamente mais tarde.</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F7F5F2] text-[#1A1A1A]">
@@ -87,7 +191,7 @@ function ProdutosPage() {
               Nossos <span className="italic text-[#D4AF37]">Produtos</span>
             </h1>
             <p className="text-white/50 text-sm max-w-xl mx-auto">
-              {PRODUCTS.length} produtos profissionais selecionados para você
+              {isLoading ? "Carregando..." : `${products.length} produtos profissionais selecionados para você`}
             </p>
           </MotionDiv>
         </div>
@@ -145,48 +249,52 @@ function ProdutosPage() {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 {/* Categorias */}
-                <div>
-                  <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">
-                    Categorias
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.map((cat) => (
-                      <button
-                        key={cat.id}
-                        onClick={() => setSelectedCategory(selectedCategory === cat.slug ? null : cat.slug)}
-                        className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
-                          selectedCategory === cat.slug
-                            ? "bg-[#D4AF37] text-[#0F3A45]"
-                            : "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37] hover:text-[#D4AF37]"
-                        }`}
-                      >
-                        {cat.name}
-                      </button>
-                    ))}
+                {categories.length > 0 && (
+                  <div>
+                    <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">
+                      Categorias
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                          className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
+                            selectedCategory === cat
+                              ? "bg-[#D4AF37] text-[#0F3A45]"
+                              : "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37] hover:text-[#D4AF37]"
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* Marcas */}
-                <div>
-                  <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">
-                    Marcas
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {BRANDS.map((brand) => (
-                      <button
-                        key={brand}
-                        onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
-                        className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
-                          selectedBrand === brand
-                            ? "bg-[#D4AF37] text-[#0F3A45]"
-                            : "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37] hover:text-[#D4AF37]"
-                        }`}
-                      >
-                        {brand}
-                      </button>
-                    ))}
+                {brands.length > 0 && (
+                  <div>
+                    <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">
+                      Marcas
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {brands.map((brand) => (
+                        <button
+                          key={brand}
+                          onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+                          className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
+                            selectedBrand === brand
+                              ? "bg-[#D4AF37] text-[#0F3A45]"
+                              : "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37] hover:text-[#D4AF37]"
+                          }`}
+                        >
+                          {brand}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </MotionDiv>
           )}
@@ -199,7 +307,7 @@ function ProdutosPage() {
               </span>
               {selectedCategory && (
                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A45] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
-                  {CATEGORIES.find(c => c.slug === selectedCategory)?.name}
+                  {selectedCategory}
                   <button onClick={() => setSelectedCategory(null)}>
                     <X className="h-3 w-3" />
                   </button>
@@ -216,27 +324,38 @@ function ProdutosPage() {
             </div>
           )}
 
+          {/* Loading State */}
+          {isLoading && (
+            <div className="flex items-center justify-center py-20">
+              <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+            </div>
+          )}
+
           {/* Results Count */}
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold mb-8">
-            {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
-          </p>
+          {!isLoading && (
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold mb-8">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+            </p>
+          )}
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product, i) => (
-              <MotionDiv
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.5 }}
-              >
-                <LocalProductCard product={product} />
-              </MotionDiv>
-            ))}
-          </div>
+          {!isLoading && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product, i) => (
+                <MotionDiv
+                  key={product.node.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.03, duration: 0.5 }}
+                >
+                  <ProductCard product={product} />
+                </MotionDiv>
+              ))}
+            </div>
+          )}
 
           {/* Empty State */}
-          {filteredProducts.length === 0 && (
+          {!isLoading && filteredProducts.length === 0 && (
             <div className="text-center py-20">
               <p className="text-[#0F3A45]/40 text-lg mb-4">Nenhum produto encontrado</p>
               <Button

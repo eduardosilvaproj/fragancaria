@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { PRODUCTS, getProductsByCategory, Product } from "@/data/products";
-import { LocalProductCard } from "@/components/shop/LocalProductCard";
+import { ProductCard } from "@/components/shop/ProductCard";
+import { storefrontApiRequest, ShopifyProduct } from "@/lib/shopify/client";
+import { useQuery } from "@tanstack/react-query";
+import { useCartStore } from "@/stores/cartStore";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -18,30 +20,170 @@ import {
   Minus,
   Plus,
   Check,
+  Loader2,
 } from "lucide-react";
 
 const MotionDiv = motion.div as any;
 
+const GET_PRODUCT_BY_HANDLE = `
+  query GetProductByHandle($handle: String!) {
+    product(handle: $handle) {
+      id
+      title
+      description
+      descriptionHtml
+      handle
+      vendor
+      productType
+      tags
+      priceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      compareAtPriceRange {
+        minVariantPrice {
+          amount
+          currencyCode
+        }
+      }
+      images(first: 10) {
+        edges {
+          node {
+            url
+            altText
+          }
+        }
+      }
+      variants(first: 20) {
+        edges {
+          node {
+            id
+            title
+            price {
+              amount
+              currencyCode
+            }
+            compareAtPrice {
+              amount
+              currencyCode
+            }
+            availableForSale
+            quantityAvailable
+            selectedOptions {
+              name
+              value
+            }
+          }
+        }
+      }
+      options {
+        name
+        values
+      }
+    }
+  }
+`;
+
+const GET_RELATED_PRODUCTS = `
+  query GetRelatedProducts($productType: String!, $first: Int!) {
+    products(first: $first, query: $productType) {
+      edges {
+        node {
+          id
+          title
+          description
+          handle
+          vendor
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+          images(first: 2) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          variants(first: 5) {
+            edges {
+              node {
+                id
+                title
+                price {
+                  amount
+                  currencyCode
+                }
+                availableForSale
+                selectedOptions {
+                  name
+                  value
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const Route = createFileRoute("/produto/$id")({
-  head: ({ params }) => {
-    const product = PRODUCTS.find(p => p.id === params.id);
-    return {
-      meta: [
-        { title: product ? `${product.name} | Fragranciaria` : "Produto | Fragranciaria" },
-        { name: "description", content: product?.description || "Produto profissional de alta qualidade." },
-      ],
-    };
-  },
+  head: () => ({
+    meta: [
+      { title: "Produto | Fragranciaria" },
+    ],
+  }),
   component: ProductPage,
 });
 
 function ProductPage() {
-  const { id } = Route.useParams();
-  const product = PRODUCTS.find(p => p.id === id);
+  const { id: handle } = Route.useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
-  if (!product) {
+  const addItem = useCartStore((state) => state.addItem);
+  const isLoading = useCartStore((state) => state.isLoading);
+
+  const { data: productData, isLoading: productLoading, error } = useQuery({
+    queryKey: ["product", handle],
+    queryFn: () => storefrontApiRequest(GET_PRODUCT_BY_HANDLE, { handle }),
+  });
+
+  const product = productData?.data?.product;
+
+  const { data: relatedData } = useQuery({
+    queryKey: ["related-products", product?.productType],
+    queryFn: () => storefrontApiRequest(GET_RELATED_PRODUCTS, {
+      productType: `product_type:${product?.productType}`,
+      first: 5
+    }),
+    enabled: !!product?.productType,
+  });
+
+  const relatedProducts: ShopifyProduct[] = relatedData?.data?.products?.edges?.filter(
+    (p: ShopifyProduct) => p.node.handle !== handle
+  ).slice(0, 4) || [];
+
+  if (productLoading) {
+    return (
+      <div className="min-h-screen bg-[#F7F5F2]">
+        <Navbar />
+        <div className="container mx-auto px-4 py-40 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !product) {
     return (
       <div className="min-h-screen bg-[#F7F5F2]">
         <Navbar />
@@ -58,17 +200,49 @@ function ProductPage() {
     );
   }
 
-  const relatedProducts = getProductsByCategory(product.category)
-    .filter(p => p.id !== product.id)
-    .slice(0, 4);
+  const images = product.images?.edges || [];
+  const variants = product.variants?.edges || [];
+  const selectedVariant = variants[selectedVariantIndex]?.node;
 
-  const discount = product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  const price = parseFloat(selectedVariant?.price?.amount || product.priceRange.minVariantPrice.amount);
+  const compareAtPrice = selectedVariant?.compareAtPrice?.amount
+    ? parseFloat(selectedVariant.compareAtPrice.amount)
+    : null;
+  const currencyCode = selectedVariant?.price?.currencyCode || product.priceRange.minVariantPrice.currencyCode;
+
+  const discount = compareAtPrice && compareAtPrice > price
+    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    if (!selectedVariant) return;
+
+    // Criar objeto ShopifyProduct compatível
+    const shopifyProduct: ShopifyProduct = {
+      node: {
+        id: product.id,
+        title: product.title,
+        description: product.description,
+        handle: product.handle,
+        vendor: product.vendor,
+        priceRange: product.priceRange,
+        images: product.images,
+        variants: product.variants,
+        options: product.options,
+      }
+    };
+
+    await addItem({
+      product: shopifyProduct,
+      variantId: selectedVariant.id,
+      variantTitle: selectedVariant.title,
+      price: selectedVariant.price,
+      quantity,
+      selectedOptions: selectedVariant.selectedOptions || []
+    });
+
     toast.success("Adicionado à sacola", {
-      description: `${quantity}x ${product.name} foi adicionado com sucesso.`,
+      description: `${quantity}x ${product.title} foi adicionado com sucesso.`,
     });
   };
 
@@ -84,7 +258,7 @@ function ProductPage() {
             <ChevronRight className="h-3 w-3" />
             <Link to="/produtos" className="hover:text-[#D4AF37] transition-colors">Produtos</Link>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-[#0F3A45]">{product.name}</span>
+            <span className="text-[#0F3A45] truncate max-w-[200px]">{product.title}</span>
           </div>
         </div>
       </div>
@@ -103,26 +277,26 @@ function ProductPage() {
                 {/* Main Image */}
                 <div className="aspect-square bg-white mb-4 overflow-hidden">
                   <img
-                    src={product.images[selectedImage] || product.images[0]}
-                    alt={product.name}
+                    src={images[selectedImage]?.node?.url || images[0]?.node?.url}
+                    alt={images[selectedImage]?.node?.altText || product.title}
                     className="w-full h-full object-contain p-8"
                   />
                 </div>
 
                 {/* Thumbnail Gallery */}
-                {product.images.length > 1 && (
-                  <div className="flex gap-4">
-                    {product.images.map((img, i) => (
+                {images.length > 1 && (
+                  <div className="flex gap-4 overflow-x-auto pb-2">
+                    {images.map((img: any, i: number) => (
                       <button
                         key={i}
                         onClick={() => setSelectedImage(i)}
-                        className={`w-20 h-20 bg-white p-2 transition-all ${
+                        className={`flex-shrink-0 w-20 h-20 bg-white p-2 transition-all ${
                           selectedImage === i
                             ? "ring-2 ring-[#D4AF37]"
                             : "hover:ring-2 hover:ring-[#0F3A45]/20"
                         }`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-contain" />
+                        <img src={img.node?.url} alt="" className="w-full h-full object-contain" />
                       </button>
                     ))}
                   </div>
@@ -138,12 +312,12 @@ function ProductPage() {
             >
               {/* Brand */}
               <p className="text-[10px] uppercase tracking-[0.5em] text-[#D4AF37] font-bold mb-4">
-                {product.brand}
+                {product.vendor}
               </p>
 
               {/* Title */}
               <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-4">
-                {product.name}
+                {product.title}
               </h1>
 
               {/* Rating */}
@@ -161,13 +335,13 @@ function ProductPage() {
               {/* Price */}
               <div className="mb-8">
                 <div className="flex items-baseline gap-4 mb-2">
-                  {product.originalPrice && (
+                  {compareAtPrice && compareAtPrice > price && (
                     <span className="text-lg text-[#1A1A1A]/30 line-through">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.originalPrice)}
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(compareAtPrice)}
                     </span>
                   )}
                   <span className="text-4xl font-light text-[#1A1A1A]">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
+                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
                   </span>
                   {discount > 0 && (
                     <span className="bg-[#D4AF37] text-[#0F3A45] text-[10px] uppercase tracking-[0.2em] px-3 py-1 font-bold">
@@ -176,7 +350,7 @@ function ProductPage() {
                   )}
                 </div>
                 <p className="text-[11px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
-                  ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)} sem juros
+                  ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros
                 </p>
               </div>
 
@@ -185,10 +359,37 @@ function ProductPage() {
                 {product.description}
               </p>
 
+              {/* Variants */}
+              {variants.length > 1 && (
+                <div className="mb-8">
+                  <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#0F3A45] mb-4">
+                    Opções
+                  </h3>
+                  <div className="flex flex-wrap gap-2">
+                    {variants.map((v: any, i: number) => (
+                      <button
+                        key={v.node.id}
+                        onClick={() => setSelectedVariantIndex(i)}
+                        disabled={!v.node.availableForSale}
+                        className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
+                          selectedVariantIndex === i
+                            ? "bg-[#D4AF37] text-[#0F3A45]"
+                            : v.node.availableForSale
+                              ? "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37]"
+                              : "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
+                        }`}
+                      >
+                        {v.node.title}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Tags */}
               {product.tags && product.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-8">
-                  {product.tags.map((tag) => (
+                  {product.tags.map((tag: string) => (
                     <span
                       key={tag}
                       className="px-4 py-2 bg-[#0F3A45]/5 text-[9px] uppercase tracking-[0.2em] font-bold text-[#0F3A45]/60"
@@ -201,11 +402,11 @@ function ProductPage() {
 
               {/* Stock Status */}
               <div className="flex items-center gap-2 mb-8">
-                {product.inStock ? (
+                {selectedVariant?.availableForSale ? (
                   <>
                     <Check className="h-4 w-4 text-green-600" />
                     <span className="text-[11px] uppercase tracking-[0.2em] text-green-600 font-bold">
-                      Em estoque ({product.quantity} unidades)
+                      Em estoque
                     </span>
                   </>
                 ) : (
@@ -237,11 +438,15 @@ function ProductPage() {
 
                 <Button
                   onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all"
+                  disabled={!selectedVariant?.availableForSale || isLoading}
+                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all disabled:opacity-50"
                 >
-                  <ShoppingBag className="h-4 w-4 mr-3" />
-                  Adicionar à Sacola
+                  {isLoading ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-3" />
+                  ) : (
+                    <ShoppingBag className="h-4 w-4 mr-3" />
+                  )}
+                  {isLoading ? "Adicionando..." : "Adicionar à Sacola"}
                 </Button>
 
                 <button className="w-14 h-14 border border-[#0F3A45]/20 flex items-center justify-center hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
@@ -296,8 +501,8 @@ function ProductPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((product) => (
-                <LocalProductCard key={product.id} product={product} />
+              {relatedProducts.map((product: ShopifyProduct) => (
+                <ProductCard key={product.node.id} product={product} />
               ))}
             </div>
           </div>
