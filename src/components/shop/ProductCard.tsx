@@ -1,23 +1,27 @@
 import { Button } from "../ui/button";
-import { Heart, Eye, ShoppingBag } from "lucide-react";
+import { Heart, Eye, ShoppingBag, Check } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { ShopifyProduct } from "@/lib/shopify/client";
 import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 interface ProductCardProps {
   product: ShopifyProduct;
+  index?: number; // Para stagger animation
 }
 
 const MotionDiv = motion.div as any;
 const MotionImg = motion.img as any;
 
-export const ProductCard = ({ product }: ProductCardProps) => {
+export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
   const isLoading = useCartStore((state) => state.isLoading);
   const [isHovered, setIsHovered] = useState(false);
+  const [isAdded, setIsAdded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const imgRef = useRef<HTMLImageElement>(null);
 
   const selectedVariant = product.node.variants.edges[0]?.node;
   const images = product.node.images.edges;
@@ -28,7 +32,7 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!selectedVariant) return;
+    if (!selectedVariant || isAdded) return;
 
     await addItem({
       product,
@@ -38,6 +42,10 @@ export const ProductCard = ({ product }: ProductCardProps) => {
       quantity: 1,
       selectedOptions: selectedVariant.selectedOptions || []
     });
+
+    // Feedback visual de sucesso
+    setIsAdded(true);
+    setTimeout(() => setIsAdded(false), 2000);
 
     toast.success("Adicionado à sacola", {
       description: `${product.node.title} foi adicionado com sucesso.`,
@@ -57,10 +65,11 @@ export const ProductCard = ({ product }: ProductCardProps) => {
     <MotionDiv
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: true, margin: "-50px" }}
+      transition={{ delay: index * 0.1, duration: 0.5 }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full bg-white transition-all duration-1000 hover:shadow-[0_30px_60px_rgba(15,58,69,0.06)] p-2"
+      className="group flex flex-col h-full bg-white transition-all duration-500 hover:shadow-[0_30px_60px_rgba(15,58,69,0.08)] p-2 hover:-translate-y-1"
     >
       <Link
         to={`/produto/${product.node.handle}` as any}
@@ -85,8 +94,12 @@ export const ProductCard = ({ product }: ProductCardProps) => {
           </button>
         </div>
 
-        {/* Image with Fade Transition */}
+        {/* Image with Fade Transition and Lazy Loading */}
         <div className="w-full h-full relative">
+          {/* Placeholder skeleton while loading */}
+          {!imageLoaded && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[#F7F5F2] to-[#EBE8E4] animate-pulse" />
+          )}
           <AnimatePresence initial={false}>
             {!isHovered ? (
               <MotionImg
@@ -94,10 +107,12 @@ export const ProductCard = ({ product }: ProductCardProps) => {
                 src={mainImage?.url}
                 alt={mainImage?.altText || product.node.title}
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: imageLoaded ? 1 : 0 }}
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full object-cover"
-                transition={{ duration: 0.8 }}
+                transition={{ duration: 0.5 }}
+                loading="lazy"
+                onLoad={() => setImageLoaded(true)}
               />
             ) : (
               <MotionImg
@@ -108,21 +123,36 @@ export const ProductCard = ({ product }: ProductCardProps) => {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0 }}
                 className="absolute inset-0 w-full h-full object-cover"
-                transition={{ duration: 0.8 }}
+                transition={{ duration: 0.5 }}
+                loading="lazy"
               />
             )}
           </AnimatePresence>
         </div>
 
         {/* Add to Cart Overlay Button */}
-        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-all duration-1000 ease-[cubic-bezier(0.19,1,0.22,1)] z-10">
+        <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] z-10">
           <Button
             onClick={handleAddToCart}
-            disabled={isLoading || !selectedVariant}
-            className="w-full bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white border-none h-12 text-[10px] uppercase tracking-[0.3em] font-bold transition-all rounded-none"
+            disabled={isLoading || !selectedVariant || isAdded}
+            className={`w-full border-none h-12 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-300 rounded-none ${
+              isAdded
+                ? "bg-[#22c55e] text-white"
+                : "bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white"
+            }`}
             size="lg"
           >
-            {isLoading ? "Processando..." : (
+            {isLoading ? (
+              <span className="flex items-center gap-3">
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Adicionando...
+              </span>
+            ) : isAdded ? (
+              <span className="flex items-center gap-3">
+                <Check className="h-4 w-4" />
+                Adicionado!
+              </span>
+            ) : (
               <span className="flex items-center gap-3">
                 <ShoppingBag className="h-4 w-4" />
                 Adicionar à Sacola

@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppUpdate } from "../hooks/useAppUpdate";
 import { WhatsAppButton } from "../components/shop/WhatsAppButton";
+import { ScrollToTop } from "../components/ui/ScrollToTop";
 
 import {
   Outlet,
@@ -155,6 +156,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <ScrollToTop />
       {/* WhatsApp button desabilitado até ter número real */}
       {/* <WhatsAppButton phoneNumber="5511999999999" /> */}
       <Toaster position="top-center" />
