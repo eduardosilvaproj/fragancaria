@@ -32,6 +32,11 @@ const AUTHORIZED_BRANDS = [
     country: "Itália",
   },
   {
+    name: "Itallian Color",
+    logo: "https://italliancolor.com.br/wp-content/uploads/2023/01/logo-itallian.png",
+    country: "Brasil",
+  },
+  {
     name: "Cadiveu",
     logo: "https://cadiveu.com.br/cdn/shop/files/cadiveu-logo.png?v=1690910519&width=200",
     country: "Brasil",
