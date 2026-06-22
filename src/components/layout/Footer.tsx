@@ -8,7 +8,7 @@ import { toast } from "sonner";
 const COMPANY_INFO = {
   whatsapp: "", // Deixar vazio até ter número real
   whatsappFormatted: "", // Ex: "(11) 99999-9999"
-  cnpj: "", // Deixar vazio até ter CNPJ real
+  cnpj: "20.590.412/0001-36",
   instagram: "", // Ex: "fragranciaria"
   youtube: "", // Ex: "fragranciaria"
 };
