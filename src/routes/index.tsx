@@ -100,10 +100,10 @@ const GET_FEATURED_PRODUCTS = `
 `;
 
 const BRANDS_DISPLAY = [
-  { name: "L'Oréal Professionnel", image: "https://http2.mlstatic.com/D_Q_NP_2X_787894-MLA109316797766_042026-E.webp", desc: "Expertise francesa" },
-  { name: "Wella Professionals", image: "https://http2.mlstatic.com/D_Q_NP_2X_797893-MLA110167764332_042026-E.webp", desc: "Excelência em cor" },
-  { name: "Keune", image: "https://http2.mlstatic.com/D_Q_NP_2X_960184-MLA112462500109_052026-E.webp", desc: "Tecnologia holandesa" },
-  { name: "Schwarzkopf", image: "https://http2.mlstatic.com/D_Q_NP_2X_688264-MLA110409088670_052026-E.webp", desc: "Inovação alemã" },
+  { name: "L'Oréal Professionnel", image: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/Loreal_yhp0tp.png", desc: "Expertise francesa" },
+  { name: "Wella Professionals", image: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140935/wella_mpinsr.png", desc: "Excelência em cor" },
+  { name: "Keune", image: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/keune_tptbl9.png", desc: "Tecnologia holandesa" },
+  { name: "Schwarzkopf", image: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/schwarzkopf_dufj7y.png", desc: "Inovação alemã" },
 ];
 
 const NEEDS = [

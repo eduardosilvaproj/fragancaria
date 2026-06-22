@@ -5,40 +5,41 @@ import { Link } from "@tanstack/react-router";
 const MotionDiv = motion.div as any;
 
 // Marcas com autorização documentada - Revendedor Autorizado
+// Logos hospedados no Cloudinary
 const AUTHORIZED_BRANDS = [
   {
     name: "L'Oréal Professionnel",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e5/L%27Or%C3%A9al_Professionnel_logo.svg/512px-L%27Or%C3%A9al_Professionnel_logo.svg.png",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/Loreal_yhp0tp.png",
     country: "França",
   },
   {
     name: "Wella Professionals",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/0/05/Wella_logo.svg/512px-Wella_logo.svg.png",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140935/wella_mpinsr.png",
     country: "Alemanha",
   },
   {
     name: "Schwarzkopf",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5c/Schwarzkopf_logo.svg/512px-Schwarzkopf_logo.svg.png",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/schwarzkopf_dufj7y.png",
     country: "Alemanha",
   },
   {
     name: "Keune",
-    logo: "https://www.keune.com/cdn/shop/files/keune-logo-black.png?v=1701175038&width=200",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/keune_tptbl9.png",
     country: "Holanda",
   },
   {
     name: "Alfaparf Milano",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8a/Alfaparf_Milano_logo.svg/512px-Alfaparf_Milano_logo.svg.png",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/f_auto,q_auto/alfaparf_lrlhph",
     country: "Itália",
   },
   {
     name: "Itallian Color",
-    logo: "https://italliancolor.com.br/wp-content/uploads/2023/01/logo-itallian.png",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/itallian_wrvypz.png",
     country: "Brasil",
   },
   {
     name: "Cadiveu",
-    logo: "https://cadiveu.com.br/cdn/shop/files/cadiveu-logo.png?v=1690910519&width=200",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/cadiveu_vtldhn.png",
     country: "Brasil",
   },
 ];
