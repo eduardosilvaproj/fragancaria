@@ -13,6 +13,11 @@ const AUTHORIZED_BRANDS = [
     country: "França",
   },
   {
+    name: "Kérastase",
+    logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140934/kerastase-logo-png_seeklogo-78062_oawn3c.png",
+    country: "França",
+  },
+  {
     name: "Wella Professionals",
     logo: "https://res.cloudinary.com/dg9oqfxoq/image/upload/v1782140935/wella_mpinsr.png",
     country: "Alemanha",
@@ -77,7 +82,7 @@ export const AuthorizedBrands = () => {
         </div>
 
         {/* Brands Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-6">
           {AUTHORIZED_BRANDS.map((brand, i) => (
             <Link
               key={brand.name}
