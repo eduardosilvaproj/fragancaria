@@ -151,12 +151,22 @@ function ProductPage() {
   const addItem = useCartStore((state) => state.addItem);
   const isLoading = useCartStore((state) => state.isLoading);
 
-  const { data: productData, isLoading: productLoading, error } = useQuery({
+  const { data: productData, isLoading: productLoading, error, isError } = useQuery({
     queryKey: ["product", handle],
-    queryFn: () => storefrontApiRequest(GET_PRODUCT_BY_HANDLE, { handle }),
+    queryFn: async () => {
+      console.log("Fetching product with handle:", handle);
+      const result = await storefrontApiRequest(GET_PRODUCT_BY_HANDLE, { handle });
+      console.log("Product API response:", result);
+      return result;
+    },
+    retry: 2,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const product = productData?.data?.product;
+
+  // Debug log
+  console.log("ProductPage state:", { handle, productLoading, isError, error, product: !!product });
 
   const { data: relatedData } = useQuery({
     queryKey: ["related-products", product?.productType],
