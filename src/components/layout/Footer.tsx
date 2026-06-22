@@ -82,7 +82,7 @@ export const Footer = () => {
               </div>
               <div>
                 <p className="text-[9px] uppercase tracking-widest text-white/30 font-bold mb-1">WhatsApp</p>
-                <p className="text-sm font-bold text-white tracking-wider">(11) 99999-9999</p>
+                <a href="https://wa.me/5511999999999" className="text-sm font-bold text-white tracking-wider hover:text-[#D4AF37] transition-colors">(11) 99999-9999</a>
               </div>
             </div>
 

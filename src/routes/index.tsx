@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
-import { 
+import {
   ArrowRight,
   Mouse,
   ChevronDown,
@@ -11,6 +11,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { storefrontApiRequest } from "@/lib/shopify/client";
 import { ProductCard } from "@/components/shop/ProductCard";
+import { LocalProductCard } from "@/components/shop/LocalProductCard";
 import { BenefitBar } from "@/components/shop/BenefitBar";
 import { RitualSection } from "@/components/shop/RitualSection";
 import { ConsultancySection } from "@/components/shop/ConsultancySection";
@@ -23,6 +24,7 @@ import { FlashOffer } from "@/components/shop/FlashOffer";
 import { SocialProof } from "@/components/shop/SocialProof";
 import { ShopByCategory } from "@/components/shop/ShopByCategory";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
+import { PRODUCTS, getFeaturedProducts, getNewProducts, getProductsOnSale, BRANDS } from "@/data/products";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef } from "react";
 
@@ -90,19 +92,24 @@ const GET_FEATURED_PRODUCTS = `
   }
 `;
 
-const BRANDS = [
-  { name: "Kérastase", image: "https://images.unsplash.com/photo-1519735777090-ec97162dc266?q=80&w=800&auto=format&fit=crop" },
-  { name: "Keune", image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800&auto=format&fit=crop" },
-  { name: "Wella Professionals", image: "https://images.unsplash.com/photo-1527799820374-dcf8d9d4a388?q=80&w=800&auto=format&fit=crop" },
-  { name: "Sebastian", image: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?q=80&w=800&auto=format&fit=crop" },
+const BRANDS_DISPLAY = [
+  { name: "L'Oréal Professionnel", image: "https://http2.mlstatic.com/D_Q_NP_2X_787894-MLA109316797766_042026-E.webp", desc: "Expertise francesa" },
+  { name: "Wella Professionals", image: "https://http2.mlstatic.com/D_Q_NP_2X_797893-MLA110167764332_042026-E.webp", desc: "Excelência em cor" },
+  { name: "Keune", image: "https://http2.mlstatic.com/D_Q_NP_2X_960184-MLA112462500109_052026-E.webp", desc: "Tecnologia holandesa" },
+  { name: "Schwarzkopf", image: "https://http2.mlstatic.com/D_Q_NP_2X_688264-MLA110409088670_052026-E.webp", desc: "Inovação alemã" },
 ];
 
 const NEEDS = [
-  { label: "Hidratação", image: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=400&auto=format&fit=crop" },
-  { label: "Nutrição", image: "https://images.unsplash.com/photo-1519735777090-ec97162dc266?q=80&w=400&auto=format&fit=crop" },
-  { label: "Reconstrução", image: "https://images.unsplash.com/photo-1580618672591-eb180b1a973f?q=80&w=400&auto=format&fit=crop" },
-  { label: "Loiros", image: "https://images.unsplash.com/photo-1605497788044-5a32c7078486?q=80&w=400&auto=format&fit=crop" },
+  { label: "Coloração", image: "https://http2.mlstatic.com/D_Q_NP_2X_776597-MLA107889014479_032026-E.webp", slug: "coloracao" },
+  { label: "Finalizadores", image: "https://http2.mlstatic.com/D_Q_NP_2X_611634-MLU74610413953_022024-E.webp", slug: "finalizadores" },
+  { label: "Shampoos", image: "https://http2.mlstatic.com/D_Q_NP_2X_774537-MLA112858976689_062026-E.webp", slug: "shampoos" },
+  { label: "Kits", image: "https://http2.mlstatic.com/D_Q_NP_2X_904887-MLA107488640188_032026-E.webp", slug: "kits" },
 ];
+
+// Produtos reais do catálogo
+const featuredProducts = PRODUCTS.filter(p => p.featured).slice(0, 4);
+const newProducts = PRODUCTS.filter(p => p.isNew).slice(0, 4);
+const saleProducts = PRODUCTS.filter(p => p.originalPrice && p.originalPrice > p.price).slice(0, 4);
 
 const FEATURED_PRODUCTS_MOCK = [
   {
@@ -344,7 +351,7 @@ function Index() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {BRANDS.map((brand, i) => (
+              {BRANDS_DISPLAY.map((brand, i) => (
                 <MotionDiv
                   key={brand.name}
                   initial={{ opacity: 0, y: 40 }}
@@ -356,12 +363,13 @@ function Index() {
                   <img
                     src={brand.image}
                     alt={brand.name}
-                    className="w-full h-full object-cover grayscale transition-all duration-[2000ms] group-hover:grayscale-0 group-hover:scale-110"
+                    className="w-full h-full object-contain p-8 bg-white transition-all duration-[2000ms] group-hover:scale-110"
                   />
-                  <div className="absolute inset-0 bg-[#0F3A45]/40 group-hover:bg-[#D4AF37]/20 transition-all duration-1000" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8 opacity-0 translate-y-8 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-700">
-                    <h3 className="text-white font-serif text-3xl text-center mb-8">{brand.name}</h3>
-                    <Button className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500">
+                  <div className="absolute inset-0 bg-[#0F3A45]/60 group-hover:bg-[#D4AF37]/30 transition-all duration-1000" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                    <h3 className="text-white font-serif text-2xl md:text-3xl text-center mb-2">{brand.name}</h3>
+                    <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-6">{brand.desc}</p>
+                    <Button className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0">
                       Explorar Coleção
                     </Button>
                   </div>
@@ -411,8 +419,8 @@ function Index() {
         <CampaignBanner />
         <ShopByCategory />
 
-        {/* PRODUCTS SECTION */}
-        <section className="bg-white">
+        {/* PRODUCTS SECTION - DESTAQUES */}
+        <section className="bg-white py-20">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-16">
               <div className="section-label !justify-center">
@@ -423,35 +431,37 @@ function Index() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-              {products.map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {featuredProducts.map((product) => (
+                <LocalProductCard key={product.id} product={product} />
               ))}
             </div>
 
             <div className="mt-20 flex justify-center">
+              <Link to="/produtos">
                 <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
                     Ver Toda a Coleção
                 </Button>
+              </Link>
             </div>
           </div>
         </section>
 
-        {/* NOVIDADES SECTION */}
-        <section className="bg-[#F7F5F2]">
+        {/* OFERTAS SECTION */}
+        <section className="bg-[#F7F5F2] py-20">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-16">
               <div className="section-label !justify-center">
-                <span>Lançamentos</span>
+                <span>Ofertas</span>
               </div>
               <h2 className="font-serif font-light text-[#1A1A1A] text-3xl md:text-4xl">
-                Novidades <span className="italic text-[#D4AF37]">Recém-Chegadas</span>
+                Promoções <span className="italic text-[#D4AF37]">Imperdíveis</span>
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-              {products.slice(0, 4).map((product: any) => (
-                <ProductCard key={product.node.id} product={product} />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {saleProducts.map((product) => (
+                <LocalProductCard key={product.id} product={product} />
               ))}
             </div>
           </div>
@@ -465,7 +475,7 @@ function Index() {
             <div className="bg-[#0F3A45] text-white p-12 md:p-20 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
                     <img
-                        src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=800"
+                        src="https://http2.mlstatic.com/D_Q_NP_2X_787894-MLA109316797766_042026-E.webp"
                         className="w-full h-full object-cover"
                         alt="Background"
                     />
@@ -473,9 +483,11 @@ function Index() {
                 <div className="relative z-10 max-w-xl">
                     <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
                     <p className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-10">Os melhores produtos utilizados pelos principais salões do Brasil.</p>
-                    <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
-                        Conhecer Coleção
-                    </Button>
+                    <Link to="/produtos">
+                      <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
+                          Conhecer Coleção
+                      </Button>
+                    </Link>
                 </div>
             </div>
           </div>
