@@ -47,9 +47,30 @@ export const useCartStore = create<CartStore>()(
       addItem: async (item) => {
         const { items, cartId, clearCart } = get();
         const existingItem = items.find(i => i.variantId === item.variantId);
-        
+        const isLocalVariant = item.variantId.startsWith('local-');
+
         set({ isLoading: true });
         try {
+          // Se é um produto local (sem variantId Shopify válido), adicionar apenas ao estado local
+          if (isLocalVariant) {
+            if (existingItem) {
+              // Atualizar quantidade do item local existente
+              const currentItems = get().items;
+              set({
+                items: currentItems.map(i =>
+                  i.variantId === item.variantId
+                    ? { ...i, quantity: i.quantity + item.quantity }
+                    : i
+                )
+              });
+            } else {
+              // Adicionar novo item local
+              const currentItems = get().items;
+              set({ items: [...currentItems, { ...item, lineId: null }] });
+            }
+            return;
+          }
+
           if (!cartId) {
             const result = await createShopifyCart({ ...item, lineId: null });
             if (result) {
@@ -93,10 +114,19 @@ export const useCartStore = create<CartStore>()(
           await get().removeItem(variantId);
           return;
         }
-        
+
         const { items, cartId, clearCart } = get();
         const item = items.find(i => i.variantId === variantId);
-        if (!item?.lineId || !cartId) return;
+        if (!item) return;
+
+        // Se é um item local, atualizar apenas no estado
+        if (variantId.startsWith('local-')) {
+          const currentItems = get().items;
+          set({ items: currentItems.map(i => i.variantId === variantId ? { ...i, quantity } : i) });
+          return;
+        }
+
+        if (!item.lineId || !cartId) return;
 
         set({ isLoading: true });
         try {
@@ -117,7 +147,17 @@ export const useCartStore = create<CartStore>()(
       removeItem: async (variantId) => {
         const { items, cartId, clearCart } = get();
         const item = items.find(i => i.variantId === variantId);
-        if (!item?.lineId || !cartId) return;
+        if (!item) return;
+
+        // Se é um item local, remover apenas do estado
+        if (variantId.startsWith('local-')) {
+          const currentItems = get().items;
+          const newItems = currentItems.filter(i => i.variantId !== variantId);
+          newItems.length === 0 ? clearCart() : set({ items: newItems });
+          return;
+        }
+
+        if (!item.lineId || !cartId) return;
 
         set({ isLoading: true });
         try {

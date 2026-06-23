@@ -8,7 +8,6 @@ import { useState, useMemo } from "react";
 import { toast } from "sonner";
 import { motion } from "framer-motion";
 import {
-  Star,
   Heart,
   ShoppingBag,
   Truck,
@@ -18,7 +17,9 @@ import {
   Minus,
   Plus,
   Check,
+  Loader2,
 } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
 
 const MotionDiv = motion.div as any;
 
@@ -35,6 +36,7 @@ function ProductPage() {
   const { id } = Route.useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const { addItem, isLoading } = useCartStore();
 
   // Buscar produto pelo ID nos dados locais
   const product = useMemo(() => {
@@ -72,7 +74,51 @@ function ProductPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
+    // variantId: usar o sku se existir, senão usar o id do produto como local
+    const variantId = product.sku
+      ? `gid://shopify/ProductVariant/${product.sku}`
+      : `local-${product.id}`;
+
+    await addItem({
+      product: {
+        node: {
+          id: `local-${product.id}`,
+          title: product.name,
+          description: product.description || "",
+          handle: product.id,
+          vendor: product.brand || "",
+          productType: product.category || "",
+          tags: product.tags || [],
+          priceRange: {
+            minVariantPrice: { amount: String(product.price), currencyCode: "BRL" }
+          },
+          images: {
+            edges: product.images[0]
+              ? [{ node: { url: product.images[0], altText: product.name } }]
+              : []
+          },
+          variants: {
+            edges: [{
+              node: {
+                id: variantId,
+                title: "Padrão",
+                price: { amount: String(product.price), currencyCode: "BRL" },
+                availableForSale: product.inStock !== false,
+                selectedOptions: []
+              }
+            }]
+          },
+          options: []
+        }
+      },
+      variantId,
+      variantTitle: "Padrão",
+      price: { amount: String(product.price), currencyCode: "BRL" },
+      quantity,
+      selectedOptions: []
+    });
+
     toast.success("Adicionado à sacola", {
       description: `${quantity}x ${product.name} foi adicionado com sucesso.`,
     });
@@ -150,21 +196,12 @@ function ProductPage() {
               )}
 
               {/* Title */}
-              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-4">
+              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-6">
                 {product.name}
               </h1>
 
-              {/* Rating */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex items-center gap-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
-                  ))}
-                </div>
-                <span className="text-[11px] text-[#1A1A1A]/40 tracking-widest font-bold">
-                  4.9/5 (128 avaliações)
-                </span>
-              </div>
+              {/* Avaliações: exibir apenas quando integração com reviews estiver ativa */}
+              {/* TODO: conectar ao Judge.me ou Shopify Product Reviews */}
 
               {/* Price */}
               <div className="mb-8">
@@ -238,10 +275,20 @@ function ProductPage() {
 
                 <Button
                   onClick={handleAddToCart}
-                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all"
+                  disabled={isLoading}
+                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all disabled:opacity-50"
                 >
-                  <ShoppingBag className="h-4 w-4 mr-3" />
-                  Adicionar à Sacola
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-3 animate-spin" />
+                      Adicionando...
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="h-4 w-4 mr-3" />
+                      Adicionar à Sacola
+                    </>
+                  )}
                 </Button>
 
                 <button className="w-14 h-14 border border-[#0F3A45]/20 flex items-center justify-center hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
@@ -295,7 +342,7 @@ function ProductPage() {
               </h2>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {relatedProducts.map((p) => (
                 <LocalProductCard key={p.id} product={p} />
               ))}
