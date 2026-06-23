@@ -184,6 +184,14 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             <span className="text-[22px] font-light text-[#1A1A1A] tracking-tighter">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
             </span>
+            {hasDiscount && compareAtPrice && (
+              <span className="bg-[#D4AF37] text-[#0F3A45] text-[9px] px-2 py-0.5 font-bold">
+                -{Math.round(((compareAtPrice - price) / compareAtPrice) * 100)}%
+              </span>
+            )}
+          </div>
+          <div className="text-[10px] text-green-600 font-semibold">
+            {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 0.95)} no PIX
           </div>
           <div className="text-[9px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
             ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros

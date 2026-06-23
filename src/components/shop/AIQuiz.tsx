@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { ChevronRight, ArrowLeft, CheckCircle2, ShoppingCart, Sparkles, Clock } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { storefrontApiRequest } from "@/lib/shopify/client";
 
 const MotionDiv = motion.div as any;
 
@@ -29,10 +31,47 @@ const QUESTIONS = [
   }
 ];
 
+const GET_RECOMMENDED_PRODUCT = `
+  query GetRecommendedProduct($first: Int!) {
+    products(first: $first, query: "product_type:Kit") {
+      edges {
+        node {
+          id
+          title
+          handle
+          vendor
+          images(first: 1) {
+            edges {
+              node {
+                url
+                altText
+              }
+            }
+          }
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
 export const AIQuiz = () => {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [showResult, setShowResult] = useState(false);
+
+  const { data: productsData } = useQuery({
+    queryKey: ["quiz-recommended-product"],
+    queryFn: () => storefrontApiRequest(GET_RECOMMENDED_PRODUCT, { first: 5 }),
+    enabled: showResult,
+  });
+
+  const recommendedProduct = productsData?.data?.products?.edges?.[0]?.node;
 
   const handleAnswer = (answer: string) => {
     const newAnswers = [...answers, answer];
@@ -52,125 +91,146 @@ export const AIQuiz = () => {
 
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
+  const formatPrice = (amount: string, currency: string) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: currency
+    }).format(parseFloat(amount));
+  };
+
   return (
-    <section className="py-24 bg-white overflow-hidden">
+    <section className="py-16 bg-white overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
-        <div className="max-w-6xl mx-auto bg-white overflow-hidden flex flex-col md:flex-row shadow-[0_50px_120px_rgba(0,0,0,0.07)] border border-black/[0.04]">
+        <div className="text-center mb-10">
+          <span className="text-[10px] uppercase tracking-[0.4em] text-[#D4AF37] font-bold">Diagnóstico</span>
+          <h2 className="font-serif font-light text-[#1A1A1A] text-2xl md:text-3xl mt-1">
+            Descubra seu Ritual Ideal
+          </h2>
+        </div>
+
+        <div className="max-w-4xl mx-auto bg-white overflow-hidden flex flex-col md:flex-row shadow-lg border border-black/5">
           {/* Left Side: Info & Progress */}
-          <div className="md:w-[40%] bg-[#1A1A1A] text-white p-10 md:p-14 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:w-[35%] bg-[#0F3A45] text-white p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-                <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-[#D4AF37] rounded-full blur-[100px]" />
+              <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-[#D4AF37] rounded-full blur-[100px]" />
             </div>
-            
+
             <div className="relative z-10">
-              <div className="flex items-center gap-3 text-[#D4AF37] mb-8">
-                <Sparkles className="h-5 w-5" />
-                <span className="text-[10px] uppercase tracking-[0.4em] font-bold">Diagnóstico Exclusivo</span>
+              <div className="flex items-center gap-2 text-[#D4AF37] mb-6">
+                <Sparkles className="h-4 w-4" />
+                <span className="text-[9px] uppercase tracking-[0.3em] font-bold">Quiz Personalizado</span>
               </div>
-              <h3 className="font-serif text-4xl md:text-5xl mb-8 font-light leading-tight">Ciência e <span className="italic text-[#D4AF37]">Beleza</span></h3>
-              <p className="text-white/40 text-sm leading-relaxed mb-12 font-light">Nosso algoritmo analisa as necessidades específicas do seu fio para criar um ritual personalizado de alta performance.</p>
-              
-              <div className="space-y-6">
-                <div className="flex items-center gap-4">
-                    <Clock className="h-4 w-4 text-[#D4AF37]/60" />
-                    <span className="text-[10px] uppercase tracking-widest text-white/60">Tempo estimado: 45 segundos</span>
-                </div>
+              <h3 className="font-serif text-2xl md:text-3xl mb-4 font-light">Encontre os produtos <span className="italic text-[#D4AF37]">certos</span></h3>
+              <p className="text-white/50 text-xs leading-relaxed mb-8">Responda 4 perguntas rápidas e receba recomendações personalizadas.</p>
+
+              <div className="flex items-center gap-3">
+                <Clock className="h-3 w-3 text-[#D4AF37]/60" />
+                <span className="text-[9px] uppercase tracking-wider text-white/50">~45 segundos</span>
               </div>
             </div>
 
-            <div className="relative z-10 mt-12">
-              <div className="flex justify-between items-end mb-4">
-                <span className="text-[10px] uppercase tracking-[0.3em] font-bold text-[#D4AF37]">Progresso</span>
-                <span className="text-[10px] uppercase tracking-widest text-white/40">{step + 1} de {QUESTIONS.length}</span>
+            <div className="relative z-10 mt-8">
+              <div className="flex justify-between items-end mb-3">
+                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#D4AF37]">Progresso</span>
+                <span className="text-[9px] text-white/40">{step + 1}/{QUESTIONS.length}</span>
               </div>
-              <div className="h-[2px] w-full bg-white/10">
-                <MotionDiv 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress}%` }}
-                    className="h-full bg-[#D4AF37]" 
+              <div className="h-1 w-full bg-white/10 rounded-full">
+                <MotionDiv
+                  initial={{ width: 0 }}
+                  animate={{ width: `${progress}%` }}
+                  className="h-full bg-[#D4AF37] rounded-full"
                 />
               </div>
             </div>
           </div>
 
           {/* Right Side: Questions/Result */}
-          <div className="flex-1 p-10 md:p-20 bg-white min-h-[500px] flex flex-col justify-center">
+          <div className="flex-1 p-8 md:p-12 bg-white min-h-[400px] flex flex-col justify-center">
             <AnimatePresence mode="wait">
               {!showResult ? (
-                <MotionDiv 
+                <MotionDiv
                   key={step}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.6 }}
+                  exit={{ opacity: 0, y: -15 }}
+                  transition={{ duration: 0.4 }}
                   className="flex-1 flex flex-col justify-center"
                 >
                   {step > 0 && (
-                    <button 
+                    <button
                       onClick={() => setStep(step - 1)}
-                      className="flex items-center gap-2 text-[10px] uppercase tracking-widest text-[#1A1A1A]/30 mb-10 hover:text-[#D4AF37] transition-colors group"
+                      className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-[#1A1A1A]/30 mb-6 hover:text-[#D4AF37] transition-colors group"
                     >
                       <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" /> Voltar
                     </button>
                   )}
-                  <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">Questão 0{step + 1}</h4>
-                  <h2 className="font-serif text-4xl md:text-5xl text-[#1A1A1A] mb-12 font-light leading-tight">{QUESTIONS[step].question}</h2>
-                  <div className="grid grid-cols-1 gap-4">
+                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#D4AF37] mb-2">Questão {step + 1}</h4>
+                  <h2 className="font-serif text-2xl md:text-3xl text-[#1A1A1A] mb-8 font-light">{QUESTIONS[step].question}</h2>
+                  <div className="grid grid-cols-1 gap-3">
                     {QUESTIONS[step].options.map(option => (
-                      <button 
+                      <button
                         key={option}
                         onClick={() => handleAnswer(option)}
-                        className="p-8 border border-black/[0.03] hover:border-[#D4AF37] hover:bg-[#F7F5F2] text-left transition-all group flex items-center justify-between"
+                        className="p-5 border border-black/5 hover:border-[#D4AF37] hover:bg-[#F7F5F2] text-left transition-all group flex items-center justify-between"
                       >
-                        <span className="text-xs uppercase tracking-[0.2em] font-bold text-[#1A1A1A]/80">{option}</span>
-                        <div className="w-8 h-8 rounded-full border border-black/5 flex items-center justify-center group-hover:bg-[#D4AF37] group-hover:border-[#D4AF37] transition-all">
-                            <ChevronRight className="h-4 w-4 text-[#D4AF37] group-hover:text-white transition-all" />
-                        </div>
+                        <span className="text-[11px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/70">{option}</span>
+                        <ChevronRight className="h-4 w-4 text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-all" />
                       </button>
                     ))}
                   </div>
                 </MotionDiv>
               ) : (
-                <MotionDiv 
+                <MotionDiv
                   initial={{ opacity: 0, scale: 0.98 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.8 }}
+                  transition={{ duration: 0.5 }}
                   className="flex-1 flex flex-col items-center text-center justify-center"
                 >
-                  <div className="w-24 h-24 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-10">
-                    <CheckCircle2 className="h-10 w-10 text-[#D4AF37]" />
+                  <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-6">
+                    <CheckCircle2 className="h-8 w-8 text-[#D4AF37]" />
                   </div>
-                  <h4 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-4">Análise Concluída</h4>
-                  <h2 className="font-serif text-5xl text-[#1A1A1A] mb-8 font-light italic">Seu Ritual <span className="text-[#D4AF37]">Personalizado</span></h2>
-                  <p className="text-[#1A1A1A]/50 text-sm mb-12 max-w-sm font-light leading-relaxed">Identificamos as necessidades dos seus fios. O ritual abaixo foi selecionado por nossos especialistas para o seu perfil.</p>
-                  
-                  <div className="bg-[#F7F5F2] p-10 w-full mb-12 flex items-center gap-8 text-left border border-black/[0.03] group hover:border-[#D4AF37]/30 transition-all cursor-pointer">
-                    <div className="relative w-24 h-24 shrink-0 overflow-hidden">
-                        <img
-                        src="https://images.unsplash.com/photo-1608248597279-f99d160bfcbc?q=80&w=200&auto=format&fit=crop"
-                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                        alt="Recommended"
-                        />
-                    </div>
-                    <div>
-                      <p className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold mb-2">Recomendação Premium</p>
-                      <h5 className="font-serif text-2xl mb-2 text-[#1A1A1A] font-light">Kérastase Nutritive Kit</h5>
-                      <p className="text-xl font-light text-[#1A1A1A]">R$ 542,00</p>
-                    </div>
-                  </div>
+                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#D4AF37] mb-2">Análise Concluída</h4>
+                  <h2 className="font-serif text-2xl text-[#1A1A1A] mb-6 font-light">Seu Ritual <span className="italic text-[#D4AF37]">Personalizado</span></h2>
 
-                  <div className="flex flex-col sm:flex-row gap-4 w-full">
+                  {recommendedProduct ? (
+                    <Link to={`/produto/${recommendedProduct.handle}` as any} className="w-full">
+                      <div className="bg-[#F7F5F2] p-6 w-full mb-8 flex items-center gap-6 text-left border border-black/5 group hover:border-[#D4AF37]/30 transition-all cursor-pointer">
+                        <div className="relative w-20 h-20 shrink-0 overflow-hidden bg-white">
+                          {recommendedProduct.images?.edges?.[0]?.node?.url && (
+                            <img
+                              src={recommendedProduct.images.edges[0].node.url}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                              alt={recommendedProduct.title}
+                            />
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-[8px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-1">Recomendação</p>
+                          <h5 className="font-serif text-lg mb-1 text-[#1A1A1A] font-light line-clamp-2">{recommendedProduct.title}</h5>
+                          <p className="text-lg font-light text-[#1A1A1A]">
+                            {formatPrice(recommendedProduct.priceRange.minVariantPrice.amount, recommendedProduct.priceRange.minVariantPrice.currencyCode)}
+                          </p>
+                        </div>
+                      </div>
+                    </Link>
+                  ) : (
+                    <div className="bg-[#F7F5F2] p-6 w-full mb-8 text-center">
+                      <p className="text-sm text-[#1A1A1A]/50">Carregando recomendação...</p>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <Link to="/produtos" search={{ productType: "Kit" }} className="flex-1">
-                      <Button className="bg-[#1A1A1A] hover:bg-[#D4AF37] text-white w-full h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-500 shadow-xl">
-                        <ShoppingCart className="h-4 w-4 mr-3" /> Ver Kits Recomendados
+                      <Button className="bg-[#0F3A45] hover:bg-[#D4AF37] text-white w-full h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all">
+                        <ShoppingCart className="h-4 w-4 mr-2" /> Ver Todos os Kits
                       </Button>
                     </Link>
                     <Button
                       variant="outline"
                       onClick={resetQuiz}
-                      className="border-black/10 hover:border-[#1A1A1A] flex-1 h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-500"
+                      className="border-black/10 hover:border-[#0F3A45] h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all"
                     >
-                      Refazer Diagnóstico
+                      Refazer
                     </Button>
                   </div>
                 </MotionDiv>
