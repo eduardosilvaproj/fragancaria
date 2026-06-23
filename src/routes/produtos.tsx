@@ -1,18 +1,21 @@
-import { createFileRoute, Link, useSearch } from "@tanstack/react-router";
+import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
-import { PRODUCTS, BRANDS, Product } from "@/data/products";
+import { PRODUCTS, Product } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Filter, X, ShoppingCart } from "lucide-react";
+import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
 import { motion } from "framer-motion";
 
 const MotionDiv = motion.div as any;
+
+const PRODUCTS_PER_PAGE = 24;
 
 // Search params type
 type ProductsSearch = {
   vendor?: string;
   productType?: string;
+  page?: number;
 };
 
 export const Route = createFileRoute("/produtos")({
@@ -20,6 +23,7 @@ export const Route = createFileRoute("/produtos")({
     return {
       vendor: search.vendor as string | undefined,
       productType: search.productType as string | undefined,
+      page: Number(search.page) || 1,
     };
   },
   head: () => ({
@@ -40,8 +44,8 @@ function LocalProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      to="/produto/$handle"
-      params={{ handle: product.id }}
+      to="/produto/$id"
+      params={{ id: product.id }}
       className="group block bg-white border border-[#0F3A45]/5 hover:border-[#D4AF37]/30 transition-all duration-500 hover:shadow-lg"
     >
       {/* Image */}
@@ -90,21 +94,116 @@ function LocalProductCard({ product }: { product: Product }) {
   );
 }
 
+// Componente de Paginação
+function Pagination({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: {
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+}) {
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+
+    if (totalPages <= 7) {
+      // Mostra todas as páginas se tiver 7 ou menos
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      // Sempre mostra a primeira página
+      pages.push(1);
+
+      if (currentPage > 3) {
+        pages.push('...');
+      }
+
+      // Páginas ao redor da atual
+      const start = Math.max(2, currentPage - 1);
+      const end = Math.min(totalPages - 1, currentPage + 1);
+
+      for (let i = start; i <= end; i++) {
+        if (!pages.includes(i)) pages.push(i);
+      }
+
+      if (currentPage < totalPages - 2) {
+        pages.push('...');
+      }
+
+      // Sempre mostra a última página
+      if (!pages.includes(totalPages)) pages.push(totalPages);
+    }
+
+    return pages;
+  };
+
+  if (totalPages <= 1) return null;
+
+  return (
+    <div className="flex items-center justify-center gap-2 mt-12">
+      {/* Botão Anterior */}
+      <button
+        onClick={() => onPageChange(currentPage - 1)}
+        disabled={currentPage === 1}
+        className="flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold border border-[#0F3A45]/20 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#0F3A45]/20 disabled:hover:text-inherit"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Anterior
+      </button>
+
+      {/* Números das Páginas */}
+      <div className="flex items-center gap-1">
+        {getPageNumbers().map((page, index) => (
+          page === '...' ? (
+            <span key={`ellipsis-${index}`} className="px-3 py-2 text-[#0F3A45]/40">
+              ...
+            </span>
+          ) : (
+            <button
+              key={page}
+              onClick={() => onPageChange(page as number)}
+              className={`w-10 h-10 flex items-center justify-center text-[11px] font-bold transition-all ${
+                currentPage === page
+                  ? "bg-[#D4AF37] text-[#0F3A45]"
+                  : "border border-[#0F3A45]/20 hover:border-[#D4AF37] hover:text-[#D4AF37]"
+              }`}
+            >
+              {page}
+            </button>
+          )
+        ))}
+      </div>
+
+      {/* Botão Próximo */}
+      <button
+        onClick={() => onPageChange(currentPage + 1)}
+        disabled={currentPage === totalPages}
+        className="flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold border border-[#0F3A45]/20 hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#0F3A45]/20 disabled:hover:text-inherit"
+      >
+        Próximo
+        <ChevronRight className="h-4 w-4" />
+      </button>
+    </div>
+  );
+}
+
 function ProdutosPage() {
-  // Get search params from URL
+  const navigate = useNavigate();
   const search = useSearch({ from: "/produtos" });
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
   const [sortBy, setSortBy] = useState<string>("featured");
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(search.page || 1);
 
   // Sync state with URL params on mount
   useEffect(() => {
     if (search.vendor) setSelectedBrand(search.vendor);
     if (search.productType) setSelectedCategory(search.productType);
+    if (search.page) setCurrentPage(search.page);
     if (search.vendor || search.productType) setShowFilters(true);
-  }, [search.vendor, search.productType]);
+  }, [search.vendor, search.productType, search.page]);
 
   // Extrair categorias únicas dos produtos
   const categories = useMemo(() => {
@@ -124,6 +223,7 @@ function ProdutosPage() {
     return Array.from(brandSet).sort();
   }, []);
 
+  // Produtos filtrados
   const filteredProducts = useMemo(() => {
     let filtered = [...PRODUCTS];
 
@@ -148,7 +248,6 @@ function ProdutosPage() {
         break;
       case "featured":
       default:
-        // Featured primeiro
         filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
         break;
     }
@@ -156,9 +255,55 @@ function ProdutosPage() {
     return filtered;
   }, [selectedCategory, selectedBrand, sortBy]);
 
+  // Calcular paginação
+  const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+
+  // Ajustar página se necessário após filtrar
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(1);
+    }
+  }, [totalPages, currentPage]);
+
+  // Produtos da página atual
+  const paginatedProducts = useMemo(() => {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+    const endIndex = startIndex + PRODUCTS_PER_PAGE;
+    return filteredProducts.slice(startIndex, endIndex);
+  }, [filteredProducts, currentPage]);
+
+  // Handler para mudar de página
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll para o topo da lista
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+
+    // Atualizar URL com a página
+    navigate({
+      to: '/produtos',
+      search: {
+        ...(selectedCategory && { productType: selectedCategory }),
+        ...(selectedBrand && { vendor: selectedBrand }),
+        page,
+      },
+    });
+  };
+
   const clearFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand(null);
+    setCurrentPage(1);
+    navigate({ to: '/produtos', search: {} });
+  };
+
+  const handleCategoryChange = (cat: string | null) => {
+    setSelectedCategory(cat);
+    setCurrentPage(1);
+  };
+
+  const handleBrandChange = (brand: string | null) => {
+    setSelectedBrand(brand);
+    setCurrentPage(1);
   };
 
   const hasActiveFilters = selectedCategory || selectedBrand;
@@ -254,7 +399,7 @@ function ProdutosPage() {
                       {categories.map((cat) => (
                         <button
                           key={cat}
-                          onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                          onClick={() => handleCategoryChange(selectedCategory === cat ? null : cat)}
                           className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
                             selectedCategory === cat
                               ? "bg-[#D4AF37] text-[#0F3A45]"
@@ -278,7 +423,7 @@ function ProdutosPage() {
                       {brands.map((brand) => (
                         <button
                           key={brand}
-                          onClick={() => setSelectedBrand(selectedBrand === brand ? null : brand)}
+                          onClick={() => handleBrandChange(selectedBrand === brand ? null : brand)}
                           className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
                             selectedBrand === brand
                               ? "bg-[#D4AF37] text-[#0F3A45]"
@@ -304,7 +449,7 @@ function ProdutosPage() {
               {selectedCategory && (
                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A45] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
                   {selectedCategory}
-                  <button onClick={() => setSelectedCategory(null)}>
+                  <button onClick={() => handleCategoryChange(null)}>
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -312,7 +457,7 @@ function ProdutosPage() {
               {selectedBrand && (
                 <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A45] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
                   {selectedBrand}
-                  <button onClick={() => setSelectedBrand(null)}>
+                  <button onClick={() => handleBrandChange(null)}>
                     <X className="h-3 w-3" />
                   </button>
                 </span>
@@ -320,24 +465,38 @@ function ProdutosPage() {
             </div>
           )}
 
-          {/* Results Count */}
-          <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold mb-8">
-            {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
-          </p>
+          {/* Results Count & Page Info */}
+          <div className="flex items-center justify-between mb-8">
+            <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold">
+              {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+            </p>
+            {totalPages > 1 && (
+              <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold">
+                Página {currentPage} de {totalPages}
+              </p>
+            )}
+          </div>
 
           {/* Products Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map((product, i) => (
+            {paginatedProducts.map((product, i) => (
               <MotionDiv
                 key={product.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.02, 0.5), duration: 0.5 }}
+                transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.4 }}
               >
                 <LocalProductCard product={product} />
               </MotionDiv>
             ))}
           </div>
+
+          {/* Pagination */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            onPageChange={handlePageChange}
+          />
 
           {/* Empty State */}
           {filteredProducts.length === 0 && (
