@@ -10,7 +10,7 @@ const MARCAS_PREMIUM = [
   { name: "L'Oréal Professionnel", slug: "L'Oréal Professionnel", desc: "Expertise francesa" },
   { name: "Wella Professionals", slug: "Wella Professionals", desc: "Excelência em cor" },
   { name: "Keune", slug: "Keune", desc: "Tecnologia holandesa" },
-  { name: "Schwarzkopf", slug: "Schwarzkopf", desc: "Inovação alemã" },
+  { name: "Kérastase", slug: "Kérastase", desc: "Luxo capilar" },
 ];
 
 const TODAS_MARCAS = [
@@ -566,16 +566,15 @@ export const Navbar = () => {
 
               {/* Mobile Footer */}
               <div className="p-6 border-t border-white/10">
-                {/* WhatsApp - desabilitado até ter número real */}
-                {/* <a
-                  href="https://wa.me/5511999999999"
+                <a
+                  href="https://wa.me/5516997150373"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-3 text-[#D4AF37] mb-4"
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Fale conosco no WhatsApp</span>
-                </a> */}
+                </a>
                 <Link
                   to="/contato"
                   onClick={() => setIsMobileMenuOpen(false)}

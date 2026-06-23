@@ -18,6 +18,8 @@ import { HeroRefinement } from "@/components/shop/HeroRefinement";
 import { CampaignBanner } from "@/components/shop/CampaignBanner";
 import { SocialProof } from "@/components/shop/SocialProof";
 import { ShopByCategory } from "@/components/shop/ShopByCategory";
+import { FirstPurchaseCoupon } from "@/components/shop/FirstPurchaseCoupon";
+import { TrustBadges } from "@/components/shop/TrustBadges";
 import { GlobalStyleSync } from "@/components/GlobalStyleSync";
 import { motion, useScroll, useTransform } from "framer-motion";
 import { useRef, useMemo } from "react";
@@ -39,18 +41,19 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+// Marcas atualizadas - removido Schwarzkopf, adicionado Kérastase
 const BRANDS_DISPLAY = [
-  { name: "L'Oreal", image: "https://http2.mlstatic.com/D_Q_NP_2X_787894-MLA109316797766_042026-E.webp", desc: "Expertise francesa" },
-  { name: "Wella", image: "https://http2.mlstatic.com/D_Q_NP_2X_797893-MLA110167764332_042026-E.webp", desc: "Excelência em cor" },
-  { name: "Keune", image: "https://http2.mlstatic.com/D_Q_NP_2X_960184-MLA112462500109_052026-E.webp", desc: "Tecnologia holandesa" },
-  { name: "Schwarzkopf", image: "https://http2.mlstatic.com/D_Q_NP_2X_688264-MLA110409088670_052026-E.webp", desc: "Inovação alemã" },
+  { name: "L'Oréal", desc: "Expertise francesa" },
+  { name: "Wella", desc: "Excelência em cor" },
+  { name: "Keune", desc: "Tecnologia holandesa" },
+  { name: "Kérastase", desc: "Luxo capilar" },
 ];
 
 const NEEDS = [
-  { label: "Coloração", image: "https://http2.mlstatic.com/D_Q_NP_2X_776597-MLA107889014479_032026-E.webp", productType: "Coloração" },
-  { label: "Finalizadores", image: "https://http2.mlstatic.com/D_Q_NP_2X_611634-MLU74610413953_022024-E.webp", productType: "Finalizador" },
-  { label: "Shampoos", image: "https://http2.mlstatic.com/D_Q_NP_2X_774537-MLA112858976689_062026-E.webp", productType: "Shampoo" },
-  { label: "Kits", image: "https://http2.mlstatic.com/D_Q_NP_2X_904887-MLA107488640188_032026-E.webp", productType: "Kit" },
+  { label: "Coloração", productType: "Coloração" },
+  { label: "Finalizadores", productType: "Finalizador" },
+  { label: "Shampoos", productType: "Shampoo" },
+  { label: "Kits", productType: "Kit" },
 ];
 
 function Index() {
@@ -207,13 +210,14 @@ function Index() {
                   ))}
                 </div>
                 <p className="text-[8px] md:text-[9px] text-white/30 uppercase tracking-[0.2em] font-medium max-w-[280px] leading-relaxed">
-                  Confiança premium: +28 mil clientes satisfeitos em nossa boutique.
+                  Produtos 100% originais · Nota fiscal em todas as compras
                 </p>
               </MotionDiv>
             </MotionDiv>
           </div>
         </MotionSection>
 
+        {/* BENEFIT BAR */}
         <MotionDiv
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -224,109 +228,10 @@ function Index() {
           <BenefitBar />
         </MotionDiv>
 
-        <MotionSection
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-10%" }}
-          transition={{ duration: 1.2 }}
-          ref={quizRef}
-          className="bg-[#F7F5F2]"
-        >
-          <AIQuiz />
-        </MotionSection>
+        {/* CUPOM PRIMEIRA COMPRA */}
+        <FirstPurchaseCoupon />
 
-        {/* BRANDS SECTION */}
-        <section ref={brandsRef} className="bg-white py-32">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
-              <div className="section-label !justify-center">
-                <span className="tracking-[0.5em]">Curadoria Exclusiva</span>
-              </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                As Marcas Mais <span className="italic text-[#D4AF37]">Desejadas</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {BRANDS_DISPLAY.map((brand, i) => (
-                <Link
-                  key={brand.name}
-                  to="/produtos"
-                  search={{ vendor: brand.name }}
-                >
-                  <MotionDiv
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, duration: 0.8 }}
-                    className="group relative aspect-[3/4] overflow-hidden bg-[#143E4A] cursor-pointer"
-                  >
-                    <img
-                      src={brand.image}
-                      alt={brand.name}
-                      className="w-full h-full object-contain p-8 bg-white transition-all duration-[2000ms] group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-[#0F3A45]/60 group-hover:bg-[#D4AF37]/30 transition-all duration-1000" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                      <h3 className="text-white font-serif text-2xl md:text-3xl text-center mb-2">{brand.name}</h3>
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-6">{brand.desc}</p>
-                      <span className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
-                        Explorar Coleção
-                      </span>
-                    </div>
-                  </MotionDiv>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* NEEDS SECTION */}
-        <section className="bg-[#F7F5F2] py-32">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
-              <div className="section-label !justify-center">
-                <span className="tracking-[0.5em]">Necessidades</span>
-              </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                Tratamento por <span className="italic text-[#D4AF37]">Desejo</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {NEEDS.map((need, i) => (
-                <Link
-                  key={need.label}
-                  to="/produtos"
-                  search={{ productType: need.productType }}
-                >
-                  <MotionDiv
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative aspect-square overflow-hidden cursor-pointer"
-                  >
-                    <img
-                      src={need.image}
-                      alt={need.label}
-                      className="w-full h-full object-cover transition-transform duration-[1500ms] group-hover:scale-110"
-                    />
-                    <div className="absolute inset-0 bg-[#0F3A45]/30 group-hover:bg-[#0F3A45]/60 transition-all duration-700" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#D4AF37]/50 pb-2 transition-all duration-500">{need.label}</span>
-                    </div>
-                  </MotionDiv>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <CampaignBanner />
-        <ShopByCategory />
-
-        {/* PRODUCTS SECTION - DESTAQUES */}
+        {/* PRODUTOS DESTAQUES - ANTES DO FOLD */}
         <section className="bg-white py-20">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-16">
@@ -344,9 +249,9 @@ function Index() {
               ))}
             </div>
 
-            <div className="mt-20 flex justify-center">
+            <div className="mt-16 flex justify-center">
               <Link to="/produtos">
-                <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-16 h-18 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
+                <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-16 h-14 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
                     Ver Toda a Coleção
                 </Button>
               </Link>
@@ -374,18 +279,114 @@ function Index() {
           </div>
         </section>
 
-        <RitualSection />
+        {/* TRUST BADGES */}
+        <TrustBadges />
 
-        {/* BANNER INSTITUCIONAL ENTRE SEÇÕES */}
+        {/* BRANDS SECTION */}
+        <section ref={brandsRef} className="bg-white py-32">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="section-label !justify-center">
+                <span className="tracking-[0.5em]">Curadoria Exclusiva</span>
+              </div>
+              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
+                As Marcas Mais <span className="italic text-[#D4AF37]">Desejadas</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+              {BRANDS_DISPLAY.map((brand, i) => (
+                <Link
+                  key={brand.name}
+                  to="/produtos"
+                  search={{ vendor: brand.name }}
+                >
+                  <MotionDiv
+                    initial={{ opacity: 0, y: 40 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1, duration: 0.8 }}
+                    className="group relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#0F3A45] to-[#143E4A] cursor-pointer"
+                  >
+                    <div className="absolute inset-0 bg-[#D4AF37]/0 group-hover:bg-[#D4AF37]/10 transition-all duration-700" />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
+                      <h3 className="text-white font-serif text-3xl md:text-4xl text-center mb-3">{brand.name}</h3>
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-8">{brand.desc}</p>
+                      <span className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
+                        Explorar Coleção
+                      </span>
+                    </div>
+                  </MotionDiv>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* NEEDS SECTION */}
+        <section className="bg-[#F7F5F2] py-32">
+          <div className="container mx-auto px-4 md:px-12">
+            <div className="text-center mb-24">
+              <div className="section-label !justify-center">
+                <span className="tracking-[0.5em]">Categorias</span>
+              </div>
+              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
+                Encontre por <span className="italic text-[#D4AF37]">Tipo</span>
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+              {NEEDS.map((need, i) => (
+                <Link
+                  key={need.label}
+                  to="/produtos"
+                  search={{ productType: need.productType }}
+                >
+                  <MotionDiv
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    whileInView={{ opacity: 1, scale: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    className="group relative aspect-square overflow-hidden cursor-pointer bg-gradient-to-br from-[#0F3A45] to-[#1a4f5c]"
+                  >
+                    <div className="absolute inset-0 bg-[#D4AF37]/0 group-hover:bg-[#D4AF37]/20 transition-all duration-700" />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#D4AF37]/50 pb-2 transition-all duration-500">{need.label}</span>
+                    </div>
+                  </MotionDiv>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <ShopByCategory />
+        <CampaignBanner />
+
+        {/* AI QUIZ - MOVIDO PARA METADE INFERIOR */}
+        <MotionSection
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true, margin: "-10%" }}
+          transition={{ duration: 1.2 }}
+          ref={quizRef}
+          className="bg-[#F7F5F2]"
+        >
+          <AIQuiz />
+        </MotionSection>
+
+        <RitualSection />
+        <ConsultancySection />
+        <SocialProof />
+        <Testimonials />
+
+        {/* BANNER INSTITUCIONAL - SEM IMAGEM MLSTATIC */}
         <section className="py-24 bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="bg-[#0F3A45] text-white p-12 md:p-20 relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-1/2 h-full opacity-20">
-                    <img
-                        src="https://http2.mlstatic.com/D_Q_NP_2X_787894-MLA109316797766_042026-E.webp"
-                        className="w-full h-full object-cover"
-                        alt="Background"
-                    />
+            <div className="bg-gradient-to-br from-[#0F3A45] to-[#143E4A] text-white p-12 md:p-20 relative overflow-hidden">
+                <div className="absolute inset-0 opacity-10">
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37] rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37] rounded-full blur-3xl" />
                 </div>
                 <div className="relative z-10 max-w-xl">
                     <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
@@ -399,10 +400,6 @@ function Index() {
             </div>
           </div>
         </section>
-
-        <SocialProof />
-        <ConsultancySection />
-        <Testimonials />
       </main>
 
       <Footer />
