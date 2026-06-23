@@ -67,18 +67,18 @@ export const RitualSection = () => {
   if (ritualProducts.length < 2) return null;
 
   return (
-    <section className="bg-[#0F3A45] text-white overflow-hidden relative py-20">
+    <section className="bg-[#0F3A3E] text-white overflow-hidden relative py-20">
       <div className="absolute top-0 left-0 w-full h-full opacity-20 pointer-events-none">
-        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#D4AF37] rounded-full blur-[150px]" />
+        <div className="absolute top-[-20%] left-[-10%] w-[60%] h-[60%] bg-[#B07B1E] rounded-full blur-[150px]" />
       </div>
 
       <div className="container mx-auto px-4 md:px-12 relative z-10">
         <div className="text-center mb-16">
-          <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] block mb-2">
+          <span className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] block mb-2">
             Experiência de Salão
           </span>
           <h2 className="font-serif font-light text-white text-3xl md:text-4xl mb-4">
-            Monte seu Ritual <span className="italic text-[#D4AF37]">Completo</span>
+            Monte seu Ritual <span className="italic text-[#B07B1E]">Completo</span>
           </h2>
           <p className="text-white/50 text-sm max-w-lg mx-auto">
             Combine produtos para potencializar os resultados
@@ -98,7 +98,7 @@ export const RitualSection = () => {
                 transition={{ delay: index * 0.1 }}
                 className="group"
               >
-                <div className="aspect-square overflow-hidden mb-4 bg-white/5 border border-white/10 group-hover:border-[#D4AF37]/30 transition-all">
+                <div className="aspect-square overflow-hidden mb-4 bg-white/5 border border-white/10 group-hover:border-[#B07B1E]/30 transition-all">
                   {item.product.images?.edges?.[0]?.node?.url && (
                     <img
                       src={item.product.images.edges[0].node.url}
@@ -108,7 +108,7 @@ export const RitualSection = () => {
                   )}
                 </div>
                 <div className="text-center">
-                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#D4AF37] block mb-1">
+                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#B07B1E] block mb-1">
                     {item.step}: {item.action}
                   </span>
                   <h4 className="text-sm font-serif text-white line-clamp-2">
@@ -125,7 +125,7 @@ export const RitualSection = () => {
 
         <div className="text-center">
           <Link to="/produtos" search={{ productType: "Kit" }}>
-            <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] px-10 h-12 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all">
+            <Button className="bg-[#B07B1E] hover:bg-white text-[#0F3A3E] px-10 h-12 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all">
               Ver Kits Completos
             </Button>
           </Link>

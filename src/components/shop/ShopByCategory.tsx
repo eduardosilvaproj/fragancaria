@@ -17,14 +17,14 @@ const CATEGORIES = [
 
 export const ShopByCategory = () => {
   return (
-    <section className="py-24 bg-[#F7F5F2]">
+    <section className="py-24 bg-[#F3EEE3]">
       <div className="container mx-auto px-4 md:px-12">
         <div className="text-center mb-16">
           <div className="section-label !justify-center">
             <span>Objetivos</span>
           </div>
-          <h2 className="font-serif font-light text-[#1A1A1A] text-3xl md:text-4xl">
-            Por <span className="italic text-[#D4AF37]">Necessidade</span>
+          <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl">
+            Por <span className="italic text-[#B07B1E]">Necessidade</span>
           </h2>
         </div>
 
@@ -44,10 +44,10 @@ export const ShopByCategory = () => {
                   transition={{ delay: i * 0.05 }}
                   className="flex flex-col items-center gap-4 group cursor-pointer"
                 >
-                  <div className="w-20 h-20 bg-white border border-[#0F3A45]/10 flex items-center justify-center group-hover:bg-[#0F3A45] group-hover:border-[#0F3A45] transition-all duration-700">
-                    <IconComponent className="h-7 w-7 text-[#0F3A45] group-hover:text-[#D4AF37] stroke-[1.2] transition-colors duration-500" />
+                  <div className="w-20 h-20 bg-white border border-[#0F3A3E]/10 flex items-center justify-center group-hover:bg-[#0F3A3E] group-hover:border-[#0F3A3E] transition-all duration-700">
+                    <IconComponent className="h-7 w-7 text-[#0F3A3E] group-hover:text-[#B07B1E] stroke-[1.2] transition-colors duration-500" />
                   </div>
-                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#1A1A1A] group-hover:text-[#D4AF37] transition-colors text-center">
+                  <span className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#1C302E] group-hover:text-[#B07B1E] transition-colors text-center">
                     {cat.label}
                   </span>
                 </MotionDiv>

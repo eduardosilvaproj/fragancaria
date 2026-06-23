@@ -54,12 +54,12 @@ function ProductPage() {
 
   if (!product) {
     return (
-      <div className="min-h-screen bg-[#F7F5F2]">
+      <div className="min-h-screen bg-[#F3EEE3]">
         <Navbar />
         <div className="container mx-auto px-4 py-40 text-center">
           <h1 className="font-serif text-4xl mb-4">Produto não encontrado</h1>
           <Link to="/produtos">
-            <Button className="bg-[#D4AF37] text-[#0F3A45]">
+            <Button className="bg-[#B07B1E] text-[#0F3A3E]">
               Ver todos os produtos
             </Button>
           </Link>
@@ -125,18 +125,18 @@ function ProductPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
+    <div className="min-h-screen bg-[#F3EEE3]">
       <Navbar />
 
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-[#0F3A45]/5">
+      <div className="bg-white border-b border-[#0F3A3E]/5">
         <div className="container mx-auto px-4 md:px-12 py-4 pt-24">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold">
-            <Link to="/" className="hover:text-[#D4AF37] transition-colors">Home</Link>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#0F3A3E]/40 font-bold">
+            <Link to="/" className="hover:text-[#B07B1E] transition-colors">Home</Link>
             <ChevronRight className="h-3 w-3" />
-            <Link to="/produtos" className="hover:text-[#D4AF37] transition-colors">Produtos</Link>
+            <Link to="/produtos" className="hover:text-[#B07B1E] transition-colors">Produtos</Link>
             <ChevronRight className="h-3 w-3" />
-            <span className="text-[#0F3A45] truncate max-w-[200px]">{product.name}</span>
+            <span className="text-[#0F3A3E] truncate max-w-[200px]">{product.name}</span>
           </div>
         </div>
       </div>
@@ -170,8 +170,8 @@ function ProductPage() {
                         onClick={() => setSelectedImage(i)}
                         className={`flex-shrink-0 w-20 h-20 bg-white p-2 transition-all ${
                           selectedImage === i
-                            ? "ring-2 ring-[#D4AF37]"
-                            : "hover:ring-2 hover:ring-[#0F3A45]/20"
+                            ? "ring-2 ring-[#B07B1E]"
+                            : "hover:ring-2 hover:ring-[#0F3A3E]/20"
                         }`}
                       >
                         <img src={img} alt="" className="w-full h-full object-contain" />
@@ -190,13 +190,13 @@ function ProductPage() {
             >
               {/* Brand */}
               {product.brand && (
-                <p className="text-[10px] uppercase tracking-[0.5em] text-[#D4AF37] font-bold mb-4">
+                <p className="text-[10px] uppercase tracking-[0.5em] text-[#B07B1E] font-bold mb-4">
                   {product.brand}
                 </p>
               )}
 
               {/* Title */}
-              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-6">
+              <h1 className="font-serif text-3xl md:text-4xl text-[#1C302E] font-light mb-6">
                 {product.name}
               </h1>
 
@@ -207,27 +207,27 @@ function ProductPage() {
               <div className="mb-8">
                 <div className="flex items-baseline gap-4 mb-2">
                   {hasDiscount && product.originalPrice && (
-                    <span className="text-lg text-[#1A1A1A]/30 line-through">
+                    <span className="text-lg text-[#1C302E]/30 line-through">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.originalPrice)}
                     </span>
                   )}
-                  <span className="text-4xl font-light text-[#1A1A1A]">
+                  <span className="text-4xl font-light text-[#1C302E]">
                     {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
                   </span>
                   {discount > 0 && (
-                    <span className="bg-[#D4AF37] text-[#0F3A45] text-[10px] uppercase tracking-[0.2em] px-3 py-1 font-bold">
+                    <span className="bg-[#B07B1E] text-[#0F3A3E] text-[10px] uppercase tracking-[0.2em] px-3 py-1 font-bold">
                       -{discount}%
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
+                <p className="text-[11px] text-[#1C302E]/40 uppercase tracking-[0.2em] font-bold">
                   ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)} sem juros
                 </p>
               </div>
 
               {/* Description */}
               {product.description && (
-                <p className="text-[#1A1A1A]/60 mb-8 leading-relaxed">
+                <p className="text-[#1C302E]/60 mb-8 leading-relaxed">
                   {product.description}
                 </p>
               )}
@@ -238,7 +238,7 @@ function ProductPage() {
                   <Link
                     to="/produtos"
                     search={{ productType: product.category }}
-                    className="px-4 py-2 bg-[#0F3A45]/5 text-[9px] uppercase tracking-[0.2em] font-bold text-[#0F3A45]/60 hover:bg-[#D4AF37]/20 hover:text-[#0F3A45] transition-colors"
+                    className="px-4 py-2 bg-[#0F3A3E]/5 text-[9px] uppercase tracking-[0.2em] font-bold text-[#0F3A3E]/60 hover:bg-[#B07B1E]/20 hover:text-[#0F3A3E] transition-colors"
                   >
                     {product.category}
                   </Link>
@@ -255,10 +255,10 @@ function ProductPage() {
 
               {/* Quantity & Add to Cart */}
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <div className="flex items-center border border-[#0F3A45]/20">
+                <div className="flex items-center border border-[#0F3A3E]/20">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A45]/5 transition-colors"
+                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A3E]/5 transition-colors"
                   >
                     <Minus className="h-4 w-4" />
                   </button>
@@ -267,7 +267,7 @@ function ProductPage() {
                   </span>
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A45]/5 transition-colors"
+                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A3E]/5 transition-colors"
                   >
                     <Plus className="h-4 w-4" />
                   </button>
@@ -276,7 +276,7 @@ function ProductPage() {
                 <Button
                   onClick={handleAddToCart}
                   disabled={isLoading}
-                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all disabled:opacity-50"
+                  className="flex-1 bg-[#0F3A3E] hover:bg-[#B07B1E] hover:text-[#0F3A3E] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all disabled:opacity-50"
                 >
                   {isLoading ? (
                     <>
@@ -291,32 +291,32 @@ function ProductPage() {
                   )}
                 </Button>
 
-                <button className="w-14 h-14 border border-[#0F3A45]/20 flex items-center justify-center hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
+                <button className="w-14 h-14 border border-[#0F3A3E]/20 flex items-center justify-center hover:border-[#B07B1E] hover:text-[#B07B1E] transition-colors">
                   <Heart className="h-5 w-5" />
                 </button>
               </div>
 
               {/* Benefits */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-[#0F3A45]/10">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-[#0F3A3E]/10">
                 <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-[#D4AF37]" />
+                  <Truck className="h-5 w-5 text-[#B07B1E]" />
                   <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">Frete Grátis</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">Acima de R$ 299</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1C302E]">Frete Grátis</p>
+                    <p className="text-[9px] text-[#1C302E]/40">Acima de R$ 299</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-[#D4AF37]" />
+                  <Shield className="h-5 w-5 text-[#B07B1E]" />
                   <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">100% Original</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">Garantia de autenticidade</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1C302E]">100% Original</p>
+                    <p className="text-[9px] text-[#1C302E]/40">Garantia de autenticidade</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <RotateCcw className="h-5 w-5 text-[#D4AF37]" />
+                  <RotateCcw className="h-5 w-5 text-[#B07B1E]" />
                   <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">Troca Fácil</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">7 dias para trocar</p>
+                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1C302E]">Troca Fácil</p>
+                    <p className="text-[9px] text-[#1C302E]/40">7 dias para trocar</p>
                   </div>
                 </div>
               </div>
@@ -331,14 +331,14 @@ function ProductPage() {
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-[#D4AF37]" />
-                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
+                <div className="w-12 h-[1px] bg-[#B07B1E]" />
+                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
                   Você também pode gostar
                 </span>
-                <div className="w-12 h-[1px] bg-[#D4AF37]" />
+                <div className="w-12 h-[1px] bg-[#B07B1E]" />
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-3xl">
-                Produtos <span className="italic text-[#D4AF37]">Relacionados</span>
+              <h2 className="font-serif font-light text-[#1C302E] text-3xl">
+                Produtos <span className="italic text-[#B07B1E]">Relacionados</span>
               </h2>
             </div>
 

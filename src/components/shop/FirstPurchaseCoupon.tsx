@@ -23,7 +23,7 @@ export const FirstPurchaseCoupon = () => {
   };
 
   return (
-    <section className="bg-gradient-to-r from-[#D4AF37] to-[#B8962E] py-6">
+    <section className="bg-gradient-to-r from-[#B07B1E] to-[#B8962E] py-6">
       <div className="container mx-auto px-4">
         <MotionDiv
           initial={{ opacity: 0, y: 10 }}
@@ -32,19 +32,19 @@ export const FirstPurchaseCoupon = () => {
           className="flex flex-col md:flex-row items-center justify-center gap-4 md:gap-8"
         >
           <div className="flex items-center gap-3">
-            <Ticket className="h-6 w-6 text-[#0F3A45]" />
-            <span className="text-[#0F3A45] font-bold text-sm md:text-base uppercase tracking-wide">
+            <Ticket className="h-6 w-6 text-[#0F3A3E]" />
+            <span className="text-[#0F3A3E] font-bold text-sm md:text-base uppercase tracking-wide">
               Primeira compra?
             </span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span className="text-[#0F3A45]/80 text-sm">
+            <span className="text-[#0F3A3E]/80 text-sm">
               Use o cupom
             </span>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-2 bg-[#0F3A45] text-white px-4 py-2 font-mono font-bold text-sm hover:bg-[#0F3A45]/90 transition-colors"
+              className="flex items-center gap-2 bg-[#0F3A3E] text-white px-4 py-2 font-mono font-bold text-sm hover:bg-[#0F3A3E]/90 transition-colors"
             >
               <span>{COUPON_CODE}</span>
               {copied ? (
@@ -53,10 +53,10 @@ export const FirstPurchaseCoupon = () => {
                 <Copy className="h-4 w-4" />
               )}
             </button>
-            <span className="text-[#0F3A45] font-bold text-lg">
+            <span className="text-[#0F3A3E] font-bold text-lg">
               {COUPON_DISCOUNT} OFF
             </span>
-            <span className="text-[#0F3A45]/70 text-sm hidden md:inline">
+            <span className="text-[#0F3A3E]/70 text-sm hidden md:inline">
               {COUPON_DESCRIPTION}
             </span>
           </div>

@@ -35,7 +35,7 @@ export const ScrollToTop = () => {
           whileTap={{ scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 25 }}
           onClick={scrollToTop}
-          className="fixed bottom-6 left-6 z-50 w-12 h-12 bg-[#0F3A45] hover:bg-[#D4AF37] text-white hover:text-[#0F3A45] rounded-full shadow-[0_4px_20px_rgba(15,58,69,0.3)] flex items-center justify-center transition-colors duration-300"
+          className="fixed bottom-6 left-6 z-50 w-12 h-12 bg-[#0F3A3E] hover:bg-[#B07B1E] text-white hover:text-[#0F3A3E] rounded-full shadow-[0_4px_20px_rgba(15,58,69,0.3)] flex items-center justify-center transition-colors duration-300"
           aria-label="Voltar ao topo"
         >
           <ChevronUp className="w-5 h-5" />

@@ -26,7 +26,7 @@ export const InstagramFeed = () => {
               href="https://instagram.com/fragranciaria"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] uppercase tracking-[0.4em] text-[#D4AF37] font-bold hover:underline transition-all"
+              className="text-[10px] uppercase tracking-[0.4em] text-[#B07B1E] font-bold hover:underline transition-all"
             >
               @fragranciaria
             </a>
@@ -47,7 +47,7 @@ export const InstagramFeed = () => {
                 alt="Instagram" 
                 className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:scale-110" 
               />
-              <div className="absolute inset-0 bg-[#D4AF37]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="absolute inset-0 bg-[#B07B1E]/20 opacity-0 group-hover:opacity-100 transition-opacity" />
             </MotionDiv>
           ))}
         </div>

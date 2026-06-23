@@ -61,8 +61,8 @@ export const AuthorizedBrands = () => {
             viewport={{ once: true }}
             className="flex items-center justify-center gap-3 mb-6"
           >
-            <ShieldCheck className="h-5 w-5 text-[#D4AF37]" />
-            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
+            <ShieldCheck className="h-5 w-5 text-[#B07B1E]" />
+            <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
               Revendedor Autorizado
             </span>
           </MotionDiv>
@@ -72,10 +72,10 @@ export const AuthorizedBrands = () => {
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
           >
-            <h2 className="font-serif font-light text-[#1A1A1A] text-3xl md:text-4xl mb-4">
-              Marcas que <span className="italic text-[#D4AF37]">Representamos</span>
+            <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl mb-4">
+              Marcas que <span className="italic text-[#B07B1E]">Representamos</span>
             </h2>
-            <p className="text-[#1A1A1A]/50 text-sm max-w-xl mx-auto">
+            <p className="text-[#1C302E]/50 text-sm max-w-xl mx-auto">
               Todos os produtos são adquiridos diretamente dos fabricantes ou distribuidores oficiais, com garantia de procedência.
             </p>
           </MotionDiv>
@@ -94,7 +94,7 @@ export const AuthorizedBrands = () => {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="group bg-[#FAFAF9] hover:bg-white border border-black/[0.03] hover:border-[#D4AF37]/30 p-6 flex flex-col items-center justify-center aspect-square transition-all duration-500 hover:shadow-lg cursor-pointer"
+                className="group bg-[#FAFAF9] hover:bg-white border border-black/[0.03] hover:border-[#B07B1E]/30 p-6 flex flex-col items-center justify-center aspect-square transition-all duration-500 hover:shadow-lg cursor-pointer"
               >
                 <div className="h-12 flex items-center justify-center mb-4 grayscale group-hover:grayscale-0 transition-all duration-500">
                   <img
@@ -104,7 +104,7 @@ export const AuthorizedBrands = () => {
                     loading="lazy"
                   />
                 </div>
-                <span className="text-[8px] uppercase tracking-[0.3em] text-[#1A1A1A]/40 font-bold text-center">
+                <span className="text-[8px] uppercase tracking-[0.3em] text-[#1C302E]/40 font-bold text-center">
                   {brand.country}
                 </span>
               </MotionDiv>
@@ -120,7 +120,7 @@ export const AuthorizedBrands = () => {
           transition={{ delay: 0.3 }}
           className="text-center mt-12"
         >
-          <p className="text-[9px] uppercase tracking-[0.3em] text-[#1A1A1A]/30 font-bold">
+          <p className="text-[9px] uppercase tracking-[0.3em] text-[#1C302E]/30 font-bold">
             Compra direta do fabricante ou distribuidor oficial
           </p>
         </MotionDiv>

@@ -73,12 +73,12 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
     >
       <Link
         to={`/produto/${product.node.handle}` as any}
-        className="relative aspect-[3/4] overflow-hidden bg-[#F7F5F2] mb-4 block"
+        className="relative aspect-[3/4] overflow-hidden bg-[#F3EEE3] mb-4 block"
       >
         {/* Badges */}
         <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {hasDiscount && (
-            <span className="bg-[#D4AF37] text-[#0F3A45] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
+            <span className="bg-[#B07B1E] text-[#0F3A3E] text-[8px] uppercase tracking-[0.2em] px-4 py-2 font-bold">
               Oferta
             </span>
           )}
@@ -86,10 +86,10 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
         {/* Quick Actions */}
         <div className="absolute top-4 right-4 z-10 flex flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
-          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] transition-all shadow-sm">
+          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A3E] hover:bg-[#B07B1E] hover:text-[#0F3A3E] transition-all shadow-sm">
             <Heart className="h-4 w-4 stroke-[1.2]" />
           </button>
-          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] transition-all shadow-sm">
+          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A3E] hover:bg-[#B07B1E] hover:text-[#0F3A3E] transition-all shadow-sm">
             <Eye className="h-4 w-4 stroke-[1.2]" />
           </button>
         </div>
@@ -98,7 +98,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         <div className="w-full h-full relative">
           {/* Placeholder skeleton while loading */}
           {!imageLoaded && (
-            <div className="absolute inset-0 bg-gradient-to-br from-[#F7F5F2] to-[#EBE8E4] animate-pulse" />
+            <div className="absolute inset-0 bg-gradient-to-br from-[#F3EEE3] to-[#EBE8E4] animate-pulse" />
           )}
           <AnimatePresence initial={false}>
             {!isHovered ? (
@@ -138,7 +138,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             className={`w-full border-none h-12 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-300 rounded-none ${
               isAdded
                 ? "bg-[#22c55e] text-white"
-                : "bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white"
+                : "bg-[#0F3A3E] hover:bg-[#B07B1E] hover:text-[#0F3A3E] text-white"
             }`}
             size="lg"
           >
@@ -163,13 +163,13 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
       </Link>
 
       <div className="flex flex-col flex-1 px-3 text-center pb-4">
-        <p className="text-[8px] uppercase tracking-[0.5em] text-[#D4AF37] font-bold mb-2">
+        <p className="text-[8px] uppercase tracking-[0.5em] text-[#B07B1E] font-bold mb-2">
           {product.node.vendor}
         </p>
 
         <Link
           to={`/produto/${product.node.handle}` as any}
-          className="font-serif text-[18px] leading-tight mb-4 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light"
+          className="font-serif text-[18px] leading-tight mb-4 hover:text-[#B07B1E] transition-colors text-[#1C302E] font-light"
         >
           {product.node.title}
         </Link>
@@ -177,15 +177,15 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         <div className="mt-auto pt-4 flex flex-col items-center gap-2">
           <div className="flex items-center gap-4">
             {hasDiscount && compareAtPrice && (
-              <span className="text-sm text-[#1A1A1A]/30 line-through font-light">
+              <span className="text-sm text-[#1C302E]/30 line-through font-light">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(compareAtPrice)}
               </span>
             )}
-            <span className="text-[22px] font-light text-[#1A1A1A] tracking-tighter">
+            <span className="text-[22px] font-light text-[#1C302E] tracking-tighter">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
             </span>
             {hasDiscount && compareAtPrice && (
-              <span className="bg-[#D4AF37] text-[#0F3A45] text-[9px] px-2 py-0.5 font-bold">
+              <span className="bg-[#B07B1E] text-[#0F3A3E] text-[9px] px-2 py-0.5 font-bold">
                 -{Math.round(((compareAtPrice - price) / compareAtPrice) * 100)}%
               </span>
             )}
@@ -193,7 +193,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
           <div className="text-[10px] text-green-600 font-semibold">
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 0.95)} no PIX
           </div>
-          <div className="text-[9px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
+          <div className="text-[9px] text-[#1C302E]/40 uppercase tracking-[0.2em] font-bold">
             ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros
           </div>
         </div>

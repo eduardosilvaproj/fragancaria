@@ -40,12 +40,12 @@ export const Footer = () => {
   };
 
   return (
-    <footer className="bg-[#0F3A45] pt-32 pb-12">
+    <footer className="bg-[#0F3A3E] pt-32 pb-12">
       <div className="container mx-auto px-4 md:px-12">
         {/* Newsletter Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-20 pb-24 border-b border-white/10 mb-24">
           <div>
-            <h3 className="font-serif text-4xl mb-6 font-light text-white">Newsletter <span className="italic text-[#D4AF37]">Privée</span></h3>
+            <h3 className="font-serif text-4xl mb-6 font-light text-white">Newsletter <span className="italic text-[#B07B1E]">Privée</span></h3>
             <p className="text-[11px] uppercase tracking-[0.3em] text-white/40 font-bold max-w-md leading-relaxed">
               Assine para receber convites exclusivos, lançamentos antecipados e curadoria de rituais profissionais.
             </p>
@@ -53,18 +53,18 @@ export const Footer = () => {
           <form onSubmit={handleNewsletterSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col sm:flex-row gap-4">
               <div className="flex-1 relative">
-                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-[#D4AF37]/40" />
+                <Mail className="absolute left-6 top-1/2 -translate-y-1/2 h-4 w-4 text-[#B07B1E]/40" />
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="SEU MELHOR E-MAIL"
-                  className="w-full bg-[#143E4A] border-none h-16 pl-16 pr-6 text-[10px] uppercase tracking-[0.2em] font-bold outline-none focus:ring-1 focus:ring-[#D4AF37]/30 transition-all text-white placeholder:text-white/30"
+                  className="w-full bg-[#16504F] border-none h-16 pl-16 pr-6 text-[10px] uppercase tracking-[0.2em] font-bold outline-none focus:ring-1 focus:ring-[#B07B1E]/30 transition-all text-white placeholder:text-white/30"
                 />
               </div>
               <Button
                 type="submit"
-                className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-700"
+                className="bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-12 h-16 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all duration-700"
               >
                 Inscrever-se
               </Button>
@@ -75,11 +75,11 @@ export const Footer = () => {
                 type="checkbox"
                 checked={optIn}
                 onChange={(e) => setOptIn(e.target.checked)}
-                className="mt-1 w-4 h-4 accent-[#D4AF37] cursor-pointer"
+                className="mt-1 w-4 h-4 accent-[#B07B1E] cursor-pointer"
               />
               <span className="text-[9px] uppercase tracking-[0.15em] text-white/40 font-bold leading-relaxed group-hover:text-white/60 transition-colors">
                 Concordo em receber comunicações da Fragranciaria e aceito a{" "}
-                <Link to="/privacidade" className="text-[#D4AF37] hover:underline">
+                <Link to="/privacidade" className="text-[#B07B1E] hover:underline">
                   Política de Privacidade
                 </Link>
               </span>
@@ -103,20 +103,20 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-10">Explorar</h4>
+            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-10">Explorar</h4>
             <ul className="space-y-5">
               <li>
-                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Todos os Produtos
                 </Link>
               </li>
               <li>
-                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Tratamentos
                 </Link>
               </li>
               <li>
-                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/produtos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Kits
                 </Link>
               </li>
@@ -124,25 +124,25 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-10">Institucional</h4>
+            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-10">Institucional</h4>
             <ul className="space-y-5">
               <li>
-                <Link to="/termos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/termos" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Termos e Condições
                 </Link>
               </li>
               <li>
-                <Link to="/privacidade" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/privacidade" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Política de Privacidade
                 </Link>
               </li>
               <li>
-                <Link to="/trocas" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/trocas" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Trocas e Devoluções
                 </Link>
               </li>
               <li>
-                <Link to="/contato" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#D4AF37] transition-colors font-bold">
+                <Link to="/contato" className="text-[10px] uppercase tracking-[0.2em] text-white/50 hover:text-[#B07B1E] transition-colors font-bold">
                   Contato
                 </Link>
               </li>
@@ -150,12 +150,12 @@ export const Footer = () => {
           </div>
 
           <div>
-            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-10">Suporte</h4>
+            <h4 className="text-[11px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-10">Suporte</h4>
 
             {/* WhatsApp - mostrar apenas se configurado */}
             {COMPANY_INFO.whatsapp && (
               <div className="flex items-center gap-6 mb-8 group cursor-pointer">
-                <div className="w-14 h-14 rounded-none bg-[#143E4A] flex items-center justify-center group-hover:bg-[#D4AF37] transition-all duration-500 text-white group-hover:text-[#0F3A45]">
+                <div className="w-14 h-14 rounded-none bg-[#16504F] flex items-center justify-center group-hover:bg-[#B07B1E] transition-all duration-500 text-white group-hover:text-[#0F3A3E]">
                   <MessageCircle className="h-5 w-5 stroke-[1.2]" />
                 </div>
                 <div>
@@ -164,7 +164,7 @@ export const Footer = () => {
                     href={`https://wa.me/${COMPANY_INFO.whatsapp}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-sm font-bold text-white tracking-wider hover:text-[#D4AF37] transition-colors"
+                    className="text-sm font-bold text-white tracking-wider hover:text-[#B07B1E] transition-colors"
                   >
                     {COMPANY_INFO.whatsappFormatted}
                   </a>
@@ -174,11 +174,11 @@ export const Footer = () => {
 
             <div className="flex flex-col gap-6 pt-6 border-t border-white/10">
               <div className="flex items-center gap-4">
-                <ShieldCheck className="h-5 w-5 text-[#D4AF37]" />
+                <ShieldCheck className="h-5 w-5 text-[#B07B1E]" />
                 <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">Compra 100% Segura</span>
               </div>
               <div className="flex items-center gap-4">
-                <CheckCircle2 className="h-5 w-5 text-[#D4AF37]" />
+                <CheckCircle2 className="h-5 w-5 text-[#B07B1E]" />
                 <span className="text-[9px] uppercase tracking-widest text-white/40 font-bold">Produtos Originais</span>
               </div>
             </div>

@@ -28,10 +28,10 @@ export const CartDrawer = () => {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        <button className="relative p-2 hover:text-[#D4AF37] transition-colors group">
+        <button className="relative p-2 hover:text-[#B07B1E] transition-colors group">
           <ShoppingBag className="h-5 w-5 stroke-[1.5]" />
           {totalItems > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 h-5 min-w-5 rounded-full px-1 flex items-center justify-center text-[10px] font-bold bg-[#D4AF37] text-[#0F3A45] shadow-lg">
+            <span className="absolute -top-0.5 -right-0.5 h-5 min-w-5 rounded-full px-1 flex items-center justify-center text-[10px] font-bold bg-[#B07B1E] text-[#0F3A3E] shadow-lg">
               {totalItems > 99 ? '99+' : totalItems}
             </span>
           )}

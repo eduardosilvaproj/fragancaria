@@ -92,7 +92,7 @@ function Index() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F7F5F2] text-[#1A1A1A] selection:bg-[#D4AF37]/20 font-sans" ref={containerRef}>
+    <div className="min-h-screen bg-[#F3EEE3] text-[#1C302E] selection:bg-[#B07B1E]/20 font-sans" ref={containerRef}>
       <GlobalStyleSync />
       <Navbar />
 
@@ -100,7 +100,7 @@ function Index() {
         {/* HERO SECTION */}
         <MotionSection
           style={{ opacity: heroOpacity }}
-          className="relative min-h-[90vh] md:min-h-screen flex items-center overflow-hidden bg-[#0F3A45]"
+          className="relative min-h-[90vh] md:min-h-screen flex items-center overflow-hidden bg-[#0F3A3E]"
         >
           <MotionDiv
             initial={{ scale: 1.1 }}
@@ -115,8 +115,8 @@ function Index() {
                 alt="Boutique de luxo"
                 className="w-full h-full object-cover md:object-[center_right] transition-transform duration-[20s] ease-out scale-105"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0F3A45]/95 via-[#0F3A45]/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0F3A45]/80 via-transparent to-transparent h-1/2 bottom-0" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0F3A3E]/95 via-[#0F3A3E]/60 to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0F3A3E]/80 via-transparent to-transparent h-1/2 bottom-0" />
             </div>
           </MotionDiv>
 
@@ -128,8 +128,8 @@ function Index() {
                 transition={{ duration: 1.2, ease: "easeOut" }}
                 className="flex items-center gap-4 md:gap-6 mb-4 md:mb-6"
               >
-                <div className="w-12 md:w-16 h-[1px] bg-[#D4AF37]" />
-                <span className="text-[9px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
+                <div className="w-12 md:w-16 h-[1px] bg-[#B07B1E]" />
+                <span className="text-[9px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
                   Especialista em Cabelo Profissional
                 </span>
               </MotionDiv>
@@ -141,7 +141,7 @@ function Index() {
                 className="font-serif font-light mb-8 md:mb-10 text-white text-4xl md:text-5xl lg:text-7xl leading-[1.1]"
               >
                 A excelência do salão<br />
-                na sua <span className="italic underline underline-offset-8 decoration-[#D4AF37]/40">intimidade</span>
+                na sua <span className="italic underline underline-offset-8 decoration-[#B07B1E]/40">intimidade</span>
               </MotionH1>
 
               <MotionDiv
@@ -153,7 +153,7 @@ function Index() {
                 <Button
                   size="lg"
                   onClick={scrollToBrands}
-                  className="w-full sm:w-auto bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-10 md:px-14 h-12 md:h-16 text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-black transition-all duration-1000 rounded-none shadow-[0_30px_60px_rgba(212,175,55,0.25)] hover:-translate-y-1.5 group relative overflow-hidden"
+                  className="w-full sm:w-auto bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-10 md:px-14 h-12 md:h-16 text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-black transition-all duration-1000 rounded-none shadow-[0_30px_60px_rgba(212,175,55,0.25)] hover:-translate-y-1.5 group relative overflow-hidden"
                 >
                   <span className="relative z-10">Explorar Coleções</span>
                   <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
@@ -161,7 +161,7 @@ function Index() {
                 </Button>
                 <button
                   onClick={scrollToQuiz}
-                  className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-[#D4AF37] transition-all duration-500 border-b border-white/10 hover:border-[#D4AF37]/40 pb-2"
+                  className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-[#B07B1E] transition-all duration-500 border-b border-white/10 hover:border-[#B07B1E]/40 pb-2"
                 >
                   Descobrir meu Ritual
                 </button>
@@ -181,7 +181,7 @@ function Index() {
                 onClick={scrollToBrands}
                 className="flex flex-col items-center gap-3 group"
               >
-                <span className="text-[8px] md:text-[9px] uppercase tracking-[0.4em] font-bold text-white/40 group-hover:text-[#D4AF37] transition-colors duration-500">
+                <span className="text-[8px] md:text-[9px] uppercase tracking-[0.4em] font-bold text-white/40 group-hover:text-[#B07B1E] transition-colors duration-500">
                   Role para descobrir
                 </span>
                 <MotionDiv
@@ -193,8 +193,8 @@ function Index() {
                   }}
                   className="flex flex-col items-center"
                 >
-                  <div className="w-[1px] h-10 bg-gradient-to-b from-[#D4AF37] to-transparent opacity-60" />
-                  <ChevronDown className="h-4 w-4 text-[#D4AF37]/60 -mt-1" />
+                  <div className="w-[1px] h-10 bg-gradient-to-b from-[#B07B1E] to-transparent opacity-60" />
+                  <ChevronDown className="h-4 w-4 text-[#B07B1E]/60 -mt-1" />
                 </MotionDiv>
               </button>
 
@@ -206,7 +206,7 @@ function Index() {
               >
                 <div className="flex items-center gap-2 justify-center mb-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-2 w-2 fill-[#D4AF37] text-[#D4AF37] opacity-60" />
+                    <Star key={i} className="h-2 w-2 fill-[#B07B1E] text-[#B07B1E] opacity-60" />
                   ))}
                 </div>
                 <p className="text-[8px] md:text-[9px] text-white/30 uppercase tracking-[0.2em] font-medium max-w-[280px] leading-relaxed">
@@ -238,8 +238,8 @@ function Index() {
               <div className="section-label !justify-center">
                 <span>Destaques</span>
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-3xl md:text-4xl">
-                Mais Vendidos da <span className="italic text-[#D4AF37]">Semana</span>
+              <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl">
+                Mais Vendidos da <span className="italic text-[#B07B1E]">Semana</span>
               </h2>
             </div>
 
@@ -251,7 +251,7 @@ function Index() {
 
             <div className="mt-16 flex justify-center">
               <Link to="/produtos">
-                <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-16 h-14 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
+                <Button variant="outline" className="border-[#0F3A3E]/20 hover:border-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white px-16 h-14 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
                     Ver Toda a Coleção
                 </Button>
               </Link>
@@ -260,14 +260,14 @@ function Index() {
         </section>
 
         {/* OFERTAS SECTION */}
-        <section className="bg-[#F7F5F2] py-20">
+        <section className="bg-[#F3EEE3] py-20">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-16">
               <div className="section-label !justify-center">
                 <span>Ofertas</span>
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-3xl md:text-4xl">
-                Promoções <span className="italic text-[#D4AF37]">Imperdíveis</span>
+              <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl">
+                Promoções <span className="italic text-[#B07B1E]">Imperdíveis</span>
               </h2>
             </div>
 
@@ -289,8 +289,8 @@ function Index() {
               <div className="section-label !justify-center">
                 <span className="tracking-[0.5em]">Curadoria Exclusiva</span>
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                As Marcas Mais <span className="italic text-[#D4AF37]">Desejadas</span>
+              <h2 className="font-serif font-light text-[#1C302E] text-4xl md:text-5xl lg:text-6xl leading-tight">
+                As Marcas Mais <span className="italic text-[#B07B1E]">Desejadas</span>
               </h2>
             </div>
 
@@ -306,13 +306,13 @@ function Index() {
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1, duration: 0.8 }}
-                    className="group relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#0F3A45] to-[#143E4A] cursor-pointer"
+                    className="group relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#0F3A3E] to-[#16504F] cursor-pointer"
                   >
-                    <div className="absolute inset-0 bg-[#D4AF37]/0 group-hover:bg-[#D4AF37]/10 transition-all duration-700" />
+                    <div className="absolute inset-0 bg-[#B07B1E]/0 group-hover:bg-[#B07B1E]/10 transition-all duration-700" />
                     <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
                       <h3 className="text-white font-serif text-3xl md:text-4xl text-center mb-3">{brand.name}</h3>
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-8">{brand.desc}</p>
-                      <span className="bg-[#D4AF37] text-[#0F3A45] hover:bg-white hover:text-[#0F3A45] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
+                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#B07B1E] font-bold mb-8">{brand.desc}</p>
+                      <span className="bg-[#B07B1E] text-[#0F3A3E] hover:bg-white hover:text-[#0F3A3E] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
                         Explorar Coleção
                       </span>
                     </div>
@@ -324,14 +324,14 @@ function Index() {
         </section>
 
         {/* NEEDS SECTION */}
-        <section className="bg-[#F7F5F2] py-32">
+        <section className="bg-[#F3EEE3] py-32">
           <div className="container mx-auto px-4 md:px-12">
             <div className="text-center mb-24">
               <div className="section-label !justify-center">
                 <span className="tracking-[0.5em]">Categorias</span>
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                Encontre por <span className="italic text-[#D4AF37]">Tipo</span>
+              <h2 className="font-serif font-light text-[#1C302E] text-4xl md:text-5xl lg:text-6xl leading-tight">
+                Encontre por <span className="italic text-[#B07B1E]">Tipo</span>
               </h2>
             </div>
 
@@ -347,11 +347,11 @@ function Index() {
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: i * 0.1 }}
-                    className="group relative aspect-square overflow-hidden cursor-pointer bg-gradient-to-br from-[#0F3A45] to-[#1a4f5c]"
+                    className="group relative aspect-square overflow-hidden cursor-pointer bg-gradient-to-br from-[#0F3A3E] to-[#1a4f5c]"
                   >
-                    <div className="absolute inset-0 bg-[#D4AF37]/0 group-hover:bg-[#D4AF37]/20 transition-all duration-700" />
+                    <div className="absolute inset-0 bg-[#B07B1E]/0 group-hover:bg-[#B07B1E]/20 transition-all duration-700" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#D4AF37]/50 pb-2 transition-all duration-500">{need.label}</span>
+                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#B07B1E]/50 pb-2 transition-all duration-500">{need.label}</span>
                     </div>
                   </MotionDiv>
                 </Link>
@@ -370,7 +370,7 @@ function Index() {
           viewport={{ once: true, margin: "-10%" }}
           transition={{ duration: 1.2 }}
           ref={quizRef}
-          className="bg-[#F7F5F2]"
+          className="bg-[#F3EEE3]"
         >
           <AIQuiz />
         </MotionSection>
@@ -383,16 +383,16 @@ function Index() {
         {/* BANNER INSTITUCIONAL - SEM IMAGEM MLSTATIC */}
         <section className="py-24 bg-white">
           <div className="container mx-auto px-4 md:px-12">
-            <div className="bg-gradient-to-br from-[#0F3A45] to-[#143E4A] text-white p-12 md:p-20 relative overflow-hidden">
+            <div className="bg-gradient-to-br from-[#0F3A3E] to-[#16504F] text-white p-12 md:p-20 relative overflow-hidden">
                 <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#D4AF37] rounded-full blur-3xl" />
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#D4AF37] rounded-full blur-3xl" />
+                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#B07B1E] rounded-full blur-3xl" />
+                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#B07B1E] rounded-full blur-3xl" />
                 </div>
                 <div className="relative z-10 max-w-xl">
                     <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
                     <p className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-10">Os melhores produtos utilizados pelos principais salões do Brasil.</p>
                     <Link to="/produtos">
-                      <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
+                      <Button className="bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
                           Conhecer Coleção
                       </Button>
                     </Link>

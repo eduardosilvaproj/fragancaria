@@ -49,17 +49,17 @@ export const FlashOffer = () => {
   }, []);
 
   return (
-    <section className="py-24 bg-[#F7F5F2]">
+    <section className="py-24 bg-[#F3EEE3]">
       <div className="container mx-auto px-4 md:px-12">
         <div className="bg-white border border-black/[0.03] p-12 md:p-16">
           <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
             <div className="max-w-md">
-              <div className="flex items-center gap-3 text-[#D4AF37] mb-6">
+              <div className="flex items-center gap-3 text-[#B07B1E] mb-6">
                 <Timer className="h-5 w-5" />
                 <span className="text-[10px] uppercase tracking-[0.4em] font-bold">OFERTA RELÂMPAGO</span>
               </div>
               <h2 className="font-serif text-4xl mb-6 font-light">Campanha <span className="italic">Limitada</span></h2>
-              <p className="text-[#1A1A1A]/50 text-sm mb-10 leading-relaxed font-light">
+              <p className="text-[#1C302E]/50 text-sm mb-10 leading-relaxed font-light">
                 Seleção exclusiva de produtos profissionais com condições especiais por tempo limitado. 
               </p>
               
@@ -70,15 +70,15 @@ export const FlashOffer = () => {
                   { label: "Seg", value: timeLeft.seconds }
                 ].map(unit => (
                   <div key={unit.label} className="flex flex-col items-center">
-                    <div className="w-16 h-16 bg-[#0F3A45] text-white flex items-center justify-center font-serif text-2xl font-light">
+                    <div className="w-16 h-16 bg-[#0F3A3E] text-white flex items-center justify-center font-serif text-2xl font-light">
                       {unit.value.toString().padStart(2, '0')}
                     </div>
-                    <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]/30 mt-2">{unit.label}</span>
+                    <span className="text-[8px] uppercase tracking-[0.2em] font-bold text-[#1C302E]/30 mt-2">{unit.label}</span>
                   </div>
                 ))}
               </div>
 
-              <Button variant="outline" className="border-[#0F3A45]/20 hover:border-[#0F3A45] hover:bg-[#0F3A45] hover:text-white px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all">
+              <Button variant="outline" className="border-[#0F3A3E]/20 hover:border-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all">
                 Ver Todas as Ofertas
                 <ArrowRight className="ml-4 h-4 w-4" />
               </Button>

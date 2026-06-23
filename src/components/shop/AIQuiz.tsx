@@ -102,43 +102,43 @@ export const AIQuiz = () => {
     <section className="py-16 bg-white overflow-hidden">
       <div className="container mx-auto px-4 md:px-12">
         <div className="text-center mb-10">
-          <span className="text-[10px] uppercase tracking-[0.4em] text-[#D4AF37] font-bold">Diagnóstico</span>
-          <h2 className="font-serif font-light text-[#1A1A1A] text-2xl md:text-3xl mt-1">
+          <span className="text-[10px] uppercase tracking-[0.4em] text-[#B07B1E] font-bold">Diagnóstico</span>
+          <h2 className="font-serif font-light text-[#1C302E] text-2xl md:text-3xl mt-1">
             Descubra seu Ritual Ideal
           </h2>
         </div>
 
         <div className="max-w-4xl mx-auto bg-white overflow-hidden flex flex-col md:flex-row shadow-lg border border-black/5">
           {/* Left Side: Info & Progress */}
-          <div className="md:w-[35%] bg-[#0F3A45] text-white p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
+          <div className="md:w-[35%] bg-[#0F3A3E] text-white p-8 md:p-10 flex flex-col justify-between relative overflow-hidden">
             <div className="absolute top-0 right-0 w-full h-full opacity-10 pointer-events-none">
-              <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-[#D4AF37] rounded-full blur-[100px]" />
+              <div className="absolute top-[-10%] right-[-10%] w-[80%] h-[80%] bg-[#B07B1E] rounded-full blur-[100px]" />
             </div>
 
             <div className="relative z-10">
-              <div className="flex items-center gap-2 text-[#D4AF37] mb-6">
+              <div className="flex items-center gap-2 text-[#B07B1E] mb-6">
                 <Sparkles className="h-4 w-4" />
                 <span className="text-[9px] uppercase tracking-[0.3em] font-bold">Quiz Personalizado</span>
               </div>
-              <h3 className="font-serif text-2xl md:text-3xl mb-4 font-light">Encontre os produtos <span className="italic text-[#D4AF37]">certos</span></h3>
+              <h3 className="font-serif text-2xl md:text-3xl mb-4 font-light">Encontre os produtos <span className="italic text-[#B07B1E]">certos</span></h3>
               <p className="text-white/50 text-xs leading-relaxed mb-8">Responda 4 perguntas rápidas e receba recomendações personalizadas.</p>
 
               <div className="flex items-center gap-3">
-                <Clock className="h-3 w-3 text-[#D4AF37]/60" />
+                <Clock className="h-3 w-3 text-[#B07B1E]/60" />
                 <span className="text-[9px] uppercase tracking-wider text-white/50">~45 segundos</span>
               </div>
             </div>
 
             <div className="relative z-10 mt-8">
               <div className="flex justify-between items-end mb-3">
-                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#D4AF37]">Progresso</span>
+                <span className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#B07B1E]">Progresso</span>
                 <span className="text-[9px] text-white/40">{step + 1}/{QUESTIONS.length}</span>
               </div>
               <div className="h-1 w-full bg-white/10 rounded-full">
                 <MotionDiv
                   initial={{ width: 0 }}
                   animate={{ width: `${progress}%` }}
-                  className="h-full bg-[#D4AF37] rounded-full"
+                  className="h-full bg-[#B07B1E] rounded-full"
                 />
               </div>
             </div>
@@ -159,22 +159,22 @@ export const AIQuiz = () => {
                   {step > 0 && (
                     <button
                       onClick={() => setStep(step - 1)}
-                      className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-[#1A1A1A]/30 mb-6 hover:text-[#D4AF37] transition-colors group"
+                      className="flex items-center gap-2 text-[9px] uppercase tracking-wider text-[#1C302E]/30 mb-6 hover:text-[#B07B1E] transition-colors group"
                     >
                       <ArrowLeft className="h-3 w-3 transition-transform group-hover:-translate-x-1" /> Voltar
                     </button>
                   )}
-                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#D4AF37] mb-2">Questão {step + 1}</h4>
-                  <h2 className="font-serif text-2xl md:text-3xl text-[#1A1A1A] mb-8 font-light">{QUESTIONS[step].question}</h2>
+                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#B07B1E] mb-2">Questão {step + 1}</h4>
+                  <h2 className="font-serif text-2xl md:text-3xl text-[#1C302E] mb-8 font-light">{QUESTIONS[step].question}</h2>
                   <div className="grid grid-cols-1 gap-3">
                     {QUESTIONS[step].options.map(option => (
                       <button
                         key={option}
                         onClick={() => handleAnswer(option)}
-                        className="p-5 border border-black/5 hover:border-[#D4AF37] hover:bg-[#F7F5F2] text-left transition-all group flex items-center justify-between"
+                        className="p-5 border border-black/5 hover:border-[#B07B1E] hover:bg-[#F3EEE3] text-left transition-all group flex items-center justify-between"
                       >
-                        <span className="text-[11px] uppercase tracking-[0.15em] font-bold text-[#1A1A1A]/70">{option}</span>
-                        <ChevronRight className="h-4 w-4 text-[#D4AF37] opacity-0 group-hover:opacity-100 transition-all" />
+                        <span className="text-[11px] uppercase tracking-[0.15em] font-bold text-[#1C302E]/70">{option}</span>
+                        <ChevronRight className="h-4 w-4 text-[#B07B1E] opacity-0 group-hover:opacity-100 transition-all" />
                       </button>
                     ))}
                   </div>
@@ -186,15 +186,15 @@ export const AIQuiz = () => {
                   transition={{ duration: 0.5 }}
                   className="flex-1 flex flex-col items-center text-center justify-center"
                 >
-                  <div className="w-16 h-16 rounded-full bg-[#D4AF37]/10 flex items-center justify-center mb-6">
-                    <CheckCircle2 className="h-8 w-8 text-[#D4AF37]" />
+                  <div className="w-16 h-16 rounded-full bg-[#B07B1E]/10 flex items-center justify-center mb-6">
+                    <CheckCircle2 className="h-8 w-8 text-[#B07B1E]" />
                   </div>
-                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#D4AF37] mb-2">Análise Concluída</h4>
-                  <h2 className="font-serif text-2xl text-[#1A1A1A] mb-6 font-light">Seu Ritual <span className="italic text-[#D4AF37]">Personalizado</span></h2>
+                  <h4 className="text-[9px] uppercase tracking-[0.3em] font-bold text-[#B07B1E] mb-2">Análise Concluída</h4>
+                  <h2 className="font-serif text-2xl text-[#1C302E] mb-6 font-light">Seu Ritual <span className="italic text-[#B07B1E]">Personalizado</span></h2>
 
                   {recommendedProduct ? (
                     <Link to={`/produto/${recommendedProduct.handle}` as any} className="w-full">
-                      <div className="bg-[#F7F5F2] p-6 w-full mb-8 flex items-center gap-6 text-left border border-black/5 group hover:border-[#D4AF37]/30 transition-all cursor-pointer">
+                      <div className="bg-[#F3EEE3] p-6 w-full mb-8 flex items-center gap-6 text-left border border-black/5 group hover:border-[#B07B1E]/30 transition-all cursor-pointer">
                         <div className="relative w-20 h-20 shrink-0 overflow-hidden bg-white">
                           {recommendedProduct.images?.edges?.[0]?.node?.url && (
                             <img
@@ -205,30 +205,30 @@ export const AIQuiz = () => {
                           )}
                         </div>
                         <div>
-                          <p className="text-[8px] uppercase tracking-[0.2em] text-[#D4AF37] font-bold mb-1">Recomendação</p>
-                          <h5 className="font-serif text-lg mb-1 text-[#1A1A1A] font-light line-clamp-2">{recommendedProduct.title}</h5>
-                          <p className="text-lg font-light text-[#1A1A1A]">
+                          <p className="text-[8px] uppercase tracking-[0.2em] text-[#B07B1E] font-bold mb-1">Recomendação</p>
+                          <h5 className="font-serif text-lg mb-1 text-[#1C302E] font-light line-clamp-2">{recommendedProduct.title}</h5>
+                          <p className="text-lg font-light text-[#1C302E]">
                             {formatPrice(recommendedProduct.priceRange.minVariantPrice.amount, recommendedProduct.priceRange.minVariantPrice.currencyCode)}
                           </p>
                         </div>
                       </div>
                     </Link>
                   ) : (
-                    <div className="bg-[#F7F5F2] p-6 w-full mb-8 text-center">
-                      <p className="text-sm text-[#1A1A1A]/50">Carregando recomendação...</p>
+                    <div className="bg-[#F3EEE3] p-6 w-full mb-8 text-center">
+                      <p className="text-sm text-[#1C302E]/50">Carregando recomendação...</p>
                     </div>
                   )}
 
                   <div className="flex flex-col sm:flex-row gap-3 w-full">
                     <Link to="/produtos" search={{ productType: "Kit" }} className="flex-1">
-                      <Button className="bg-[#0F3A45] hover:bg-[#D4AF37] text-white w-full h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all">
+                      <Button className="bg-[#0F3A3E] hover:bg-[#B07B1E] text-white w-full h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all">
                         <ShoppingCart className="h-4 w-4 mr-2" /> Ver Todos os Kits
                       </Button>
                     </Link>
                     <Button
                       variant="outline"
                       onClick={resetQuiz}
-                      className="border-black/10 hover:border-[#0F3A45] h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all"
+                      className="border-black/10 hover:border-[#0F3A3E] h-12 rounded-none text-[10px] uppercase tracking-[0.2em] font-bold transition-all"
                     >
                       Refazer
                     </Button>

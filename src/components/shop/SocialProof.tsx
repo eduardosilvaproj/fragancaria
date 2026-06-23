@@ -18,15 +18,15 @@ export const SocialProof = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div>
             <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-[1px] bg-[#D4AF37]" />
-              <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
+              <div className="w-12 h-[1px] bg-[#B07B1E]" />
+              <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
                 Por que escolher a Fragranciaria
               </span>
             </div>
             <h2 className="font-serif text-3xl md:text-4xl mb-6 font-light leading-tight">
-              Sua Boutique de <span className="italic text-[#D4AF37]">Cosméticos Profissionais</span>
+              Sua Boutique de <span className="italic text-[#B07B1E]">Cosméticos Profissionais</span>
             </h2>
-            <p className="text-[#1A1A1A]/50 text-sm mb-12 leading-relaxed font-light">
+            <p className="text-[#1C302E]/50 text-sm mb-12 leading-relaxed font-light">
               Selecionamos os melhores produtos capilares profissionais para você cuidar dos seus fios em casa com qualidade de salão.
             </p>
 
@@ -40,12 +40,12 @@ export const SocialProof = () => {
                   transition={{ delay: i * 0.1 }}
                   className="flex gap-6"
                 >
-                  <div className="w-12 h-12 bg-[#F7F5F2] flex items-center justify-center shrink-0">
-                    <stat.icon className="h-5 w-5 text-[#D4AF37] stroke-[1.2]" />
+                  <div className="w-12 h-12 bg-[#F3EEE3] flex items-center justify-center shrink-0">
+                    <stat.icon className="h-5 w-5 text-[#B07B1E] stroke-[1.2]" />
                   </div>
                   <div>
-                    <h4 className="text-xs uppercase tracking-[0.2em] font-bold text-[#1A1A1A] mb-1">{stat.title}</h4>
-                    <p className="text-[11px] text-[#1A1A1A]/40 font-bold uppercase tracking-widest">{stat.detail}</p>
+                    <h4 className="text-xs uppercase tracking-[0.2em] font-bold text-[#1C302E] mb-1">{stat.title}</h4>
+                    <p className="text-[11px] text-[#1C302E]/40 font-bold uppercase tracking-widest">{stat.detail}</p>
                   </div>
                 </MotionDiv>
               ))}

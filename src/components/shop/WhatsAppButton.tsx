@@ -45,7 +45,7 @@ export const WhatsAppButton = ({
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
                 transition={{ duration: 0.2 }}
-                className="bg-white shadow-lg px-4 py-2 rounded-lg text-sm font-medium text-[#0F3A45] whitespace-nowrap"
+                className="bg-white shadow-lg px-4 py-2 rounded-lg text-sm font-medium text-[#0F3A3E] whitespace-nowrap"
               >
                 Fale conosco no WhatsApp
               </MotionDiv>

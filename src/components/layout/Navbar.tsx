@@ -105,7 +105,7 @@ export const Navbar = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-[60] transition-all duration-700",
         isScrolled
-          ? "bg-[#0F3A45]/98 backdrop-blur-xl border-b border-[#D4AF37]/10 py-2"
+          ? "bg-[#0F3A3E]/98 backdrop-blur-xl border-b border-[#B07B1E]/10 py-2"
           : "bg-transparent py-4"
       )}
     >
@@ -115,7 +115,7 @@ export const Navbar = () => {
           <div className="lg:hidden">
             <button
               onClick={() => setIsMobileMenuOpen(true)}
-              className="p-2 text-white transition-colors hover:text-[#D4AF37]"
+              className="p-2 text-white transition-colors hover:text-[#B07B1E]"
               aria-label="Abrir menu"
             >
               <Menu className="h-6 w-6 stroke-[1.5]" />
@@ -142,7 +142,7 @@ export const Navbar = () => {
               <button
                 className={cn(
                   "text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500 flex items-center gap-1.5 group py-2",
-                  "text-white/90 hover:text-[#D4AF37]"
+                  "text-white/90 hover:text-[#B07B1E]"
                 )}
               >
                 Tratamentos
@@ -159,17 +159,17 @@ export const Navbar = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[600px] bg-[#0F3A45]/98 backdrop-blur-xl border border-[#D4AF37]/10 shadow-2xl p-8"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[600px] bg-[#0F3A3E]/98 backdrop-blur-xl border border-[#B07B1E]/10 shadow-2xl p-8"
                   >
                     <div className="grid grid-cols-2 gap-8">
                       <div>
-                        <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold mb-4">Por Tipo</h4>
+                        <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold mb-4">Por Tipo</h4>
                         <div className="flex flex-col gap-2">
                           {TIPOS_PRODUTO.map(item => (
                             <button
                               key={item.label}
                               onClick={() => navigateToProducts({ productType: item.productType })}
-                              className="text-left text-white/80 hover:text-[#D4AF37] transition-colors py-1.5 text-sm font-medium"
+                              className="text-left text-white/80 hover:text-[#B07B1E] transition-colors py-1.5 text-sm font-medium"
                             >
                               {item.label}
                             </button>
@@ -177,13 +177,13 @@ export const Navbar = () => {
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold mb-4">Por Necessidade</h4>
+                        <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold mb-4">Por Necessidade</h4>
                         <div className="flex flex-col gap-2">
                           {NECESSIDADES.map(item => (
                             <button
                               key={item.label}
                               onClick={() => navigateToProducts({ tag: item.tag })}
-                              className="text-left text-white/80 hover:text-[#D4AF37] transition-colors py-1.5 text-sm font-medium"
+                              className="text-left text-white/80 hover:text-[#B07B1E] transition-colors py-1.5 text-sm font-medium"
                             >
                               {item.label}
                             </button>
@@ -195,7 +195,7 @@ export const Navbar = () => {
                       <Link
                         to="/produtos"
                         onClick={() => setActiveDropdown(null)}
-                        className="text-[10px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold hover:text-white transition-colors"
+                        className="text-[10px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold hover:text-white transition-colors"
                       >
                         Ver Todos os Produtos →
                       </Link>
@@ -214,7 +214,7 @@ export const Navbar = () => {
               <button
                 className={cn(
                   "text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500 flex items-center gap-1.5 group py-2",
-                  "text-white/90 hover:text-[#D4AF37]"
+                  "text-white/90 hover:text-[#B07B1E]"
                 )}
               >
                 Coloração
@@ -231,7 +231,7 @@ export const Navbar = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[280px] bg-[#0F3A45]/98 backdrop-blur-xl border border-[#D4AF37]/10 shadow-2xl p-6"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[280px] bg-[#0F3A3E]/98 backdrop-blur-xl border border-[#B07B1E]/10 shadow-2xl p-6"
                   >
                     <div className="flex flex-col gap-2">
                       {COLORACAO_ITEMS.map(item => (
@@ -240,7 +240,7 @@ export const Navbar = () => {
                           onClick={() => navigateToProducts(
                             item.tag ? { tag: item.tag } : { productType: item.productType }
                           )}
-                          className="text-left text-white/80 hover:text-[#D4AF37] transition-colors py-2 text-sm font-medium"
+                          className="text-left text-white/80 hover:text-[#B07B1E] transition-colors py-2 text-sm font-medium"
                         >
                           {item.label}
                         </button>
@@ -260,7 +260,7 @@ export const Navbar = () => {
               <button
                 className={cn(
                   "text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500 flex items-center gap-1.5 group py-2",
-                  "text-white/90 hover:text-[#D4AF37]"
+                  "text-white/90 hover:text-[#B07B1E]"
                 )}
               >
                 Marcas
@@ -277,17 +277,17 @@ export const Navbar = () => {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.2 }}
-                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[500px] bg-[#0F3A45]/98 backdrop-blur-xl border border-[#D4AF37]/10 shadow-2xl p-8"
+                    className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-[500px] bg-[#0F3A3E]/98 backdrop-blur-xl border border-[#B07B1E]/10 shadow-2xl p-8"
                   >
-                    <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold mb-4">Marcas Premium</h4>
+                    <h4 className="text-[9px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold mb-4">Marcas Premium</h4>
                     <div className="grid grid-cols-2 gap-3 mb-6">
                       {MARCAS_PREMIUM.map(marca => (
                         <button
                           key={marca.name}
                           onClick={() => navigateToProducts({ vendor: marca.slug })}
-                          className="text-left bg-[#143E4A]/50 hover:bg-[#D4AF37]/20 p-4 transition-all group/marca"
+                          className="text-left bg-[#16504F]/50 hover:bg-[#B07B1E]/20 p-4 transition-all group/marca"
                         >
-                          <span className="text-white font-medium group-hover/marca:text-[#D4AF37] transition-colors">{marca.name}</span>
+                          <span className="text-white font-medium group-hover/marca:text-[#B07B1E] transition-colors">{marca.name}</span>
                           <p className="text-[10px] text-white/40 mt-1">{marca.desc}</p>
                         </button>
                       ))}
@@ -298,7 +298,7 @@ export const Navbar = () => {
                         <button
                           key={marca}
                           onClick={() => navigateToProducts({ vendor: marca })}
-                          className="text-white/60 hover:text-[#D4AF37] transition-colors text-sm"
+                          className="text-white/60 hover:text-[#B07B1E] transition-colors text-sm"
                         >
                           {marca}
                         </button>
@@ -308,7 +308,7 @@ export const Navbar = () => {
                       <Link
                         to="/produtos"
                         onClick={() => setActiveDropdown(null)}
-                        className="text-[10px] uppercase tracking-[0.3em] text-[#D4AF37] font-bold hover:text-white transition-colors"
+                        className="text-[10px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold hover:text-white transition-colors"
                       >
                         Ver Todas as Marcas →
                       </Link>
@@ -322,7 +322,7 @@ export const Navbar = () => {
             <Link
               to="/produtos"
               search={{ productType: "Kits" }}
-              className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/90 hover:text-[#D4AF37] transition-all duration-500 py-2"
+              className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/90 hover:text-[#B07B1E] transition-all duration-500 py-2"
             >
               Kits
             </Link>
@@ -331,7 +331,7 @@ export const Navbar = () => {
             <Link
               to="/produtos"
               search={{ sale: "true" }}
-              className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/90 hover:text-[#D4AF37] transition-all duration-500 py-2"
+              className="text-[10px] uppercase tracking-[0.4em] font-bold text-white/90 hover:text-[#B07B1E] transition-all duration-500 py-2"
             >
               Ofertas
             </Link>
@@ -342,7 +342,7 @@ export const Navbar = () => {
             {/* Search */}
             <button
               onClick={() => setIsSearchOpen(true)}
-              className="p-2 text-white hover:text-[#D4AF37] transition-all duration-300"
+              className="p-2 text-white hover:text-[#B07B1E] transition-all duration-300"
               aria-label="Buscar"
             >
               <Search className="h-5 w-5 stroke-[1.5]" />
@@ -353,7 +353,7 @@ export const Navbar = () => {
               href="https://wa.me/5511999999999"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex p-2 text-white hover:text-[#D4AF37] transition-all duration-300"
+              className="hidden sm:flex p-2 text-white hover:text-[#B07B1E] transition-all duration-300"
               aria-label="WhatsApp"
             >
               <MessageCircle className="h-5 w-5 stroke-[1.5]" />
@@ -361,7 +361,7 @@ export const Navbar = () => {
 
             {/* Wishlist */}
             <button
-              className="hidden md:flex p-2 text-white hover:text-[#D4AF37] transition-all duration-300"
+              className="hidden md:flex p-2 text-white hover:text-[#B07B1E] transition-all duration-300"
               aria-label="Favoritos"
             >
               <Heart className="h-5 w-5 stroke-[1.5]" />
@@ -382,7 +382,7 @@ export const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0F3A45] z-[100] lg:hidden overflow-y-auto"
+            className="fixed inset-0 bg-[#0F3A3E] z-[100] lg:hidden overflow-y-auto"
           >
             <div className="flex flex-col min-h-full">
               {/* Mobile Header */}
@@ -396,7 +396,7 @@ export const Navbar = () => {
                 </Link>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="p-2 text-white hover:text-[#D4AF37]"
+                  className="p-2 text-white hover:text-[#B07B1E]"
                   aria-label="Fechar menu"
                 >
                   <X className="h-6 w-6" />
@@ -426,22 +426,22 @@ export const Navbar = () => {
                         className="overflow-hidden"
                       >
                         <div className="pb-4 pl-4">
-                          <p className="text-[10px] uppercase tracking-wider text-[#D4AF37] mb-2">Por Tipo</p>
+                          <p className="text-[10px] uppercase tracking-wider text-[#B07B1E] mb-2">Por Tipo</p>
                           {TIPOS_PRODUTO.map(item => (
                             <button
                               key={item.label}
                               onClick={() => navigateToProducts({ productType: item.productType })}
-                              className="block w-full text-left py-2 text-white/70 hover:text-[#D4AF37]"
+                              className="block w-full text-left py-2 text-white/70 hover:text-[#B07B1E]"
                             >
                               {item.label}
                             </button>
                           ))}
-                          <p className="text-[10px] uppercase tracking-wider text-[#D4AF37] mt-4 mb-2">Por Necessidade</p>
+                          <p className="text-[10px] uppercase tracking-wider text-[#B07B1E] mt-4 mb-2">Por Necessidade</p>
                           {NECESSIDADES.map(item => (
                             <button
                               key={item.label}
                               onClick={() => navigateToProducts({ tag: item.tag })}
-                              className="block w-full text-left py-2 text-white/70 hover:text-[#D4AF37]"
+                              className="block w-full text-left py-2 text-white/70 hover:text-[#B07B1E]"
                             >
                               {item.label}
                             </button>
@@ -479,7 +479,7 @@ export const Navbar = () => {
                               onClick={() => navigateToProducts(
                                 item.tag ? { tag: item.tag } : { productType: item.productType }
                               )}
-                              className="block w-full text-left py-2 text-white/70 hover:text-[#D4AF37]"
+                              className="block w-full text-left py-2 text-white/70 hover:text-[#B07B1E]"
                             >
                               {item.label}
                             </button>
@@ -515,7 +515,7 @@ export const Navbar = () => {
                             <button
                               key={marca.name}
                               onClick={() => navigateToProducts({ vendor: marca.slug })}
-                              className="block w-full text-left py-2 text-white/70 hover:text-[#D4AF37]"
+                              className="block w-full text-left py-2 text-white/70 hover:text-[#B07B1E]"
                             >
                               {marca.name}
                             </button>
@@ -525,7 +525,7 @@ export const Navbar = () => {
                             <button
                               key={marca}
                               onClick={() => navigateToProducts({ vendor: marca })}
-                              className="block w-full text-left py-2 text-white/50 hover:text-[#D4AF37] text-sm"
+                              className="block w-full text-left py-2 text-white/50 hover:text-[#B07B1E] text-sm"
                             >
                               {marca}
                             </button>
@@ -550,7 +550,7 @@ export const Navbar = () => {
                   to="/produtos"
                   search={{ sale: "true" }}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className="block py-4 text-lg font-medium text-[#D4AF37] border-b border-white/10"
+                  className="block py-4 text-lg font-medium text-[#B07B1E] border-b border-white/10"
                 >
                   Ofertas
                 </Link>
@@ -570,7 +570,7 @@ export const Navbar = () => {
                   href="https://wa.me/5516997150373"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 text-[#D4AF37] mb-4"
+                  className="flex items-center gap-3 text-[#B07B1E] mb-4"
                 >
                   <MessageCircle className="h-5 w-5" />
                   <span className="text-sm font-medium">Fale conosco no WhatsApp</span>
@@ -595,12 +595,12 @@ export const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0F3A45]/98 z-[100] flex flex-col p-6 md:p-16"
+            className="fixed inset-0 bg-[#0F3A3E]/98 z-[100] flex flex-col p-6 md:p-16"
           >
             <div className="flex justify-end mb-8 md:mb-16">
               <button
                 onClick={() => setIsSearchOpen(false)}
-                className="p-3 hover:rotate-90 transition-transform duration-500 text-white hover:text-[#D4AF37]"
+                className="p-3 hover:rotate-90 transition-transform duration-500 text-white hover:text-[#B07B1E]"
               >
                 <X className="h-8 w-8 stroke-[1.5]" />
               </button>
@@ -612,13 +612,13 @@ export const Navbar = () => {
                   type="text"
                   autoFocus
                   placeholder="O que você procura?"
-                  className="w-full bg-transparent border-b-2 border-white/20 py-6 text-2xl md:text-4xl font-serif outline-none focus:border-[#D4AF37] transition-colors text-white placeholder:text-white/30"
+                  className="w-full bg-transparent border-b-2 border-white/20 py-6 text-2xl md:text-4xl font-serif outline-none focus:border-[#B07B1E] transition-colors text-white placeholder:text-white/30"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
                 <button
                   type="submit"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-[#D4AF37] hover:text-white transition-colors"
+                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-[#B07B1E] hover:text-white transition-colors"
                 >
                   <SearchIcon className="h-8 w-8" />
                 </button>
@@ -626,7 +626,7 @@ export const Navbar = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
                 <div>
-                  <h5 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-6">Marcas Populares</h5>
+                  <h5 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-6">Marcas Populares</h5>
                   <div className="flex flex-col gap-3">
                     {MARCAS_PREMIUM.map((marca) => (
                       <button
@@ -635,7 +635,7 @@ export const Navbar = () => {
                           navigateToProducts({ vendor: marca.slug });
                           setIsSearchOpen(false);
                         }}
-                        className="text-left text-xl md:text-2xl font-serif hover:text-[#D4AF37] transition-colors text-white/80"
+                        className="text-left text-xl md:text-2xl font-serif hover:text-[#B07B1E] transition-colors text-white/80"
                       >
                         {marca.name}
                       </button>
@@ -643,7 +643,7 @@ export const Navbar = () => {
                   </div>
                 </div>
                 <div>
-                  <h5 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#D4AF37] mb-6">Categorias</h5>
+                  <h5 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-6">Categorias</h5>
                   <div className="flex flex-wrap gap-3">
                     {TIPOS_PRODUTO.map(item => (
                       <button
@@ -652,7 +652,7 @@ export const Navbar = () => {
                           navigateToProducts({ productType: item.productType });
                           setIsSearchOpen(false);
                         }}
-                        className="px-5 py-2.5 bg-[#143E4A] text-[11px] uppercase tracking-[0.2em] hover:bg-[#D4AF37] hover:text-[#0F3A45] transition-all text-white font-medium"
+                        className="px-5 py-2.5 bg-[#16504F] text-[11px] uppercase tracking-[0.2em] hover:bg-[#B07B1E] hover:text-[#0F3A3E] transition-all text-white font-medium"
                       >
                         {item.label}
                       </button>

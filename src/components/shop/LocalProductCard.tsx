@@ -83,91 +83,85 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
       viewport={{ once: true }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="group flex flex-col h-full bg-white transition-all duration-1000 hover:shadow-[0_30px_60px_rgba(15,58,69,0.06)] p-2"
+      className="group flex flex-col h-full bg-white border border-[#E9E1D2] transition-all duration-300 hover:shadow-[0_18px_40px_rgba(15,58,62,0.10)] hover:-translate-y-1"
     >
       <Link
         to={`/produto/${product.id}` as any}
-        className="relative aspect-[3/4] overflow-hidden bg-[#F7F5F2] mb-4 block pb-12 md:pb-0"
+        className="relative aspect-square overflow-hidden bg-[#F8F4EA] block"
       >
         {/* Badges */}
-        <div className="absolute top-3 left-3 md:top-4 md:left-4 z-10 flex flex-col gap-2">
+        <div className="absolute top-4 left-4 z-10 flex flex-col gap-2">
           {hasDiscount && discount > 0 && (
-            <span className="bg-[#D4AF37] text-[#0F3A45] text-[7px] md:text-[8px] uppercase tracking-[0.15em] md:tracking-[0.2em] px-2 md:px-4 py-1.5 md:py-2 font-bold">
+            <span className="bg-[#0F3A3E] text-white text-[11px] font-semibold tracking-[0.04em] px-3 py-1.5">
               -{discount}% OFF
             </span>
           )}
           {product.isNew && (
-            <span className="bg-[#0F3A45] text-white text-[7px] md:text-[8px] uppercase tracking-[0.15em] md:tracking-[0.2em] px-2 md:px-4 py-1.5 md:py-2 font-bold">
+            <span className="bg-[#B07B1E] text-white text-[11px] font-semibold tracking-[0.04em] px-3 py-1.5">
               Novo
             </span>
           )}
         </div>
 
         {/* Quick Actions - só desktop */}
-        <div className="hidden md:flex absolute top-4 right-4 z-10 flex-col gap-3 opacity-0 group-hover:opacity-100 transition-all duration-500 translate-x-4 group-hover:translate-x-0">
-          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] transition-all shadow-sm">
-            <Heart className="h-4 w-4 stroke-[1.2]" />
-          </button>
-          <button className="w-11 h-11 bg-white flex items-center justify-center text-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] transition-all shadow-sm">
-            <Eye className="h-4 w-4 stroke-[1.2]" />
+        <div className="hidden md:flex absolute top-4 right-4 z-10 flex-col gap-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-2 group-hover:translate-x-0">
+          <button className="w-10 h-10 rounded-full bg-[#0F3A3E]/10 flex items-center justify-center text-[#0F3A3E] hover:bg-[#B07B1E] hover:text-white transition-all">
+            <Heart className="h-4 w-4" />
           </button>
         </div>
 
         {/* Image */}
-        <div className="w-full h-full relative">
+        <div className="w-full h-full relative p-6">
           <img
             src={product.images[0]}
             alt={product.name}
-            className="absolute inset-0 w-full h-full object-contain p-2 md:p-4 transition-transform duration-700 group-hover:scale-105"
+            className="absolute inset-0 w-full h-full object-contain p-4 transition-transform duration-500 group-hover:scale-105"
           />
-        </div>
-
-        {/* Botão de compra — visível no hover (desktop) e sempre visível no mobile */}
-        <div className={`
-          absolute inset-x-0 bottom-0 transition-all duration-700 ease-[cubic-bezier(0.19,1,0.22,1)] z-10
-          md:translate-y-full md:group-hover:translate-y-0
-          translate-y-0
-        `}>
-          <Button
-            onClick={handleAddToCart}
-            disabled={isLoading}
-            className="w-full bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white border-none h-10 md:h-12 text-[9px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-bold transition-all rounded-none"
-            size="lg"
-          >
-            <span className="flex items-center gap-2 md:gap-3">
-              <ShoppingBag className="h-3.5 w-3.5 md:h-4 md:w-4" />
-              {isLoading ? "Adicionando..." : "Adicionar"}
-            </span>
-          </Button>
         </div>
       </Link>
 
-      <div className="flex flex-col flex-1 px-1 md:px-3 text-center pb-2 md:pb-4">
-        <p className="text-[7px] md:text-[8px] uppercase tracking-[0.4em] md:tracking-[0.5em] text-[#D4AF37] font-bold mb-1 md:mb-2">
+      <div className="flex flex-col flex-1 p-4 md:p-5">
+        {/* Brand eyebrow */}
+        <p className="text-[11px] uppercase tracking-[0.16em] text-[#B07B1E] font-medium mb-2">
           {product.brand}
         </p>
 
+        {/* Product name */}
         <Link
           to={`/produto/${product.id}` as any}
-          className="font-serif text-[13px] md:text-[16px] leading-tight mb-2 md:mb-4 hover:text-[#D4AF37] transition-colors text-[#1A1A1A] font-light line-clamp-2"
+          className="font-serif text-[17px] md:text-[18px] leading-tight mb-3 text-[#0F3A3E] font-medium line-clamp-2 hover:text-[#B07B1E] transition-colors"
         >
           {product.name}
         </Link>
 
-        <div className="mt-auto pt-2 md:pt-4 flex flex-col items-center gap-1 md:gap-2">
-          <div className="flex items-center gap-2 md:gap-4 flex-wrap justify-center">
+        {/* Price section */}
+        <div className="mt-auto pt-3 border-t border-[#E9E1D2]">
+          <div className="flex items-baseline gap-3 mb-1">
             {hasDiscount && product.originalPrice && (
-              <span className="text-[11px] md:text-sm text-[#1A1A1A]/30 line-through font-light">
+              <span className="text-[13px] text-[#C3BCA8] line-through">
                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.originalPrice)}
               </span>
             )}
-            <span className="text-[18px] md:text-[22px] font-light text-[#1A1A1A] tracking-tighter">
+            <span className="font-serif text-[22px] text-[#0F3A3E]">
               {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price)}
             </span>
           </div>
-          <div className="text-[8px] md:text-[9px] text-[#1A1A1A]/40 uppercase tracking-[0.15em] md:tracking-[0.2em] font-bold">
-            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)}
-          </div>
+          <p className="text-[11px] text-[#8A938E] mb-4">
+            ou <strong className="text-[#0F3A3E]">10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)}</strong> sem juros
+          </p>
+
+          {/* Add to cart button */}
+          <Button
+            onClick={handleAddToCart}
+            disabled={isLoading}
+            className="w-full bg-[#0F3A3E] hover:bg-[#16504F] text-white h-12 text-[12px] uppercase tracking-[0.16em] font-medium transition-all rounded-none"
+            size="lg"
+          >
+            <span className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4" />
+              {isLoading ? "Adicionando..." : "Adicionar ao Carrinho"}
+            </span>
+          </Button>
         </div>
       </div>
     </MotionDiv>

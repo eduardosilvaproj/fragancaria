@@ -34,7 +34,7 @@ export const CampaignBanner = () => {
   }, []);
 
   return (
-    <section className="bg-[#0F3A45] overflow-hidden py-16">
+    <section className="bg-[#0F3A3E] overflow-hidden py-16">
       <div className="container mx-auto px-4 md:px-12">
         <div className="relative h-[400px] overflow-hidden">
           <AnimatePresence mode="wait">
@@ -52,7 +52,7 @@ export const CampaignBanner = () => {
                   alt={CAMPAIGNS[current].title}
                   className="w-full h-full object-cover opacity-30 grayscale"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#0F3A45] via-transparent to-[#0F3A45]" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0F3A3E] via-transparent to-[#0F3A3E]" />
               </div>
 
               <div className="relative z-10 max-w-2xl">
@@ -64,11 +64,11 @@ export const CampaignBanner = () => {
                   <h2 className="font-serif text-5xl md:text-7xl text-white mb-6 font-light tracking-tight">
                     {CAMPAIGNS[current].title}
                   </h2>
-                  <p className="text-[#D4AF37] text-sm uppercase tracking-[0.4em] font-bold mb-10">
+                  <p className="text-[#B07B1E] text-sm uppercase tracking-[0.4em] font-bold mb-10">
                     {CAMPAIGNS[current].subtitle}
                   </p>
                   <Link to={CAMPAIGNS[current].link as any}>
-                    <Button className="bg-[#D4AF37] hover:bg-white text-[#0F3A45] hover:text-[#0F3A45] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
+                    <Button className="bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-bold transition-all duration-500">
                       {CAMPAIGNS[current].cta}
                       <ArrowRight className="ml-4 h-4 w-4" />
                     </Button>
@@ -83,7 +83,7 @@ export const CampaignBanner = () => {
               <button
                 key={i}
                 onClick={() => setCurrent(i)}
-                className={`w-12 h-[2px] transition-all duration-500 ${current === i ? "bg-[#D4AF37]" : "bg-white/10"}`}
+                className={`w-12 h-[2px] transition-all duration-500 ${current === i ? "bg-[#B07B1E]" : "bg-white/10"}`}
               />
             ))}
           </div>
