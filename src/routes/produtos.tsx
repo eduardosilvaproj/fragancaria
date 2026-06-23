@@ -110,7 +110,7 @@ function ProdutosPage() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["all-products"],
-    queryFn: () => storefrontApiRequest(GET_ALL_PRODUCTS, { first: 100 }),
+    queryFn: () => storefrontApiRequest(GET_ALL_PRODUCTS, { first: 500 }),
   });
 
   const products: ShopifyProduct[] = data?.data?.products?.edges || [];
