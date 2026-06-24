@@ -62,6 +62,15 @@ export function OrderConfirmation() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
+        {paymentData?.orderId && (
+          <Link
+            to="/pedido/$id"
+            params={{ id: String(paymentData.orderId) }}
+            className="flex-1 bg-[#B07B1E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#8f6418]"
+          >
+            Acompanhar Pedido →
+          </Link>
+        )}
         <Link
           to="/"
           onClick={() => clearCheckout()}

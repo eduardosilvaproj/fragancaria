@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
+import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
@@ -21,6 +22,7 @@ import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
+import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
 import { Route as AfiliadoRecuperarSenhaRouteImport } from './routes/afiliado/recuperar-senha'
 import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
@@ -46,6 +48,11 @@ const TermosRoute = TermosRouteImport.update({
 const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
   id: '/seja-afiliado',
   path: '/seja-afiliado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RastrearPedidoRoute = RastrearPedidoRouteImport.update({
+  id: '/rastrear-pedido',
+  path: '/rastrear-pedido',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutosRoute = ProdutosRouteImport.update({
@@ -91,6 +98,11 @@ const IndexRoute = IndexRouteImport.update({
 const ProdutoIdRoute = ProdutoIdRouteImport.update({
   id: '/produto/$id',
   path: '/produto/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PedidoIdRoute = PedidoIdRouteImport.update({
+  id: '/pedido/$id',
+  path: '/pedido/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AfiliadoRecuperarSenhaRoute = AfiliadoRecuperarSenhaRouteImport.update({
@@ -160,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -168,6 +181,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -185,6 +199,7 @@ export interface FileRoutesByTo {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -192,6 +207,7 @@ export interface FileRoutesByTo {
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -210,6 +226,7 @@ export interface FileRoutesById {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -218,6 +235,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -237,6 +255,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -245,6 +264,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/pedido/$id'
     | '/produto/$id'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -262,6 +282,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -269,6 +290,7 @@ export interface FileRouteTypes {
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/pedido/$id'
     | '/produto/$id'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -286,6 +308,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -294,6 +317,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/pedido/$id'
     | '/produto/$id'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -312,6 +336,7 @@ export interface RootRouteChildren {
   FavoritosRoute: typeof FavoritosRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
+  RastrearPedidoRoute: typeof RastrearPedidoRoute
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
   TermosRoute: typeof TermosRoute
   TrocasRoute: typeof TrocasRoute
@@ -320,6 +345,7 @@ export interface RootRouteChildren {
   AfiliadoDashboardRoute: typeof AfiliadoDashboardRouteWithChildren
   AfiliadoLoginRoute: typeof AfiliadoLoginRoute
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
+  PedidoIdRoute: typeof PedidoIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
@@ -345,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/seja-afiliado'
       fullPath: '/seja-afiliado'
       preLoaderRoute: typeof SejaAfiliadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rastrear-pedido': {
+      id: '/rastrear-pedido'
+      path: '/rastrear-pedido'
+      fullPath: '/rastrear-pedido'
+      preLoaderRoute: typeof RastrearPedidoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produtos': {
@@ -408,6 +441,13 @@ declare module '@tanstack/react-router' {
       path: '/produto/$id'
       fullPath: '/produto/$id'
       preLoaderRoute: typeof ProdutoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pedido/$id': {
+      id: '/pedido/$id'
+      path: '/pedido/$id'
+      fullPath: '/pedido/$id'
+      preLoaderRoute: typeof PedidoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/afiliado/recuperar-senha': {
@@ -518,6 +558,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritosRoute: FavoritosRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
+  RastrearPedidoRoute: RastrearPedidoRoute,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
   TermosRoute: TermosRoute,
   TrocasRoute: TrocasRoute,
@@ -526,6 +567,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoDashboardRoute: AfiliadoDashboardRouteWithChildren,
   AfiliadoLoginRoute: AfiliadoLoginRoute,
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
+  PedidoIdRoute: PedidoIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
