@@ -366,6 +366,16 @@
     }
   }
 
+  /* Shimmer animation for skeletons */
+  @keyframes shimmer {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
   .animate-slide-up {
     animation: slide-up 1.2s cubic-bezier(0.19, 1, 0.22, 1) forwards;
   }
