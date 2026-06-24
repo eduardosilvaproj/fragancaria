@@ -1,9 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Heart, Eye } from "lucide-react";
+import { Heart, Eye, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useQuickViewStore } from "@/stores/quickViewStore";
+import { useCompareStore } from "@/stores/compareStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackAddToCart } from "@/lib/analytics";
@@ -37,8 +38,10 @@ export function ProductCardEditorial({
   const addToCart = useCartStore((state) => state.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const openQuickView = useQuickViewStore((state) => state.openQuickView);
+  const { toggleItem: toggleCompare, isInCompare, items: compareItems } = useCompareStore();
   const [isAdding, setIsAdding] = useState(false);
   const isWishlisted = isInWishlist(id);
+  const isComparing = isInCompare(id);
 
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
 
@@ -97,6 +100,30 @@ export function ProductCardEditorial({
     openQuickView(id);
   };
 
+  const handleCompare = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (!isComparing && compareItems.length >= 4) {
+      toast.error("Máximo de 4 produtos para comparar", { duration: 2000 });
+      return;
+    }
+
+    const wasAdded = toggleCompare({
+      id,
+      title,
+      vendor,
+      price,
+      originalPrice,
+      image,
+    });
+
+    toast.success(
+      wasAdded ? "Adicionado à comparação" : "Removido da comparação",
+      { duration: 2000 }
+    );
+  };
+
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -141,6 +168,20 @@ export function ProductCardEditorial({
             aria-label={isWishlisted ? "Remover dos favoritos" : "Adicionar aos favoritos"}
           >
             <Heart className={cn("h-4 w-4 md:h-5 md:w-5", isWishlisted && "fill-current")} />
+          </button>
+
+          {/* Compare Button */}
+          <button
+            onClick={handleCompare}
+            className={cn(
+              "absolute top-2 right-10 md:top-4 md:right-14 z-10 w-8 h-8 md:w-9 md:h-9 flex items-center justify-center transition-all duration-200",
+              isComparing
+                ? "text-[#0F3A3E] bg-[#E8C25A]/20"
+                : "text-[#0F3A3E]/40 hover:text-[#0F3A3E] opacity-0 group-hover:opacity-100"
+            )}
+            aria-label={isComparing ? "Remover da comparação" : "Adicionar à comparação"}
+          >
+            <GitCompare className="h-4 w-4 md:h-5 md:w-5" />
           </button>
 
           {/* Quick View Button - appears on hover */}
