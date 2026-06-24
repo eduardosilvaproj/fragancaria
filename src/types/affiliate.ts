@@ -222,6 +222,7 @@ export interface AffiliatePayout {
   gross_amount: number;
   fees: number;
   net_amount: number;
+  amount?: number;
   sales_count: number;
 
   // Período
