@@ -67,12 +67,15 @@ export const NavbarEditorial = () => {
         </div>
 
         {/* Logo */}
-        <Link to="/" className="flex items-center">
+        <Link to="/" className="flex items-center gap-3">
           <img
-            src="/images/logo.png"
-            alt="Fragranciaria"
-            className="h-[52px] w-auto max-w-[220px] object-contain"
+            src="/images/logo-icon.png"
+            alt=""
+            className="h-[42px] w-auto object-contain"
           />
+          <span className="font-serif text-[22px] md:text-[26px] font-medium tracking-[0.08em] text-[#0F3A3E]">
+            FRAGRANCIARIA
+          </span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -203,11 +206,16 @@ export const NavbarEditorial = () => {
           >
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-6 py-5 border-b border-[#E0D8C7]">
-                <img
-                  src="/images/logo.png"
-                  alt="Fragranciaria"
-                  className="h-[52px] w-auto"
-                />
+                <div className="flex items-center gap-2">
+                  <img
+                    src="/images/logo-icon.png"
+                    alt=""
+                    className="h-[36px] w-auto object-contain"
+                  />
+                  <span className="font-serif text-[18px] font-medium tracking-[0.08em] text-[#0F3A3E]">
+                    FRAGRANCIARIA
+                  </span>
+                </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}
                   className="p-2 text-[#0F3A3E]"
