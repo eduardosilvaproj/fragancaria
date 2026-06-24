@@ -15,7 +15,7 @@ interface WishlistState {
   items: WishlistItem[];
   addItem: (item: Omit<WishlistItem, "addedAt">) => void;
   removeItem: (id: string) => void;
-  toggleItem: (item: Omit<WishlistItem, "addedAt">) => void;
+  toggleItem: (item: Omit<WishlistItem, "addedAt">) => boolean;
   isInWishlist: (id: string) => boolean;
   clearWishlist: () => void;
 }
@@ -47,8 +47,10 @@ export const useWishlistStore = create<WishlistState>()(
         const exists = get().items.some((i) => i.id === item.id);
         if (exists) {
           get().removeItem(item.id);
+          return false;
         } else {
           get().addItem(item);
+          return true;
         }
       },
 

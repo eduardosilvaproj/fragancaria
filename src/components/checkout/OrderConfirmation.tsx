@@ -1,168 +1,109 @@
 import { Link } from "@tanstack/react-router";
+import { CheckCircle2, Package, MapPin, CreditCard } from "lucide-react";
 import { useCheckoutStore } from "@/stores/checkoutStore";
-import { CheckCircle, Package, Mail, ArrowRight } from "lucide-react";
+import { PAYMENT_METHODS, SHIPPING_METHODS } from "@/config/mercadopago";
 
-interface OrderConfirmationProps {
-  onNewOrder: () => void;
-}
+export function OrderConfirmation() {
+  const { customer, shippingAddress, shippingMethod, paymentMethod, paymentData, clearCheckout } = useCheckoutStore();
 
-export function OrderConfirmation({ onNewOrder }: OrderConfirmationProps) {
-  const { customer, paymentData, paymentMethod, shippingAddress, shippingMethod } =
-    useCheckoutStore();
+  const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod);
+  const payment = PAYMENT_METHODS.find((p) => p.id === paymentMethod);
 
-  const getPaymentMethodLabel = () => {
-    switch (paymentMethod) {
-      case "credit_card":
-        return "Cartão de Crédito";
-      case "pix":
-        return "PIX";
-      case "boleto":
-        return "Boleto Bancário";
-      default:
-        return "";
-    }
-  };
-
-  const getStatusLabel = () => {
-    switch (paymentData?.status) {
-      case "approved":
-        return { text: "Aprovado", color: "text-[#1C6B4A]", bg: "bg-[#E8F5E9]" };
-      case "pending":
-        return { text: "Aguardando pagamento", color: "text-[#B07B1E]", bg: "bg-[#FFF8E1]" };
-      default:
-        return { text: "Processando", color: "text-[#51635F]", bg: "bg-[#F8F4EA]" };
-    }
-  };
-
-  const status = getStatusLabel();
+  const statusLabel =
+    paymentData?.status === "approved" ? "Aprovado" : paymentData?.status === "rejected" ? "Recusado" : "Aguardando pagamento";
+  const statusClass =
+    paymentData?.status === "approved"
+      ? "bg-[#1C6B4A] text-white"
+      : paymentData?.status === "rejected"
+      ? "bg-red-600 text-white"
+      : "bg-[#B07B1E] text-white";
 
   return (
-    <div className="max-w-2xl mx-auto">
-      {/* Header de sucesso */}
-      <div className="text-center mb-8">
-        <div className="w-20 h-20 bg-[#E8F5E9] rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle className="h-10 w-10 text-[#1C6B4A]" />
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div className="text-center py-6">
+        <div className="w-20 h-20 bg-[#1C6B4A] rounded-full mx-auto flex items-center justify-center mb-4">
+          <CheckCircle2 className="w-12 h-12 text-white" strokeWidth={1.5} />
         </div>
-        <h2 className="font-serif text-3xl text-[#0F3A3E] mb-2">
-          Pedido Confirmado!
-        </h2>
-        <p className="text-[#51635F]">
-          Obrigado pela sua compra, {customer?.firstName}!
+        <h2 className="font-serif text-3xl text-[#0F3A3E]">Pedido Confirmado!</h2>
+        <p className="text-[#51635F] mt-2">
+          Obrigado pela sua compra{customer?.firstName ? `, ${customer.firstName}` : ""}!
         </p>
       </div>
 
-      {/* Detalhes do pedido */}
-      <div className="bg-white border border-[#E9E1D2] p-6 mb-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white border border-[#E9E1D2] p-6 space-y-4">
+        <div className="flex items-center justify-between border-b border-[#E9E1D2] pb-4">
           <div>
-            <p className="text-sm text-[#75827E]">Número do pedido</p>
-            <p className="font-serif text-xl text-[#0F3A3E]">
-              #{paymentData?.id?.slice(-8).toUpperCase() || "00000000"}
-            </p>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#51635F]">Pedido</div>
+            <div className="font-serif text-xl text-[#0F3A3E]">#{paymentData?.orderId ?? "-----"}</div>
           </div>
-          <div className={`${status.bg} px-4 py-2`}>
-            <span className={`text-sm font-medium ${status.color}`}>
-              {status.text}
-            </span>
-          </div>
+          <span className={`px-3 py-1.5 text-[10px] uppercase tracking-[0.18em] font-bold ${statusClass}`}>
+            {statusLabel}
+          </span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Forma de pagamento */}
-          <div>
-            <p className="text-sm text-[#75827E] mb-2">Forma de pagamento</p>
-            <p className="text-[#0F3A3E] font-medium">{getPaymentMethodLabel()}</p>
-            {paymentMethod === "pix" && paymentData?.status === "pending" && (
-              <p className="text-sm text-[#B07B1E] mt-1">
-                Aguardando confirmação do PIX
-              </p>
-            )}
-            {paymentMethod === "boleto" && paymentData?.status === "pending" && (
-              <p className="text-sm text-[#B07B1E] mt-1">
-                Boleto vence em 3 dias úteis
-              </p>
-            )}
-          </div>
-
-          {/* Entrega */}
-          <div>
-            <p className="text-sm text-[#75827E] mb-2">Método de entrega</p>
-            <p className="text-[#0F3A3E] font-medium">{shippingMethod?.name}</p>
-            <p className="text-sm text-[#51635F] mt-1">
-              Previsão: {shippingMethod?.estimatedDays} dias úteis
-            </p>
-          </div>
-        </div>
-
-        {/* Endereço */}
-        <div className="mt-6 pt-6 border-t border-[#E9E1D2]">
-          <p className="text-sm text-[#75827E] mb-2">Endereço de entrega</p>
-          <p className="text-[#0F3A3E]">
-            {shippingAddress?.street}, {shippingAddress?.number}
-            {shippingAddress?.complement && ` - ${shippingAddress.complement}`}
-          </p>
-          <p className="text-[#51635F] text-sm">
-            {shippingAddress?.neighborhood} - {shippingAddress?.city}/{shippingAddress?.state}
-          </p>
-          <p className="text-[#51635F] text-sm">CEP: {shippingAddress?.zipCode}</p>
-        </div>
+        <Row icon={CreditCard} label="Pagamento" value={payment?.name ?? "—"} />
+        <Row icon={Package} label="Envio" value={shipping ? `${shipping.name} • ${shipping.days}` : "—"} />
+        {shippingAddress && (
+          <Row
+            icon={MapPin}
+            label="Endereço"
+            value={`${shippingAddress.street}, ${shippingAddress.number} — ${shippingAddress.neighborhood}, ${shippingAddress.city}/${shippingAddress.state}`}
+          />
+        )}
       </div>
 
-      {/* Próximos passos */}
-      <div className="bg-[#F8F4EA] border border-[#E9E1D2] p-6 mb-6">
-        <h3 className="font-medium text-[#0F3A3E] mb-4 flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Próximos passos
-        </h3>
-        <ul className="space-y-3 text-sm text-[#51635F]">
-          <li className="flex items-start gap-2">
-            <span className="text-[#1C6B4A]">✓</span>
-            Enviamos um e-mail de confirmação para {customer?.email}
-          </li>
-          <li className="flex items-start gap-2">
-            <Package className="h-4 w-4 text-[#B07B1E] mt-0.5" />
-            {paymentData?.status === "approved" ? (
-              "Seu pedido está sendo preparado e em breve será enviado"
-            ) : (
-              "Após a confirmação do pagamento, seu pedido será preparado"
-            )}
-          </li>
-          <li className="flex items-start gap-2">
-            <span className="text-[#0F3A3E]">📦</span>
-            Você receberá o código de rastreamento por e-mail
-          </li>
+      <div className="bg-[#F3EEE3] border border-[#E9E1D2] p-6">
+        <h3 className="font-serif text-lg text-[#0F3A3E] mb-3">Próximos passos</h3>
+        <ul className="space-y-2 text-sm text-[#51635F] list-disc list-inside">
+          <li>Você receberá um e-mail de confirmação em {customer?.email || "seu endereço cadastrado"}.</li>
+          <li>Acompanharemos a separação do pedido nas próximas 24 horas.</li>
+          <li>O código de rastreamento será enviado assim que a transportadora coletar.</li>
         </ul>
       </div>
 
-      {/* Ações */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
+        {paymentData?.orderId && (
+          <Link
+            to="/pedido/$id"
+            params={{ id: String(paymentData.orderId) }}
+            className="flex-1 bg-[#B07B1E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#8f6418]"
+          >
+            Acompanhar Pedido →
+          </Link>
+        )}
         <Link
           to="/"
-          onClick={onNewOrder}
-          className="flex-1 bg-[#0F3A3E] text-white py-4 text-sm uppercase tracking-wider font-semibold hover:bg-[#16504F] transition-colors text-center flex items-center justify-center gap-2"
+          onClick={() => clearCheckout()}
+          className="flex-1 bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F]"
         >
-          Continuar comprando
-          <ArrowRight className="h-4 w-4" />
+          Continuar Comprando
         </Link>
         <Link
           to="/produtos"
-          className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-4 text-sm uppercase tracking-wider font-semibold hover:bg-[#F8F4EA] transition-colors text-center"
+          onClick={() => clearCheckout()}
+          className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white"
         >
-          Ver mais produtos
+          Ver Mais Produtos
         </Link>
       </div>
 
-      {/* Suporte */}
-      <div className="text-center mt-8 text-sm text-[#75827E]">
-        <p>
-          Dúvidas? Entre em contato:{" "}
-          <a
-            href="mailto:contato@fragranciaria.com.br"
-            className="text-[#B07B1E] hover:underline"
-          >
-            contato@fragranciaria.com.br
-          </a>
-        </p>
+      <p className="text-center text-xs text-[#51635F]">
+        Precisa de ajuda?{" "}
+        <Link to="/contato" className="text-[#B07B1E] underline">
+          Fale com o suporte
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function Row({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="flex gap-3">
+      <Icon className="w-5 h-5 text-[#B07B1E] flex-shrink-0 mt-0.5" />
+      <div>
+        <div className="text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold">{label}</div>
+        <div className="text-sm text-[#0F3A3E]">{value}</div>
       </div>
     </div>
   );

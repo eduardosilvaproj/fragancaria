@@ -1,59 +1,48 @@
-import { cn } from "@/lib/utils";
-import { Check, Truck, CreditCard, Package } from "lucide-react";
+import { Truck, CreditCard, Package, Check } from "lucide-react";
+import type { CheckoutStep } from "@/stores/checkoutStore";
 
-interface CheckoutStepsProps {
-  currentStep: 'cart' | 'shipping' | 'payment' | 'confirmation';
-}
-
-const steps = [
-  { id: 'shipping', label: 'Entrega', icon: Truck },
-  { id: 'payment', label: 'Pagamento', icon: CreditCard },
-  { id: 'confirmation', label: 'Confirmação', icon: Package },
+const STEPS: { id: CheckoutStep; label: string; icon: typeof Truck }[] = [
+  { id: "shipping", label: "Entrega", icon: Truck },
+  { id: "payment", label: "Pagamento", icon: CreditCard },
+  { id: "confirmation", label: "Confirmação", icon: Package },
 ];
 
-export function CheckoutSteps({ currentStep }: CheckoutStepsProps) {
-  const currentIndex = steps.findIndex((s) => s.id === currentStep);
+export function CheckoutSteps({ current }: { current: CheckoutStep }) {
+  const currentIdx = STEPS.findIndex((s) => s.id === current);
 
   return (
-    <div className="flex items-center justify-center gap-4 md:gap-8">
-      {steps.map((step, index) => {
-        const isCompleted = index < currentIndex;
-        const isCurrent = step.id === currentStep;
+    <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-6">
+      {STEPS.map((step, i) => {
+        const isComplete = i < currentIdx;
+        const isCurrent = i === currentIdx;
         const Icon = step.icon;
-
         return (
-          <div key={step.id} className="flex items-center">
-            <div className="flex flex-col items-center">
+          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-2">
               <div
-                className={cn(
-                  "w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center transition-all",
-                  isCompleted && "bg-[#1C6B4A] text-white",
-                  isCurrent && "bg-[#0F3A3E] text-white",
-                  !isCompleted && !isCurrent && "bg-[#E9E1D2] text-[#75827E]"
-                )}
+                className={`w-12 h-12 flex items-center justify-center transition-colors ${
+                  isComplete
+                    ? "bg-[#1C6B4A] text-white"
+                    : isCurrent
+                    ? "bg-[#0F3A3E] text-white"
+                    : "bg-[#E9E1D2] text-[#51635F]"
+                }`}
               >
-                {isCompleted ? (
-                  <Check className="h-5 w-5 md:h-6 md:w-6" />
-                ) : (
-                  <Icon className="h-5 w-5 md:h-6 md:w-6" />
-                )}
+                {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
               </div>
               <span
-                className={cn(
-                  "mt-2 text-xs md:text-sm font-medium",
-                  isCurrent ? "text-[#0F3A3E]" : "text-[#75827E]"
-                )}
+                className={`text-[10px] uppercase tracking-[0.18em] font-semibold ${
+                  isComplete || isCurrent ? "text-[#0F3A3E]" : "text-[#51635F]"
+                }`}
               >
                 {step.label}
               </span>
             </div>
-
-            {index < steps.length - 1 && (
+            {i < STEPS.length - 1 && (
               <div
-                className={cn(
-                  "w-12 md:w-24 h-0.5 mx-2 md:mx-4",
-                  index < currentIndex ? "bg-[#1C6B4A]" : "bg-[#E9E1D2]"
-                )}
+                className={`h-px flex-1 mx-3 mb-6 transition-colors ${
+                  i < currentIdx ? "bg-[#1C6B4A]" : "bg-[#E9E1D2]"
+                }`}
               />
             )}
           </div>

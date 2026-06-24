@@ -9,7 +9,6 @@ import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 
-// Categorias organizadas
 const CATEGORIES = [
   { label: "Shampoo", productType: "Shampoo", count: 111 },
   { label: "Condicionador", productType: "Condicionador", count: 51 },
@@ -20,7 +19,6 @@ const CATEGORIES = [
   { label: "Leave-in", productType: "Leave-in", count: 10 },
 ];
 
-// Marcas principais
 const BRANDS = [
   { label: "Wella", vendor: "Wella", count: 122 },
   { label: "L'Oréal", vendor: "L'Oréal", count: 87 },
@@ -38,7 +36,7 @@ export const NavbarEditorial = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [mobileSubmenu, setMobileSubmenu] = useState<string | null>(null);
+  const [mobileSubmenu, setMobileSubmenu] = useState<null | "produtos" | "marcas">(null);
   const navigate = useNavigate();
   const { items, setIsOpen } = useCartStore();
   const wishlistItems = useWishlistStore((state) => state.items);
@@ -89,160 +87,138 @@ export const NavbarEditorial = () => {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden lg:flex items-center gap-6 xl:gap-8">
-          {/* Produtos - Mega Menu com CSS hover */}
+        <nav className="hidden lg:flex items-center gap-8 xl:gap-9">
+          {/* Produtos - Mega Menu */}
           <div className="group relative">
             <Link
               to="/produtos"
-              className="flex items-center gap-1 text-[13px] tracking-[0.18em] uppercase cursor-pointer transition-colors font-medium text-[#2B413F] hover:text-[#0F3A3E] py-4"
+              className="flex items-center gap-1 text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors py-4"
             >
               Produtos
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
             </Link>
-
-            {/* Dropdown - aparece no hover via CSS */}
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-0 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div className="bg-white border border-[#E0D8C7] shadow-xl min-w-[620px] p-6">
-                <div className="grid grid-cols-3 gap-8">
-                  {/* Categorias */}
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
-                      Categorias
-                    </p>
-                    <ul className="space-y-2">
-                      {CATEGORIES.map((cat) => (
-                        <li key={cat.productType}>
-                          <Link
-                            to="/produtos"
-                            search={{ productType: cat.productType }}
-                            className="flex items-center justify-between text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors py-1"
-                          >
-                            {cat.label}
-                            <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
-                          </Link>
-                        </li>
-                      ))}
-                      <li className="pt-2 border-t border-[#E9E1D2] mt-3">
+              <div className="bg-white border border-[#E0D8C7] shadow-xl min-w-[620px] p-6 grid grid-cols-3 gap-6">
+                {/* Categorias */}
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
+                    Categorias
+                  </p>
+                  <ul className="space-y-2.5">
+                    {CATEGORIES.map((cat) => (
+                      <li key={cat.label}>
                         <Link
                           to="/produtos"
-                          className="text-[13px] text-[#0F3A3E] font-medium hover:text-[#B07B1E] transition-colors"
+                          search={{ productType: cat.productType }}
+                          className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
-                          Ver todas categorias →
+                          <span>{cat.label}</span>
+                          <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
                         </Link>
                       </li>
-                    </ul>
-                  </div>
+                    ))}
+                  </ul>
+                  <Link
+                    to="/produtos"
+                    className="inline-block mt-4 text-[12px] text-[#0F3A3E] hover:text-[#B07B1E] border-b border-[#B07B1E] pb-[2px]"
+                  >
+                    Ver todas categorias →
+                  </Link>
+                </div>
 
-                  {/* Marcas */}
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
-                      Marcas
-                    </p>
-                    <ul className="space-y-2">
-                      {BRANDS.map((brand) => (
-                        <li key={brand.vendor}>
-                          <Link
-                            to="/produtos"
-                            search={{ vendor: brand.vendor }}
-                            className="flex items-center justify-between text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors py-1"
-                          >
-                            {brand.label}
-                            <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
+                {/* Marcas */}
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
+                    Marcas
+                  </p>
+                  <ul className="space-y-2.5">
+                    {BRANDS.map((brand) => (
+                      <li key={brand.label}>
+                        <Link
+                          to="/produtos"
+                          search={{ vendor: brand.vendor }}
+                          className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
+                        >
+                          <span>{brand.label}</span>
+                          <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-                  {/* Destaques */}
-                  <div className="bg-[#F8F4EA] p-5 -m-1">
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
-                      Destaques
-                    </p>
-                    <ul className="space-y-3">
-                      <li>
-                        <Link
-                          to="/produtos"
-                          search={{ ofertas: true }}
-                          className="flex items-center gap-2 text-[14px] text-[#0F3A3E] font-medium hover:text-[#B07B1E] transition-colors"
-                        >
-                          <span className="w-2 h-2 bg-[#B07B1E] rounded-full" />
-                          Ofertas do Dia
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/produtos"
-                          search={{ productType: "Coloração" }}
-                          className="flex items-center gap-2 text-[14px] text-[#0F3A3E] font-medium hover:text-[#B07B1E] transition-colors"
-                        >
-                          <span className="w-2 h-2 bg-[#0F3A3E] rounded-full" />
-                          Coloração Profissional
-                        </Link>
-                      </li>
-                      <li>
-                        <Link
-                          to="/produtos"
-                          search={{ productType: "Kit" }}
-                          className="flex items-center gap-2 text-[14px] text-[#0F3A3E] font-medium hover:text-[#B07B1E] transition-colors"
-                        >
-                          <span className="w-2 h-2 bg-[#0F3A3E] rounded-full" />
-                          Kits Promocionais
-                        </Link>
-                      </li>
-                    </ul>
-                    <div className="mt-6 pt-4 border-t border-[#E0D8C7]">
-                      <Link
-                        to="/produtos"
-                        className="block text-center py-2.5 bg-[#0F3A3E] text-white text-[11px] uppercase tracking-[0.14em] font-semibold hover:bg-[#16504F] transition-colors"
-                      >
-                        Ver todos os produtos
+                {/* Destaques */}
+                <div className="bg-[#F8F4EA] p-5 -m-1 flex flex-col">
+                  <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
+                    Destaques
+                  </p>
+                  <ul className="space-y-3 flex-1">
+                    <li>
+                      <Link to="/produtos" search={{ ofertas: true }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                        Ofertas do Dia
                       </Link>
-                    </div>
-                  </div>
+                    </li>
+                    <li>
+                      <Link to="/produtos" search={{ productType: "Coloração" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                        Coloração Profissional
+                      </Link>
+                    </li>
+                    <li>
+                      <Link to="/produtos" search={{ productType: "Kit" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                        Kits Promocionais
+                      </Link>
+                    </li>
+                  </ul>
+                  <Link
+                    to="/produtos"
+                    className="mt-5 block text-center bg-[#0F3A3E] text-white text-[11px] uppercase tracking-[0.18em] py-3 hover:bg-[#16504F] transition-colors"
+                  >
+                    Ver todos os produtos
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Marcas - Dropdown com CSS hover */}
+          {/* Marcas - Dropdown simples */}
           <div className="group relative">
-            <button className="flex items-center gap-1 text-[13px] tracking-[0.18em] uppercase cursor-pointer transition-colors font-medium text-[#2B413F] hover:text-[#0F3A3E] py-4">
+            <Link
+              to="/produtos"
+              className="flex items-center gap-1 text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors py-4"
+            >
               Marcas
               <ChevronDown className="h-3.5 w-3.5 transition-transform group-hover:rotate-180" />
-            </button>
-
-            {/* Dropdown - aparece no hover via CSS */}
-            <div className="absolute top-full left-0 pt-0 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
-              <div className="bg-white border border-[#E0D8C7] shadow-xl min-w-[220px] py-3">
-                {BRANDS.map((brand) => (
-                  <Link
-                    key={brand.vendor}
-                    to="/produtos"
-                    search={{ vendor: brand.vendor }}
-                    className="flex items-center justify-between px-5 py-2.5 text-[14px] text-[#51635F] hover:text-[#0F3A3E] hover:bg-[#F8F4EA] transition-colors"
-                  >
-                    {brand.label}
-                    <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
-                  </Link>
-                ))}
-                <div className="border-t border-[#E9E1D2] mt-2 pt-2 px-5">
-                  <Link
-                    to="/produtos"
-                    className="block text-[13px] text-[#0F3A3E] font-medium hover:text-[#B07B1E] py-2"
-                  >
-                    Ver todas as marcas →
-                  </Link>
-                </div>
+            </Link>
+            <div className="absolute top-full left-1/2 -translate-x-1/2 pt-0 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
+              <div className="bg-white border border-[#E0D8C7] shadow-xl min-w-[240px] p-5">
+                <ul className="space-y-2.5">
+                  {BRANDS.map((brand) => (
+                    <li key={brand.label}>
+                      <Link
+                        to="/produtos"
+                        search={{ vendor: brand.vendor }}
+                        className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
+                      >
+                        <span>{brand.label}</span>
+                        <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to="/produtos"
+                  className="inline-block mt-4 text-[12px] text-[#0F3A3E] hover:text-[#B07B1E] border-b border-[#B07B1E] pb-[2px]"
+                >
+                  Ver todas as marcas →
+                </Link>
               </div>
             </div>
           </div>
 
-          {/* Links simples */}
           <Link
             to="/produtos"
             search={{ productType: "Maquiagem" }}
-            className="text-[13px] tracking-[0.18em] uppercase cursor-pointer transition-colors font-medium text-[#2B413F] hover:text-[#0F3A3E]"
+            className="text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors"
           >
             Maquiagem
           </Link>
@@ -250,7 +226,7 @@ export const NavbarEditorial = () => {
           <Link
             to="/produtos"
             search={{ ofertas: true }}
-            className="text-[13px] tracking-[0.18em] uppercase cursor-pointer transition-colors font-medium text-[#B07B1E] hover:text-[#C68C28]"
+            className="text-[13px] tracking-[0.18em] uppercase font-medium text-[#B07B1E] hover:text-[#C68C28] transition-colors"
           >
             Ofertas
           </Link>
@@ -327,9 +303,9 @@ export const NavbarEditorial = () => {
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "tween", duration: 0.3 }}
-            className="fixed inset-0 bg-[#F3EEE3] z-[100] lg:hidden overflow-y-auto"
+            className="fixed inset-0 bg-[#F3EEE3] z-[100] lg:hidden"
           >
-            <div className="flex flex-col min-h-full">
+            <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-6 py-5 border-b border-[#E0D8C7]">
                 <div className="flex items-center gap-2">
                   <img
@@ -350,116 +326,133 @@ export const NavbarEditorial = () => {
                 </button>
               </div>
 
-              <nav className="flex-1 px-6 py-6">
-                {/* Produtos com submenu */}
-                <div className="border-b border-[#E9E1D2] pb-4 mb-4">
-                  <button
-                    onClick={() => setMobileSubmenu(mobileSubmenu === "produtos" ? null : "produtos")}
-                    className="flex items-center justify-between w-full py-3"
-                  >
-                    <span className="font-serif text-xl text-[#0F3A3E]">Produtos</span>
-                    <ChevronRight className={cn("h-5 w-5 text-[#75827E] transition-transform", mobileSubmenu === "produtos" && "rotate-90")} />
-                  </button>
-
-                  <AnimatePresence>
-                    {mobileSubmenu === "produtos" && (
-                      <MotionDiv
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pl-4 pt-2 space-y-1">
-                          <Link
-                            to="/produtos"
-                            onClick={() => setIsMobileMenuOpen(false)}
-                            className="block py-2 text-[15px] text-[#0F3A3E] font-medium"
-                          >
-                            Ver todos os produtos
-                          </Link>
-                          <p className="text-[11px] uppercase tracking-[0.16em] text-[#B07B1E] pt-3 pb-1">Categorias</p>
-                          {CATEGORIES.slice(0, 6).map((cat) => (
-                            <Link
-                              key={cat.productType}
-                              to="/produtos"
-                              search={{ productType: cat.productType }}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex items-center justify-between py-2 text-[15px] text-[#51635F]"
-                            >
-                              {cat.label}
-                              <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </MotionDiv>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Marcas com submenu */}
-                <div className="border-b border-[#E9E1D2] pb-4 mb-4">
-                  <button
-                    onClick={() => setMobileSubmenu(mobileSubmenu === "marcas" ? null : "marcas")}
-                    className="flex items-center justify-between w-full py-3"
-                  >
-                    <span className="font-serif text-xl text-[#0F3A3E]">Marcas</span>
-                    <ChevronRight className={cn("h-5 w-5 text-[#75827E] transition-transform", mobileSubmenu === "marcas" && "rotate-90")} />
-                  </button>
-
-                  <AnimatePresence>
-                    {mobileSubmenu === "marcas" && (
-                      <MotionDiv
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="pl-4 pt-2 space-y-1">
-                          {BRANDS.map((brand) => (
-                            <Link
-                              key={brand.vendor}
-                              to="/produtos"
-                              search={{ vendor: brand.vendor }}
-                              onClick={() => setIsMobileMenuOpen(false)}
-                              className="flex items-center justify-between py-2 text-[15px] text-[#51635F]"
-                            >
-                              {brand.label}
-                              <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
-                            </Link>
-                          ))}
-                        </div>
-                      </MotionDiv>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Links diretos */}
+              <nav className="flex-1 px-6 py-8">
                 <ul className="space-y-4">
+                  {/* Produtos com submenu */}
+                  <li>
+                    <button
+                      onClick={() => setMobileSubmenu(mobileSubmenu === "produtos" ? null : "produtos")}
+                      className="flex items-center justify-between w-full font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Produtos
+                      <ChevronRight
+                        className={cn(
+                          "h-5 w-5 transition-transform",
+                          mobileSubmenu === "produtos" && "rotate-90"
+                        )}
+                      />
+                    </button>
+                    <AnimatePresence>
+                      {mobileSubmenu === "produtos" && (
+                        <MotionDiv
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <ul className="mt-3 pl-4 space-y-3 border-l border-[#E0D8C7]">
+                            <li>
+                              <Link
+                                to="/produtos"
+                                onClick={() => setIsMobileMenuOpen(false)}
+                                className="text-[14px] text-[#0F3A3E] font-medium"
+                              >
+                                Ver todos os produtos
+                              </Link>
+                            </li>
+                            <li>
+                              <p className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold pt-2">
+                                Categorias
+                              </p>
+                            </li>
+                            {CATEGORIES.slice(0, 6).map((cat) => (
+                              <li key={cat.label}>
+                                <Link
+                                  to="/produtos"
+                                  search={{ productType: cat.productType }}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  className="flex justify-between text-[14px] text-[#51635F]"
+                                >
+                                  <span>{cat.label}</span>
+                                  <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </MotionDiv>
+                      )}
+                    </AnimatePresence>
+                  </li>
+
+                  {/* Marcas com submenu */}
+                  <li>
+                    <button
+                      onClick={() => setMobileSubmenu(mobileSubmenu === "marcas" ? null : "marcas")}
+                      className="flex items-center justify-between w-full font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Marcas
+                      <ChevronRight
+                        className={cn(
+                          "h-5 w-5 transition-transform",
+                          mobileSubmenu === "marcas" && "rotate-90"
+                        )}
+                      />
+                    </button>
+                    <AnimatePresence>
+                      {mobileSubmenu === "marcas" && (
+                        <MotionDiv
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden"
+                        >
+                          <ul className="mt-3 pl-4 space-y-3 border-l border-[#E0D8C7]">
+                            {BRANDS.map((brand) => (
+                              <li key={brand.label}>
+                                <Link
+                                  to="/produtos"
+                                  search={{ vendor: brand.vendor }}
+                                  onClick={() => setIsMobileMenuOpen(false)}
+                                  className="flex justify-between text-[14px] text-[#51635F]"
+                                >
+                                  <span>{brand.label}</span>
+                                  <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                                </Link>
+                              </li>
+                            ))}
+                          </ul>
+                        </MotionDiv>
+                      )}
+                    </AnimatePresence>
+                  </li>
+
                   <li>
                     <Link
                       to="/produtos"
                       search={{ productType: "Maquiagem" }}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="block font-serif text-xl text-[#0F3A3E] py-2"
+                      className="block font-serif text-2xl text-[#0F3A3E]"
                     >
                       Maquiagem
                     </Link>
                   </li>
+
                   <li>
                     <Link
                       to="/produtos"
                       search={{ ofertas: true }}
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="block font-serif text-xl text-[#B07B1E] py-2"
+                      className="block font-serif text-2xl text-[#B07B1E]"
                     >
                       Ofertas
                     </Link>
                   </li>
+
                   <li>
                     <Link
                       to="/favoritos"
                       onClick={() => setIsMobileMenuOpen(false)}
-                      className="flex items-center gap-3 font-serif text-xl text-[#0F3A3E] py-2"
+                      className="flex items-center gap-3 font-serif text-2xl text-[#0F3A3E]"
                     >
                       Favoritos
                       {wishlistCount > 0 && (
@@ -472,8 +465,8 @@ export const NavbarEditorial = () => {
                 </ul>
               </nav>
 
-              <div className="px-6 py-6 border-t border-[#E0D8C7] mt-auto">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-[#B07B1E] mb-3">
+              <div className="px-6 py-8 border-t border-[#E0D8C7]">
+                <p className="text-[11px] uppercase tracking-[0.16em] text-[#B07B1E] mb-4">
                   Atendimento
                 </p>
                 <p className="text-[#51635F] text-sm">

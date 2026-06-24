@@ -273,7 +273,7 @@ export const CartDrawerEditorial = () => {
 
             {/* Checkout Button */}
             <Link
-              to="/carrinho"
+              to="/checkout"
               onClick={() => setIsOpen(false)}
               className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mt-4 mb-3"
             >

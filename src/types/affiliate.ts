@@ -222,6 +222,7 @@ export interface AffiliatePayout {
   gross_amount: number;
   fees: number;
   net_amount: number;
+  amount?: number;
   sales_count: number;
 
   // Período
@@ -303,6 +304,8 @@ export interface AffiliateDashboardSummary {
   total_commission_earned: number;
   total_commission_paid: number;
   pending_commission: number;
+  available_commission?: number;
+  conversion_rate?: number;
   current_month_sales: number;
   active_links_count: number;
   pending_sales_count: number;

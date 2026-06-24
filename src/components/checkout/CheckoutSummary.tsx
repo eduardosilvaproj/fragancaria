@@ -1,187 +1,139 @@
+import { useState } from "react";
+import { Shield, Award, Tag, X } from "lucide-react";
+import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
-import { Truck, Tag } from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+import { SHIPPING_METHODS } from "@/config/mercadopago";
+
+const formatBRL = (v: number) =>
+  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
+const COUPONS: Record<string, number> = {
+  BEMVINDO10: 10,
+};
 
 export function CheckoutSummary() {
-  const { items } = useCartStore();
-  const { shippingMethod, coupon, setCoupon } = useCheckoutStore();
-  const [couponCode, setCouponCode] = useState("");
-  const [isApplyingCoupon, setIsApplyingCoupon] = useState(false);
+  const { items, getTotalPrice } = useCartStore();
+  const { shippingMethod, paymentMethod, coupon, setCoupon } = useCheckoutStore();
+  const [code, setCode] = useState("");
 
-  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const shippingCost = shippingMethod?.price || 0;
+  const subtotal = getTotalPrice();
+  const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod)?.price ?? 0;
+  const discountCoupon = coupon ? (subtotal * coupon.discountPercent) / 100 : 0;
+  const pixDiscount = paymentMethod === "pix" ? (subtotal * 5) / 100 : 0;
+  const total = Math.max(0, subtotal - discountCoupon - pixDiscount + shipping);
+  const installmentValue = total / 10;
 
-  // Calcular desconto
-  let discount = 0;
-  if (coupon) {
-    if (coupon.type === 'percentage') {
-      discount = subtotal * (coupon.discount / 100);
+  const applyCoupon = () => {
+    const key = code.trim().toUpperCase();
+    if (COUPONS[key]) {
+      setCoupon({ code: key, discountPercent: COUPONS[key] });
+      toast.success(`Cupom ${key} aplicado!`);
+      setCode("");
     } else {
-      discount = coupon.discount;
+      toast.error("Cupom inválido");
     }
-  }
-
-  const total = subtotal + shippingCost - discount;
-
-  const formatPrice = (value: number) => {
-    return value.toLocaleString("pt-BR", {
-      style: "currency",
-      currency: "BRL",
-    });
-  };
-
-  const handleApplyCoupon = async () => {
-    if (!couponCode.trim()) return;
-
-    setIsApplyingCoupon(true);
-
-    // Simular validação de cupom
-    await new Promise((r) => setTimeout(r, 500));
-
-    // Cupom de exemplo
-    if (couponCode.toUpperCase() === "BEMVINDO10") {
-      setCoupon({
-        code: couponCode.toUpperCase(),
-        discount: 10,
-        type: "percentage",
-      });
-      toast.success("Cupom aplicado! 10% de desconto");
-    } else if (couponCode.toUpperCase() === "FRETE") {
-      setCoupon({
-        code: couponCode.toUpperCase(),
-        discount: shippingCost,
-        type: "fixed",
-      });
-      toast.success("Cupom de frete grátis aplicado!");
-    } else {
-      toast.error("Cupom inválido ou expirado");
-    }
-
-    setIsApplyingCoupon(false);
-    setCouponCode("");
-  };
-
-  const removeCoupon = () => {
-    setCoupon(null);
-    toast.success("Cupom removido");
   };
 
   return (
-    <div className="bg-white border border-[#E9E1D2] p-6 sticky top-24">
-      <h3 className="font-serif text-xl text-[#0F3A3E] mb-6">Resumo do Pedido</h3>
+    <aside className="bg-white border border-[#E9E1D2] p-6 lg:sticky lg:top-6 h-fit">
+      <h2 className="font-serif text-xl text-[#0F3A3E] mb-5">Resumo do Pedido</h2>
 
-      {/* Itens */}
-      <div className="space-y-4 max-h-[280px] overflow-y-auto mb-6">
+      <div className="space-y-4 max-h-72 overflow-y-auto pr-1 mb-5">
         {items.map((item) => (
           <div key={item.id} className="flex gap-3">
-            <img
-              src={item.image}
-              alt={item.title}
-              className="w-16 h-16 object-cover bg-[#F8F4EA]"
-            />
+            <div className="w-16 h-20 bg-[#F3EEE3] flex-shrink-0">
+              {item.image && (
+                <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+              )}
+            </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-[#0F3A3E] font-medium line-clamp-2">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-[#B07B1E] font-semibold">
+                {item.vendor}
+              </p>
+              <p className="font-serif text-sm text-[#0F3A3E] leading-tight line-clamp-2">
                 {item.title}
               </p>
-              <p className="text-xs text-[#75827E] mt-1">
-                Qtd: {item.quantity}
-              </p>
-              <p className="text-sm text-[#0F3A3E] font-medium mt-1">
-                {formatPrice(item.price * item.quantity)}
-              </p>
+              <div className="flex justify-between items-center mt-1 text-xs text-[#51635F]">
+                <span>Qtd: {item.quantity}</span>
+                <span className="font-semibold text-[#0F3A3E]">
+                  {formatBRL(item.price * item.quantity)}
+                </span>
+              </div>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Cupom */}
       <div className="border-t border-[#E9E1D2] pt-4 mb-4">
         {coupon ? (
-          <div className="flex items-center justify-between bg-[#F8F4EA] p-3">
-            <div className="flex items-center gap-2">
-              <Tag className="h-4 w-4 text-[#1C6B4A]" />
-              <span className="text-sm font-medium text-[#1C6B4A]">
-                {coupon.code}
-              </span>
+          <div className="flex items-center justify-between bg-[#F3EEE3] px-3 py-2 mb-2">
+            <div className="flex items-center gap-2 text-xs">
+              <Tag className="w-4 h-4 text-[#1C6B4A]" />
+              <span className="font-semibold text-[#0F3A3E]">{coupon.code}</span>
+              <span className="text-[#1C6B4A]">-{coupon.discountPercent}%</span>
             </div>
-            <button
-              onClick={removeCoupon}
-              className="text-xs text-[#B07B1E] hover:text-[#8B5A00] transition-colors"
-            >
-              Remover
+            <button onClick={() => setCoupon(null)} aria-label="Remover cupom">
+              <X className="w-4 h-4 text-[#51635F]" />
             </button>
           </div>
         ) : (
           <div className="flex gap-2">
             <input
-              type="text"
-              value={couponCode}
-              onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-              placeholder="Código do cupom"
-              className="flex-1 px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E] transition-colors"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              placeholder="Cupom de desconto"
+              className="flex-1 border border-[#E9E1D2] px-3 py-2 text-sm focus:outline-none focus:border-[#B07B1E]"
             />
             <button
-              onClick={handleApplyCoupon}
-              disabled={isApplyingCoupon || !couponCode.trim()}
-              className="px-4 py-2 bg-[#0F3A3E] text-white text-sm hover:bg-[#16504F] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              onClick={applyCoupon}
+              className="bg-[#0F3A3E] text-white px-4 text-[11px] uppercase tracking-wider font-semibold hover:bg-[#16504F]"
             >
-              {isApplyingCoupon ? "..." : "Aplicar"}
+              Aplicar
             </button>
           </div>
         )}
       </div>
 
-      {/* Totais */}
-      <div className="border-t border-[#E9E1D2] pt-4 space-y-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-[#51635F]">Subtotal</span>
-          <span className="text-[#0F3A3E]">{formatPrice(subtotal)}</span>
-        </div>
-
-        {shippingMethod && (
-          <div className="flex justify-between text-sm">
-            <span className="text-[#51635F] flex items-center gap-2">
-              <Truck className="h-4 w-4" />
-              {shippingMethod.name}
-            </span>
-            <span className="text-[#0F3A3E]">
-              {shippingMethod.price === 0 ? "Grátis" : formatPrice(shippingMethod.price)}
-            </span>
-          </div>
+      <div className="space-y-2 text-sm border-t border-[#E9E1D2] pt-4">
+        <Row label="Subtotal" value={formatBRL(subtotal)} />
+        <Row
+          label="Frete"
+          value={shippingMethod ? formatBRL(shipping) : "A calcular"}
+        />
+        {discountCoupon > 0 && (
+          <Row label="Desconto cupom" value={`- ${formatBRL(discountCoupon)}`} positive />
         )}
-
-        {discount > 0 && (
-          <div className="flex justify-between text-sm">
-            <span className="text-[#1C6B4A]">Desconto</span>
-            <span className="text-[#1C6B4A]">-{formatPrice(discount)}</span>
-          </div>
+        {pixDiscount > 0 && (
+          <Row label="Desconto PIX (5%)" value={`- ${formatBRL(pixDiscount)}`} positive />
         )}
-
-        <div className="flex justify-between pt-3 border-t border-[#E9E1D2]">
-          <span className="font-serif text-lg text-[#0F3A3E]">Total</span>
-          <span className="font-serif text-2xl text-[#0F3A3E]">
-            {formatPrice(total)}
-          </span>
-        </div>
-
-        <p className="text-xs text-[#75827E] text-center">
-          ou até 10x de {formatPrice(total / 10)} sem juros
-        </p>
       </div>
 
-      {/* Trust badges */}
-      <div className="mt-6 pt-4 border-t border-[#E9E1D2] flex items-center justify-center gap-4">
-        <div className="flex items-center gap-1.5 text-[11px] text-[#75827E]">
-          <span>🔒</span>
-          Compra segura
+      <div className="flex justify-between items-baseline border-t border-[#E9E1D2] mt-4 pt-4">
+        <span className="text-sm uppercase tracking-wider text-[#0F3A3E]">Total</span>
+        <span className="font-serif text-2xl text-[#0F3A3E]">{formatBRL(total)}</span>
+      </div>
+      <p className="text-xs text-[#51635F] text-right mt-1">
+        ou até 10x de {formatBRL(installmentValue)} sem juros
+      </p>
+
+      <div className="mt-6 pt-5 border-t border-[#E9E1D2] space-y-2">
+        <div className="flex items-center gap-2 text-xs text-[#51635F]">
+          <Shield className="w-4 h-4 text-[#1C6B4A]" /> Compra 100% segura
         </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-[#75827E]">
-          <span>✓</span>
-          Produto original
+        <div className="flex items-center gap-2 text-xs text-[#51635F]">
+          <Award className="w-4 h-4 text-[#1C6B4A]" /> Produtos originais
         </div>
       </div>
+    </aside>
+  );
+}
+
+function Row({ label, value, positive }: { label: string; value: string; positive?: boolean }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-[#51635F]">{label}</span>
+      <span className={positive ? "text-[#1C6B4A] font-semibold" : "text-[#0F3A3E]"}>{value}</span>
     </div>
   );
 }

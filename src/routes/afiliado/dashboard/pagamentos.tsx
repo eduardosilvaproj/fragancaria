@@ -52,7 +52,7 @@ function PagamentosPage() {
   const availableAmount = dashboardSummary?.available_commission || 0;
   const totalPaid = payouts
     .filter((p) => p.status === "paid")
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + (p.amount ?? p.net_amount ?? 0), 0);
 
   const canRequestPayout = availableAmount >= 100;
 
@@ -230,7 +230,7 @@ function PagamentosPage() {
                       </td>
                       <td className="p-4 text-right">
                         <p className="text-[15px] font-medium text-[#0F3A3E]">
-                          {formatCurrency(payout.amount)}
+                          {formatCurrency(payout.amount ?? payout.net_amount ?? 0)}
                         </p>
                       </td>
                       <td className="p-4">

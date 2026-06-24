@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Heart, ChevronDown, Menu, X, SearchIcon, MessageCircle, ChevronRight } from "lucide-react";
-import { CartDrawer } from "../shop/CartDrawer";
+import { CartDrawerEditorial as CartDrawer } from "../shop/CartDrawerEditorial";
 import { cn } from "@/lib/utils";
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";

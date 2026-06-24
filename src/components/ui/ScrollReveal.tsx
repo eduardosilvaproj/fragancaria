@@ -1,6 +1,8 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, type ReactNode } from "react";
 
+const MotionDiv = motion.div as any;
+
 interface ScrollRevealProps {
   children: ReactNode;
   className?: string;
@@ -21,7 +23,7 @@ export function ScrollReveal({
   once = true,
 }: ScrollRevealProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once, margin: "-50px" });
+  const isInView = useInView(ref as any, { once, margin: "-50px" });
 
   const getInitialPosition = () => {
     switch (direction) {
@@ -56,7 +58,7 @@ export function ScrollReveal({
   };
 
   return (
-    <motion.div
+    <MotionDiv
       ref={ref}
       className={className}
       initial={getInitialPosition()}
@@ -68,7 +70,7 @@ export function ScrollReveal({
       }}
     >
       {children}
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -85,10 +87,10 @@ export function StaggerContainer({
   staggerDelay = 0.1,
 }: StaggerContainerProps) {
   const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref as any, { once: true, margin: "-50px" });
 
   return (
-    <motion.div
+    <MotionDiv
       ref={ref}
       className={className}
       initial="hidden"
@@ -103,7 +105,7 @@ export function StaggerContainer({
       }}
     >
       {children}
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -115,7 +117,7 @@ interface StaggerItemProps {
 
 export function StaggerItem({ children, className }: StaggerItemProps) {
   return (
-    <motion.div
+    <MotionDiv
       className={className}
       variants={{
         hidden: { opacity: 0, y: 20 },
@@ -130,7 +132,7 @@ export function StaggerItem({ children, className }: StaggerItemProps) {
       }}
     >
       {children}
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -145,7 +147,7 @@ export function Parallax({ children, className, speed = 0.5 }: ParallaxProps) {
   const ref = useRef<HTMLDivElement>(null);
 
   return (
-    <motion.div
+    <MotionDiv
       ref={ref}
       className={className}
       style={{
@@ -161,7 +163,7 @@ export function Parallax({ children, className, speed = 0.5 }: ParallaxProps) {
       }}
     >
       {children}
-    </motion.div>
+    </MotionDiv>
   );
 }
 
@@ -174,13 +176,13 @@ interface ScaleHoverProps {
 
 export function ScaleHover({ children, className, scale = 1.02 }: ScaleHoverProps) {
   return (
-    <motion.div
+    <MotionDiv
       className={className}
       whileHover={{ scale }}
       whileTap={{ scale: 0.98 }}
       transition={{ duration: 0.2, ease: "easeOut" }}
     >
       {children}
-    </motion.div>
+    </MotionDiv>
   );
 }
