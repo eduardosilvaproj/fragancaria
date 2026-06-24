@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useState } from "react";
 import { toast } from "sonner";
+import { trackAddToCart } from "@/lib/analytics";
 
 export interface ProductCardEditorialProps {
   id: string;
@@ -49,6 +50,15 @@ export function ProductCardEditorial({
       quantity: 1,
       image,
       vendor,
+    });
+
+    // Track add to cart event
+    trackAddToCart({
+      id,
+      name: title,
+      brand: vendor,
+      price,
+      quantity: 1,
     });
 
     toast.success("Produto adicionado ao carrinho", {

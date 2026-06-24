@@ -1,0 +1,59 @@
+{
+  "name": "Fragranciaria",
+  "short_name": "Fragranciaria",
+  "description": "Especialista em cabelo profissional. Curadoria dos melhores cosméticos capilares.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#F3EEE3",
+  "theme_color": "#0F3A3E",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["shopping", "beauty"],
+  "icons": [
+    {
+      "src": "/images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "apple-touch-icon"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/images/screenshot-mobile.png",
+      "sizes": "390x844",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Ver Produtos",
+      "url": "/produtos",
+      "description": "Explorar todos os produtos"
+    },
+    {
+      "name": "Ofertas",
+      "url": "/produtos?productType=Ofertas",
+      "description": "Ver produtos em promoção"
+    }
+  ]
+}
