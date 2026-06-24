@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Heart, Menu, X, ShoppingBag } from "lucide-react";
 import { CartDrawerEditorial } from "../shop/CartDrawerEditorial";
+import { SearchAutocomplete } from "../shop/SearchAutocomplete";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
@@ -21,8 +22,6 @@ export const NavbarEditorial = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const { items, setIsOpen } = useCartStore();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
@@ -34,14 +33,6 @@ export const NavbarEditorial = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      setIsSearchOpen(false);
-      navigate({ to: "/produtos", search: { q: searchQuery } });
-    }
-  };
 
   return (
     <>
@@ -139,57 +130,17 @@ export const NavbarEditorial = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-[#0F3A3E]/95 z-[100] flex flex-col items-center justify-center p-8"
+            className="fixed inset-0 bg-[#0F3A3E]/95 z-[100] flex flex-col items-center justify-center p-6 md:p-8"
           >
             <button
               onClick={() => setIsSearchOpen(false)}
-              className="absolute top-8 right-8 p-4 text-white hover:text-[#E8C25A] transition-colors"
+              className="absolute top-6 right-6 md:top-8 md:right-8 p-3 md:p-4 text-white hover:text-[#E8C25A] transition-colors"
               aria-label="Fechar"
             >
-              <X className="h-8 w-8" />
+              <X className="h-6 w-6 md:h-8 md:w-8" />
             </button>
 
-            <form onSubmit={handleSearch} className="w-full max-w-2xl">
-              <div className="relative">
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  autoFocus
-                  placeholder="O que você procura?"
-                  className="w-full bg-transparent border-b-2 border-white/20 py-6 text-3xl md:text-4xl font-serif text-white placeholder:text-white/40 outline-none focus:border-[#E8C25A] transition-colors"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 p-2 text-[#E8C25A] hover:text-white transition-colors"
-                  aria-label="Pesquisar"
-                >
-                  <Search className="h-8 w-8" />
-                </button>
-              </div>
-
-              <div className="mt-12">
-                <p className="text-[11px] uppercase tracking-[0.16em] text-[#E8C25A] mb-4">
-                  Pesquisas populares
-                </p>
-                <div className="flex flex-wrap gap-3">
-                  {["Coloração Wella", "Shampoo L'Oréal", "Kit Tratamento", "Loiro Perfeito"].map((term) => (
-                    <button
-                      key={term}
-                      type="button"
-                      onClick={() => {
-                        setSearchQuery(term);
-                        searchInputRef.current?.focus();
-                      }}
-                      className="px-4 py-2 border border-white/20 text-white/80 text-sm hover:border-[#E8C25A] hover:text-[#E8C25A] transition-colors"
-                    >
-                      {term}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </form>
+            <SearchAutocomplete onClose={() => setIsSearchOpen(false)} />
           </MotionDiv>
         )}
       </AnimatePresence>
