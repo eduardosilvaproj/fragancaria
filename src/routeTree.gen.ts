@@ -13,6 +13,7 @@ import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as IndexRouteImport } from './routes/index'
@@ -36,6 +37,11 @@ const ProdutosRoute = ProdutosRouteImport.update({
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FavoritosRoute = FavoritosRouteImport.update({
+  id: '/favoritos',
+  path: '/favoritos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ContatoRoute = ContatoRouteImport.update({
@@ -63,6 +69,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/termos': typeof TermosRoute
@@ -73,6 +80,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/termos': typeof TermosRoute
@@ -84,6 +92,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/carrinho': typeof CarrinhoRoute
   '/contato': typeof ContatoRoute
+  '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/termos': typeof TermosRoute
@@ -96,6 +105,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/favoritos'
     | '/privacidade'
     | '/produtos'
     | '/termos'
@@ -106,6 +116,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/favoritos'
     | '/privacidade'
     | '/produtos'
     | '/termos'
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/'
     | '/carrinho'
     | '/contato'
+    | '/favoritos'
     | '/privacidade'
     | '/produtos'
     | '/termos'
@@ -127,6 +139,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CarrinhoRoute: typeof CarrinhoRoute
   ContatoRoute: typeof ContatoRoute
+  FavoritosRoute: typeof FavoritosRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   TermosRoute: typeof TermosRoute
@@ -164,6 +177,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/favoritos': {
+      id: '/favoritos'
+      path: '/favoritos'
+      fullPath: '/favoritos'
+      preLoaderRoute: typeof FavoritosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/contato': {
       id: '/contato'
       path: '/contato'
@@ -199,6 +219,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CarrinhoRoute: CarrinhoRoute,
   ContatoRoute: ContatoRoute,
+  FavoritosRoute: FavoritosRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   TermosRoute: TermosRoute,

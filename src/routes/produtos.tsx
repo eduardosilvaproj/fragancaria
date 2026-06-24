@@ -2,17 +2,27 @@ import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-r
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
+import { PriceRangeSlider } from "@/components/ui/PriceRangeSlider";
+import { SortDropdown, sortProducts } from "@/components/ui/SortDropdown";
 import { PRODUCTS } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
 
 const PRODUCTS_PER_PAGE = 12;
 
+// Calculate min/max prices from products
+const PRICE_MIN = Math.floor(Math.min(...PRODUCTS.map(p => p.price)));
+const PRICE_MAX = Math.ceil(Math.max(...PRODUCTS.map(p => p.price)));
+
 type ProductsSearch = {
   vendor?: string;
   productType?: string;
   page?: number;
   q?: string;
+  sort?: string;
+  priceMin?: number;
+  priceMax?: number;
 };
 
 export const Route = createFileRoute("/produtos")({
@@ -22,6 +32,9 @@ export const Route = createFileRoute("/produtos")({
       productType: search.productType as string | undefined,
       page: Number(search.page) || 1,
       q: search.q as string | undefined,
+      sort: (search.sort as string) || "relevance",
+      priceMin: search.priceMin ? Number(search.priceMin) : undefined,
+      priceMax: search.priceMax ? Number(search.priceMax) : undefined,
     };
   },
   head: () => ({
@@ -156,7 +169,11 @@ function ProdutosPage() {
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
-  const [sortBy, setSortBy] = useState<string>("featured");
+  const [sortBy, setSortBy] = useState<string>(search.sort || "relevance");
+  const [priceRange, setPriceRange] = useState<[number, number]>([
+    search.priceMin || PRICE_MIN,
+    search.priceMax || PRICE_MAX,
+  ]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(search.page || 1);
   const [searchTerm, setSearchTerm] = useState(search.q || "");
@@ -165,6 +182,7 @@ function ProdutosPage() {
   const [expandedSections, setExpandedSections] = useState({
     categories: true,
     brands: true,
+    price: true,
   });
 
   useEffect(() => {
@@ -172,7 +190,11 @@ function ProdutosPage() {
     if (search.productType) setSelectedCategory(search.productType);
     if (search.page) setCurrentPage(search.page);
     if (search.q) setSearchTerm(search.q);
-  }, [search.vendor, search.productType, search.page, search.q]);
+    if (search.sort) setSortBy(search.sort);
+    if (search.priceMin || search.priceMax) {
+      setPriceRange([search.priceMin || PRICE_MIN, search.priceMax || PRICE_MAX]);
+    }
+  }, [search.vendor, search.productType, search.page, search.q, search.sort, search.priceMin, search.priceMax]);
 
   // Extract unique categories with counts
   const categoriesWithCounts = useMemo(() => {
@@ -221,24 +243,14 @@ function ProdutosPage() {
       filtered = filtered.filter(p => p.brand === selectedBrand);
     }
 
-    switch (sortBy) {
-      case "price-asc":
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case "price-desc":
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case "name":
-        filtered.sort((a, b) => a.name.localeCompare(b.name));
-        break;
-      case "featured":
-      default:
-        filtered.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
-        break;
-    }
+    // Filter by price range
+    filtered = filtered.filter(p =>
+      p.price >= priceRange[0] && p.price <= priceRange[1]
+    );
 
-    return filtered;
-  }, [selectedCategory, selectedBrand, sortBy, searchTerm]);
+    // Use the sortProducts function
+    return sortProducts(filtered, sortBy);
+  }, [selectedCategory, selectedBrand, sortBy, searchTerm, priceRange]);
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
@@ -256,21 +268,29 @@ function ProdutosPage() {
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    navigate({
-      to: '/produtos',
-      search: {
-        ...(selectedCategory && { productType: selectedCategory }),
-        ...(selectedBrand && { vendor: selectedBrand }),
-        ...(searchTerm && { q: searchTerm }),
-        page,
-      },
-    });
+    updateURL({ page });
+  };
+
+  const updateURL = (updates: Partial<ProductsSearch>) => {
+    const newSearch: ProductsSearch = {
+      ...(selectedCategory && { productType: selectedCategory }),
+      ...(selectedBrand && { vendor: selectedBrand }),
+      ...(searchTerm && { q: searchTerm }),
+      ...(sortBy !== "relevance" && { sort: sortBy }),
+      ...(priceRange[0] !== PRICE_MIN && { priceMin: priceRange[0] }),
+      ...(priceRange[1] !== PRICE_MAX && { priceMax: priceRange[1] }),
+      page: currentPage,
+      ...updates,
+    };
+    navigate({ to: '/produtos', search: newSearch });
   };
 
   const clearFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand(null);
     setSearchTerm("");
+    setPriceRange([PRICE_MIN, PRICE_MAX]);
+    setSortBy("relevance");
     setCurrentPage(1);
     navigate({ to: '/produtos', search: {} });
   };
@@ -278,14 +298,28 @@ function ProdutosPage() {
   const handleCategoryChange = (cat: string | null) => {
     setSelectedCategory(cat);
     setCurrentPage(1);
+    updateURL({ productType: cat || undefined, page: 1 });
   };
 
   const handleBrandChange = (brand: string | null) => {
     setSelectedBrand(brand);
     setCurrentPage(1);
+    updateURL({ vendor: brand || undefined, page: 1 });
   };
 
-  const hasActiveFilters = selectedCategory || selectedBrand || searchTerm;
+  const handleSortChange = (sort: string) => {
+    setSortBy(sort);
+    setCurrentPage(1);
+    updateURL({ sort: sort !== "relevance" ? sort : undefined, page: 1 });
+  };
+
+  const handlePriceChange = (range: [number, number]) => {
+    setPriceRange(range);
+    setCurrentPage(1);
+  };
+
+  const hasActiveFilters = selectedCategory || selectedBrand || searchTerm ||
+    priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX;
 
   // Sidebar Filter Component
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
@@ -359,6 +393,32 @@ function ProdutosPage() {
         )}
       </div>
 
+      {/* Price Range */}
+      <div className="mb-8">
+        <button
+          onClick={() => setExpandedSections(s => ({ ...s, price: !s.price }))}
+          className="flex items-center justify-between w-full mb-4"
+        >
+          <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A3E] font-semibold">
+            Preço
+          </h3>
+          <ChevronDown
+            className={`h-4 w-4 text-[#75827E] transition-transform ${
+              expandedSections.price ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {expandedSections.price && (
+          <PriceRangeSlider
+            min={PRICE_MIN}
+            max={PRICE_MAX}
+            value={priceRange}
+            onChange={handlePriceChange}
+            step={10}
+          />
+        )}
+      </div>
+
       {hasActiveFilters && (
         <button
           onClick={clearFilters}
@@ -378,25 +438,14 @@ function ProdutosPage() {
       <div className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
         <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-10">
           {/* Breadcrumb */}
-          <nav className="text-[12px] text-[#75827E] mb-4">
-            <Link to="/" className="hover:text-[#0F3A3E] transition-colors">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-[#0F3A3E]">Produtos</span>
-            {selectedCategory && (
-              <>
-                <span className="mx-2">/</span>
-                <span className="text-[#0F3A3E]">{selectedCategory}</span>
-              </>
-            )}
-            {selectedBrand && (
-              <>
-                <span className="mx-2">/</span>
-                <span className="text-[#0F3A3E]">{selectedBrand}</span>
-              </>
-            )}
-          </nav>
+          <Breadcrumbs
+            items={[
+              { label: "Produtos", href: "/produtos" },
+              ...(selectedCategory ? [{ label: selectedCategory }] : []),
+              ...(selectedBrand ? [{ label: selectedBrand }] : []),
+            ]}
+            className="mb-4"
+          />
 
           <h1 className="font-serif text-[36px] md:text-[48px] text-[#0F3A3E]">
             {selectedBrand || selectedCategory || "Todos os Produtos"}
@@ -426,6 +475,9 @@ function ProdutosPage() {
               >
                 <SlidersHorizontal className="h-4 w-4" />
                 Filtros
+                {hasActiveFilters && (
+                  <span className="w-2 h-2 rounded-full bg-[#B07B1E]" />
+                )}
               </button>
 
               {/* Active Filters Tags */}
@@ -447,6 +499,14 @@ function ProdutosPage() {
                       </button>
                     </span>
                   )}
+                  {(priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX) && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
+                      R${priceRange[0]} - R${priceRange[1]}
+                      <button onClick={() => setPriceRange([PRICE_MIN, PRICE_MAX])}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
                   {searchTerm && (
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
                       "{searchTerm}"
@@ -459,22 +519,11 @@ function ProdutosPage() {
               )}
 
               {/* Sort Dropdown */}
-              <div className="flex items-center gap-3 ml-auto">
-                <span className="text-[12px] text-[#75827E] hidden sm:inline">Ordenar por:</span>
-                <div className="relative">
-                  <select
-                    value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value)}
-                    className="appearance-none bg-white border border-[#E0D8C7] px-4 py-2.5 pr-10 text-[13px] text-[#0F3A3E] focus:outline-none focus:border-[#0F3A3E] cursor-pointer"
-                  >
-                    <option value="featured">Relevância</option>
-                    <option value="price-asc">Menor preço</option>
-                    <option value="price-desc">Maior preço</option>
-                    <option value="name">Nome A-Z</option>
-                  </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#75827E] pointer-events-none" />
-                </div>
-              </div>
+              <SortDropdown
+                value={sortBy}
+                onChange={handleSortChange}
+                className="ml-auto"
+              />
             </div>
 
             {/* Products Grid */}
