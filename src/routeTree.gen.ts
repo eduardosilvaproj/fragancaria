@@ -27,6 +27,7 @@ import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboa
 import { Route as AfiliadoCadastroSucessoRouteImport } from './routes/afiliado/cadastro-sucesso'
 import { Route as AfiliadoCadastroRouteImport } from './routes/afiliado/cadastro'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
 import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
@@ -122,6 +123,11 @@ const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AfiliadoDashboardRoute,
 } as any)
+const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
+  id: '/api/public/mp-webhook',
+  path: '/api/public/mp-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AfiliadoDashboardVendasRoute = AfiliadoDashboardVendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
@@ -167,6 +173,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesByTo {
@@ -190,6 +197,7 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesById {
@@ -215,6 +223,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -241,6 +250,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/public/mp-webhook'
     | '/afiliado/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -264,6 +274,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/public/mp-webhook'
     | '/afiliado/dashboard'
   id:
     | '__root__'
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/public/mp-webhook'
     | '/afiliado/dashboard/'
   fileRoutesById: FileRoutesById
 }
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   AfiliadoLoginRoute: typeof AfiliadoLoginRoute
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -439,6 +452,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
     }
+    '/api/public/mp-webhook': {
+      id: '/api/public/mp-webhook'
+      path: '/api/public/mp-webhook'
+      fullPath: '/api/public/mp-webhook'
+      preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/afiliado/dashboard/vendas': {
       id: '/afiliado/dashboard/vendas'
       path: '/vendas'
@@ -507,17 +527,8 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoLoginRoute: AfiliadoLoginRoute,
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
