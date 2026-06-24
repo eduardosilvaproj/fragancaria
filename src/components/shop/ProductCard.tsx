@@ -17,7 +17,7 @@ const MotionImg = motion.img as any;
 
 export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
   const addItem = useCartStore((state) => state.addItem);
-  const isLoading = useCartStore((state) => state.isLoading);
+  const [isAdding, setIsAdding] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -34,14 +34,16 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
 
     if (!selectedVariant || isAdded) return;
 
-    await addItem({
-      product,
-      variantId: selectedVariant.id,
-      variantTitle: selectedVariant.title,
-      price: selectedVariant.price,
+    setIsAdding(true);
+    addItem({
+      id: product.node.handle,
+      title: product.node.title,
+      price: parseFloat(selectedVariant.price.amount),
       quantity: 1,
-      selectedOptions: selectedVariant.selectedOptions || []
+      image: mainImage?.url || "",
+      vendor: product.node.vendor,
     });
+    setTimeout(() => setIsAdding(false), 800);
 
     // Feedback visual de sucesso
     setIsAdded(true);
@@ -134,7 +136,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
         <div className="absolute inset-x-0 bottom-0 translate-y-full group-hover:translate-y-0 transition-all duration-500 ease-[cubic-bezier(0.19,1,0.22,1)] z-10">
           <Button
             onClick={handleAddToCart}
-            disabled={isLoading || !selectedVariant || isAdded}
+            disabled={isAdding || !selectedVariant || isAdded}
             className={`w-full border-none h-12 text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-300 rounded-none ${
               isAdded
                 ? "bg-[#22c55e] text-white"
@@ -142,7 +144,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             }`}
             size="lg"
           >
-            {isLoading ? (
+            {isAdding ? (
               <span className="flex items-center gap-3">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                 Adicionando...

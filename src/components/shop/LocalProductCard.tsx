@@ -15,55 +15,23 @@ const MotionDiv = motion.div as any;
 
 export const LocalProductCard = ({ product }: LocalProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const { addItem, isLoading } = useCartStore();
+  const addItem = useCartStore((state) => state.addItem);
+  const [isAdding, setIsAdding] = useState(false);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    // variantId: usar o sku se existir, senão usar o id do produto como local
-    const variantId = product.sku
-      ? `gid://shopify/ProductVariant/${product.sku}`
-      : `local-${product.id}`;
-
-    await addItem({
-      product: {
-        node: {
-          id: `local-${product.id}`,
-          title: product.name,
-          description: product.description || "",
-          handle: product.id,
-          vendor: product.brand || "",
-          productType: product.category || "",
-          tags: product.tags || [],
-          priceRange: {
-            minVariantPrice: { amount: String(product.price), currencyCode: "BRL" }
-          },
-          images: {
-            edges: product.images[0]
-              ? [{ node: { url: product.images[0], altText: product.name } }]
-              : []
-          },
-          variants: {
-            edges: [{
-              node: {
-                id: variantId,
-                title: "Padrão",
-                price: { amount: String(product.price), currencyCode: "BRL" },
-                availableForSale: product.inStock !== false,
-                selectedOptions: []
-              }
-            }]
-          },
-          options: []
-        }
-      },
-      variantId,
-      variantTitle: "Padrão",
-      price: { amount: String(product.price), currencyCode: "BRL" },
+    setIsAdding(true);
+    addItem({
+      id: product.id,
+      title: product.name,
+      price: product.price,
       quantity: 1,
-      selectedOptions: []
+      image: product.images[0] || "",
+      vendor: product.brand || "",
     });
+    setTimeout(() => setIsAdding(false), 800);
 
     toast.success("Adicionado à sacola", {
       description: `${product.name} foi adicionado com sucesso.`,
@@ -153,13 +121,13 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
           {/* Add to cart button */}
           <Button
             onClick={handleAddToCart}
-            disabled={isLoading}
+            disabled={isAdding}
             className="w-full bg-[#0F3A3E] hover:bg-[#16504F] text-white h-12 text-[12px] uppercase tracking-[0.16em] font-medium transition-all rounded-none"
             size="lg"
           >
             <span className="flex items-center gap-2">
               <ShoppingBag className="h-4 w-4" />
-              {isLoading ? "Adicionando..." : "Adicionar ao Carrinho"}
+              {isAdding ? "Adicionando..." : "Adicionar ao Carrinho"}
             </span>
           </Button>
         </div>
