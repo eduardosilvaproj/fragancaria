@@ -116,7 +116,7 @@ export function RecentlyViewedSection({
             >
               <article className="bg-white border border-[#E9E1D2] transition-all duration-200 hover:-translate-y-1 hover:shadow-md">
                 {/* Image */}
-                <div className="bg-[#F8F4EA] p-4 aspect-square flex items-center justify-center">
+                <div className="bg-white p-4 aspect-square flex items-center justify-center">
                   <img
                     src={item.image}
                     alt={item.title}

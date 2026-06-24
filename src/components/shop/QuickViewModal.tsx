@@ -122,7 +122,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
 
             <div className="flex flex-col md:flex-row">
               {/* Image Gallery */}
-              <div className="relative md:w-1/2 bg-[#F8F4EA]">
+              <div className="relative md:w-1/2 bg-white">
                 {/* Discount Badge */}
                 {discount > 0 && (
                   <span className="absolute top-4 left-4 z-10 bg-[#0F3A3E] text-white text-[11px] font-semibold tracking-[0.06em] px-3 py-1.5">

@@ -228,7 +228,7 @@ function ProductPage() {
               )}
 
               {/* Main Image */}
-              <div className="flex-1 relative bg-[#F8F4EA] border border-[#E9E1D2] overflow-hidden group">
+              <div className="flex-1 relative bg-white border border-[#E9E1D2] overflow-hidden group">
                 {/* Discount Badge */}
                 {discount > 0 && (
                   <span className="absolute top-5 left-5 z-10 bg-[#0F3A3E] text-white text-[11px] font-semibold tracking-[0.06em] px-3 py-1.5">

@@ -86,7 +86,7 @@ export function CompareBar() {
                 {items.map((item) => (
                   <div
                     key={item.id}
-                    className="flex-shrink-0 w-[180px] bg-[#F8F4EA] border border-[#E9E1D2] p-3 relative group"
+                    className="flex-shrink-0 w-[180px] bg-white border border-[#E9E1D2] p-3 relative group"
                   >
                     <button
                       onClick={() => removeItem(item.id)}
