@@ -1,8 +1,9 @@
 import { Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
+import { Heart, Eye } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
+import { useQuickViewStore } from "@/stores/quickViewStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackAddToCart } from "@/lib/analytics";
@@ -35,6 +36,7 @@ export function ProductCardEditorial({
 }: ProductCardEditorialProps) {
   const addToCart = useCartStore((state) => state.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const openQuickView = useQuickViewStore((state) => state.openQuickView);
   const [isAdding, setIsAdding] = useState(false);
   const isWishlisted = isInWishlist(id);
 
@@ -89,6 +91,12 @@ export function ProductCardEditorial({
     );
   };
 
+  const handleQuickView = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    openQuickView(id);
+  };
+
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -133,6 +141,16 @@ export function ProductCardEditorial({
             aria-label={isWishlisted ? "Remover dos favoritos" : "Adicionar aos favoritos"}
           >
             <Heart className={cn("h-4 w-4 md:h-5 md:w-5", isWishlisted && "fill-current")} />
+          </button>
+
+          {/* Quick View Button - appears on hover */}
+          <button
+            onClick={handleQuickView}
+            className="absolute bottom-2 left-1/2 -translate-x-1/2 md:bottom-4 z-10 flex items-center gap-1.5 px-3 py-2 bg-white/95 text-[#0F3A3E] text-[10px] md:text-[11px] uppercase tracking-[0.1em] font-medium opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-200 hover:bg-white shadow-sm"
+            aria-label="Visualização rápida"
+          >
+            <Eye className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">Ver rápido</span>
           </button>
 
           {/* Product Image */}
