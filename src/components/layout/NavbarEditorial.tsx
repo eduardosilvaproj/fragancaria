@@ -7,6 +7,7 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
 
 const NAV_LINKS = [
   { label: "Tratamentos", href: "/produtos", search: { productType: "Tratamento" } },
@@ -24,7 +25,9 @@ export const NavbarEditorial = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
   const { items, setIsOpen } = useCartStore();
+  const wishlistItems = useWishlistStore((state) => state.items);
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
+  const wishlistCount = wishlistItems.length;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,12 +101,18 @@ export const NavbarEditorial = () => {
             <Search className="h-[15px] w-[15px]" />
           </button>
 
-          <button
-            className="cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
+          <Link
+            to="/favoritos"
+            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
             aria-label="Favoritos"
           >
             <Heart className="h-[15px] w-[15px]" />
-          </button>
+            {wishlistCount > 0 && (
+              <span className="absolute -top-2 -right-2.5 bg-[#B07B1E] text-white text-[10px] font-bold min-w-[17px] h-[17px] rounded-full flex items-center justify-center px-1">
+                {wishlistCount}
+              </span>
+            )}
+          </Link>
 
           <button
             onClick={() => setIsOpen(true)}
@@ -193,6 +202,22 @@ export const NavbarEditorial = () => {
                       </Link>
                     </li>
                   ))}
+
+                  {/* Favoritos link mobile */}
+                  <li>
+                    <Link
+                      to="/favoritos"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Favoritos
+                      {wishlistCount > 0 && (
+                        <span className="bg-[#B07B1E] text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                          {wishlistCount}
+                        </span>
+                      )}
+                    </Link>
+                  </li>
                 </ul>
               </nav>
 

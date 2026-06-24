@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
+import { useWishlistStore } from "@/stores/wishlistStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackAddToCart } from "@/lib/analytics";
@@ -33,8 +34,9 @@ export function ProductCardEditorial({
   className,
 }: ProductCardEditorialProps) {
   const addToCart = useCartStore((state) => state.addItem);
-  const [isWishlisted, setIsWishlisted] = useState(false);
+  const { toggleItem, isInWishlist } = useWishlistStore();
   const [isAdding, setIsAdding] = useState(false);
+  const isWishlisted = isInWishlist(id);
 
   const discount = originalPrice ? Math.round(((originalPrice - price) / originalPrice) * 100) : 0;
 
@@ -71,7 +73,20 @@ export function ProductCardEditorial({
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    setIsWishlisted(!isWishlisted);
+
+    const wasAdded = toggleItem({
+      id,
+      title,
+      vendor,
+      price,
+      originalPrice,
+      image,
+    });
+
+    toast.success(
+      wasAdded ? "Adicionado aos favoritos" : "Removido dos favoritos",
+      { duration: 2000 }
+    );
   };
 
   const formatPrice = (value: number) => {
