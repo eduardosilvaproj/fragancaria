@@ -12,6 +12,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
+import { useAffiliateTracking } from "../hooks/useAffiliateTracking";
 import { initGA, initMetaPixel } from "../lib/analytics";
 import { QuickViewModal } from "../components/shop/QuickViewModal";
 import { CompareBar } from "../components/shop/CompareBar";
@@ -166,6 +167,7 @@ function RootComponent() {
   const { productId, isOpen, closeQuickView } = useQuickViewStore();
   useCartSync();
   useAppUpdate();
+  useAffiliateTracking();
 
   // Initialize analytics on client side
   useEffect(() => {
