@@ -4,6 +4,8 @@ import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, SHIPPING_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
+import { useServerFn } from "@tanstack/react-start";
+import { createPayment } from "@/lib/payments.functions";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -16,7 +18,8 @@ function calcTotal({ subtotal, shipping, couponPercent, pix }: { subtotal: numbe
 
 export function PaymentForm() {
   const { getTotalPrice } = useCartStore();
-  const { paymentMethod, setPaymentMethod, setPaymentData, setStep, shippingMethod, coupon } = useCheckoutStore();
+  const { paymentMethod, setPaymentMethod, setPaymentData, setStep, shippingMethod, coupon, customer, shippingAddress } =
+    useCheckoutStore();
 
   const subtotal = getTotalPrice();
   const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod)?.price ?? 0;
@@ -52,9 +55,24 @@ export function PaymentForm() {
         </div>
       </section>
 
-      {paymentMethod === "credit_card" && <CardForm total={total} onDone={(data) => { setPaymentData(data); setStep("confirmation"); }} />}
-      {paymentMethod === "pix" && <PixForm total={total} onDone={(data) => { setPaymentData(data); setStep("confirmation"); }} />}
-      {paymentMethod === "boleto" && <BoletoForm total={total} onDone={(data) => { setPaymentData(data); setStep("confirmation"); }} />}
+      {paymentMethod === "credit_card" && (
+        <CardForm total={total} onDone={(data) => { setPaymentData(data); setStep("confirmation"); }} />
+      )}
+      {paymentMethod === "pix" && (
+        <PixForm
+          total={total}
+          customer={customer}
+          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+        />
+      )}
+      {paymentMethod === "boleto" && (
+        <BoletoForm
+          total={total}
+          customer={customer}
+          shippingAddress={shippingAddress}
+          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+        />
+      )}
 
       <button
         type="button"
@@ -158,9 +176,12 @@ function CardForm({ total, onDone }: { total: number; onDone: (d: any) => void }
   );
 }
 
-function PixForm({ total, onDone }: { total: number; onDone: (d: any) => void }) {
+function PixForm({ total, customer, onDone }: { total: number; customer: any; onDone: (d: any) => void }) {
+  const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
+  const [qrBase64, setQrBase64] = useState<string | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(30 * 60);
 
   useEffect(() => {
@@ -169,14 +190,33 @@ function PixForm({ total, onDone }: { total: number; onDone: (d: any) => void })
     return () => clearInterval(t);
   }, [code]);
 
-  const generate = () => {
+  const generate = async () => {
+    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
     setLoading(true);
-    setTimeout(() => {
-      const fake = "00020126360014BR.GOV.BCB.PIX0114+5511999998888520400005303986540" + total.toFixed(2) + "5802BR5913FRAGRANCIARIA6009SAO PAULO62070503***6304E2CA";
-      setCode(fake);
-      setLoading(false);
+    try {
+      const res: any = await createPaymentFn({
+        data: {
+          method: "pix",
+          amount: Number(total.toFixed(2)),
+          description: "Pedido Fragranciaria",
+          payer: {
+            email: customer.email,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            identification: { type: "CPF", number: customer.cpf },
+          },
+        },
+      });
+      if (!res.success) throw new Error(res.error);
+      setCode(res.data.pixQrCode ?? "");
+      setQrBase64(res.data.pixQrCodeBase64 ?? null);
+      setPaymentId(res.data.id);
       toast.success("PIX gerado! Escaneie o QR Code ou copie o código.");
-    }, 2000);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar PIX");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copy = () => {
@@ -186,8 +226,7 @@ function PixForm({ total, onDone }: { total: number; onDone: (d: any) => void })
   };
 
   const confirm = () => {
-    const orderId = "ORD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    onDone({ orderId, status: "pending", pixCode: code });
+    onDone({ orderId: paymentId ?? "PENDING", status: "pending", pixCode: code ?? undefined });
   };
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -211,7 +250,11 @@ function PixForm({ total, onDone }: { total: number; onDone: (d: any) => void })
         <div className="space-y-4">
           <div className="flex flex-col items-center gap-3">
             <div className="w-48 h-48 bg-[#F3EEE3] border border-[#E9E1D2] flex items-center justify-center">
-              <QrCode className="w-32 h-32 text-[#0F3A3E]" />
+              {qrBase64 ? (
+                <img src={`data:image/png;base64,${qrBase64}`} alt="QR Code PIX" className="w-full h-full object-contain" />
+              ) : (
+                <QrCode className="w-32 h-32 text-[#0F3A3E]" />
+              )}
             </div>
             <div className="text-center">
               <div className="text-xs text-[#51635F] uppercase tracking-wider">Expira em</div>
@@ -231,18 +274,60 @@ function PixForm({ total, onDone }: { total: number; onDone: (d: any) => void })
   );
 }
 
-function BoletoForm({ total, onDone }: { total: number; onDone: (d: any) => void }) {
+function BoletoForm({
+  total,
+  customer,
+  shippingAddress,
+  onDone,
+}: {
+  total: number;
+  customer: any;
+  shippingAddress: any;
+  onDone: (d: any) => void;
+}) {
+  const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
+  const [boletoUrl, setBoletoUrl] = useState<string | null>(null);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
 
-  const generate = () => {
+  const generate = async () => {
+    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
     setLoading(true);
-    setTimeout(() => {
-      const fake = "23793.39001 60000.000000 00000.000000 1 " + Math.floor(Math.random() * 99999999999999).toString().padStart(14, "0");
-      setCode(fake);
-      setLoading(false);
+    try {
+      const res: any = await createPaymentFn({
+        data: {
+          method: "boleto",
+          amount: Number(total.toFixed(2)),
+          description: "Pedido Fragranciaria",
+          payer: {
+            email: customer.email,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            identification: { type: "CPF", number: customer.cpf },
+            address: shippingAddress
+              ? {
+                  zipCode: shippingAddress.cep,
+                  streetName: shippingAddress.street,
+                  streetNumber: shippingAddress.number,
+                  neighborhood: shippingAddress.neighborhood,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                }
+              : undefined,
+          },
+        },
+      });
+      if (!res.success) throw new Error(res.error);
+      setCode(res.data.boletoBarcode ?? "");
+      setBoletoUrl(res.data.boletoUrl ?? null);
+      setPaymentId(res.data.id);
       toast.success("Boleto gerado!");
-    }, 2000);
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao gerar boleto");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copy = () => {
@@ -252,8 +337,7 @@ function BoletoForm({ total, onDone }: { total: number; onDone: (d: any) => void
   };
 
   const confirm = () => {
-    const orderId = "ORD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
-    onDone({ orderId, status: "pending", boletoCode: code, boletoUrl: "#" });
+    onDone({ orderId: paymentId ?? "PENDING", status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
   };
 
   return (
@@ -280,7 +364,13 @@ function BoletoForm({ total, onDone }: { total: number; onDone: (d: any) => void
             <button onClick={copy} className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center gap-2">
               <Copy className="w-4 h-4" /> Copiar Código
             </button>
-            <a href="#" onClick={(e) => e.preventDefault()} className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center">
+            <a
+              href={boletoUrl ?? "#"}
+              target={boletoUrl ? "_blank" : undefined}
+              rel="noreferrer"
+              onClick={(e) => { if (!boletoUrl) e.preventDefault(); }}
+              className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center"
+            >
               Visualizar Boleto
             </a>
           </div>
