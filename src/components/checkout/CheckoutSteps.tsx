@@ -1,0 +1,53 @@
+import { Truck, CreditCard, Package, Check } from "lucide-react";
+import type { CheckoutStep } from "@/stores/checkoutStore";
+
+const STEPS: { id: CheckoutStep; label: string; icon: typeof Truck }[] = [
+  { id: "shipping", label: "Entrega", icon: Truck },
+  { id: "payment", label: "Pagamento", icon: CreditCard },
+  { id: "confirmation", label: "Confirmação", icon: Package },
+];
+
+export function CheckoutSteps({ current }: { current: CheckoutStep }) {
+  const currentIdx = STEPS.findIndex((s) => s.id === current);
+
+  return (
+    <div className="flex items-center justify-center w-full max-w-2xl mx-auto py-6">
+      {STEPS.map((step, i) => {
+        const isComplete = i < currentIdx;
+        const isCurrent = i === currentIdx;
+        const Icon = step.icon;
+        return (
+          <div key={step.id} className="flex items-center flex-1 last:flex-none">
+            <div className="flex flex-col items-center gap-2">
+              <div
+                className={`w-12 h-12 flex items-center justify-center transition-colors ${
+                  isComplete
+                    ? "bg-[#1C6B4A] text-white"
+                    : isCurrent
+                    ? "bg-[#0F3A3E] text-white"
+                    : "bg-[#E9E1D2] text-[#51635F]"
+                }`}
+              >
+                {isComplete ? <Check className="w-5 h-5" /> : <Icon className="w-5 h-5" />}
+              </div>
+              <span
+                className={`text-[10px] uppercase tracking-[0.18em] font-semibold ${
+                  isComplete || isCurrent ? "text-[#0F3A3E]" : "text-[#51635F]"
+                }`}
+              >
+                {step.label}
+              </span>
+            </div>
+            {i < STEPS.length - 1 && (
+              <div
+                className={`h-px flex-1 mx-3 mb-6 transition-colors ${
+                  i < currentIdx ? "bg-[#1C6B4A]" : "bg-[#E9E1D2]"
+                }`}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
