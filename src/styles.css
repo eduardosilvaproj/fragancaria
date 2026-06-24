@@ -5,17 +5,21 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * Design system definition.
+ * FRAGRANCIARIA Editorial Design System v3
  *
- * The @theme inline block maps CSS custom properties to Tailwind utility
- * classes (e.g. --color-primary -> bg-primary, text-primary).
+ * Color Palette (from design handoff):
+ * - Background: #F3EEE3 (warm cream/beige)
+ * - Primary (Teal): #0F3A3E
+ * - Secondary (Teal Light): #2B413F
+ * - Accent (Amber): #B07B1E
+ * - Accent Bright (Gold): #E8C25A / #D4A12A
+ * - Text Primary: #1C302E
+ * - Text Muted: #51635F / #75827E
+ * - Border: #E0D8C7 / #E9E1D2
  *
- * The :root and .dark blocks define the actual color values using oklch.
- * All colors MUST use oklch format.
- *
- * To add a new semantic color:
- * 1. Add the variable to :root (light value) and .dark (dark value)
- * 2. Register it in @theme inline as --color-<name>: var(--<name>)
+ * Typography:
+ * - Serif: Fraunces (headings, prices)
+ * - Sans: Jost (body, UI)
  */
 
 @theme inline {
@@ -62,89 +66,85 @@
 }
 
 :root {
-  --radius: 0.25rem;
+  --radius: 0;
 
-  /* FRAGRANCIARIA Official Brand Colors */
-  /* Deep Teal Blue - Primary */
-  --teal-primary: #0F3A45;
-  /* Dark Ocean Blue - Secondary */
-  --teal-secondary: #143E4A;
-  /* Champagne Gold - Accent */
-  --gold-accent: #D4AF37;
-  /* Soft Gold - Auxiliary */
-  --gold-soft: #BFA06A;
-  /* Premium White */
-  --white-premium: #F7F5F2;
-  /* Premium Black */
-  --black-premium: #1A1A1A;
+  /* FRAGRANCIARIA Editorial Design System v3 */
+  /* Primary Teal */
+  --teal-primary: #0F3A3E;
+  /* Secondary Teal */
+  --teal-secondary: #2B413F;
+  /* Accent Amber */
+  --amber-accent: #B07B1E;
+  /* Accent Gold Bright */
+  --gold-bright: #E8C25A;
+  /* Background Cream */
+  --cream-bg: #F3EEE3;
+  /* Card Background */
+  --card-bg: #F8F4EA;
+  /* Text Primary */
+  --text-primary: #1C302E;
+  /* Text Muted */
+  --text-muted: #51635F;
+  /* Border Light */
+  --border-light: #E0D8C7;
+  /* Border Card */
+  --border-card: #E9E1D2;
 
-  --background: oklch(0.97 0.005 85); /* #F7F5F2 - Premium White */
-  --foreground: oklch(0.15 0.01 200); /* #1A1A1A - Premium Black */
-  --card: oklch(0.96 0.003 85); /* Slightly darker white */
-  --card-foreground: oklch(0.15 0.01 200);
-  --popover: oklch(0.98 0.002 85);
-  --popover-foreground: oklch(0.15 0.01 200);
-  --primary: oklch(0.30 0.06 195); /* #0F3A45 - Deep Teal Blue */
-  --primary-foreground: oklch(0.97 0.005 85);
-  --secondary: oklch(0.32 0.055 195); /* #143E4A - Dark Ocean Blue */
-  --secondary-foreground: oklch(0.97 0.005 85);
-  --accent: oklch(0.75 0.14 85); /* #D4AF37 - Champagne Gold */
-  --accent-foreground: oklch(0.15 0.01 200);
-  --muted: oklch(0.92 0.005 85);
-  --muted-foreground: oklch(0.45 0.02 200);
-  --destructive: oklch(0.5 0.2 25);
-  --destructive-foreground: oklch(1 0 0);
-  --border: oklch(0.88 0.01 85);
-  --input: oklch(0.92 0.005 85);
-  --ring: oklch(0.75 0.14 85); /* Gold ring */
-  --chart-1: oklch(0.30 0.06 195);
-  --chart-2: oklch(0.75 0.14 85);
-  --chart-3: oklch(0.32 0.055 195);
-  --chart-4: oklch(0.70 0.10 85);
-  --chart-5: oklch(0.40 0.05 195);
-  --sidebar: oklch(0.20 0.05 195); /* Dark teal sidebar */
-  --sidebar-foreground: oklch(0.97 0.005 85);
-  --sidebar-primary: oklch(0.75 0.14 85);
-  --sidebar-primary-foreground: oklch(0.15 0.01 200);
-  --sidebar-accent: oklch(0.25 0.05 195);
-  --sidebar-accent-foreground: oklch(0.97 0.005 85);
-  --sidebar-border: oklch(0.25 0.04 195);
-  --sidebar-ring: oklch(0.75 0.14 85);
+  --background: #F3EEE3;
+  --foreground: #1C302E;
+  --card: #FFFFFF;
+  --card-foreground: #1C302E;
+  --popover: #FFFFFF;
+  --popover-foreground: #1C302E;
+  --primary: #0F3A3E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2B413F;
+  --secondary-foreground: #FFFFFF;
+  --accent: #B07B1E;
+  --accent-foreground: #FFFFFF;
+  --muted: #F8F4EA;
+  --muted-foreground: #75827E;
+  --destructive: #B0443A;
+  --destructive-foreground: #FFFFFF;
+  --border: #E0D8C7;
+  --input: #FBF8F1;
+  --ring: #B07B1E;
+  --chart-1: #0F3A3E;
+  --chart-2: #B07B1E;
+  --chart-3: #2B413F;
+  --chart-4: #E8C25A;
+  --chart-5: #51635F;
+  --sidebar: #0F3A3E;
+  --sidebar-foreground: #FFFFFF;
+  --sidebar-primary: #B07B1E;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #16504F;
+  --sidebar-accent-foreground: #FFFFFF;
+  --sidebar-border: rgba(255,255,255,0.1);
+  --sidebar-ring: #B07B1E;
 }
 
+/* Dark mode - kept for compatibility but not primary focus */
 .dark {
-  --background: oklch(0.129 0.042 264.695);
-  --foreground: oklch(0.984 0.003 247.858);
-  --card: oklch(0.208 0.042 265.755);
-  --card-foreground: oklch(0.984 0.003 247.858);
-  --popover: oklch(0.208 0.042 265.755);
-  --popover-foreground: oklch(0.984 0.003 247.858);
-  --primary: oklch(0.929 0.013 255.508);
-  --primary-foreground: oklch(0.208 0.042 265.755);
-  --secondary: oklch(0.279 0.041 260.031);
-  --secondary-foreground: oklch(0.984 0.003 247.858);
-  --muted: oklch(0.279 0.041 260.031);
-  --muted-foreground: oklch(0.704 0.04 256.788);
-  --accent: oklch(0.279 0.041 260.031);
-  --accent-foreground: oklch(0.984 0.003 247.858);
-  --destructive: oklch(0.704 0.191 22.216);
-  --destructive-foreground: oklch(0.984 0.003 247.858);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.551 0.027 264.364);
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.208 0.042 265.755);
-  --sidebar-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-accent: oklch(0.279 0.041 260.031);
-  --sidebar-accent-foreground: oklch(0.984 0.003 247.858);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.551 0.027 264.364);
+  --background: #1C302E;
+  --foreground: #F3EEE3;
+  --card: #2B413F;
+  --card-foreground: #F3EEE3;
+  --popover: #2B413F;
+  --popover-foreground: #F3EEE3;
+  --primary: #F3EEE3;
+  --primary-foreground: #0F3A3E;
+  --secondary: #51635F;
+  --secondary-foreground: #F3EEE3;
+  --muted: #2B413F;
+  --muted-foreground: #9AA39F;
+  --accent: #B07B1E;
+  --accent-foreground: #FFFFFF;
+  --destructive: #B0443A;
+  --destructive-foreground: #FFFFFF;
+  --border: rgba(255,255,255,0.1);
+  --input: rgba(255,255,255,0.1);
+  --ring: #B07B1E;
 }
 
 @layer base {
@@ -153,22 +153,23 @@
   }
 
   body {
-    background-color: var(--color-background);
-    color: var(--color-foreground);
-    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: 'Jost', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    font-size: 13px;
+    font-size: 14px;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
+    font-weight: 500;
   }
 
-  h1 { font-size: clamp(2.2rem, 5.5vw, 4rem); }
-  h2 { font-size: clamp(1.8rem, 3.8vw, 2.7rem); }
-  h3 { font-size: clamp(1.3rem, 2.8vw, 2rem); }
+  h1 { font-size: clamp(2.5rem, 5vw, 3.5rem); line-height: 1.08; }
+  h2 { font-size: clamp(1.75rem, 4vw, 2.625rem); line-height: 1.1; }
+  h3 { font-size: clamp(1.25rem, 3vw, 1.375rem); line-height: 1.25; }
 
   section {
     padding-top: 4rem;
@@ -180,26 +181,65 @@
   }
 
   .font-serif {
-    font-family: 'Playfair Display', serif;
+    font-family: 'Fraunces', serif;
   }
 
   .font-sans {
-    font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+    font-family: 'Jost', system-ui, -apple-system, sans-serif;
   }
 
-  /* Brand Color Utility Classes */
-  .bg-teal-primary { background-color: #0F3A45; }
-  .bg-teal-secondary { background-color: #143E4A; }
-  .bg-gold-accent { background-color: #D4AF37; }
-  .bg-gold-soft { background-color: #BFA06A; }
-  .text-teal-primary { color: #0F3A45; }
-  .text-teal-secondary { color: #143E4A; }
-  .text-gold-accent { color: #D4AF37; }
-  .text-gold-soft { color: #BFA06A; }
-  .border-gold-accent { border-color: #D4AF37; }
-  .border-teal-primary { border-color: #0F3A45; }
+  /* Editorial Brand Color Utility Classes */
+  .bg-teal-primary { background-color: #0F3A3E; }
+  .bg-teal-secondary { background-color: #2B413F; }
+  .bg-amber-accent { background-color: #B07B1E; }
+  .bg-gold-bright { background-color: #E8C25A; }
+  .bg-cream { background-color: #F3EEE3; }
+  .bg-card-cream { background-color: #F8F4EA; }
+  .text-teal-primary { color: #0F3A3E; }
+  .text-teal-secondary { color: #2B413F; }
+  .text-amber-accent { color: #B07B1E; }
+  .text-gold-bright { color: #E8C25A; }
+  .text-muted-editorial { color: #51635F; }
+  .text-muted-light { color: #75827E; }
+  .border-editorial { border-color: #E0D8C7; }
+  .border-card { border-color: #E9E1D2; }
 
-  /* Luxury Utility Classes */
+  /* Legacy color classes for backwards compatibility */
+  .bg-gold-accent { background-color: #B07B1E; }
+  .bg-gold-soft { background-color: #E8C25A; }
+  .text-gold-accent { color: #B07B1E; }
+  .text-gold-soft { color: #E8C25A; }
+  .border-gold-accent { border-color: #B07B1E; }
+  .border-teal-primary { border-color: #0F3A3E; }
+
+  /* Editorial Typography Utilities */
+  .tracking-editorial-wide {
+    letter-spacing: 0.18em;
+  }
+
+  .tracking-editorial-label {
+    letter-spacing: 0.16em;
+  }
+
+  .tracking-editorial-tight {
+    letter-spacing: -0.02em;
+  }
+
+  .uppercase-label {
+    font-size: 11px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .uppercase-label-sm {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  /* Luxury Utility Classes (legacy) */
   .tracking-luxury {
     letter-spacing: 0.3em;
   }
@@ -212,7 +252,11 @@
     transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  /* Section Label Styling */
+  .transition-editorial {
+    transition: all 0.25s ease;
+  }
+
+  /* Editorial Section Label */
   .section-label {
     display: flex;
     align-items: center;
@@ -221,18 +265,25 @@
   }
 
   .section-label span {
-    font-size: 10px;
+    font-size: 11px;
     text-transform: uppercase;
-    letter-spacing: 0.4em;
-    font-weight: 700;
-    color: #D4AF37;
+    letter-spacing: 0.2em;
+    font-weight: 500;
+    color: #B07B1E;
   }
 
   .section-label::before {
     content: '';
     width: 2rem;
     height: 1px;
-    background: #D4AF37;
+    background: #B07B1E;
+  }
+
+  /* Editorial Gold Bar (separator) */
+  .gold-bar {
+    width: 46px;
+    height: 2px;
+    background: #B07B1E;
   }
 }
 
@@ -267,12 +318,51 @@
     }
   }
 
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes heroIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes heroZoom {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.06);
+    }
+  }
+
   @keyframes ken-burns {
     0% {
       transform: scale(1);
     }
     100% {
       transform: scale(1.15);
+    }
+  }
+
+  /* Marquee animation for announcement bar */
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
     }
   }
 
@@ -288,7 +378,21 @@
     animation: ken-burns 20s ease-out infinite alternate;
   }
 
+  .animate-marquee {
+    animation: marquee 26s linear infinite;
+  }
+
   .fill-mode-forwards {
     animation-fill-mode: forwards;
+  }
+
+  /* Editorial hover effects */
+  .hover-lift {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(15, 58, 62, 0.10);
   }
 }

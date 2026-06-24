@@ -1,516 +1,466 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { ProductCard } from "@/components/shop/ProductCard";
-import { storefrontApiRequest, ShopifyProduct } from "@/lib/shopify/client";
-import { useQuery } from "@tanstack/react-query";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { FooterEditorial } from "@/components/layout/FooterEditorial";
+import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { PRODUCTS } from "@/data/products";
+import { useState, useMemo } from "react";
 import { useCartStore } from "@/stores/cartStore";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
 import { toast } from "sonner";
-import { motion } from "framer-motion";
 import {
   Star,
   Heart,
-  ShoppingBag,
   Truck,
   Shield,
   RotateCcw,
-  ChevronRight,
   Minus,
   Plus,
-  Check,
-  Loader2,
+  ChevronDown,
 } from "lucide-react";
-
-const MotionDiv = motion.div as any;
-
-const GET_PRODUCT_BY_HANDLE = `
-  query GetProductByHandle($handle: String!) {
-    product(handle: $handle) {
-      id
-      title
-      description
-      descriptionHtml
-      handle
-      vendor
-      productType
-      tags
-      priceRange {
-        minVariantPrice {
-          amount
-          currencyCode
-        }
-      }
-      compareAtPriceRange {
-        minVariantPrice {
-          amount
-          currencyCode
-        }
-      }
-      images(first: 10) {
-        edges {
-          node {
-            url
-            altText
-          }
-        }
-      }
-      variants(first: 20) {
-        edges {
-          node {
-            id
-            title
-            price {
-              amount
-              currencyCode
-            }
-            compareAtPrice {
-              amount
-              currencyCode
-            }
-            availableForSale
-            selectedOptions {
-              name
-              value
-            }
-          }
-        }
-      }
-      options {
-        name
-        values
-      }
-    }
-  }
-`;
-
-const GET_RELATED_PRODUCTS = `
-  query GetRelatedProducts($productType: String!, $first: Int!) {
-    products(first: $first, query: $productType) {
-      edges {
-        node {
-          id
-          title
-          description
-          handle
-          vendor
-          priceRange {
-            minVariantPrice {
-              amount
-              currencyCode
-            }
-          }
-          images(first: 2) {
-            edges {
-              node {
-                url
-                altText
-              }
-            }
-          }
-          variants(first: 5) {
-            edges {
-              node {
-                id
-                title
-                price {
-                  amount
-                  currencyCode
-                }
-                availableForSale
-                selectedOptions {
-                  name
-                  value
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-`;
 
 export const Route = createFileRoute("/produto/$id")({
   head: () => ({
-    meta: [
-      { title: "Produto | Fragranciaria" },
-    ],
+    meta: [{ title: "Produto | Fragranciaria" }],
   }),
   component: ProductPage,
 });
 
 function ProductPage() {
-  const { id: handle } = Route.useParams();
+  const { id } = Route.useParams();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
-  const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>("descricao");
+  const addToCart = useCartStore((state) => state.addItem);
 
-  const addItem = useCartStore((state) => state.addItem);
-  const isLoading = useCartStore((state) => state.isLoading);
+  const product = useMemo(() => {
+    return PRODUCTS.find((p) => p.id === id);
+  }, [id]);
 
-  const { data: productData, isLoading: productLoading, error } = useQuery({
-    queryKey: ["product", handle],
-    queryFn: () => storefrontApiRequest(GET_PRODUCT_BY_HANDLE, { handle }),
-    retry: 2,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const relatedProducts = useMemo(() => {
+    if (!product) return [];
+    return PRODUCTS.filter(
+      (p) =>
+        p.id !== product.id &&
+        (p.category === product.category || p.brand === product.brand)
+    ).slice(0, 4);
+  }, [product]);
 
-  const product = productData?.data?.product;
-
-  const { data: relatedData } = useQuery({
-    queryKey: ["related-products", product?.productType],
-    queryFn: () => storefrontApiRequest(GET_RELATED_PRODUCTS, {
-      productType: `product_type:${product?.productType}`,
-      first: 5
-    }),
-    enabled: !!product?.productType,
-  });
-
-  const relatedProducts: ShopifyProduct[] = relatedData?.data?.products?.edges?.filter(
-    (p: ShopifyProduct) => p.node.handle !== handle
-  ).slice(0, 4) || [];
-
-  if (productLoading) {
+  if (!product) {
     return (
-      <div className="min-h-screen bg-[#F7F5F2]">
-        <Navbar />
-        <div className="container mx-auto px-4 py-40 flex items-center justify-center">
-          <Loader2 className="h-8 w-8 animate-spin text-[#D4AF37]" />
-        </div>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (error || !product) {
-    return (
-      <div className="min-h-screen bg-[#F7F5F2]">
-        <Navbar />
-        <div className="container mx-auto px-4 py-40 text-center">
-          <h1 className="font-serif text-4xl mb-4">Produto não encontrado</h1>
-          <Link to="/produtos">
-            <Button className="bg-[#D4AF37] text-[#0F3A45]">
-              Ver todos os produtos
-            </Button>
+      <div className="min-h-screen bg-[#F3EEE3]">
+        <NavbarEditorial />
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-40 text-center">
+          <h1 className="font-serif text-4xl mb-4 text-[#0F3A3E]">
+            Produto não encontrado
+          </h1>
+          <Link
+            to="/produtos"
+            className="inline-block bg-[#0F3A3E] text-white px-8 py-4 text-[12px] uppercase tracking-[0.14em] font-medium hover:bg-[#B07B1E] transition-colors"
+          >
+            Ver todos os produtos
           </Link>
         </div>
-        <Footer />
+        <FooterEditorial />
       </div>
     );
   }
 
-  const images = product.images?.edges || [];
-  const variants = product.variants?.edges || [];
-  const selectedVariant = variants[selectedVariantIndex]?.node;
-
-  const price = parseFloat(selectedVariant?.price?.amount || product.priceRange.minVariantPrice.amount);
-  const compareAtPrice = selectedVariant?.compareAtPrice?.amount
-    ? parseFloat(selectedVariant.compareAtPrice.amount)
-    : null;
-  const currencyCode = selectedVariant?.price?.currencyCode || product.priceRange.minVariantPrice.currencyCode;
-
-  const discount = compareAtPrice && compareAtPrice > price
-    ? Math.round(((compareAtPrice - price) / compareAtPrice) * 100)
+  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
+  const discount = hasDiscount && product.originalPrice
+    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
-  const handleAddToCart = async () => {
-    if (!selectedVariant) return;
-
-    // Criar objeto ShopifyProduct compatível
-    const shopifyProduct: ShopifyProduct = {
-      node: {
-        id: product.id,
-        title: product.title,
-        description: product.description,
-        handle: product.handle,
-        vendor: product.vendor,
-        priceRange: product.priceRange,
-        images: product.images,
-        variants: product.variants,
-        options: product.options,
-      }
-    };
-
-    await addItem({
-      product: shopifyProduct,
-      variantId: selectedVariant.id,
-      variantTitle: selectedVariant.title,
-      price: selectedVariant.price,
-      quantity,
-      selectedOptions: selectedVariant.selectedOptions || []
-    });
-
-    toast.success("Adicionado à sacola", {
-      description: `${quantity}x ${product.title} foi adicionado com sucesso.`,
+  const formatPrice = (value: number) => {
+    return value.toLocaleString("pt-BR", {
+      style: "currency",
+      currency: "BRL",
     });
   };
 
+  const handleAddToCart = () => {
+    setIsAdding(true);
+    addToCart({
+      id: product.id,
+      title: product.name,
+      price: product.price,
+      quantity,
+      image: product.images[0],
+      vendor: product.brand || "",
+    });
+    toast.success("Adicionado ao carrinho!", {
+      description: `${quantity}x ${product.name}`,
+    });
+    setTimeout(() => setIsAdding(false), 1500);
+  };
+
+  const toggleSection = (section: string) => {
+    setExpandedSection(expandedSection === section ? null : section);
+  };
+
   return (
-    <div className="min-h-screen bg-[#F7F5F2]">
-      <Navbar />
+    <div className="min-h-screen bg-[#F3EEE3] font-sans">
+      <NavbarEditorial />
 
       {/* Breadcrumb */}
-      <div className="bg-white border-b border-[#0F3A45]/5">
-        <div className="container mx-auto px-4 md:px-12 py-4 pt-24">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#0F3A45]/40 font-bold">
-            <Link to="/" className="hover:text-[#D4AF37] transition-colors">Home</Link>
-            <ChevronRight className="h-3 w-3" />
-            <Link to="/produtos" className="hover:text-[#D4AF37] transition-colors">Produtos</Link>
-            <ChevronRight className="h-3 w-3" />
-            <span className="text-[#0F3A45] truncate max-w-[200px]">{product.title}</span>
-          </div>
+      <div className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-4">
+          <nav className="text-[12px] text-[#75827E]">
+            <Link to="/" className="hover:text-[#0F3A3E] transition-colors">
+              Home
+            </Link>
+            <span className="mx-2">/</span>
+            <Link to="/produtos" className="hover:text-[#0F3A3E] transition-colors">
+              Produtos
+            </Link>
+            {product.brand && (
+              <>
+                <span className="mx-2">/</span>
+                <Link
+                  to="/produtos"
+                  search={{ vendor: product.brand }}
+                  className="hover:text-[#0F3A3E] transition-colors"
+                >
+                  {product.brand}
+                </Link>
+              </>
+            )}
+            <span className="mx-2">/</span>
+            <span className="text-[#0F3A3E]">{product.name.substring(0, 40)}...</span>
+          </nav>
         </div>
       </div>
 
       {/* Product Section */}
-      <section className="py-12">
-        <div className="container mx-auto px-4 md:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
-            {/* Images */}
-            <MotionDiv
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-            >
-              <div className="sticky top-28">
-                {/* Main Image */}
-                <div className="aspect-square bg-white mb-4 overflow-hidden">
-                  <img
-                    src={images[selectedImage]?.node?.url || images[0]?.node?.url}
-                    alt={images[selectedImage]?.node?.altText || product.title}
-                    className="w-full h-full object-contain p-8"
-                  />
+      <section className="py-12 md:py-16">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14">
+          <div className="grid grid-cols-1 lg:grid-cols-[55%_45%] gap-10 lg:gap-16">
+            {/* Image Gallery */}
+            <div className="flex gap-4">
+              {/* Thumbnails - Vertical */}
+              {product.images.length > 1 && (
+                <div className="hidden md:flex flex-col gap-3 w-[80px] flex-shrink-0">
+                  {product.images.slice(0, 5).map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedImage(i)}
+                      className={`w-[80px] h-[80px] bg-white border transition-all ${
+                        selectedImage === i
+                          ? "border-[#0F3A3E]"
+                          : "border-[#E9E1D2] hover:border-[#B07B1E]"
+                      }`}
+                    >
+                      <img
+                        src={img}
+                        alt=""
+                        className="w-full h-full object-contain p-2"
+                      />
+                    </button>
+                  ))}
                 </div>
+              )}
 
-                {/* Thumbnail Gallery */}
-                {images.length > 1 && (
-                  <div className="flex gap-4 overflow-x-auto pb-2">
-                    {images.map((img: any, i: number) => (
-                      <button
-                        key={i}
-                        onClick={() => setSelectedImage(i)}
-                        className={`flex-shrink-0 w-20 h-20 bg-white p-2 transition-all ${
-                          selectedImage === i
-                            ? "ring-2 ring-[#D4AF37]"
-                            : "hover:ring-2 hover:ring-[#0F3A45]/20"
-                        }`}
-                      >
-                        <img src={img.node?.url} alt="" className="w-full h-full object-contain" />
-                      </button>
-                    ))}
-                  </div>
+              {/* Main Image */}
+              <div className="flex-1 relative bg-[#F8F4EA] border border-[#E9E1D2] overflow-hidden">
+                {/* Discount Badge */}
+                {discount > 0 && (
+                  <span className="absolute top-5 left-5 z-10 bg-[#0F3A3E] text-white text-[11px] font-semibold tracking-[0.06em] px-3 py-1.5">
+                    -{discount}% OFF
+                  </span>
                 )}
+
+                {/* Wishlist */}
+                <button
+                  onClick={() => setIsWishlisted(!isWishlisted)}
+                  className={`absolute top-5 right-5 z-10 w-10 h-10 flex items-center justify-center transition-all ${
+                    isWishlisted
+                      ? "text-[#B07B1E]"
+                      : "text-[#0F3A3E]/40 hover:text-[#B07B1E]"
+                  }`}
+                  aria-label={isWishlisted ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+                >
+                  <Heart className={`h-6 w-6 ${isWishlisted ? "fill-current" : ""}`} />
+                </button>
+
+                <img
+                  src={product.images[selectedImage] || product.images[0]}
+                  alt={product.name}
+                  className="w-full aspect-square object-contain p-12"
+                />
               </div>
-            </MotionDiv>
+            </div>
 
             {/* Product Info */}
-            <MotionDiv
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-            >
+            <div className="lg:pt-4">
               {/* Brand */}
-              <p className="text-[10px] uppercase tracking-[0.5em] text-[#D4AF37] font-bold mb-4">
-                {product.vendor}
-              </p>
+              {product.brand && (
+                <Link
+                  to="/produtos"
+                  search={{ vendor: product.brand }}
+                  className="text-[12px] uppercase tracking-[0.2em] text-[#B07B1E] font-medium hover:underline"
+                >
+                  {product.brand}
+                </Link>
+              )}
 
               {/* Title */}
-              <h1 className="font-serif text-3xl md:text-4xl text-[#1A1A1A] font-light mb-4">
-                {product.title}
+              <h1 className="font-serif text-[28px] md:text-[36px] text-[#0F3A3E] leading-[1.15] mt-3 mb-5">
+                {product.name}
               </h1>
 
               {/* Rating */}
-              <div className="flex items-center gap-2 mb-6">
-                <div className="flex items-center gap-1">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center gap-0.5">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-[#D4AF37] text-[#D4AF37]" />
+                    <Star
+                      key={i}
+                      className={`h-[18px] w-[18px] ${
+                        i < 4 ? "fill-[#E8C25A] text-[#E8C25A]" : "fill-[#DDD4C2] text-[#DDD4C2]"
+                      }`}
+                    />
                   ))}
                 </div>
-                <span className="text-[11px] text-[#1A1A1A]/40 tracking-widest font-bold">
-                  4.9/5 (128 avaliações)
+                <span className="text-[13px] text-[#75827E]">
+                  4.5 · 48 avaliações
                 </span>
               </div>
 
               {/* Price */}
               <div className="mb-8">
-                <div className="flex items-baseline gap-4 mb-2">
-                  {compareAtPrice && compareAtPrice > price && (
-                    <span className="text-lg text-[#1A1A1A]/30 line-through">
-                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(compareAtPrice)}
+                <div className="flex items-baseline gap-3">
+                  {hasDiscount && product.originalPrice && (
+                    <span className="text-[16px] text-[#9AA39F] line-through">
+                      {formatPrice(product.originalPrice)}
                     </span>
                   )}
-                  <span className="text-4xl font-light text-[#1A1A1A]">
-                    {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price)}
+                  <span className="font-serif text-[36px] text-[#0F3A3E]">
+                    {formatPrice(product.price)}
                   </span>
-                  {discount > 0 && (
-                    <span className="bg-[#D4AF37] text-[#0F3A45] text-[10px] uppercase tracking-[0.2em] px-3 py-1 font-bold">
-                      -{discount}%
-                    </span>
-                  )}
                 </div>
-                <p className="text-[11px] text-[#1A1A1A]/40 uppercase tracking-[0.2em] font-bold">
-                  ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros
+                <p className="text-[14px] text-[#75827E] mt-2">
+                  ou <strong className="text-[#0F3A3E]">10x de {formatPrice(product.price / 10)}</strong> sem juros
+                </p>
+                <p className="text-[13px] text-[#1c6b4a] mt-1">
+                  ✦ {formatPrice(product.price * 0.95)} no PIX (5% off)
                 </p>
               </div>
 
-              {/* Description */}
-              <p className="text-[#1A1A1A]/60 mb-8 leading-relaxed">
-                {product.description}
-              </p>
-
-              {/* Variants */}
-              {variants.length > 1 && (
-                <div className="mb-8">
-                  <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#0F3A45] mb-4">
-                    Opções
-                  </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {variants.map((v: any, i: number) => (
-                      <button
-                        key={v.node.id}
-                        onClick={() => setSelectedVariantIndex(i)}
-                        disabled={!v.node.availableForSale}
-                        className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
-                          selectedVariantIndex === i
-                            ? "bg-[#D4AF37] text-[#0F3A45]"
-                            : v.node.availableForSale
-                              ? "bg-white border border-[#0F3A45]/10 text-[#0F3A45]/60 hover:border-[#D4AF37]"
-                              : "bg-gray-100 text-gray-400 cursor-not-allowed line-through"
-                        }`}
-                      >
-                        {v.node.title}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Tags */}
-              {product.tags && product.tags.length > 0 && (
-                <div className="flex flex-wrap gap-2 mb-8">
-                  {product.tags.map((tag: string) => (
-                    <span
-                      key={tag}
-                      className="px-4 py-2 bg-[#0F3A45]/5 text-[9px] uppercase tracking-[0.2em] font-bold text-[#0F3A45]/60"
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              )}
-
-              {/* Stock Status */}
-              <div className="flex items-center gap-2 mb-8">
-                {selectedVariant?.availableForSale ? (
-                  <>
-                    <Check className="h-4 w-4 text-green-600" />
-                    <span className="text-[11px] uppercase tracking-[0.2em] text-green-600 font-bold">
-                      Em estoque
-                    </span>
-                  </>
-                ) : (
-                  <span className="text-[11px] uppercase tracking-[0.2em] text-red-600 font-bold">
-                    Fora de estoque
-                  </span>
-                )}
-              </div>
+              {/* Separator */}
+              <div className="border-t border-[#E0D8C7] my-7" />
 
               {/* Quantity & Add to Cart */}
-              <div className="flex flex-col sm:flex-row gap-4 mb-8">
-                <div className="flex items-center border border-[#0F3A45]/20">
-                  <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A45]/5 transition-colors"
-                  >
-                    <Minus className="h-4 w-4" />
-                  </button>
-                  <span className="w-16 h-14 flex items-center justify-center text-lg font-bold">
-                    {quantity}
-                  </span>
-                  <button
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-14 flex items-center justify-center hover:bg-[#0F3A45]/5 transition-colors"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
+              <div className="space-y-5">
+                {/* Quantity Selector */}
+                <div className="flex items-center gap-5">
+                  <span className="text-[13px] text-[#51635F]">Quantidade:</span>
+                  <div className="flex items-center border border-[#E0D8C7]">
+                    <button
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="w-11 h-11 flex items-center justify-center hover:bg-[#F8F4EA] transition-colors"
+                      aria-label="Diminuir quantidade"
+                    >
+                      <Minus className="h-4 w-4 text-[#0F3A3E]" />
+                    </button>
+                    <span className="w-14 text-center text-[#0F3A3E] font-medium text-[15px]">
+                      {quantity}
+                    </span>
+                    <button
+                      onClick={() => setQuantity(quantity + 1)}
+                      className="w-11 h-11 flex items-center justify-center hover:bg-[#F8F4EA] transition-colors"
+                      aria-label="Aumentar quantidade"
+                    >
+                      <Plus className="h-4 w-4 text-[#0F3A3E]" />
+                    </button>
+                  </div>
                 </div>
 
-                <Button
+                {/* Add to Cart */}
+                <button
                   onClick={handleAddToCart}
-                  disabled={!selectedVariant?.availableForSale || isLoading}
-                  className="flex-1 bg-[#0F3A45] hover:bg-[#D4AF37] hover:text-[#0F3A45] text-white h-14 rounded-none text-[11px] uppercase tracking-[0.3em] font-bold transition-all disabled:opacity-50"
+                  disabled={isAdding}
+                  className={`w-full py-[18px] text-[12px] uppercase tracking-[0.18em] font-semibold transition-all ${
+                    isAdding
+                      ? "bg-[#1c6b4a] text-white"
+                      : "bg-[#0F3A3E] text-white hover:bg-[#16504F]"
+                  }`}
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-3" />
-                  ) : (
-                    <ShoppingBag className="h-4 w-4 mr-3" />
-                  )}
-                  {isLoading ? "Adicionando..." : "Adicionar à Sacola"}
-                </Button>
+                  {isAdding ? "✓ Adicionado ao Carrinho" : "Adicionar ao Carrinho"}
+                </button>
 
-                <button className="w-14 h-14 border border-[#0F3A45]/20 flex items-center justify-center hover:border-[#D4AF37] hover:text-[#D4AF37] transition-colors">
-                  <Heart className="h-5 w-5" />
+                {/* Buy Now */}
+                <button className="w-full py-[18px] border border-[#B07B1E] text-[#B07B1E] text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#B07B1E] hover:text-white transition-colors">
+                  Comprar Agora
                 </button>
               </div>
 
-              {/* Benefits */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-[#0F3A45]/10">
-                <div className="flex items-center gap-3">
-                  <Truck className="h-5 w-5 text-[#D4AF37]" />
-                  <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">Frete Grátis</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">Acima de R$ 299</p>
-                  </div>
+              {/* Benefits Strip */}
+              <div className="mt-8 grid grid-cols-3 gap-4">
+                <div className="text-center">
+                  <Truck className="h-5 w-5 text-[#B07B1E] mx-auto mb-2" />
+                  <p className="text-[11px] text-[#51635F] leading-tight">
+                    Frete grátis<br />acima R$199
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <Shield className="h-5 w-5 text-[#D4AF37]" />
-                  <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">100% Original</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">Garantia de autenticidade</p>
-                  </div>
+                <div className="text-center">
+                  <Shield className="h-5 w-5 text-[#B07B1E] mx-auto mb-2" />
+                  <p className="text-[11px] text-[#51635F] leading-tight">
+                    Produto<br />100% original
+                  </p>
                 </div>
-                <div className="flex items-center gap-3">
-                  <RotateCcw className="h-5 w-5 text-[#D4AF37]" />
-                  <div>
-                    <p className="text-[9px] uppercase tracking-[0.2em] font-bold text-[#1A1A1A]">Troca Fácil</p>
-                    <p className="text-[9px] text-[#1A1A1A]/40">7 dias para trocar</p>
-                  </div>
+                <div className="text-center">
+                  <RotateCcw className="h-5 w-5 text-[#B07B1E] mx-auto mb-2" />
+                  <p className="text-[11px] text-[#51635F] leading-tight">
+                    Troca fácil<br />em 30 dias
+                  </p>
                 </div>
               </div>
-            </MotionDiv>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Accordion Details */}
+      <section className="py-12 bg-white border-t border-[#E0D8C7]">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14">
+          <div className="max-w-[800px]">
+            {/* Descrição */}
+            <div className="border-b border-[#E0D8C7]">
+              <button
+                onClick={() => toggleSection("descricao")}
+                className="w-full flex items-center justify-between py-5"
+              >
+                <span className="text-[13px] uppercase tracking-[0.16em] text-[#0F3A3E] font-semibold">
+                  Descrição do Produto
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 text-[#75827E] transition-transform ${
+                    expandedSection === "descricao" ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {expandedSection === "descricao" && (
+                <div className="pb-6 text-[#51635F] leading-[1.75] text-[15px]">
+                  <p>
+                    {product.description ||
+                      "Este produto oferece o melhor da tecnologia capilar profissional para uso doméstico. Formulado com ingredientes de alta qualidade para resultados visíveis desde a primeira aplicação."}
+                  </p>
+                  <p className="mt-4">
+                    Ideal para quem busca cuidados profissionais em casa, com a praticidade do dia a dia.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Modo de Uso */}
+            <div className="border-b border-[#E0D8C7]">
+              <button
+                onClick={() => toggleSection("uso")}
+                className="w-full flex items-center justify-between py-5"
+              >
+                <span className="text-[13px] uppercase tracking-[0.16em] text-[#0F3A3E] font-semibold">
+                  Modo de Uso
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 text-[#75827E] transition-transform ${
+                    expandedSection === "uso" ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {expandedSection === "uso" && (
+                <div className="pb-6 text-[#51635F] leading-[1.75] text-[15px]">
+                  <ol className="list-decimal list-inside space-y-2">
+                    <li>Aplique o produto nos cabelos úmidos ou secos, conforme indicação.</li>
+                    <li>Distribua uniformemente por todo o comprimento dos fios.</li>
+                    <li>Deixe agir pelo tempo indicado na embalagem.</li>
+                    <li>Enxágue abundantemente se necessário.</li>
+                  </ol>
+                </div>
+              )}
+            </div>
+
+            {/* Especificações */}
+            <div className="border-b border-[#E0D8C7]">
+              <button
+                onClick={() => toggleSection("specs")}
+                className="w-full flex items-center justify-between py-5"
+              >
+                <span className="text-[13px] uppercase tracking-[0.16em] text-[#0F3A3E] font-semibold">
+                  Especificações
+                </span>
+                <ChevronDown
+                  className={`h-5 w-5 text-[#75827E] transition-transform ${
+                    expandedSection === "specs" ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+              {expandedSection === "specs" && (
+                <div className="pb-6">
+                  <ul className="space-y-3">
+                    {[
+                      { label: "Marca", value: product.brand || "N/A" },
+                      { label: "Categoria", value: product.category || "N/A" },
+                      { label: "SKU", value: product.id },
+                      { label: "Peso", value: "Conforme embalagem" },
+                    ].map((spec) => (
+                      <li
+                        key={spec.label}
+                        className="flex items-center justify-between py-2 border-b border-[#F0EBE0]"
+                      >
+                        <span className="text-[#75827E] text-[14px]">{spec.label}</span>
+                        <span className="text-[#0F3A3E] text-[14px] font-medium">
+                          {spec.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center gap-4 mb-4">
-                <div className="w-12 h-[1px] bg-[#D4AF37]" />
-                <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#D4AF37]">
-                  Você também pode gostar
+        <section className="py-[100px] bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto px-6 md:px-14">
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
+              <div>
+                <span className="text-[12px] uppercase tracking-[0.3em] text-[#B07B1E]">
+                  Você também vai gostar
                 </span>
-                <div className="w-12 h-[1px] bg-[#D4AF37]" />
+                <h2 className="font-serif text-[32px] md:text-[40px] text-[#0F3A3E] mt-2">
+                  Produtos Relacionados
+                </h2>
               </div>
-              <h2 className="font-serif font-light text-[#1A1A1A] text-3xl">
-                Produtos <span className="italic text-[#D4AF37]">Relacionados</span>
-              </h2>
+              <Link
+                to="/produtos"
+                className="text-[13px] uppercase tracking-[0.16em] text-[#0F3A3E] border-b border-[#B07B1E] pb-1 hover:text-[#B07B1E] transition-colors"
+              >
+                Ver todos →
+              </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCardEditorial
+                  key={relatedProduct.id}
+                  id={relatedProduct.id}
+                  title={relatedProduct.name}
+                  vendor={relatedProduct.brand || ""}
+                  price={relatedProduct.price}
+                  originalPrice={relatedProduct.originalPrice}
+                  image={relatedProduct.images[0]}
+                  rating={4.3}
+                  reviewCount={Math.floor(Math.random() * 50) + 5}
+                />
               ))}
             </div>
           </div>
         </section>
       )}
 
-      <Footer />
+      <FooterEditorial />
     </div>
   );
 }
