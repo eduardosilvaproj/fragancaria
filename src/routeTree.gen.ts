@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
@@ -19,6 +20,16 @@ import { Route as CompararRouteImport } from './routes/comparar'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
+import { Route as AfiliadoRecuperarSenhaRouteImport } from './routes/afiliado/recuperar-senha'
+import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
+import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
+import { Route as AfiliadoCadastroSucessoRouteImport } from './routes/afiliado/cadastro-sucesso'
+import { Route as AfiliadoCadastroRouteImport } from './routes/afiliado/cadastro'
+import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
+import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
+import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
+import { Route as AfiliadoDashboardConfiguracoesRouteImport } from './routes/afiliado/dashboard/configuracoes'
 
 const TrocasRoute = TrocasRouteImport.update({
   id: '/trocas',
@@ -28,6 +39,11 @@ const TrocasRoute = TrocasRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
+  id: '/seja-afiliado',
+  path: '/seja-afiliado',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutosRoute = ProdutosRouteImport.update({
@@ -70,6 +86,58 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
   path: '/produto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AfiliadoRecuperarSenhaRoute = AfiliadoRecuperarSenhaRouteImport.update({
+  id: '/afiliado/recuperar-senha',
+  path: '/afiliado/recuperar-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoLoginRoute = AfiliadoLoginRouteImport.update({
+  id: '/afiliado/login',
+  path: '/afiliado/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoDashboardRoute = AfiliadoDashboardRouteImport.update({
+  id: '/afiliado/dashboard',
+  path: '/afiliado/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoCadastroSucessoRoute = AfiliadoCadastroSucessoRouteImport.update({
+  id: '/afiliado/cadastro-sucesso',
+  path: '/afiliado/cadastro-sucesso',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoCadastroRoute = AfiliadoCadastroRouteImport.update({
+  id: '/afiliado/cadastro',
+  path: '/afiliado/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AfiliadoDashboardRoute,
+} as any)
+const AfiliadoDashboardVendasRoute = AfiliadoDashboardVendasRouteImport.update({
+  id: '/vendas',
+  path: '/vendas',
+  getParentRoute: () => AfiliadoDashboardRoute,
+} as any)
+const AfiliadoDashboardPagamentosRoute =
+  AfiliadoDashboardPagamentosRouteImport.update({
+    id: '/pagamentos',
+    path: '/pagamentos',
+    getParentRoute: () => AfiliadoDashboardRoute,
+  } as any)
+const AfiliadoDashboardLinksRoute = AfiliadoDashboardLinksRouteImport.update({
+  id: '/links',
+  path: '/links',
+  getParentRoute: () => AfiliadoDashboardRoute,
+} as any)
+const AfiliadoDashboardConfiguracoesRoute =
+  AfiliadoDashboardConfiguracoesRouteImport.update({
+    id: '/configuracoes',
+    path: '/configuracoes',
+    getParentRoute: () => AfiliadoDashboardRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -79,9 +147,20 @@ export interface FileRoutesByFullPath {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
+  '/afiliado/cadastro': typeof AfiliadoCadastroRoute
+  '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
+  '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
+  '/afiliado/login': typeof AfiliadoLoginRoute
+  '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
+  '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
+  '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
+  '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -91,9 +170,19 @@ export interface FileRoutesByTo {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
+  '/afiliado/cadastro': typeof AfiliadoCadastroRoute
+  '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
+  '/afiliado/login': typeof AfiliadoLoginRoute
+  '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
+  '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
+  '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
+  '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -104,9 +193,20 @@ export interface FileRoutesById {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
+  '/afiliado/cadastro': typeof AfiliadoCadastroRoute
+  '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
+  '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
+  '/afiliado/login': typeof AfiliadoLoginRoute
+  '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
   '/produto/$id': typeof ProdutoIdRoute
+  '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
+  '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
+  '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
+  '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -118,9 +218,20 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/seja-afiliado'
     | '/termos'
     | '/trocas'
+    | '/afiliado/cadastro'
+    | '/afiliado/cadastro-sucesso'
+    | '/afiliado/dashboard'
+    | '/afiliado/login'
+    | '/afiliado/recuperar-senha'
     | '/produto/$id'
+    | '/afiliado/dashboard/configuracoes'
+    | '/afiliado/dashboard/links'
+    | '/afiliado/dashboard/pagamentos'
+    | '/afiliado/dashboard/vendas'
+    | '/afiliado/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -130,9 +241,19 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/seja-afiliado'
     | '/termos'
     | '/trocas'
+    | '/afiliado/cadastro'
+    | '/afiliado/cadastro-sucesso'
+    | '/afiliado/login'
+    | '/afiliado/recuperar-senha'
     | '/produto/$id'
+    | '/afiliado/dashboard/configuracoes'
+    | '/afiliado/dashboard/links'
+    | '/afiliado/dashboard/pagamentos'
+    | '/afiliado/dashboard/vendas'
+    | '/afiliado/dashboard'
   id:
     | '__root__'
     | '/'
@@ -142,9 +263,20 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/seja-afiliado'
     | '/termos'
     | '/trocas'
+    | '/afiliado/cadastro'
+    | '/afiliado/cadastro-sucesso'
+    | '/afiliado/dashboard'
+    | '/afiliado/login'
+    | '/afiliado/recuperar-senha'
     | '/produto/$id'
+    | '/afiliado/dashboard/configuracoes'
+    | '/afiliado/dashboard/links'
+    | '/afiliado/dashboard/pagamentos'
+    | '/afiliado/dashboard/vendas'
+    | '/afiliado/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -155,8 +287,14 @@ export interface RootRouteChildren {
   FavoritosRoute: typeof FavoritosRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
+  SejaAfiliadoRoute: typeof SejaAfiliadoRoute
   TermosRoute: typeof TermosRoute
   TrocasRoute: typeof TrocasRoute
+  AfiliadoCadastroRoute: typeof AfiliadoCadastroRoute
+  AfiliadoCadastroSucessoRoute: typeof AfiliadoCadastroSucessoRoute
+  AfiliadoDashboardRoute: typeof AfiliadoDashboardRouteWithChildren
+  AfiliadoLoginRoute: typeof AfiliadoLoginRoute
+  AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
 }
 
@@ -174,6 +312,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/seja-afiliado': {
+      id: '/seja-afiliado'
+      path: '/seja-afiliado'
+      fullPath: '/seja-afiliado'
+      preLoaderRoute: typeof SejaAfiliadoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produtos': {
@@ -232,8 +377,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/afiliado/recuperar-senha': {
+      id: '/afiliado/recuperar-senha'
+      path: '/afiliado/recuperar-senha'
+      fullPath: '/afiliado/recuperar-senha'
+      preLoaderRoute: typeof AfiliadoRecuperarSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado/login': {
+      id: '/afiliado/login'
+      path: '/afiliado/login'
+      fullPath: '/afiliado/login'
+      preLoaderRoute: typeof AfiliadoLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado/dashboard': {
+      id: '/afiliado/dashboard'
+      path: '/afiliado/dashboard'
+      fullPath: '/afiliado/dashboard'
+      preLoaderRoute: typeof AfiliadoDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado/cadastro-sucesso': {
+      id: '/afiliado/cadastro-sucesso'
+      path: '/afiliado/cadastro-sucesso'
+      fullPath: '/afiliado/cadastro-sucesso'
+      preLoaderRoute: typeof AfiliadoCadastroSucessoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado/cadastro': {
+      id: '/afiliado/cadastro'
+      path: '/afiliado/cadastro'
+      fullPath: '/afiliado/cadastro'
+      preLoaderRoute: typeof AfiliadoCadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/afiliado/dashboard/': {
+      id: '/afiliado/dashboard/'
+      path: '/'
+      fullPath: '/afiliado/dashboard/'
+      preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
+      parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/afiliado/dashboard/vendas': {
+      id: '/afiliado/dashboard/vendas'
+      path: '/vendas'
+      fullPath: '/afiliado/dashboard/vendas'
+      preLoaderRoute: typeof AfiliadoDashboardVendasRouteImport
+      parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/afiliado/dashboard/pagamentos': {
+      id: '/afiliado/dashboard/pagamentos'
+      path: '/pagamentos'
+      fullPath: '/afiliado/dashboard/pagamentos'
+      preLoaderRoute: typeof AfiliadoDashboardPagamentosRouteImport
+      parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/afiliado/dashboard/links': {
+      id: '/afiliado/dashboard/links'
+      path: '/links'
+      fullPath: '/afiliado/dashboard/links'
+      preLoaderRoute: typeof AfiliadoDashboardLinksRouteImport
+      parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/afiliado/dashboard/configuracoes': {
+      id: '/afiliado/dashboard/configuracoes'
+      path: '/configuracoes'
+      fullPath: '/afiliado/dashboard/configuracoes'
+      preLoaderRoute: typeof AfiliadoDashboardConfiguracoesRouteImport
+      parentRoute: typeof AfiliadoDashboardRoute
+    }
   }
 }
+
+interface AfiliadoDashboardRouteChildren {
+  AfiliadoDashboardConfiguracoesRoute: typeof AfiliadoDashboardConfiguracoesRoute
+  AfiliadoDashboardLinksRoute: typeof AfiliadoDashboardLinksRoute
+  AfiliadoDashboardPagamentosRoute: typeof AfiliadoDashboardPagamentosRoute
+  AfiliadoDashboardVendasRoute: typeof AfiliadoDashboardVendasRoute
+  AfiliadoDashboardIndexRoute: typeof AfiliadoDashboardIndexRoute
+}
+
+const AfiliadoDashboardRouteChildren: AfiliadoDashboardRouteChildren = {
+  AfiliadoDashboardConfiguracoesRoute: AfiliadoDashboardConfiguracoesRoute,
+  AfiliadoDashboardLinksRoute: AfiliadoDashboardLinksRoute,
+  AfiliadoDashboardPagamentosRoute: AfiliadoDashboardPagamentosRoute,
+  AfiliadoDashboardVendasRoute: AfiliadoDashboardVendasRoute,
+  AfiliadoDashboardIndexRoute: AfiliadoDashboardIndexRoute,
+}
+
+const AfiliadoDashboardRouteWithChildren =
+  AfiliadoDashboardRoute._addFileChildren(AfiliadoDashboardRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -243,8 +477,14 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritosRoute: FavoritosRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
+  SejaAfiliadoRoute: SejaAfiliadoRoute,
   TermosRoute: TermosRoute,
   TrocasRoute: TrocasRoute,
+  AfiliadoCadastroRoute: AfiliadoCadastroRoute,
+  AfiliadoCadastroSucessoRoute: AfiliadoCadastroSucessoRoute,
+  AfiliadoDashboardRoute: AfiliadoDashboardRouteWithChildren,
+  AfiliadoLoginRoute: AfiliadoLoginRoute,
+  AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
   ProdutoIdRoute: ProdutoIdRoute,
 }
 export const routeTree = rootRouteImport
