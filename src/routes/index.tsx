@@ -5,14 +5,31 @@ import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { PRODUCTS } from "@/data/products";
 import { useMemo } from "react";
 import { ArrowRight } from "lucide-react";
+import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
+import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Fragranciaria | Especialista em Cabelo Profissional" },
-      { name: "description", content: "Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa." },
+      { name: "description", content: "Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa. Kérastase, Wella, L'Oréal Pro e mais." },
       { property: "og:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
       { property: "og:description", content: "A excelência do salão na sua casa." },
+      { property: "og:type", content: "website" },
+      { property: "og:url", content: "https://fragranciaria.com.br" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "robots", content: "index, follow" },
+      { name: "keywords", content: "produtos capilares, shampoo profissional, coloração, tratamento capilar, Kérastase, Wella, L'Oréal, Schwarzkopf" },
+    ],
+    scripts: [
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(generateOrganizationSchema()),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify(generateWebsiteSchema()),
+      },
     ],
   }),
   component: IndexEditorial,
@@ -191,51 +208,55 @@ function IndexEditorial() {
         <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
           <div className="max-w-[1280px] mx-auto">
             {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-5 mb-10 md:mb-14">
-              <div>
-                <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
-                  Encontre por necessidade
-                </span>
-                <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3 leading-[1.1] md:leading-[1.05]">
-                  O que seus fios <em className="text-[#B07B1E]">pedem</em> hoje?
-                </h2>
+            <ScrollReveal>
+              <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-5 mb-10 md:mb-14">
+                <div>
+                  <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                    Encontre por necessidade
+                  </span>
+                  <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3 leading-[1.1] md:leading-[1.05]">
+                    O que seus fios <em className="text-[#B07B1E]">pedem</em> hoje?
+                  </h2>
+                </div>
+                <Link
+                  to="/produtos"
+                  className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto"
+                >
+                  Ver tudo →
+                </Link>
               </div>
-              <Link
-                to="/produtos"
-                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto"
-              >
-                Ver tudo →
-              </Link>
-            </div>
+            </ScrollReveal>
 
             {/* Grid de 8 cards */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+            <StaggerContainer className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5" staggerDelay={0.08}>
               {NEEDS.map((need) => (
-                <Link
-                  key={need.title}
-                  to="/produtos"
-                  search={{ productType: need.productType }}
-                  className="group bg-white border border-[#E6DECE] overflow-hidden transition-all duration-[250ms] hover:-translate-y-[3px] hover:shadow-[0_14px_34px_rgba(15,58,62,0.10)]"
-                >
-                  <img
-                    src={need.image}
-                    alt={need.title}
-                    className="w-full h-[120px] md:h-[180px] object-cover"
-                  />
-                  <div className="p-4 md:p-7">
-                    <div className="font-serif text-[12px] md:text-[14px] text-[#B07B1E]">
-                      {need.num}
+                <StaggerItem key={need.title}>
+                  <Link
+                    to="/produtos"
+                    search={{ productType: need.productType }}
+                    className="group block bg-white border border-[#E6DECE] overflow-hidden transition-all duration-[250ms] hover:-translate-y-[3px] hover:shadow-[0_14px_34px_rgba(15,58,62,0.10)]"
+                  >
+                    <img
+                      src={need.image}
+                      alt={need.title}
+                      className="w-full h-[120px] md:h-[180px] object-cover transition-transform duration-500 group-hover:scale-105"
+                      loading="lazy"
+                    />
+                    <div className="p-4 md:p-7">
+                      <div className="font-serif text-[12px] md:text-[14px] text-[#B07B1E]">
+                        {need.num}
+                      </div>
+                      <div className="font-serif text-[18px] md:text-[26px] text-[#0F3A3E] mt-2 md:mt-3">
+                        {need.title}
+                      </div>
+                      <div className="text-[11px] md:text-[12px] text-[#75827E] mt-1 md:mt-2 leading-[1.4] md:leading-[1.5] hidden sm:block">
+                        {need.desc}
+                      </div>
                     </div>
-                    <div className="font-serif text-[18px] md:text-[26px] text-[#0F3A3E] mt-2 md:mt-3">
-                      {need.title}
-                    </div>
-                    <div className="text-[11px] md:text-[12px] text-[#75827E] mt-1 md:mt-2 leading-[1.4] md:leading-[1.5] hidden sm:block">
-                      {need.desc}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           </div>
         </section>
 
@@ -243,34 +264,35 @@ function IndexEditorial() {
         <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
           <div className="max-w-[1280px] mx-auto">
             {/* Header */}
-            <div className="text-center mb-10 md:mb-14">
+            <ScrollReveal className="text-center mb-10 md:mb-14">
               <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
                 Destaques
               </span>
               <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3">
                 Mais Vendidos da <em className="text-[#B07B1E]">Semana</em>
               </h2>
-            </div>
+            </ScrollReveal>
 
             {/* Grid de 4 produtos */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" staggerDelay={0.1}>
               {featuredProducts.map((product) => (
-                <ProductCardEditorial
-                  key={product.id}
-                  id={product.id}
-                  title={product.name}
-                  vendor={product.brand || ""}
-                  price={product.price}
-                  originalPrice={product.originalPrice}
-                  image={product.images[0]}
-                  rating={4.5}
-                  reviewCount={Math.floor(Math.random() * 100) + 20}
-                />
+                <StaggerItem key={product.id}>
+                  <ProductCardEditorial
+                    id={product.id}
+                    title={product.name}
+                    vendor={product.brand || ""}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    image={product.images[0]}
+                    rating={4.5}
+                    reviewCount={Math.floor(Math.random() * 100) + 20}
+                  />
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
 
             {/* Ver todos */}
-            <div className="text-center mt-10 md:mt-12">
+            <ScrollReveal delay={0.4} className="text-center mt-10 md:mt-12">
               <Link
                 to="/produtos"
                 className="inline-flex items-center gap-2 text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
@@ -278,7 +300,7 @@ function IndexEditorial() {
                 Ver todos os produtos
                 <ArrowRight className="h-4 w-4" />
               </Link>
-            </div>
+            </ScrollReveal>
           </div>
         </section>
 
