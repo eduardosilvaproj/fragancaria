@@ -145,7 +145,7 @@ function ComparePage() {
                       </button>
 
                       <Link to="/produto/$id" params={{ id: item.id }}>
-                        <div className="bg-[#F8F4EA] p-4 mb-4">
+                        <div className="bg-white p-4 mb-4">
                           <img
                             src={item.image}
                             alt={item.title}

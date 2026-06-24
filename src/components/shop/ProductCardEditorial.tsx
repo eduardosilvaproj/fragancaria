@@ -141,7 +141,7 @@ export function ProductCardEditorial({
         className="bg-white border border-[#E9E1D2] transition-all duration-[250ms] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,58,62,0.10)]"
       >
         {/* Image Container */}
-        <div className="relative bg-[#F8F4EA] p-4 md:p-8">
+        <div className="relative bg-white p-4 md:p-8">
           {/* Discount Badge */}
           {discount > 0 && (
             <span className="absolute top-2 left-2 md:top-4 md:left-4 z-10 bg-[#0F3A3E] text-white text-[10px] md:text-[11px] font-semibold tracking-[0.06em] px-2 py-1 md:px-3 md:py-1.5">
