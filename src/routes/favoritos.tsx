@@ -2,15 +2,14 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
-import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { useWishlistStore } from "@/stores/wishlistStore";
-import { Heart, ShoppingBag } from "lucide-react";
+import { Heart, Trash2, ShoppingBag } from "lucide-react";
 
 export const Route = createFileRoute("/favoritos")({
   head: () => ({
     meta: [
       { title: "Meus Favoritos | Fragranciaria" },
-      { name: "description", content: "Seus produtos favoritos salvos para comprar depois." },
+      { name: "description", content: "Seus produtos favoritos salvos na Fragranciaria." },
     ],
   }),
   component: FavoritosPage,
@@ -24,22 +23,22 @@ function FavoritosPage() {
       <NavbarEditorial />
 
       {/* Header */}
-      <div className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-10">
-          <Breadcrumbs
-            items={[{ label: "Favoritos" }]}
-            className="mb-4"
-          />
-
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <section className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-10 md:py-14">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
             <div>
-              <h1 className="font-serif text-[36px] md:text-[48px] text-[#0F3A3E] flex items-center gap-4">
+              <div className="flex items-center gap-3 mb-3">
+                <Heart className="w-6 h-6 text-[#B07B1E]" />
+                <span className="text-[11px] tracking-[0.25em] text-[#B07B1E] uppercase">
+                  Minha Lista
+                </span>
+              </div>
+              <h1 className="font-serif font-medium text-[32px] md:text-[48px] text-[#0F3A3E] leading-[1.1]">
                 Meus Favoritos
-                <Heart className="h-8 w-8 md:h-10 md:w-10 text-[#B07B1E]" />
               </h1>
-              <p className="text-[#75827E] text-[15px] mt-2">
+              <p className="text-[14px] text-[#51635F] mt-2">
                 {items.length === 0
-                  ? "Nenhum produto salvo"
+                  ? "Você ainda não tem produtos favoritos"
                   : `${items.length} ${items.length === 1 ? "produto salvo" : "produtos salvos"}`}
               </p>
             </div>
@@ -47,58 +46,76 @@ function FavoritosPage() {
             {items.length > 0 && (
               <button
                 onClick={() => {
-                  if (confirm("Deseja remover todos os produtos dos favoritos?")) {
+                  if (window.confirm("Tem certeza que deseja limpar todos os favoritos?")) {
                     clearWishlist();
                   }
                 }}
-                className="text-[12px] text-[#75827E] hover:text-[#0F3A3E] transition-colors underline"
+                className="flex items-center gap-2 text-[12px] text-[#75827E] hover:text-[#B07B1E] transition-colors"
               >
-                Limpar favoritos
+                <Trash2 className="w-4 h-4" />
+                Limpar lista
               </button>
             )}
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Content */}
-      <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-12">
-        {items.length > 0 ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
-            {items.map((item) => (
-              <ProductCardEditorial
-                key={item.id}
-                id={item.id}
-                title={item.title}
-                vendor={item.vendor}
-                price={item.price}
-                originalPrice={item.originalPrice}
-                image={item.image}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-20">
-            <div className="w-20 h-20 mx-auto mb-6 bg-[#F8F4EA] rounded-full flex items-center justify-center">
-              <Heart className="h-10 w-10 text-[#B07B1E]" />
+      <section className="py-10 md:py-14">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14">
+          {items.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="w-24 h-24 bg-[#F8F4EA] flex items-center justify-center mx-auto mb-6">
+                <Heart className="w-10 h-10 text-[#E0D8C7]" />
+              </div>
+              <h2 className="font-serif text-[24px] text-[#0F3A3E] mb-3">
+                Sua lista está vazia
+              </h2>
+              <p className="text-[14px] text-[#51635F] mb-8 max-w-[400px] mx-auto">
+                Explore nossa coleção e clique no coração para salvar seus produtos favoritos aqui.
+              </p>
+              <Link
+                to="/produtos"
+                className="inline-flex items-center gap-2 bg-[#0F3A3E] text-white px-8 py-4 text-[12px] uppercase tracking-[0.16em] font-medium hover:bg-[#16504F] transition-colors"
+              >
+                <ShoppingBag className="w-4 h-4" />
+                Explorar Produtos
+              </Link>
             </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              {items.map((item) => (
+                <ProductCardEditorial
+                  key={item.id}
+                  id={item.id}
+                  title={item.title}
+                  vendor={item.vendor}
+                  price={item.price}
+                  originalPrice={item.originalPrice}
+                  image={item.image}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
 
-            <h2 className="font-serif text-2xl text-[#0F3A3E] mb-3">
-              Sua lista está vazia
-            </h2>
-            <p className="text-[#75827E] mb-8 max-w-md mx-auto">
-              Explore nossos produtos e clique no coração para salvar seus favoritos aqui.
+      {/* CTA Section */}
+      {items.length > 0 && (
+        <section className="py-10 md:py-14 bg-white border-t border-[#E0D8C7]">
+          <div className="max-w-[1280px] mx-auto px-6 md:px-14 text-center">
+            <p className="text-[14px] text-[#51635F] mb-4">
+              Encontrou o que procurava?
             </p>
-
             <Link
               to="/produtos"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-[#0F3A3E] text-white text-[12px] uppercase tracking-[0.16em] font-medium hover:bg-[#16504F] transition-colors"
+              className="inline-block text-[12px] tracking-[0.16em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
             >
-              <ShoppingBag className="h-4 w-4" />
-              Explorar Produtos
+              Continuar comprando →
             </Link>
           </div>
-        )}
-      </div>
+        </section>
+      )}
 
       <FooterEditorial />
     </div>
