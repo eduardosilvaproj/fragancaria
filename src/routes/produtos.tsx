@@ -1,21 +1,18 @@
 import { createFileRoute, Link, useSearch, useNavigate } from "@tanstack/react-router";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { PRODUCTS, Product } from "@/data/products";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { FooterEditorial } from "@/components/layout/FooterEditorial";
+import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { PRODUCTS } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
-import { Button } from "@/components/ui/button";
-import { Filter, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion } from "framer-motion";
+import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
 
-const MotionDiv = motion.div as any;
+const PRODUCTS_PER_PAGE = 12;
 
-const PRODUCTS_PER_PAGE = 24;
-
-// Search params type
 type ProductsSearch = {
   vendor?: string;
   productType?: string;
   page?: number;
+  q?: string;
 };
 
 export const Route = createFileRoute("/produtos")({
@@ -24,77 +21,61 @@ export const Route = createFileRoute("/produtos")({
       vendor: search.vendor as string | undefined,
       productType: search.productType as string | undefined,
       page: Number(search.page) || 1,
+      q: search.q as string | undefined,
     };
   },
   head: () => ({
     meta: [
-      { title: "Produtos | Fragranciaria - Cosméticos Profissionais" },
-      { name: "description", content: "Explore nossa coleção completa de cosméticos profissionais das melhores marcas." },
+      { title: "Produtos | Fragranciaria" },
+      { name: "description", content: "Explore nossa coleção completa de cosméticos profissionais." },
     ],
   }),
   component: ProdutosPage,
 });
 
-// Componente de card de produto local
-function LocalProductCard({ product }: { product: Product }) {
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-  const discountPercent = hasDiscount
-    ? Math.round((1 - product.price / product.originalPrice!) * 100)
-    : 0;
-
+// Checkbox item component
+function FilterCheckbox({
+  label,
+  count,
+  checked,
+  onChange,
+}: {
+  label: string;
+  count?: number;
+  checked: boolean;
+  onChange: () => void;
+}) {
   return (
-    <Link
-      to="/produto/$id"
-      params={{ id: product.id }}
-      className="group block bg-white border border-[#0F3A3E]/5 hover:border-[#B07B1E]/30 transition-all duration-500 hover:shadow-lg"
+    <button
+      onClick={onChange}
+      className="flex items-center gap-3 w-full py-2 group"
     >
-      {/* Image */}
-      <div className="relative aspect-square overflow-hidden bg-[#F3EEE3]">
-        {product.images[0] && (
-          <img
-            src={product.images[0]}
-            alt={product.name}
-            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-700"
-          />
-        )}
-        {hasDiscount && (
-          <span className="absolute top-3 left-3 bg-[#B07B1E] text-[#0F3A3E] text-[9px] uppercase tracking-wider font-bold px-2 py-1">
-            -{discountPercent}%
-          </span>
-        )}
-        {product.isNew && (
-          <span className="absolute top-3 right-3 bg-[#0F3A3E] text-white text-[9px] uppercase tracking-wider font-bold px-2 py-1">
-            Novo
-          </span>
-        )}
-      </div>
-
-      {/* Info */}
-      <div className="p-4">
-        {product.brand && (
-          <span className="text-[9px] uppercase tracking-[0.3em] text-[#B07B1E] font-bold">
-            {product.brand}
-          </span>
-        )}
-        <h3 className="font-serif text-sm text-[#0F3A3E] mt-1 mb-3 line-clamp-2 group-hover:text-[#B07B1E] transition-colors">
-          {product.name}
-        </h3>
-        <div className="flex items-center gap-2">
-          <span className="font-bold text-[#0F3A3E]">
-            R$ {product.price.toFixed(2).replace('.', ',')}
-          </span>
-          {hasDiscount && (
-            <span className="text-xs text-[#0F3A3E]/40 line-through">
-              R$ {product.originalPrice!.toFixed(2).replace('.', ',')}
-            </span>
-          )}
-        </div>
-      </div>
-    </Link>
+      <span
+        className={`w-[18px] h-[18px] border flex items-center justify-center transition-all ${
+          checked
+            ? "bg-[#0F3A3E] border-[#0F3A3E]"
+            : "border-[#C4BBA8] group-hover:border-[#0F3A3E]"
+        }`}
+      >
+        {checked && <Check className="h-3 w-3 text-white" strokeWidth={3} />}
+      </span>
+      <span
+        className={`text-[14px] transition-colors ${
+          checked ? "text-[#0F3A3E] font-medium" : "text-[#51635F] group-hover:text-[#0F3A3E]"
+        }`}
+      >
+        {label}
+      </span>
+      {count !== undefined && (
+        <span className="text-[12px] text-[#9AA39F] ml-auto">
+          ({count})
+        </span>
+      )}
+    </button>
   );
 }
 
-// Componente de Paginação
+// Pagination component
 function Pagination({
   currentPage,
   totalPages,
@@ -106,66 +87,49 @@ function Pagination({
 }) {
   const getPageNumbers = () => {
     const pages: (number | string)[] = [];
-
-    if (totalPages <= 7) {
-      // Mostra todas as páginas se tiver 7 ou menos
+    if (totalPages <= 5) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
-      // Sempre mostra a primeira página
       pages.push(1);
-
-      if (currentPage > 3) {
-        pages.push('...');
-      }
-
-      // Páginas ao redor da atual
+      if (currentPage > 3) pages.push('...');
       const start = Math.max(2, currentPage - 1);
       const end = Math.min(totalPages - 1, currentPage + 1);
-
       for (let i = start; i <= end; i++) {
         if (!pages.includes(i)) pages.push(i);
       }
-
-      if (currentPage < totalPages - 2) {
-        pages.push('...');
-      }
-
-      // Sempre mostra a última página
+      if (currentPage < totalPages - 2) pages.push('...');
       if (!pages.includes(totalPages)) pages.push(totalPages);
     }
-
     return pages;
   };
 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-center gap-2 mt-12">
-      {/* Botão Anterior */}
+    <div className="flex flex-wrap items-center justify-center gap-1 sm:gap-2 mt-12 md:mt-16">
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold border border-[#0F3A3E]/20 hover:border-[#B07B1E] hover:text-[#B07B1E] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#0F3A3E]/20 disabled:hover:text-inherit"
+        className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.14em] font-medium border border-[#E0D8C7] hover:border-[#0F3A3E] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
-        <ChevronLeft className="h-4 w-4" />
-        Anterior
+        <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
+        <span className="hidden sm:inline">Anterior</span>
       </button>
 
-      {/* Números das Páginas */}
       <div className="flex items-center gap-1">
         {getPageNumbers().map((page, index) => (
           page === '...' ? (
-            <span key={`ellipsis-${index}`} className="px-3 py-2 text-[#0F3A3E]/40">
+            <span key={`ellipsis-${index}`} className="px-2 sm:px-3 py-2 text-[#75827E] text-sm">
               ...
             </span>
           ) : (
             <button
               key={page}
               onClick={() => onPageChange(page as number)}
-              className={`w-10 h-10 flex items-center justify-center text-[11px] font-bold transition-all ${
+              className={`w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-[11px] sm:text-[12px] font-medium transition-all ${
                 currentPage === page
-                  ? "bg-[#B07B1E] text-[#0F3A3E]"
-                  : "border border-[#0F3A3E]/20 hover:border-[#B07B1E] hover:text-[#B07B1E]"
+                  ? "bg-[#0F3A3E] text-white"
+                  : "border border-[#E0D8C7] text-[#0F3A3E] hover:border-[#0F3A3E]"
               }`}
             >
               {page}
@@ -174,14 +138,13 @@ function Pagination({
         ))}
       </div>
 
-      {/* Botão Próximo */}
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex items-center gap-2 px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold border border-[#0F3A3E]/20 hover:border-[#B07B1E] hover:text-[#B07B1E] transition-all disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-[#0F3A3E]/20 disabled:hover:text-inherit"
+        className="flex items-center gap-1 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-[10px] sm:text-[11px] uppercase tracking-[0.1em] sm:tracking-[0.14em] font-medium border border-[#E0D8C7] hover:border-[#0F3A3E] transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
       >
-        Próximo
-        <ChevronRight className="h-4 w-4" />
+        <span className="hidden sm:inline">Próximo</span>
+        <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
       </button>
     </div>
   );
@@ -194,38 +157,61 @@ function ProdutosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
   const [sortBy, setSortBy] = useState<string>("featured");
-  const [showFilters, setShowFilters] = useState(false);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(search.page || 1);
+  const [searchTerm, setSearchTerm] = useState(search.q || "");
 
-  // Sync state with URL params on mount
+  // Expandable sections
+  const [expandedSections, setExpandedSections] = useState({
+    categories: true,
+    brands: true,
+  });
+
   useEffect(() => {
     if (search.vendor) setSelectedBrand(search.vendor);
     if (search.productType) setSelectedCategory(search.productType);
     if (search.page) setCurrentPage(search.page);
-    if (search.vendor || search.productType) setShowFilters(true);
-  }, [search.vendor, search.productType, search.page]);
+    if (search.q) setSearchTerm(search.q);
+  }, [search.vendor, search.productType, search.page, search.q]);
 
-  // Extrair categorias únicas dos produtos
-  const categories = useMemo(() => {
-    const cats = new Set<string>();
+  // Extract unique categories with counts
+  const categoriesWithCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
     PRODUCTS.forEach(p => {
-      if (p.category) cats.add(p.category);
+      if (p.category) {
+        counts[p.category] = (counts[p.category] || 0) + 1;
+      }
     });
-    return Array.from(cats).sort();
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
   }, []);
 
-  // Extrair marcas únicas dos produtos
-  const brands = useMemo(() => {
-    const brandSet = new Set<string>();
+  // Extract unique brands with counts
+  const brandsWithCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
     PRODUCTS.forEach(p => {
-      if (p.brand) brandSet.add(p.brand);
+      if (p.brand) {
+        counts[p.brand] = (counts[p.brand] || 0) + 1;
+      }
     });
-    return Array.from(brandSet).sort();
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([name, count]) => ({ name, count }));
   }, []);
 
-  // Produtos filtrados
+  // Filtered products
   const filteredProducts = useMemo(() => {
     let filtered = [...PRODUCTS];
+
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(term) ||
+        p.brand?.toLowerCase().includes(term) ||
+        p.category?.toLowerCase().includes(term)
+      );
+    }
 
     if (selectedCategory) {
       filtered = filtered.filter(p => p.category === selectedCategory);
@@ -235,7 +221,6 @@ function ProdutosPage() {
       filtered = filtered.filter(p => p.brand === selectedBrand);
     }
 
-    // Ordenação
     switch (sortBy) {
       case "price-asc":
         filtered.sort((a, b) => a.price - b.price);
@@ -253,37 +238,30 @@ function ProdutosPage() {
     }
 
     return filtered;
-  }, [selectedCategory, selectedBrand, sortBy]);
+  }, [selectedCategory, selectedBrand, sortBy, searchTerm]);
 
-  // Calcular paginação
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
-  // Ajustar página se necessário após filtrar
   useEffect(() => {
     if (currentPage > totalPages && totalPages > 0) {
       setCurrentPage(1);
     }
   }, [totalPages, currentPage]);
 
-  // Produtos da página atual
   const paginatedProducts = useMemo(() => {
     const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
-    const endIndex = startIndex + PRODUCTS_PER_PAGE;
-    return filteredProducts.slice(startIndex, endIndex);
+    return filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
   }, [filteredProducts, currentPage]);
 
-  // Handler para mudar de página
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
-    // Scroll para o topo da lista
-    window.scrollTo({ top: 400, behavior: 'smooth' });
-
-    // Atualizar URL com a página
+    window.scrollTo({ top: 0, behavior: 'smooth' });
     navigate({
       to: '/produtos',
       search: {
         ...(selectedCategory && { productType: selectedCategory }),
         ...(selectedBrand && { vendor: selectedBrand }),
+        ...(searchTerm && { q: searchTerm }),
         page,
       },
     });
@@ -292,6 +270,7 @@ function ProdutosPage() {
   const clearFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand(null);
+    setSearchTerm("");
     setCurrentPage(1);
     navigate({ to: '/produtos', search: {} });
   };
@@ -306,214 +285,252 @@ function ProdutosPage() {
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = selectedCategory || selectedBrand;
+  const hasActiveFilters = selectedCategory || selectedBrand || searchTerm;
+
+  // Sidebar Filter Component
+  const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
+    <div className={isMobile ? "p-6" : ""}>
+      {isMobile && (
+        <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#E0D8C7]">
+          <h2 className="font-serif text-xl text-[#0F3A3E]">Filtros</h2>
+          <button onClick={() => setShowMobileFilters(false)}>
+            <X className="h-6 w-6 text-[#0F3A3E]" />
+          </button>
+        </div>
+      )}
+
+      {/* Categories */}
+      <div className="mb-8">
+        <button
+          onClick={() => setExpandedSections(s => ({ ...s, categories: !s.categories }))}
+          className="flex items-center justify-between w-full mb-4"
+        >
+          <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A3E] font-semibold">
+            Categoria
+          </h3>
+          <ChevronDown
+            className={`h-4 w-4 text-[#75827E] transition-transform ${
+              expandedSections.categories ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {expandedSections.categories && (
+          <div className="space-y-0">
+            {categoriesWithCounts.map(({ name, count }) => (
+              <FilterCheckbox
+                key={name}
+                label={name}
+                count={count}
+                checked={selectedCategory === name}
+                onChange={() => handleCategoryChange(selectedCategory === name ? null : name)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Brands */}
+      <div className="mb-8">
+        <button
+          onClick={() => setExpandedSections(s => ({ ...s, brands: !s.brands }))}
+          className="flex items-center justify-between w-full mb-4"
+        >
+          <h3 className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A3E] font-semibold">
+            Marca
+          </h3>
+          <ChevronDown
+            className={`h-4 w-4 text-[#75827E] transition-transform ${
+              expandedSections.brands ? "rotate-180" : ""
+            }`}
+          />
+        </button>
+        {expandedSections.brands && (
+          <div className="space-y-0 max-h-[280px] overflow-y-auto pr-2">
+            {brandsWithCounts.map(({ name, count }) => (
+              <FilterCheckbox
+                key={name}
+                label={name}
+                count={count}
+                checked={selectedBrand === name}
+                onChange={() => handleBrandChange(selectedBrand === name ? null : name)}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {hasActiveFilters && (
+        <button
+          onClick={clearFilters}
+          className="w-full py-3 border border-[#0F3A3E] text-[#0F3A3E] text-[11px] uppercase tracking-[0.14em] font-medium hover:bg-[#0F3A3E] hover:text-white transition-colors"
+        >
+          Limpar filtros
+        </button>
+      )}
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-[#F3EEE3] text-[#1C302E]">
-      <Navbar />
+    <div className="min-h-screen bg-[#F3EEE3] font-sans">
+      <NavbarEditorial />
 
-      {/* Hero Banner */}
-      <section className="bg-[#0F3A3E] pt-32 pb-16">
-        <div className="container mx-auto px-4 md:px-12">
-          <MotionDiv
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <div className="flex items-center justify-center gap-4 mb-6">
-              <div className="w-12 h-[1px] bg-[#B07B1E]" />
-              <span className="text-[10px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
-                Coleção Completa
-              </span>
-              <div className="w-12 h-[1px] bg-[#B07B1E]" />
-            </div>
-            <h1 className="font-serif font-light text-white text-4xl md:text-5xl lg:text-6xl mb-4">
-              Nossos <span className="italic text-[#B07B1E]">Produtos</span>
-            </h1>
-            <p className="text-white/50 text-sm max-w-xl mx-auto">
-              {PRODUCTS.length} produtos profissionais selecionados para você
-            </p>
-          </MotionDiv>
+      {/* Header with Breadcrumb */}
+      <div className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-10">
+          {/* Breadcrumb */}
+          <nav className="text-[12px] text-[#75827E] mb-4">
+            <Link to="/" className="hover:text-[#0F3A3E] transition-colors">
+              Home
+            </Link>
+            <span className="mx-2">/</span>
+            <span className="text-[#0F3A3E]">Produtos</span>
+            {selectedCategory && (
+              <>
+                <span className="mx-2">/</span>
+                <span className="text-[#0F3A3E]">{selectedCategory}</span>
+              </>
+            )}
+            {selectedBrand && (
+              <>
+                <span className="mx-2">/</span>
+                <span className="text-[#0F3A3E]">{selectedBrand}</span>
+              </>
+            )}
+          </nav>
+
+          <h1 className="font-serif text-[36px] md:text-[48px] text-[#0F3A3E]">
+            {selectedBrand || selectedCategory || "Todos os Produtos"}
+          </h1>
+          <p className="text-[#75827E] text-[15px] mt-2">
+            {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+          </p>
         </div>
-      </section>
+      </div>
 
-      {/* Filters & Products */}
-      <section className="py-12">
-        <div className="container mx-auto px-4 md:px-12">
-          {/* Filter Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-8 border-b border-[#0F3A3E]/10">
-            <div className="flex items-center gap-4">
+      {/* Main Content */}
+      <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-12">
+        <div className="flex gap-14">
+          {/* Sidebar - Desktop */}
+          <aside className="hidden lg:block w-[240px] flex-shrink-0">
+            <FilterSidebar />
+          </aside>
+
+          {/* Products Area */}
+          <div className="flex-1">
+            {/* Toolbar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-8 pb-6 border-b border-[#E0D8C7]">
+              {/* Mobile Filter Toggle */}
               <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center gap-2 px-6 py-3 bg-[#0F3A3E] text-white text-[10px] uppercase tracking-[0.3em] font-bold hover:bg-[#B07B1E] hover:text-[#0F3A3E] transition-all"
+                onClick={() => setShowMobileFilters(true)}
+                className="lg:hidden flex items-center gap-2 px-4 py-2.5 border border-[#E0D8C7] text-[#0F3A3E] text-[11px] uppercase tracking-[0.14em] font-medium"
               >
-                <Filter className="h-4 w-4" />
+                <SlidersHorizontal className="h-4 w-4" />
                 Filtros
               </button>
 
+              {/* Active Filters Tags */}
               {hasActiveFilters && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {selectedCategory && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
+                      {selectedCategory}
+                      <button onClick={() => handleCategoryChange(null)}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                  {selectedBrand && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
+                      {selectedBrand}
+                      <button onClick={() => handleBrandChange(null)}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                  {searchTerm && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
+                      "{searchTerm}"
+                      <button onClick={() => { setSearchTerm(""); navigate({ to: '/produtos', search: {} }); }}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Sort Dropdown */}
+              <div className="flex items-center gap-3 ml-auto">
+                <span className="text-[12px] text-[#75827E] hidden sm:inline">Ordenar por:</span>
+                <div className="relative">
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="appearance-none bg-white border border-[#E0D8C7] px-4 py-2.5 pr-10 text-[13px] text-[#0F3A3E] focus:outline-none focus:border-[#0F3A3E] cursor-pointer"
+                  >
+                    <option value="featured">Relevância</option>
+                    <option value="price-asc">Menor preço</option>
+                    <option value="price-desc">Maior preço</option>
+                    <option value="name">Nome A-Z</option>
+                  </select>
+                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#75827E] pointer-events-none" />
+                </div>
+              </div>
+            </div>
+
+            {/* Products Grid */}
+            {paginatedProducts.length > 0 ? (
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 md:gap-6">
+                {paginatedProducts.map((product) => (
+                  <ProductCardEditorial
+                    key={product.id}
+                    id={product.id}
+                    title={product.name}
+                    vendor={product.brand || ""}
+                    price={product.price}
+                    originalPrice={product.originalPrice}
+                    image={product.images[0]}
+                    badge={product.isNew ? "Novo" : undefined}
+                    rating={4.5}
+                    reviewCount={Math.floor(Math.random() * 100) + 10}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20">
+                <p className="text-[#75827E] text-lg mb-4">Nenhum produto encontrado</p>
                 <button
                   onClick={clearFilters}
-                  className="flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-[#0F3A3E]/60 hover:text-[#B07B1E] transition-colors"
+                  className="px-6 py-3 bg-[#0F3A3E] text-white text-[12px] uppercase tracking-[0.14em] font-medium hover:bg-[#16504F] transition-colors"
                 >
-                  <X className="h-4 w-4" />
                   Limpar filtros
                 </button>
-              )}
-            </div>
-
-            <div className="flex items-center gap-4">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#0F3A3E]/40 font-bold">
-                Ordenar por:
-              </span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-transparent border border-[#0F3A3E]/20 px-4 py-2 text-[11px] uppercase tracking-[0.2em] font-bold focus:outline-none focus:border-[#B07B1E]"
-              >
-                <option value="featured">Destaques</option>
-                <option value="price-asc">Menor preço</option>
-                <option value="price-desc">Maior preço</option>
-                <option value="name">Nome A-Z</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Filter Panel */}
-          {showFilters && (
-            <MotionDiv
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-8 pb-8 border-b border-[#0F3A3E]/10"
-            >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Categorias */}
-                {categories.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-4">
-                      Categorias
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {categories.map((cat) => (
-                        <button
-                          key={cat}
-                          onClick={() => handleCategoryChange(selectedCategory === cat ? null : cat)}
-                          className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
-                            selectedCategory === cat
-                              ? "bg-[#B07B1E] text-[#0F3A3E]"
-                              : "bg-white border border-[#0F3A3E]/10 text-[#0F3A3E]/60 hover:border-[#B07B1E] hover:text-[#B07B1E]"
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Marcas */}
-                {brands.length > 0 && (
-                  <div>
-                    <h3 className="text-[10px] uppercase tracking-[0.4em] font-bold text-[#B07B1E] mb-4">
-                      Marcas
-                    </h3>
-                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
-                      {brands.map((brand) => (
-                        <button
-                          key={brand}
-                          onClick={() => handleBrandChange(selectedBrand === brand ? null : brand)}
-                          className={`px-4 py-2 text-[10px] uppercase tracking-[0.2em] font-bold transition-all ${
-                            selectedBrand === brand
-                              ? "bg-[#B07B1E] text-[#0F3A3E]"
-                              : "bg-white border border-[#0F3A3E]/10 text-[#0F3A3E]/60 hover:border-[#B07B1E] hover:text-[#B07B1E]"
-                          }`}
-                        >
-                          {brand}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
-            </MotionDiv>
-          )}
-
-          {/* Active Filters Display */}
-          {hasActiveFilters && (
-            <div className="flex flex-wrap items-center gap-2 mb-6">
-              <span className="text-[10px] uppercase tracking-[0.2em] text-[#0F3A3E]/40 font-bold">
-                Filtros ativos:
-              </span>
-              {selectedCategory && (
-                <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A3E] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
-                  {selectedCategory}
-                  <button onClick={() => handleCategoryChange(null)}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
-              {selectedBrand && (
-                <span className="inline-flex items-center gap-2 px-3 py-1 bg-[#0F3A3E] text-white text-[9px] uppercase tracking-[0.2em] font-bold">
-                  {selectedBrand}
-                  <button onClick={() => handleBrandChange(null)}>
-                    <X className="h-3 w-3" />
-                  </button>
-                </span>
-              )}
-            </div>
-          )}
-
-          {/* Results Count & Page Info */}
-          <div className="flex items-center justify-between mb-8">
-            <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A3E]/40 font-bold">
-              {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
-            </p>
-            {totalPages > 1 && (
-              <p className="text-[11px] uppercase tracking-[0.2em] text-[#0F3A3E]/40 font-bold">
-                Página {currentPage} de {totalPages}
-              </p>
             )}
+
+            {/* Pagination */}
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+            />
           </div>
-
-          {/* Products Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
-            {paginatedProducts.map((product, i) => (
-              <MotionDiv
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: Math.min(i * 0.03, 0.3), duration: 0.4 }}
-              >
-                <LocalProductCard product={product} />
-              </MotionDiv>
-            ))}
-          </div>
-
-          {/* Pagination */}
-          <Pagination
-            currentPage={currentPage}
-            totalPages={totalPages}
-            onPageChange={handlePageChange}
-          />
-
-          {/* Empty State */}
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-20">
-              <p className="text-[#0F3A3E]/40 text-lg mb-4">Nenhum produto encontrado</p>
-              <Button
-                onClick={clearFilters}
-                className="bg-[#B07B1E] text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white"
-              >
-                Limpar filtros
-              </Button>
-            </div>
-          )}
         </div>
-      </section>
+      </div>
 
-      <Footer />
+      {/* Mobile Filters Drawer */}
+      {showMobileFilters && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowMobileFilters(false)}
+          />
+          <div className="absolute left-0 top-0 bottom-0 w-[320px] bg-[#F3EEE3] overflow-y-auto">
+            <FilterSidebar isMobile />
+          </div>
+        </div>
+      )}
+
+      <FooterEditorial />
     </div>
   );
 }

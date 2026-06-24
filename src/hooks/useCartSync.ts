@@ -1,15 +1,8 @@
 import { useEffect } from 'react';
-import { useCartStore } from '../stores/cartStore';
 
+// Este hook não é mais necessário com o store simplificado
+// que usa localStorage persistido automaticamente via zustand persist
 export function useCartSync() {
-  const syncCart = useCartStore(state => state.syncCart);
-
-  useEffect(() => {
-    syncCart();
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') syncCart();
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [syncCart]);
+  // No-op - mantido para compatibilidade
+  useEffect(() => {}, []);
 }

@@ -1,410 +1,293 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
-import {
-  ArrowRight,
-  ChevronDown,
-  Star
-} from "lucide-react";
-import { LocalProductCard } from "@/components/shop/LocalProductCard";
-import { PRODUCTS, BRANDS } from "@/data/products";
-import { BenefitBar } from "@/components/shop/BenefitBar";
-import { RitualSection } from "@/components/shop/RitualSection";
-import { ConsultancySection } from "@/components/shop/ConsultancySection";
-import { AIQuiz } from "@/components/shop/AIQuiz";
-import { Testimonials } from "@/components/shop/Testimonials";
-import { HeroRefinement } from "@/components/shop/HeroRefinement";
-import { CampaignBanner } from "@/components/shop/CampaignBanner";
-import { SocialProof } from "@/components/shop/SocialProof";
-import { ShopByCategory } from "@/components/shop/ShopByCategory";
-import { FirstPurchaseCoupon } from "@/components/shop/FirstPurchaseCoupon";
-import { TrustBadges } from "@/components/shop/TrustBadges";
-import { GlobalStyleSync } from "@/components/GlobalStyleSync";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { useRef, useMemo } from "react";
-
-const MotionDiv = motion.div as any;
-const MotionSection = motion.section as any;
-const MotionH1 = motion.h1 as any;
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { FooterEditorial } from "@/components/layout/FooterEditorial";
+import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { PRODUCTS } from "@/data/products";
+import { useMemo } from "react";
+import { ArrowRight } from "lucide-react";
 
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "Fragranciaria | Cosméticos Capilares Profissionais" },
-      { name: "description", content: "Boutique online de cosméticos capilares profissionais. Produtos originais das melhores marcas com entrega para todo Brasil." },
-      { property: "og:title", content: "Fragranciaria | Cosméticos Capilares Profissionais" },
-      { property: "og:description", content: "Produtos profissionais para cuidar dos seus fios em casa." },
-      { property: "og:image", content: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=1200" },
+      { title: "Fragranciaria | Especialista em Cabelo Profissional" },
+      { name: "description", content: "Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa." },
+      { property: "og:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
+      { property: "og:description", content: "A excelência do salão na sua casa." },
     ],
   }),
-  component: Index,
+  component: IndexEditorial,
 });
 
-// Marcas atualizadas - removido Schwarzkopf, adicionado Kérastase
-const BRANDS_DISPLAY = [
-  { name: "L'Oréal", desc: "Expertise francesa" },
-  { name: "Wella", desc: "Excelência em cor" },
-  { name: "Keune", desc: "Tecnologia holandesa" },
-  { name: "Kérastase", desc: "Luxo capilar" },
+// Marcas para o marquee
+const BRAND_MARQUEE = [
+  "L'Oréal Professionnel",
+  "Kérastase",
+  "Wella",
+  "Schwarzkopf",
+  "Keune",
+  "Alfaparf Milano",
+  "Itallian Color",
+  "Cadiveu",
+  "Sebastian",
 ];
 
+// 8 Cards de necessidade
 const NEEDS = [
-  { label: "Coloração", productType: "Coloração" },
-  { label: "Finalizadores", productType: "Finalizador" },
-  { label: "Shampoos", productType: "Shampoo" },
-  { label: "Kits", productType: "Kit" },
+  { num: "01", title: "Hidratação", desc: "Fios secos pedindo água e maciez.", image: "/images/needs/need-hidratacao.png", productType: "Máscara" },
+  { num: "02", title: "Nutrição", desc: "Repõe lipídios e devolve o brilho.", image: "/images/needs/need-nutricao.png", productType: "Condicionador" },
+  { num: "03", title: "Reconstrução", desc: "Força para cabelos fragilizados.", image: "/images/needs/need-reconstrucao.png", productType: "Tratamento" },
+  { num: "04", title: "Coloração", desc: "Cor, correção e manutenção.", image: "/images/needs/need-coloracao.png", productType: "Coloração" },
+  { num: "05", title: "Finalização", desc: "Definição, frizz e acabamento.", image: "/images/needs/need-finalizacao.png", productType: "Finalizador" },
+  { num: "06", title: "Proteção Solar", desc: "Defesa contra sol e cloro.", image: "/images/needs/need-protecao-solar.png", productType: "Leave-in" },
+  { num: "07", title: "Tratamentos", desc: "Protocolos intensivos de salão.", image: "/images/needs/need-tratamentos.png", productType: "Tratamento" },
+  { num: "08", title: "Corte & Styling", desc: "Modelagem e textura.", image: "/images/needs/need-corte.png", productType: "Finalizador" },
 ];
 
-function Index() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const brandsRef = useRef<HTMLElement>(null);
-  const quizRef = useRef<HTMLDivElement>(null);
-
-  const scrollToBrands = () => {
-    brandsRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const scrollToQuiz = () => {
-    quizRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef as any,
-    offset: ["start start", "end start"]
-  });
-
-  const heroY = useTransform(scrollYProgress, [0, 1], ["0%", "20%"]);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.4], [1, 0]);
-
-  // Produtos em destaque (featured ou primeiros 8)
+function IndexEditorial() {
   const featuredProducts = useMemo(() => {
-    const featured = PRODUCTS.filter(p => p.featured);
-    if (featured.length >= 4) return featured.slice(0, 4);
+    const withDiscount = PRODUCTS.filter(
+      (p) => p.originalPrice && p.originalPrice > p.price
+    ).slice(0, 4);
+    if (withDiscount.length >= 4) return withDiscount;
     return PRODUCTS.slice(0, 4);
   }, []);
 
-  // Produtos com desconto para "Promoções"
-  const saleProducts = useMemo(() => {
-    const withDiscount = PRODUCTS.filter(p => p.originalPrice && p.originalPrice > p.price);
-    if (withDiscount.length >= 4) return withDiscount.slice(0, 4);
-    return PRODUCTS.slice(4, 8);
-  }, []);
-
   return (
-    <div className="min-h-screen bg-[#F3EEE3] text-[#1C302E] selection:bg-[#B07B1E]/20 font-sans" ref={containerRef}>
-      <GlobalStyleSync />
-      <Navbar />
+    <div className="min-h-screen bg-[#F3EEE3] font-sans overflow-x-hidden">
+      <NavbarEditorial />
 
       <main>
-        {/* HERO SECTION */}
-        <MotionSection
-          style={{ opacity: heroOpacity }}
-          className="relative min-h-[90vh] md:min-h-screen flex items-center overflow-hidden bg-[#0F3A3E]"
+        {/* ===== HERO SECTION ===== */}
+        <section
+          className="relative min-h-[600px] md:min-h-[720px] flex items-center overflow-hidden"
+          style={{
+            backgroundColor: '#EDE5D2',
+            backgroundImage: 'repeating-linear-gradient(45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px), repeating-linear-gradient(-45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px)'
+          }}
         >
-          <MotionDiv
-            initial={{ scale: 1.1 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 15, ease: "linear", repeat: Infinity, repeatType: "reverse" }}
-            style={{ y: heroY }}
-            className="absolute inset-0 z-0"
-          >
-            <div className="w-full h-full overflow-hidden">
-              <img
-                src="https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?q=80&w=2000&auto=format&fit=crop"
-                alt="Boutique de luxo"
-                className="w-full h-full object-cover md:object-[center_right] transition-transform duration-[20s] ease-out scale-105"
-              />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0F3A3E]/95 via-[#0F3A3E]/60 to-transparent" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0F3A3E]/80 via-transparent to-transparent h-1/2 bottom-0" />
-            </div>
-          </MotionDiv>
+          {/* Arco âmbar decorativo - hidden on mobile */}
+          <div
+            className="hidden md:block absolute -top-[180px] -right-[60px] w-[900px] h-[900px] rounded-full pointer-events-none"
+            style={{
+              background: 'radial-gradient(circle at 34% 34%, rgba(198,163,98,0.34) 0%, rgba(198,163,98,0.14) 42%, transparent 66%)'
+            }}
+          />
+          <div
+            className="hidden md:block absolute -top-[100px] right-[20px] w-[720px] h-[720px] rounded-full border pointer-events-none"
+            style={{ borderColor: 'rgba(190,152,78,0.26)' }}
+          />
+          <div
+            className="hidden md:block absolute -top-[30px] right-[100px] w-[540px] h-[540px] rounded-full border pointer-events-none"
+            style={{ borderColor: 'rgba(190,152,78,0.14)' }}
+          />
 
-          <div className="container mx-auto px-4 md:px-12 relative z-10 pt-20 md:pt-0">
-            <div className="w-full md:max-w-[55%] flex flex-col items-center md:items-start text-center md:text-left">
-              <MotionDiv
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 1.2, ease: "easeOut" }}
-                className="flex items-center gap-4 md:gap-6 mb-4 md:mb-6"
-              >
-                <div className="w-12 md:w-16 h-[1px] bg-[#B07B1E]" />
-                <span className="text-[9px] md:text-[11px] uppercase tracking-[0.5em] font-bold text-[#B07B1E]">
-                  Especialista em Cabelo Profissional
-                </span>
-              </MotionDiv>
+          {/* Modelo - posicionada à direita, imagem completa sem corte */}
+          <img
+            src="/images/hero-model-nobg.png"
+            alt="Modelo com produtos profissionais"
+            className="hidden lg:block absolute bottom-0 right-0 h-[95%] w-auto object-contain animate-[heroIn_1.4s_ease_both]"
+          />
 
-              <MotionH1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.2, ease: "easeOut" }}
-                className="font-serif font-light mb-8 md:mb-10 text-white text-4xl md:text-5xl lg:text-7xl leading-[1.1]"
-              >
-                A excelência do salão<br />
-                na sua <span className="italic underline underline-offset-8 decoration-[#B07B1E]/40">intimidade</span>
-              </MotionH1>
+          {/* Véu para legibilidade do texto */}
+          <div
+            className="absolute top-0 left-0 bottom-0 w-[48%] pointer-events-none hidden lg:block"
+            style={{ background: 'linear-gradient(to right, rgba(237,229,210,0.46) 0%, transparent 100%)' }}
+          />
 
-              <MotionDiv
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 1.2, delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-6 md:gap-6 items-center mb-10 md:mb-12"
-              >
-                <Button
-                  size="lg"
-                  onClick={scrollToBrands}
-                  className="w-full sm:w-auto bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-10 md:px-14 h-12 md:h-16 text-[10px] md:text-[11px] uppercase tracking-[0.5em] font-black transition-all duration-1000 rounded-none shadow-[0_30px_60px_rgba(212,175,55,0.25)] hover:-translate-y-1.5 group relative overflow-hidden"
-                >
-                  <span className="relative z-10">Explorar Coleções</span>
-                  <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-500" />
-                  <ArrowRight className="relative z-10 ml-4 h-4 w-4 transition-transform group-hover:translate-x-2" />
-                </Button>
-                <button
-                  onClick={scrollToQuiz}
-                  className="text-[9px] md:text-[10px] uppercase tracking-[0.4em] font-bold text-white/50 hover:text-[#B07B1E] transition-all duration-500 border-b border-white/10 hover:border-[#B07B1E]/40 pb-2"
-                >
-                  Descobrir meu Ritual
-                </button>
-              </MotionDiv>
-
-              <HeroRefinement />
+          {/* Conteúdo de texto */}
+          <div className="relative z-10 px-6 md:px-14 py-12 md:py-16 lg:py-[70px] w-full lg:w-auto lg:max-w-[600px]">
+            {/* Label */}
+            <div className="flex items-center gap-3.5 mb-5 md:mb-6 animate-[fadeUp_0.9s_ease_0.1s_both]">
+              <span className="w-8 md:w-10 h-[1px] bg-[#B07B1E]" />
+              <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                Especialista em Cabelo Profissional
+              </span>
             </div>
 
-            {/* SCROLL INDICATOR */}
-            <MotionDiv
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 1.5, duration: 1.5 }}
-              className="absolute bottom-8 md:bottom-12 left-1/2 -translate-x-1/2 flex flex-col items-center gap-4 z-20"
-            >
-              <button
-                onClick={scrollToBrands}
-                className="flex flex-col items-center gap-3 group"
+            {/* Headline */}
+            <h1 className="font-serif font-medium text-[36px] md:text-[56px] lg:text-[80px] leading-[1] md:leading-[0.97] text-[#0F3A3E] tracking-[-0.01em] animate-[fadeUp_1s_ease_0.2s_both]">
+              A excelência<br />do salão na<br />sua <em className="italic text-[#B07B1E]">casa</em>.
+            </h1>
+
+            {/* Subheadline */}
+            <p className="text-[15px] md:text-[17px] text-[#4A5C4A] mt-5 md:mt-6 leading-[1.65] md:leading-[1.7] max-w-[320px] md:max-w-[420px] animate-[fadeUp_1s_ease_0.35s_both]">
+              Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa.
+            </p>
+
+            {/* CTAs */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
+              <Link
+                to="/produtos"
+                className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors"
               >
-                <span className="text-[8px] md:text-[9px] uppercase tracking-[0.4em] font-bold text-white/40 group-hover:text-[#B07B1E] transition-colors duration-500">
-                  Role para descobrir
-                </span>
-                <MotionDiv
-                  animate={{ y: [0, 6, 0] }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  }}
-                  className="flex flex-col items-center"
-                >
-                  <div className="w-[1px] h-10 bg-gradient-to-b from-[#B07B1E] to-transparent opacity-60" />
-                  <ChevronDown className="h-4 w-4 text-[#B07B1E]/60 -mt-1" />
-                </MotionDiv>
-              </button>
-
-              <MotionDiv
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 3.5, duration: 2 }}
-                className="mt-4 text-center px-4 hidden md:block"
+                Explorar Coleções
+              </Link>
+              <Link
+                to="/produtos"
+                search={{ productType: "Tratamento" }}
+                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
               >
-                <div className="flex items-center gap-2 justify-center mb-1">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="h-2 w-2 fill-[#B07B1E] text-[#B07B1E] opacity-60" />
-                  ))}
-                </div>
-                <p className="text-[8px] md:text-[9px] text-white/30 uppercase tracking-[0.2em] font-medium max-w-[280px] leading-relaxed">
-                  Produtos 100% originais · Nota fiscal em todas as compras
-                </p>
-              </MotionDiv>
-            </MotionDiv>
-          </div>
-        </MotionSection>
+                Descobrir meu Ritual
+              </Link>
+            </div>
 
-        {/* BENEFIT BAR */}
-        <MotionDiv
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="relative z-20 -mt-16"
-        >
-          <BenefitBar />
-        </MotionDiv>
-
-        {/* CUPOM PRIMEIRA COMPRA */}
-        <FirstPurchaseCoupon />
-
-        {/* PRODUTOS DESTAQUES - ANTES DO FOLD */}
-        <section className="bg-white py-20">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-16">
-              <div className="section-label !justify-center">
-                <span>Destaques</span>
+            {/* Trust badges */}
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-8 mt-7 md:mt-9 animate-[fadeUp_1s_ease_0.65s_both]">
+              <div className="flex items-center gap-2 text-[11px] md:text-[12px] tracking-[0.04em] text-[#3A4A3A]">
+                <span className="text-[#B07B1E] text-[14px]">➟</span>
+                Frete grátis acima de R$199
               </div>
-              <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl">
-                Mais Vendidos da <span className="italic text-[#B07B1E]">Semana</span>
+              <div className="flex items-center gap-2 text-[11px] md:text-[12px] tracking-[0.04em] text-[#3A4A3A]">
+                <span className="text-[#B07B1E] text-[14px]">◈</span>
+                Até 10x sem juros
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile Hero Image - subtle overlay */}
+          <div className="lg:hidden absolute inset-0 -z-10">
+            <img
+              src="/images/hero-model-nobg.png"
+              alt="Modelo"
+              className="w-full h-full object-contain object-right-bottom opacity-20"
+            />
+          </div>
+        </section>
+
+        {/* ===== BRAND MARQUEE ===== */}
+        <section className="bg-[#0F3A3E] py-5 md:py-[26px] overflow-hidden">
+          <div
+            className="flex gap-0 w-max animate-marquee"
+            style={{ animationDuration: '28s' }}
+          >
+            {/* First set */}
+            <div className="flex gap-0">
+              {BRAND_MARQUEE.map((brand, i) => (
+                <span
+                  key={`a-${i}`}
+                  className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"
+                >
+                  {brand}
+                  <span className="text-[#B07B1E]">✦</span>
+                </span>
+              ))}
+            </div>
+            {/* Duplicate for seamless loop */}
+            <div className="flex gap-0" aria-hidden="true">
+              {BRAND_MARQUEE.map((brand, i) => (
+                <span
+                  key={`b-${i}`}
+                  className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"
+                >
+                  {brand}
+                  <span className="text-[#B07B1E]">✦</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== POR NECESSIDADE ===== */}
+        <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 md:gap-5 mb-10 md:mb-14">
+              <div>
+                <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                  Encontre por necessidade
+                </span>
+                <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3 leading-[1.1] md:leading-[1.05]">
+                  O que seus fios <em className="text-[#B07B1E]">pedem</em> hoje?
+                </h2>
+              </div>
+              <Link
+                to="/produtos"
+                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto"
+              >
+                Ver tudo →
+              </Link>
+            </div>
+
+            {/* Grid de 8 cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-5">
+              {NEEDS.map((need) => (
+                <Link
+                  key={need.title}
+                  to="/produtos"
+                  search={{ productType: need.productType }}
+                  className="group bg-white border border-[#E6DECE] overflow-hidden transition-all duration-[250ms] hover:-translate-y-[3px] hover:shadow-[0_14px_34px_rgba(15,58,62,0.10)]"
+                >
+                  <img
+                    src={need.image}
+                    alt={need.title}
+                    className="w-full h-[120px] md:h-[180px] object-cover"
+                  />
+                  <div className="p-4 md:p-7">
+                    <div className="font-serif text-[12px] md:text-[14px] text-[#B07B1E]">
+                      {need.num}
+                    </div>
+                    <div className="font-serif text-[18px] md:text-[26px] text-[#0F3A3E] mt-2 md:mt-3">
+                      {need.title}
+                    </div>
+                    <div className="text-[11px] md:text-[12px] text-[#75827E] mt-1 md:mt-2 leading-[1.4] md:leading-[1.5] hidden sm:block">
+                      {need.desc}
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== MAIS VENDIDOS ===== */}
+        <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto">
+            {/* Header */}
+            <div className="text-center mb-10 md:mb-14">
+              <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                Destaques
+              </span>
+              <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3">
+                Mais Vendidos da <em className="text-[#B07B1E]">Semana</em>
               </h2>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
+            {/* Grid de 4 produtos */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
               {featuredProducts.map((product) => (
-                <LocalProductCard key={product.id} product={product} />
+                <ProductCardEditorial
+                  key={product.id}
+                  id={product.id}
+                  title={product.name}
+                  vendor={product.brand || ""}
+                  price={product.price}
+                  originalPrice={product.originalPrice}
+                  image={product.images[0]}
+                  rating={4.5}
+                  reviewCount={Math.floor(Math.random() * 100) + 20}
+                />
               ))}
             </div>
 
-            <div className="mt-16 flex justify-center">
-              <Link to="/produtos">
-                <Button variant="outline" className="border-[#0F3A3E]/20 hover:border-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white px-16 h-14 rounded-none text-[11px] uppercase tracking-[0.4em] font-bold transition-all duration-700">
-                    Ver Toda a Coleção
-                </Button>
+            {/* Ver todos */}
+            <div className="text-center mt-10 md:mt-12">
+              <Link
+                to="/produtos"
+                className="inline-flex items-center gap-2 text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
+              >
+                Ver todos os produtos
+                <ArrowRight className="h-4 w-4" />
               </Link>
             </div>
           </div>
         </section>
 
-        {/* OFERTAS SECTION */}
-        <section className="bg-[#F3EEE3] py-20">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-16">
-              <div className="section-label !justify-center">
-                <span>Ofertas</span>
-              </div>
-              <h2 className="font-serif font-light text-[#1C302E] text-3xl md:text-4xl">
-                Promoções <span className="italic text-[#B07B1E]">Imperdíveis</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
-              {saleProducts.map((product) => (
-                <LocalProductCard key={product.id} product={product} />
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* TRUST BADGES */}
-        <TrustBadges />
-
-        {/* BRANDS SECTION */}
-        <section ref={brandsRef} className="bg-white py-32">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
-              <div className="section-label !justify-center">
-                <span className="tracking-[0.5em]">Curadoria Exclusiva</span>
-              </div>
-              <h2 className="font-serif font-light text-[#1C302E] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                As Marcas Mais <span className="italic text-[#B07B1E]">Desejadas</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              {BRANDS_DISPLAY.map((brand, i) => (
-                <Link
-                  key={brand.name}
-                  to="/produtos"
-                  search={{ vendor: brand.name }}
-                >
-                  <MotionDiv
-                    initial={{ opacity: 0, y: 40 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1, duration: 0.8 }}
-                    className="group relative aspect-[3/4] overflow-hidden bg-gradient-to-br from-[#0F3A3E] to-[#16504F] cursor-pointer"
-                  >
-                    <div className="absolute inset-0 bg-[#B07B1E]/0 group-hover:bg-[#B07B1E]/10 transition-all duration-700" />
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-8">
-                      <h3 className="text-white font-serif text-3xl md:text-4xl text-center mb-3">{brand.name}</h3>
-                      <p className="text-[9px] uppercase tracking-[0.2em] text-[#B07B1E] font-bold mb-8">{brand.desc}</p>
-                      <span className="bg-[#B07B1E] text-[#0F3A3E] hover:bg-white hover:text-[#0F3A3E] px-10 h-14 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-all duration-500 opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 flex items-center justify-center">
-                        Explorar Coleção
-                      </span>
-                    </div>
-                  </MotionDiv>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* NEEDS SECTION */}
-        <section className="bg-[#F3EEE3] py-32">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="text-center mb-24">
-              <div className="section-label !justify-center">
-                <span className="tracking-[0.5em]">Categorias</span>
-              </div>
-              <h2 className="font-serif font-light text-[#1C302E] text-4xl md:text-5xl lg:text-6xl leading-tight">
-                Encontre por <span className="italic text-[#B07B1E]">Tipo</span>
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-              {NEEDS.map((need, i) => (
-                <Link
-                  key={need.label}
-                  to="/produtos"
-                  search={{ productType: need.productType }}
-                >
-                  <MotionDiv
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    whileInView={{ opacity: 1, scale: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    className="group relative aspect-square overflow-hidden cursor-pointer bg-gradient-to-br from-[#0F3A3E] to-[#1a4f5c]"
-                  >
-                    <div className="absolute inset-0 bg-[#B07B1E]/0 group-hover:bg-[#B07B1E]/20 transition-all duration-700" />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-white font-serif text-2xl md:text-3xl border-b border-white/0 group-hover:border-[#B07B1E]/50 pb-2 transition-all duration-500">{need.label}</span>
-                    </div>
-                  </MotionDiv>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <ShopByCategory />
-        <CampaignBanner />
-
-        {/* AI QUIZ - MOVIDO PARA METADE INFERIOR */}
-        <MotionSection
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true, margin: "-10%" }}
-          transition={{ duration: 1.2 }}
-          ref={quizRef}
-          className="bg-[#F3EEE3]"
-        >
-          <AIQuiz />
-        </MotionSection>
-
-        <RitualSection />
-        <ConsultancySection />
-        <SocialProof />
-        <Testimonials />
-
-        {/* BANNER INSTITUCIONAL - SEM IMAGEM MLSTATIC */}
-        <section className="py-24 bg-white">
-          <div className="container mx-auto px-4 md:px-12">
-            <div className="bg-gradient-to-br from-[#0F3A3E] to-[#16504F] text-white p-12 md:p-20 relative overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                  <div className="absolute top-0 right-0 w-96 h-96 bg-[#B07B1E] rounded-full blur-3xl" />
-                  <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#B07B1E] rounded-full blur-3xl" />
-                </div>
-                <div className="relative z-10 max-w-xl">
-                    <h3 className="font-serif text-4xl md:text-5xl mb-6 font-light">Curadoria Exclusiva</h3>
-                    <p className="text-white/40 text-xs uppercase tracking-[0.4em] font-bold mb-10">Os melhores produtos utilizados pelos principais salões do Brasil.</p>
-                    <Link to="/produtos">
-                      <Button className="bg-[#B07B1E] hover:bg-white text-[#0F3A3E] hover:text-[#0F3A3E] px-12 h-14 rounded-none text-[10px] uppercase tracking-[0.4em] font-black transition-all duration-700">
-                          Conhecer Coleção
-                      </Button>
-                    </Link>
-                </div>
-            </div>
-          </div>
-        </section>
+        {/* ===== NEWSLETTER (já vem no Footer) ===== */}
       </main>
 
-      <Footer />
+      <FooterEditorial />
     </div>
   );
 }
 
-export default Index;
+export default IndexEditorial;
