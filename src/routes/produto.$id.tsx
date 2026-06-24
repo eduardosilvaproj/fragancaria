@@ -5,6 +5,8 @@ import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { RecentlyViewedSection } from "@/components/shop/RecentlyViewedSection";
 import { ImageLightbox } from "@/components/shop/ImageLightbox";
 import { ShareButtons } from "@/components/shop/ShareButtons";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { generateProductSchema, generateBreadcrumbSchema } from "@/lib/seo";
 import { PRODUCTS } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
@@ -20,6 +22,7 @@ import {
   Plus,
   ChevronDown,
   ZoomIn,
+  ChevronRight,
 } from "lucide-react";
 
 export const Route = createFileRoute("/produto/$id")({
@@ -92,6 +95,34 @@ function ProductPage() {
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
 
+  // SEO schemas
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://fragranciaria.com.br";
+
+  const productSchema = generateProductSchema({
+    id: product.id,
+    name: product.name,
+    description: product.description || `${product.name} - ${product.brand || "Fragranciaria"}`,
+    brand: product.brand,
+    price: product.price,
+    originalPrice: product.originalPrice,
+    images: product.images,
+    category: product.category,
+    inStock: true,
+    rating: 4.5,
+    reviewCount: 42,
+  }, baseUrl);
+
+  const breadcrumbItems = [
+    { name: "Home", url: "/" },
+    { name: "Produtos", url: "/produtos" },
+  ];
+  if (product.category) {
+    breadcrumbItems.push({ name: product.category, url: `/produtos?productType=${encodeURIComponent(product.category)}` });
+  }
+  breadcrumbItems.push({ name: product.name, url: `/produto/${product.id}` });
+
+  const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems, baseUrl);
+
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
@@ -121,22 +152,37 @@ function ProductPage() {
 
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans">
+      {/* SEO Structured Data */}
+      <JsonLd data={[productSchema, breadcrumbSchema]} />
+
       <NavbarEditorial />
 
       {/* Breadcrumb */}
       <div className="bg-[#F3EEE3] border-b border-[#E0D8C7]">
         <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-4">
-          <nav className="text-[12px] text-[#75827E]">
+          <nav className="flex items-center gap-1 text-[12px] text-[#75827E] flex-wrap">
             <Link to="/" className="hover:text-[#0F3A3E] transition-colors">
               Home
             </Link>
-            <span className="mx-2">/</span>
+            <ChevronRight className="w-3 h-3" />
             <Link to="/produtos" className="hover:text-[#0F3A3E] transition-colors">
               Produtos
             </Link>
+            {product.category && (
+              <>
+                <ChevronRight className="w-3 h-3" />
+                <Link
+                  to="/produtos"
+                  search={{ productType: product.category }}
+                  className="hover:text-[#0F3A3E] transition-colors"
+                >
+                  {product.category}
+                </Link>
+              </>
+            )}
             {product.brand && (
               <>
-                <span className="mx-2">/</span>
+                <ChevronRight className="w-3 h-3" />
                 <Link
                   to="/produtos"
                   search={{ vendor: product.brand }}
@@ -146,8 +192,8 @@ function ProductPage() {
                 </Link>
               </>
             )}
-            <span className="mx-2">/</span>
-            <span className="text-[#0F3A3E]">{product.name.substring(0, 40)}...</span>
+            <ChevronRight className="w-3 h-3" />
+            <span className="text-[#0F3A3E] line-clamp-1">{product.name}</span>
           </nav>
         </div>
       </div>

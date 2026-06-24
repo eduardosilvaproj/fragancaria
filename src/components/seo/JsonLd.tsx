@@ -1,0 +1,40 @@
+import { useEffect } from "react";
+
+interface JsonLdProps {
+  data: object | object[];
+}
+
+/**
+ * Component to inject JSON-LD structured data into the page
+ * Automatically handles cleanup when component unmounts
+ */
+export function JsonLd({ data }: JsonLdProps) {
+  useEffect(() => {
+    // Create script element
+    const script = document.createElement("script");
+    script.type = "application/ld+json";
+    script.text = JSON.stringify(data);
+    script.id = `json-ld-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Append to head
+    document.head.appendChild(script);
+
+    // Cleanup on unmount
+    return () => {
+      const existingScript = document.getElementById(script.id);
+      if (existingScript) {
+        document.head.removeChild(existingScript);
+      }
+    };
+  }, [data]);
+
+  return null;
+}
+
+/**
+ * Server-side safe version that returns the script tag markup
+ * Use this in SSR contexts
+ */
+export function jsonLdScript(data: object | object[]): string {
+  return `<script type="application/ld+json">${JSON.stringify(data)}</script>`;
+}
