@@ -3,6 +3,8 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { RecentlyViewedSection } from "@/components/shop/RecentlyViewedSection";
+import { ImageLightbox } from "@/components/shop/ImageLightbox";
+import { ShareButtons } from "@/components/shop/ShareButtons";
 import { PRODUCTS } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
@@ -17,6 +19,7 @@ import {
   Minus,
   Plus,
   ChevronDown,
+  ZoomIn,
 } from "lucide-react";
 
 export const Route = createFileRoute("/produto/$id")({
@@ -33,6 +36,7 @@ function ProductPage() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("descricao");
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const addToCart = useCartStore((state) => state.addItem);
   const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
 
@@ -178,7 +182,7 @@ function ProductPage() {
               )}
 
               {/* Main Image */}
-              <div className="flex-1 relative bg-[#F8F4EA] border border-[#E9E1D2] overflow-hidden">
+              <div className="flex-1 relative bg-[#F8F4EA] border border-[#E9E1D2] overflow-hidden group">
                 {/* Discount Badge */}
                 {discount > 0 && (
                   <span className="absolute top-5 left-5 z-10 bg-[#0F3A3E] text-white text-[11px] font-semibold tracking-[0.06em] px-3 py-1.5">
@@ -199,10 +203,20 @@ function ProductPage() {
                   <Heart className={`h-6 w-6 ${isWishlisted ? "fill-current" : ""}`} />
                 </button>
 
+                {/* Zoom Button */}
+                <button
+                  onClick={() => setIsLightboxOpen(true)}
+                  className="absolute bottom-5 right-5 z-10 w-10 h-10 flex items-center justify-center bg-white/90 text-[#0F3A3E] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white"
+                  aria-label="Ampliar imagem"
+                >
+                  <ZoomIn className="h-5 w-5" />
+                </button>
+
                 <img
                   src={product.images[selectedImage] || product.images[0]}
                   alt={product.name}
-                  className="w-full aspect-square object-contain p-12"
+                  className="w-full aspect-square object-contain p-12 cursor-zoom-in"
+                  onClick={() => setIsLightboxOpen(true)}
                 />
               </div>
             </div>
@@ -330,6 +344,16 @@ function ProductPage() {
                     Troca fácil<br />em 30 dias
                   </p>
                 </div>
+              </div>
+
+              {/* Share Buttons */}
+              <div className="mt-6 pt-6 border-t border-[#E0D8C7]">
+                <ShareButtons
+                  productName={product.name}
+                  productUrl={`/produto/${product.id}`}
+                  productImage={product.images[0]}
+                  productPrice={product.price}
+                />
               </div>
             </div>
           </div>
@@ -481,6 +505,15 @@ function ProductPage() {
       <RecentlyViewedSection excludeProductId={id} />
 
       <FooterEditorial />
+
+      {/* Image Lightbox */}
+      <ImageLightbox
+        images={product.images}
+        initialIndex={selectedImage}
+        isOpen={isLightboxOpen}
+        onClose={() => setIsLightboxOpen(false)}
+        productName={product.name}
+      />
     </div>
   );
 }
