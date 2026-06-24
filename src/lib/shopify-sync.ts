@@ -16,12 +16,23 @@ export function getSyncStats(): SyncStats {
 
 export async function syncAllProducts(
   onProgress?: (current: number, total: number) => void,
-): Promise<{ success: boolean; synced: number; failed: number; message: string }> {
+): Promise<{
+  success: boolean;
+  synced: number;
+  failed: number;
+  imported: number;
+  updated: number;
+  errors: string[];
+  message: string;
+}> {
   onProgress?.(0, 0);
   return {
     success: false,
     synced: 0,
     failed: 0,
+    imported: 0,
+    updated: 0,
+    errors: [],
     message: "Shopify sync não está configurado neste projeto.",
   };
 }
