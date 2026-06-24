@@ -14,6 +14,7 @@ import {
 import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
+import { initGA, initMetaPixel } from "../lib/analytics";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -93,6 +94,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:image", content: "https://res.cloudinary.com/dg9oqfxoq/image/upload/f_auto,q_auto/ChatGPT_Image_22_de_jun._de_2025_11_34_41_uhvqo0" },
       { name: "twitter:image", content: "https://res.cloudinary.com/dg9oqfxoq/image/upload/f_auto,q_auto/ChatGPT_Image_22_de_jun._de_2025_11_34_41_uhvqo0" },
       { name: "twitter:card", content: "summary_large_image" },
+      // PWA meta tags
+      { name: "theme-color", content: "#0F3A3E" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Fragranciaria" },
+      { name: "mobile-web-app-capable", content: "yes" },
+      { name: "application-name", content: "Fragranciaria" },
+      { name: "msapplication-TileColor", content: "#0F3A3E" },
+      { name: "msapplication-tap-highlight", content: "no" },
     ],
     links: [
       {
@@ -103,6 +113,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       {
         rel: "apple-touch-icon",
         href: "/images/icon.png",
+      },
+      {
+        rel: "manifest",
+        href: "/manifest.json",
       },
       {
         rel: "stylesheet",
@@ -151,6 +165,11 @@ function RootComponent() {
   useCartSync();
   useAppUpdate();
 
+  // Initialize analytics on client side
+  useEffect(() => {
+    initGA();
+    initMetaPixel();
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
