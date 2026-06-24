@@ -18,34 +18,70 @@ export type Database = {
         Row: {
           amount: number | null
           created_at: string
+          customer_email: string | null
+          customer_name: string | null
+          discount: number | null
+          estimated_delivery: string | null
           id: string
+          items: Json | null
           payer_email: string | null
           payment_id: string
           payment_method: string | null
           raw: Json | null
+          shipping_address: Json | null
+          shipping_method: string | null
+          shipping_price: number | null
           status: string
+          status_history: Json | null
+          subtotal: number | null
+          total: number | null
+          tracking_code: string | null
           updated_at: string
         }
         Insert: {
           amount?: number | null
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          discount?: number | null
+          estimated_delivery?: string | null
           id?: string
+          items?: Json | null
           payer_email?: string | null
           payment_id: string
           payment_method?: string | null
           raw?: Json | null
+          shipping_address?: Json | null
+          shipping_method?: string | null
+          shipping_price?: number | null
           status: string
+          status_history?: Json | null
+          subtotal?: number | null
+          total?: number | null
+          tracking_code?: string | null
           updated_at?: string
         }
         Update: {
           amount?: number | null
           created_at?: string
+          customer_email?: string | null
+          customer_name?: string | null
+          discount?: number | null
+          estimated_delivery?: string | null
           id?: string
+          items?: Json | null
           payer_email?: string | null
           payment_id?: string
           payment_method?: string | null
           raw?: Json | null
+          shipping_address?: Json | null
+          shipping_method?: string | null
+          shipping_price?: number | null
           status?: string
+          status_history?: Json | null
+          subtotal?: number | null
+          total?: number | null
+          tracking_code?: string | null
           updated_at?: string
         }
         Relationships: []
