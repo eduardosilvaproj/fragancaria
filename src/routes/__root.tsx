@@ -15,6 +15,8 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
 import { initGA, initMetaPixel } from "../lib/analytics";
+import { QuickViewModal } from "../components/shop/QuickViewModal";
+import { useQuickViewStore } from "../stores/quickViewStore";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -162,6 +164,7 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const { productId, isOpen, closeQuickView } = useQuickViewStore();
   useCartSync();
   useAppUpdate();
 
@@ -177,6 +180,11 @@ function RootComponent() {
       <ScrollToTop />
       <WhatsAppButton />
       <Toaster position="top-center" />
+      <QuickViewModal
+        productId={productId}
+        isOpen={isOpen}
+        onClose={closeQuickView}
+      />
     </QueryClientProvider>
   );
 }

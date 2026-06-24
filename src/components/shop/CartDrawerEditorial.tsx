@@ -1,16 +1,52 @@
 import { useCartStore } from "@/stores/cartStore";
+import { useCouponStore, formatCouponDiscount } from "@/stores/couponStore";
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Minus, Plus, Trash2, X } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, X, Tag, Check, Truck } from "lucide-react";
+import { useState } from "react";
+import { toast } from "sonner";
+
+const FREE_SHIPPING_THRESHOLD = 199;
 
 export const CartDrawerEditorial = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getTotalPrice } = useCartStore();
+  const { appliedCoupon, error: couponError, applyCoupon, removeCoupon, calculateDiscount } = useCouponStore();
+  const [couponCode, setCouponCode] = useState("");
+  const [isApplying, setIsApplying] = useState(false);
+
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const subtotal = getTotalPrice();
+  const discount = calculateDiscount(subtotal);
+  const total = subtotal - discount;
+  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
+  const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
 
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
+  };
+
+  const handleApplyCoupon = () => {
+    if (!couponCode.trim()) return;
+
+    setIsApplying(true);
+    const success = applyCoupon(couponCode, subtotal);
+
+    setTimeout(() => {
+      setIsApplying(false);
+      if (success) {
+        toast.success("Cupom aplicado com sucesso!");
+        setCouponCode("");
+      } else {
+        toast.error(couponError || "Cupom inválido");
+      }
+    }, 500);
+  };
+
+  const handleRemoveCoupon = () => {
+    removeCoupon();
+    toast.success("Cupom removido");
   };
 
   if (!isOpen) return null;
@@ -37,6 +73,33 @@ export const CartDrawerEditorial = () => {
             <X className="h-5 w-5 text-[#0F3A3E]" />
           </button>
         </div>
+
+        {/* Free Shipping Progress */}
+        {items.length > 0 && (
+          <div className="px-6 py-4 bg-[#F8F4EA] border-b border-[#E0D8C7]">
+            {hasFreeShipping ? (
+              <div className="flex items-center gap-2 text-[#1c6b4a]">
+                <Check className="h-4 w-4" />
+                <span className="text-[13px] font-medium">Você ganhou frete grátis!</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2 mb-2">
+                  <Truck className="h-4 w-4 text-[#B07B1E]" />
+                  <span className="text-[12px] text-[#51635F]">
+                    Faltam <strong className="text-[#0F3A3E]">{formatPrice(remainingForFreeShipping)}</strong> para frete grátis
+                  </span>
+                </div>
+                <div className="h-1.5 bg-[#E0D8C7] overflow-hidden">
+                  <div
+                    className="h-full bg-[#B07B1E] transition-all duration-500"
+                    style={{ width: `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%` }}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+        )}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -123,23 +186,96 @@ export const CartDrawerEditorial = () => {
         {/* Footer */}
         {items.length > 0 && (
           <div className="px-6 py-6 border-t border-[#E0D8C7] bg-[#F8F4EA]">
-            {/* Subtotal */}
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[13px] text-[#51635F]">Subtotal</span>
-              <span className="font-serif text-[22px] text-[#0F3A3E]">
-                {formatPrice(getTotalPrice())}
-              </span>
+            {/* Coupon Section */}
+            <div className="mb-5 pb-5 border-b border-[#E0D8C7]">
+              {appliedCoupon ? (
+                <div className="flex items-center justify-between bg-[#1c6b4a]/10 px-3 py-2.5 border border-[#1c6b4a]/20">
+                  <div className="flex items-center gap-2">
+                    <Tag className="h-4 w-4 text-[#1c6b4a]" />
+                    <span className="text-[13px] text-[#1c6b4a] font-medium">
+                      {appliedCoupon.code}
+                    </span>
+                    <span className="text-[11px] text-[#1c6b4a]/80">
+                      ({formatCouponDiscount(appliedCoupon)})
+                    </span>
+                  </div>
+                  <button
+                    onClick={handleRemoveCoupon}
+                    className="text-[11px] text-[#C4433A] hover:underline"
+                  >
+                    Remover
+                  </button>
+                </div>
+              ) : (
+                <div className="flex gap-2">
+                  <div className="flex-1 relative">
+                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9AA39F]" />
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                      placeholder="Código do cupom"
+                      className="w-full pl-10 pr-3 py-2.5 text-[13px] bg-white border border-[#E0D8C7] focus:border-[#0F3A3E] focus:outline-none placeholder:text-[#9AA39F]"
+                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
+                    />
+                  </div>
+                  <button
+                    onClick={handleApplyCoupon}
+                    disabled={isApplying || !couponCode.trim()}
+                    className="px-4 py-2.5 bg-[#0F3A3E] text-white text-[11px] uppercase tracking-[0.1em] font-semibold hover:bg-[#16504F] disabled:bg-[#C4BBA8] disabled:cursor-not-allowed transition-colors"
+                  >
+                    {isApplying ? "..." : "Aplicar"}
+                  </button>
+                </div>
+              )}
+              {couponError && !appliedCoupon && (
+                <p className="text-[11px] text-[#C4433A] mt-2">{couponError}</p>
+              )}
             </div>
 
-            <p className="text-[11px] text-[#9AA39F] mb-5">
-              Frete e impostos calculados no checkout
-            </p>
+            {/* Order Summary */}
+            <div className="space-y-2 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-[#51635F]">Subtotal</span>
+                <span className="text-[15px] text-[#0F3A3E]">
+                  {formatPrice(subtotal)}
+                </span>
+              </div>
+
+              {discount > 0 && (
+                <div className="flex items-center justify-between text-[#1c6b4a]">
+                  <span className="text-[13px]">Desconto ({appliedCoupon?.code})</span>
+                  <span className="text-[15px] font-medium">
+                    -{formatPrice(discount)}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-[13px] text-[#51635F]">Frete</span>
+                <span className="text-[13px] text-[#51635F]">
+                  {hasFreeShipping ? (
+                    <span className="text-[#1c6b4a] font-medium">Grátis</span>
+                  ) : (
+                    "Calculado no checkout"
+                  )}
+                </span>
+              </div>
+            </div>
+
+            {/* Total */}
+            <div className="flex items-center justify-between py-3 border-t border-[#E0D8C7]">
+              <span className="text-[14px] font-medium text-[#0F3A3E]">Total</span>
+              <span className="font-serif text-[24px] text-[#0F3A3E]">
+                {formatPrice(total)}
+              </span>
+            </div>
 
             {/* Checkout Button */}
             <Link
               to="/carrinho"
               onClick={() => setIsOpen(false)}
-              className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mb-3"
+              className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mt-4 mb-3"
             >
               Finalizar Compra
             </Link>

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cat)",
+      "Read(//c/Users/eduar/.claude/plans/**)"
+    ]
+  }
+}

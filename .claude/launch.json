@@ -3,8 +3,8 @@
   "configurations": [
     {
       "name": "fragranciaria",
-      "runtimeExecutable": "npx",
-      "runtimeArgs": ["vite", "dev"],
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["run", "dev"],
       "port": 5173
     }
   ]
