@@ -48,16 +48,16 @@ const BRAND_MARQUEE = [
   "Sebastian",
 ];
 
-// 8 Cards de necessidade
+// 8 Cards de necessidade - baseado nas categorias reais do catálogo
 const NEEDS = [
-  { num: "01", title: "Hidratação", desc: "Fios secos pedindo água e maciez.", image: "/images/needs/need-hidratacao.png", productType: "Máscara" },
-  { num: "02", title: "Nutrição", desc: "Repõe lipídios e devolve o brilho.", image: "/images/needs/need-nutricao.png", productType: "Condicionador" },
-  { num: "03", title: "Reconstrução", desc: "Força para cabelos fragilizados.", image: "/images/needs/need-reconstrucao.png", productType: "Tratamento" },
+  { num: "01", title: "Shampoo", desc: "Limpeza profissional para todos os tipos.", image: "/images/needs/need-hidratacao.png", productType: "Shampoo" },
+  { num: "02", title: "Condicionador", desc: "Desembaraça e prepara os fios.", image: "/images/needs/need-nutricao.png", productType: "Condicionador" },
+  { num: "03", title: "Máscara", desc: "Tratamento intensivo e nutrição.", image: "/images/needs/need-reconstrucao.png", productType: "Máscara" },
   { num: "04", title: "Coloração", desc: "Cor, correção e manutenção.", image: "/images/needs/need-coloracao.png", productType: "Coloração" },
-  { num: "05", title: "Finalização", desc: "Definição, frizz e acabamento.", image: "/images/needs/need-finalizacao.png", productType: "Finalizador" },
-  { num: "06", title: "Proteção Solar", desc: "Defesa contra sol e cloro.", image: "/images/needs/need-protecao-solar.png", productType: "Leave-in" },
-  { num: "07", title: "Tratamentos", desc: "Protocolos intensivos de salão.", image: "/images/needs/need-tratamentos.png", productType: "Tratamento" },
-  { num: "08", title: "Corte & Styling", desc: "Modelagem e textura.", image: "/images/needs/need-corte.png", productType: "Finalizador" },
+  { num: "05", title: "Finalizador", desc: "Definição, frizz e acabamento.", image: "/images/needs/need-finalizacao.png", productType: "Finalizador" },
+  { num: "06", title: "Tratamento", desc: "Ampolas, seruns e reparadores.", image: "/images/needs/need-tratamentos.png", productType: "Tratamento" },
+  { num: "07", title: "Maquiagem", desc: "Bruna Tavares e mais.", image: "/images/needs/need-protecao-solar.png", productType: "Maquiagem" },
+  { num: "08", title: "Óleo", desc: "Brilho e nutrição intensiva.", image: "/images/needs/need-corte.png", productType: "Óleo" },
 ];
 
 function IndexEditorial() {

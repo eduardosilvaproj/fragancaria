@@ -23,6 +23,7 @@ type ProductsSearch = {
   sort?: string;
   priceMin?: number;
   priceMax?: number;
+  ofertas?: boolean;
 };
 
 export const Route = createFileRoute("/produtos")({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/produtos")({
       sort: (search.sort as string) || "relevance",
       priceMin: search.priceMin ? Number(search.priceMin) : undefined,
       priceMax: search.priceMax ? Number(search.priceMax) : undefined,
+      ofertas: search.ofertas === true || search.ofertas === 'true',
     };
   },
   head: () => ({
@@ -177,6 +179,7 @@ function ProdutosPage() {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(search.page || 1);
   const [searchTerm, setSearchTerm] = useState(search.q || "");
+  const [showOnlyOfertas, setShowOnlyOfertas] = useState(search.ofertas || false);
 
   // Expandable sections
   const [expandedSections, setExpandedSections] = useState({
@@ -190,6 +193,7 @@ function ProdutosPage() {
     if (search.productType) setSelectedCategory(search.productType);
     if (search.page) setCurrentPage(search.page);
     if (search.q) setSearchTerm(search.q);
+    setShowOnlyOfertas(search.ofertas || false);
     if (search.sort) setSortBy(search.sort);
     if (search.priceMin || search.priceMax) {
       setPriceRange([search.priceMin || PRICE_MIN, search.priceMax || PRICE_MAX]);
@@ -226,6 +230,11 @@ function ProdutosPage() {
   const filteredProducts = useMemo(() => {
     let filtered = [...PRODUCTS];
 
+    // Filter only products with discount if ofertas is enabled
+    if (showOnlyOfertas) {
+      filtered = filtered.filter(p => p.originalPrice && p.originalPrice > p.price);
+    }
+
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(p =>
@@ -250,7 +259,7 @@ function ProdutosPage() {
 
     // Use the sortProducts function
     return sortProducts(filtered, sortBy);
-  }, [selectedCategory, selectedBrand, sortBy, searchTerm, priceRange]);
+  }, [selectedCategory, selectedBrand, sortBy, searchTerm, priceRange, showOnlyOfertas]);
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
@@ -279,6 +288,7 @@ function ProdutosPage() {
       ...(sortBy !== "relevance" && { sort: sortBy }),
       ...(priceRange[0] !== PRICE_MIN && { priceMin: priceRange[0] }),
       ...(priceRange[1] !== PRICE_MAX && { priceMax: priceRange[1] }),
+      ...(showOnlyOfertas && { ofertas: true }),
       page: currentPage,
       ...updates,
     };
@@ -292,6 +302,7 @@ function ProdutosPage() {
     setPriceRange([PRICE_MIN, PRICE_MAX]);
     setSortBy("relevance");
     setCurrentPage(1);
+    setShowOnlyOfertas(false);
     navigate({ to: '/produtos', search: {} });
   };
 
@@ -319,7 +330,12 @@ function ProdutosPage() {
   };
 
   const hasActiveFilters = selectedCategory || selectedBrand || searchTerm ||
-    priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX;
+    priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX || showOnlyOfertas;
+
+  // Count ofertas
+  const ofertasCount = useMemo(() => {
+    return PRODUCTS.filter(p => p.originalPrice && p.originalPrice > p.price).length;
+  }, []);
 
   // Sidebar Filter Component
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
@@ -332,6 +348,21 @@ function ProdutosPage() {
           </button>
         </div>
       )}
+
+      {/* Ofertas Toggle */}
+      <div className="mb-8">
+        <FilterCheckbox
+          label="Apenas Ofertas"
+          count={ofertasCount}
+          checked={showOnlyOfertas}
+          onChange={() => {
+            const newValue = !showOnlyOfertas;
+            setShowOnlyOfertas(newValue);
+            setCurrentPage(1);
+            updateURL({ ofertas: newValue || undefined, page: 1 });
+          }}
+        />
+      </div>
 
       {/* Categories */}
       <div className="mb-8">
@@ -441,6 +472,7 @@ function ProdutosPage() {
           <Breadcrumbs
             items={[
               { label: "Produtos", href: "/produtos" },
+              ...(showOnlyOfertas ? [{ label: "Ofertas" }] : []),
               ...(selectedCategory ? [{ label: selectedCategory }] : []),
               ...(selectedBrand ? [{ label: selectedBrand }] : []),
             ]}
@@ -448,7 +480,7 @@ function ProdutosPage() {
           />
 
           <h1 className="font-serif text-[36px] md:text-[48px] text-[#0F3A3E]">
-            {selectedBrand || selectedCategory || "Todos os Produtos"}
+            {showOnlyOfertas ? "Ofertas" : selectedBrand || selectedCategory || "Todos os Produtos"}
           </h1>
           <p className="text-[#75827E] text-[15px] mt-2">
             {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
@@ -503,6 +535,14 @@ function ProdutosPage() {
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
                       R${priceRange[0]} - R${priceRange[1]}
                       <button onClick={() => setPriceRange([PRICE_MIN, PRICE_MAX])}>
+                        <X className="h-3 w-3" />
+                      </button>
+                    </span>
+                  )}
+                  {showOnlyOfertas && (
+                    <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#B07B1E] text-white text-[11px]">
+                      Ofertas
+                      <button onClick={() => { setShowOnlyOfertas(false); updateURL({ ofertas: undefined, page: 1 }); }}>
                         <X className="h-3 w-3" />
                       </button>
                     </span>
