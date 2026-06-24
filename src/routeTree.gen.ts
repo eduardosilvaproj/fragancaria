@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
+import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
@@ -47,6 +48,11 @@ const TermosRoute = TermosRouteImport.update({
 const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
   id: '/seja-afiliado',
   path: '/seja-afiliado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RastrearPedidoRoute = RastrearPedidoRouteImport.update({
+  id: '/rastrear-pedido',
+  path: '/rastrear-pedido',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProdutosRoute = ProdutosRouteImport.update({
@@ -166,6 +172,7 @@ export interface FileRoutesByFullPath {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -192,6 +199,7 @@ export interface FileRoutesByTo {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -218,6 +226,7 @@ export interface FileRoutesById {
   '/favoritos': typeof FavoritosRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
+  '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
@@ -246,6 +255,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -272,6 +282,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -297,6 +308,7 @@ export interface FileRouteTypes {
     | '/favoritos'
     | '/privacidade'
     | '/produtos'
+    | '/rastrear-pedido'
     | '/seja-afiliado'
     | '/termos'
     | '/trocas'
@@ -324,6 +336,7 @@ export interface RootRouteChildren {
   FavoritosRoute: typeof FavoritosRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
+  RastrearPedidoRoute: typeof RastrearPedidoRoute
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
   TermosRoute: typeof TermosRoute
   TrocasRoute: typeof TrocasRoute
@@ -358,6 +371,13 @@ declare module '@tanstack/react-router' {
       path: '/seja-afiliado'
       fullPath: '/seja-afiliado'
       preLoaderRoute: typeof SejaAfiliadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rastrear-pedido': {
+      id: '/rastrear-pedido'
+      path: '/rastrear-pedido'
+      fullPath: '/rastrear-pedido'
+      preLoaderRoute: typeof RastrearPedidoRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/produtos': {
@@ -538,6 +558,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritosRoute: FavoritosRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
+  RastrearPedidoRoute: RastrearPedidoRoute,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
   TermosRoute: TermosRoute,
   TrocasRoute: TrocasRoute,
