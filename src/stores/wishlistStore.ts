@@ -8,14 +8,14 @@ export interface WishlistItem {
   price: number;
   originalPrice?: number;
   image: string;
-  addedAt: number;
+  addedAt: string;
 }
 
 interface WishlistState {
   items: WishlistItem[];
   addItem: (item: Omit<WishlistItem, "addedAt">) => void;
   removeItem: (id: string) => void;
-  toggleItem: (item: Omit<WishlistItem, "addedAt">) => boolean; // returns true if added, false if removed
+  toggleItem: (item: Omit<WishlistItem, "addedAt">) => void;
   isInWishlist: (id: string) => boolean;
   clearWishlist: () => void;
 }
@@ -26,40 +26,29 @@ export const useWishlistStore = create<WishlistState>()(
       items: [],
 
       addItem: (item) => {
-        const { items } = get();
-        if (!items.find((i) => i.id === item.id)) {
-          set({
+        const exists = get().items.some((i) => i.id === item.id);
+        if (!exists) {
+          set((state) => ({
             items: [
-              ...items,
-              { ...item, addedAt: Date.now() },
+              { ...item, addedAt: new Date().toISOString() },
+              ...state.items,
             ],
-          });
+          }));
         }
       },
 
       removeItem: (id) => {
-        set({
-          items: get().items.filter((item) => item.id !== id),
-        });
+        set((state) => ({
+          items: state.items.filter((item) => item.id !== id),
+        }));
       },
 
       toggleItem: (item) => {
-        const { items } = get();
-        const exists = items.find((i) => i.id === item.id);
-
+        const exists = get().items.some((i) => i.id === item.id);
         if (exists) {
-          set({
-            items: items.filter((i) => i.id !== item.id),
-          });
-          return false;
+          get().removeItem(item.id);
         } else {
-          set({
-            items: [
-              ...items,
-              { ...item, addedAt: Date.now() },
-            ],
-          });
-          return true;
+          get().addItem(item);
         }
       },
 
