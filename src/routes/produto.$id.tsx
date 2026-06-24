@@ -2,9 +2,11 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { RecentlyViewedSection } from "@/components/shop/RecentlyViewedSection";
 import { PRODUCTS } from "@/data/products";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
+import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
 import { toast } from "sonner";
 import {
   Star,
@@ -32,10 +34,25 @@ function ProductPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("descricao");
   const addToCart = useCartStore((state) => state.addItem);
+  const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
 
   const product = useMemo(() => {
     return PRODUCTS.find((p) => p.id === id);
   }, [id]);
+
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      addToRecentlyViewed({
+        id: product.id,
+        title: product.name,
+        vendor: product.brand || "",
+        price: product.price,
+        originalPrice: product.originalPrice,
+        image: product.images[0],
+      });
+    }
+  }, [product, addToRecentlyViewed]);
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
@@ -459,6 +476,9 @@ function ProductPage() {
           </div>
         </section>
       )}
+
+      {/* Recently Viewed */}
+      <RecentlyViewedSection excludeProductId={id} />
 
       <FooterEditorial />
     </div>

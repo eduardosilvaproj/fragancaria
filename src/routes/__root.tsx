@@ -16,6 +16,7 @@ import { Toaster } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
 import { initGA, initMetaPixel } from "../lib/analytics";
 import { QuickViewModal } from "../components/shop/QuickViewModal";
+import { CompareBar } from "../components/shop/CompareBar";
 import { useQuickViewStore } from "../stores/quickViewStore";
 
 import appCss from "../styles.css?url";
@@ -185,6 +186,7 @@ function RootComponent() {
         isOpen={isOpen}
         onClose={closeQuickView}
       />
+      <CompareBar />
     </QueryClientProvider>
   );
 }
