@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { Mail, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -41,8 +41,8 @@ function ContatoPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
+    <div className="min-h-screen bg-[#F3EEE3]">
+      <NavbarEditorial />
       <main className="pt-32 pb-24">
         <div className="container mx-auto px-4 md:px-12 max-w-6xl">
           <div className="text-center mb-16">
@@ -156,7 +156,7 @@ function ContatoPage() {
           </div>
         </div>
       </main>
-      <Footer />
+      <FooterEditorial />
     </div>
   );
 }
