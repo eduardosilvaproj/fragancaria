@@ -121,20 +121,42 @@ export const createPayment = createServerFn({ method: "POST" })
 
     if (!res.ok) {
       console.error("MP error", res.status, json);
+
+      // Tratar erros específicos com mensagens amigáveis
+      let errorMessage = json?.message || `Erro Mercado Pago (${res.status})`;
+
+      // Erro de PIX não habilitado na conta
+      if (errorMessage.includes("Collector user without key enabled for QR render")) {
+        errorMessage = "PIX não está habilitado nesta conta do Mercado Pago. Por favor, habilite o PIX na sua conta ou use outro método de pagamento (cartão ou boleto).";
+      }
+
+      // Erro de boleto não habilitado
+      if (errorMessage.includes("payment_method_id") && data.method === "boleto") {
+        errorMessage = "Boleto não está habilitado nesta conta do Mercado Pago. Por favor, use outro método de pagamento.";
+      }
+
       return {
         success: false as const,
-        error: json?.message || `Erro Mercado Pago (${res.status})`,
+        error: errorMessage,
       };
     }
 
     // Salvar pedido no Supabase
     let orderId: string | undefined;
+    let dbError: string | undefined;
+
+    console.log("=== SALVANDO PEDIDO NO SUPABASE ===");
+    console.log("Payment ID do MP:", json.id);
+    console.log("Status do MP:", json.status);
+
     try {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      console.log("Supabase Admin client carregado com sucesso");
 
       const orderData = {
         payment_id: String(json.id),
         status: json.status as string,
+        payment_status: json.status as string,
         amount: json.transaction_amount,
         total: data.amount,
         subtotal: data.subtotal ?? data.amount,
@@ -156,8 +178,11 @@ export const createPayment = createServerFn({ method: "POST" })
           zipCode: data.payer.address.zipCode,
         } : null,
         raw: json,
+        metadata: {},
         status_history: [{ status: json.status, date: new Date().toISOString() }],
       };
+
+      console.log("Dados do pedido a inserir:", JSON.stringify(orderData, null, 2));
 
       const { data: insertedOrder, error: insertError } = await supabaseAdmin
         .from("orders")
@@ -166,13 +191,21 @@ export const createPayment = createServerFn({ method: "POST" })
         .single();
 
       if (insertError) {
-        console.error("Erro ao salvar pedido:", insertError);
+        console.error("=== ERRO AO SALVAR PEDIDO ===");
+        console.error("Código:", insertError.code);
+        console.error("Mensagem:", insertError.message);
+        console.error("Detalhes:", insertError.details);
+        console.error("Hint:", insertError.hint);
+        dbError = insertError.message;
       } else {
         orderId = insertedOrder?.id;
-        console.log("Pedido salvo:", orderId);
+        console.log("=== PEDIDO SALVO COM SUCESSO ===");
+        console.log("Order ID:", orderId);
       }
-    } catch (dbError) {
-      console.error("Erro ao conectar Supabase:", dbError);
+    } catch (err: any) {
+      console.error("=== ERRO AO CONECTAR SUPABASE ===");
+      console.error("Erro:", err?.message || err);
+      dbError = err?.message || "Erro desconhecido ao conectar Supabase";
     }
 
     return {
@@ -188,6 +221,7 @@ export const createPayment = createServerFn({ method: "POST" })
           | undefined,
         boletoUrl: json.transaction_details?.external_resource_url as string | undefined,
         boletoBarcode: json.barcode?.content as string | undefined,
+        dbError, // Incluir erro do banco se houver (para debug)
       },
     };
   });

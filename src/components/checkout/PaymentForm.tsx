@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { CreditCard, Loader2, Copy, QrCode, FileText, Check } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
@@ -6,6 +6,16 @@ import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, SHIPPING_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
 import { useServerFn } from "@tanstack/react-start";
 import { createPayment } from "@/lib/payments.functions";
+
+// Mercado Pago Public Key - necessário para tokenizar cartões
+const MP_PUBLIC_KEY = import.meta.env.VITE_MP_PUBLIC_KEY || "APP_USR-f84f9b2c-7a06-4298-bc17-b0226a47989e";
+
+// Declaração para o SDK do Mercado Pago
+declare global {
+  interface Window {
+    MercadoPago: any;
+  }
+}
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -145,31 +155,125 @@ interface PaymentFormProps {
 function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
+  const [sdkLoaded, setSdkLoaded] = useState(false);
   const [card, setCard] = useState({ number: "", name: "", month: "", year: "", cvv: "", installments: 1, cpf: "" });
+  const mpRef = useRef<any>(null);
 
   const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
   const years = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() + i));
 
+  // Carregar SDK do Mercado Pago
+  useEffect(() => {
+    if (window.MercadoPago) {
+      mpRef.current = new window.MercadoPago(MP_PUBLIC_KEY, { locale: "pt-BR" });
+      setSdkLoaded(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://sdk.mercadopago.com/js/v2";
+    script.async = true;
+    script.onload = () => {
+      mpRef.current = new window.MercadoPago(MP_PUBLIC_KEY, { locale: "pt-BR" });
+      setSdkLoaded(true);
+    };
+    script.onerror = () => {
+      toast.error("Erro ao carregar SDK de pagamento");
+    };
+    document.body.appendChild(script);
+
+    return () => {
+      // Não remover o script para evitar problemas de re-render
+    };
+  }, []);
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) { toast.error("Dados do cliente ausentes"); return; }
+    if (!sdkLoaded || !mpRef.current) { toast.error("SDK de pagamento não carregado. Aguarde..."); return; }
     setLoading(true);
 
     try {
-      // Para cartão, precisamos tokenizar primeiro (integração completa com MP SDK)
-      // Por enquanto, simular pagamento aprovado e salvar no Supabase
+      // Tokenizar cartão com o SDK do Mercado Pago
+      const cardNumber = card.number.replace(/\s/g, "");
+      const expirationMonth = card.month;
+      const expirationYear = card.year;
+      const securityCode = card.cvv;
+      const cardholderName = card.name;
+      const identificationNumber = card.cpf.replace(/\D/g, "");
+
+      // Validações básicas
+      if (cardNumber.length < 13 || cardNumber.length > 19) {
+        throw new Error("Número do cartão inválido");
+      }
+      if (!expirationMonth || !expirationYear) {
+        throw new Error("Data de validade inválida");
+      }
+      if (securityCode.length < 3) {
+        throw new Error("CVV inválido");
+      }
+      if (identificationNumber.length !== 11) {
+        throw new Error("CPF deve ter 11 dígitos");
+      }
+
+      let token: string;
+      try {
+        console.log("Dados para tokenização:", {
+          cardNumber: cardNumber,
+          cardholderName: cardholderName,
+          cardExpirationMonth: expirationMonth,
+          cardExpirationYear: expirationYear.slice(-2),
+          securityCode: securityCode,
+          identificationType: "CPF",
+          identificationNumber: identificationNumber,
+        });
+
+        // O SDK v2 do MP usa createCardToken com objeto específico
+        const tokenResponse = await mpRef.current.createCardToken({
+          cardNumber: cardNumber,
+          cardholderName: cardholderName,
+          cardExpirationMonth: expirationMonth,
+          cardExpirationYear: expirationYear.slice(-2), // MP espera apenas 2 dígitos do ano
+          securityCode: securityCode,
+          identificationType: "CPF",
+          identificationNumber: identificationNumber,
+        });
+
+        console.log("Token response:", tokenResponse);
+
+        if (!tokenResponse || !tokenResponse.id) {
+          throw new Error("Falha ao tokenizar cartão");
+        }
+        token = tokenResponse.id;
+      } catch (tokenError: any) {
+        console.error("Erro completo ao tokenizar:", JSON.stringify(tokenError, null, 2));
+        console.error("Erro objeto:", tokenError);
+        // Extrair mensagem de erro mais específica
+        let errorMsg = "Dados do cartão inválidos";
+        if (tokenError?.cause && Array.isArray(tokenError.cause)) {
+          const causes = tokenError.cause.map((c: any) => c.description || c.message).filter(Boolean);
+          if (causes.length > 0) {
+            errorMsg = causes.join(". ");
+          }
+        } else if (tokenError?.message) {
+          errorMsg = tokenError.message;
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Enviar pagamento com o token
       const res: any = await createPaymentFn({
         data: {
           method: "credit_card",
           amount: Number(total.toFixed(2)),
           description: "Pedido Fragranciaria",
-          token: "simulated_token", // Em produção: usar MP SDK para tokenizar
+          token,
           installments: card.installments,
           payer: {
             email: customer.email,
             firstName: customer.firstName,
             lastName: customer.lastName,
-            identification: { type: "CPF", number: card.cpf || customer.cpf },
+            identification: { type: "CPF", number: identificationNumber },
             address: shippingAddress
               ? {
                   zipCode: shippingAddress.cep,
@@ -192,8 +296,16 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
 
       if (!res.success) throw new Error(res.error);
 
-      const last4 = card.number.replace(/\D/g, "").slice(-4);
-      toast.success("Pagamento aprovado!");
+      const last4 = cardNumber.slice(-4);
+
+      if (res.data.status === "approved") {
+        toast.success("Pagamento aprovado!");
+      } else if (res.data.status === "in_process") {
+        toast.info("Pagamento em análise. Você receberá uma confirmação em breve.");
+      } else if (res.data.status === "rejected") {
+        throw new Error("Pagamento recusado. Verifique os dados do cartão ou tente outro método.");
+      }
+
       onDone({
         orderId: res.data.orderId || res.data.id,
         status: res.data.status || "approved",

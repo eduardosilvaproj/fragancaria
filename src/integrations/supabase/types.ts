@@ -18,15 +18,19 @@ export type Database = {
         Row: {
           amount: number | null
           created_at: string
+          customer_cpf: string | null
           customer_email: string | null
           customer_name: string | null
+          customer_phone: string | null
           discount: number | null
           estimated_delivery: string | null
           id: string
           items: Json | null
+          metadata: Json | null
           payer_email: string | null
           payment_id: string
           payment_method: string | null
+          payment_status: string | null
           raw: Json | null
           shipping_address: Json | null
           shipping_method: string | null
@@ -41,15 +45,19 @@ export type Database = {
         Insert: {
           amount?: number | null
           created_at?: string
+          customer_cpf?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           discount?: number | null
           estimated_delivery?: string | null
           id?: string
           items?: Json | null
+          metadata?: Json | null
           payer_email?: string | null
           payment_id: string
           payment_method?: string | null
+          payment_status?: string | null
           raw?: Json | null
           shipping_address?: Json | null
           shipping_method?: string | null
@@ -64,15 +72,19 @@ export type Database = {
         Update: {
           amount?: number | null
           created_at?: string
+          customer_cpf?: string | null
           customer_email?: string | null
           customer_name?: string | null
+          customer_phone?: string | null
           discount?: number | null
           estimated_delivery?: string | null
           id?: string
           items?: Json | null
+          metadata?: Json | null
           payer_email?: string | null
           payment_id?: string
           payment_method?: string | null
+          payment_status?: string | null
           raw?: Json | null
           shipping_address?: Json | null
           shipping_method?: string | null
