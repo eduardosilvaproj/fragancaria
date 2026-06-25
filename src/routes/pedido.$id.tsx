@@ -96,13 +96,24 @@ function OrderTrackingPage() {
   const { data: order, isLoading, error } = useQuery({
     queryKey: ["order", id],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Primeiro tenta buscar por UUID (id do Supabase)
+      let result = await supabase
         .from("orders")
         .select("*")
         .eq("id", id)
         .maybeSingle();
-      if (error) throw error;
-      return data;
+
+      // Se não encontrou, tenta buscar por payment_id (id do Mercado Pago)
+      if (!result.data && !result.error) {
+        result = await supabase
+          .from("orders")
+          .select("*")
+          .eq("payment_id", id)
+          .maybeSingle();
+      }
+
+      if (result.error) throw result.error;
+      return result.data;
     },
   });
 
