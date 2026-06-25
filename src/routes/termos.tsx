@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Navbar } from "@/components/layout/Navbar";
-import { Footer } from "@/components/layout/Footer";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { FooterEditorial } from "@/components/layout/FooterEditorial";
 
 export const Route = createFileRoute("/termos")({
   head: () => ({
@@ -14,8 +14,8 @@ export const Route = createFileRoute("/termos")({
 
 function TermosPage() {
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
+    <div className="min-h-screen bg-[#F3EEE3]">
+      <NavbarEditorial />
       <main className="pt-32 pb-24">
         <div className="container mx-auto px-4 md:px-12 max-w-4xl">
           <h1 className="font-serif text-4xl md:text-5xl mb-12 font-light text-[#1C302E]">
@@ -95,7 +95,7 @@ function TermosPage() {
           </div>
         </div>
       </main>
-      <Footer />
+      <FooterEditorial />
     </div>
   );
 }

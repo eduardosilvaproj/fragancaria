@@ -12,4 +12,27 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: (id) => {
+            // Separar dados de produtos (grande array de 434 itens)
+            if (id.includes('src/data/products')) {
+              return 'products-data';
+            }
+            // Framer motion separado
+            if (id.includes('node_modules/framer-motion')) {
+              return 'vendor-framer';
+            }
+            // Lucide icons separado
+            if (id.includes('node_modules/lucide-react')) {
+              return 'vendor-icons';
+            }
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000, // Bundle principal inclui TanStack Router
+    },
+  },
 });
