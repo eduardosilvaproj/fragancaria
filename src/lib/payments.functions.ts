@@ -16,8 +16,17 @@ const payerSchema = z.object({
       neighborhood: z.string(),
       city: z.string(),
       state: z.string(),
+      complement: z.string().optional(),
     })
     .optional(),
+});
+
+const cartItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  quantity: z.number().int().positive(),
+  price: z.number().positive(),
+  image: z.string().optional(),
 });
 
 const inputSchema = z.object({
@@ -27,6 +36,12 @@ const inputSchema = z.object({
   payer: payerSchema,
   token: z.string().optional(),
   installments: z.number().int().min(1).max(12).optional(),
+  // Dados extras para salvar no pedido
+  items: z.array(cartItemSchema).optional(),
+  subtotal: z.number().optional(),
+  discount: z.number().optional(),
+  shippingPrice: z.number().optional(),
+  shippingMethod: z.string().optional(),
 });
 
 export const createPayment = createServerFn({ method: "POST" })
@@ -112,10 +127,59 @@ export const createPayment = createServerFn({ method: "POST" })
       };
     }
 
+    // Salvar pedido no Supabase
+    let orderId: string | undefined;
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      const orderData = {
+        payment_id: String(json.id),
+        status: json.status as string,
+        amount: json.transaction_amount,
+        total: data.amount,
+        subtotal: data.subtotal ?? data.amount,
+        discount: data.discount ?? 0,
+        shipping_price: data.shippingPrice ?? 0,
+        shipping_method: data.shippingMethod ?? null,
+        payment_method: data.method,
+        customer_name: `${data.payer.firstName} ${data.payer.lastName}`,
+        customer_email: data.payer.email,
+        payer_email: data.payer.email,
+        items: data.items ?? [],
+        shipping_address: data.payer.address ? {
+          street: data.payer.address.streetName,
+          number: data.payer.address.streetNumber,
+          complement: data.payer.address.complement || "",
+          neighborhood: data.payer.address.neighborhood,
+          city: data.payer.address.city,
+          state: data.payer.address.state,
+          zipCode: data.payer.address.zipCode,
+        } : null,
+        raw: json,
+        status_history: [{ status: json.status, date: new Date().toISOString() }],
+      };
+
+      const { data: insertedOrder, error: insertError } = await supabaseAdmin
+        .from("orders")
+        .insert(orderData)
+        .select("id")
+        .single();
+
+      if (insertError) {
+        console.error("Erro ao salvar pedido:", insertError);
+      } else {
+        orderId = insertedOrder?.id;
+        console.log("Pedido salvo:", orderId);
+      }
+    } catch (dbError) {
+      console.error("Erro ao conectar Supabase:", dbError);
+    }
+
     return {
       success: true as const,
       data: {
         id: String(json.id),
+        orderId,
         status: json.status as string,
         statusDetail: json.status_detail as string | undefined,
         pixQrCode: json.point_of_interaction?.transaction_data?.qr_code as string | undefined,

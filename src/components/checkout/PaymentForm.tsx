@@ -17,7 +17,7 @@ function calcTotal({ subtotal, shipping, couponPercent, pix }: { subtotal: numbe
 }
 
 export function PaymentForm() {
-  const { getTotalPrice } = useCartStore();
+  const { getTotalPrice, items } = useCartStore();
   const { paymentMethod, setPaymentMethod, setPaymentData, setStep, shippingMethod, coupon, customer, shippingAddress } =
     useCheckoutStore();
 
@@ -25,6 +25,18 @@ export function PaymentForm() {
   const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod)?.price ?? 0;
   const couponPercent = coupon?.discountPercent ?? 0;
   const total = calcTotal({ subtotal, shipping, couponPercent, pix: paymentMethod === "pix" });
+
+  // Calcular desconto real
+  const discount = (subtotal * couponPercent) / 100 + (paymentMethod === "pix" ? (subtotal * 5) / 100 : 0);
+
+  // Mapear itens do carrinho para o formato esperado
+  const cartItems = items.map(item => ({
+    id: item.id,
+    title: item.title,
+    quantity: item.quantity,
+    price: item.price,
+    image: item.image,
+  }));
 
   const select = (id: PaymentMethodId) => setPaymentMethod(id);
 
@@ -56,18 +68,39 @@ export function PaymentForm() {
       </section>
 
       {paymentMethod === "credit_card" && (
-        <CardForm total={total} onDone={(data) => { setPaymentData(data); setStep("confirmation"); }} />
+        <CardForm
+          total={total}
+          subtotal={subtotal}
+          discount={discount}
+          shippingPrice={shipping}
+          shippingMethod={shippingMethod}
+          items={cartItems}
+          customer={customer}
+          shippingAddress={shippingAddress}
+          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+        />
       )}
       {paymentMethod === "pix" && (
         <PixForm
           total={total}
+          subtotal={subtotal}
+          discount={discount}
+          shippingPrice={shipping}
+          shippingMethod={shippingMethod}
+          items={cartItems}
           customer={customer}
+          shippingAddress={shippingAddress}
           onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
         />
       )}
       {paymentMethod === "boleto" && (
         <BoletoForm
           total={total}
+          subtotal={subtotal}
+          discount={discount}
+          shippingPrice={shipping}
+          shippingMethod={shippingMethod}
+          items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
           onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
@@ -97,23 +130,81 @@ function Field({ label, full, children }: { label: string; full?: boolean; child
   );
 }
 
-function CardForm({ total, onDone }: { total: number; onDone: (d: any) => void }) {
+interface PaymentFormProps {
+  total: number;
+  subtotal: number;
+  discount: number;
+  shippingPrice: number;
+  shippingMethod: string | null;
+  items: Array<{ id: string; title: string; quantity: number; price: number; image?: string }>;
+  customer: any;
+  shippingAddress: any;
+  onDone: (d: any) => void;
+}
+
+function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+  const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [card, setCard] = useState({ number: "", name: "", month: "", year: "", cvv: "", installments: 1, cpf: "" });
 
   const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
   const years = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() + i));
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      // Para cartão, precisamos tokenizar primeiro (integração completa com MP SDK)
+      // Por enquanto, simular pagamento aprovado e salvar no Supabase
+      const res: any = await createPaymentFn({
+        data: {
+          method: "credit_card",
+          amount: Number(total.toFixed(2)),
+          description: "Pedido Fragranciaria",
+          token: "simulated_token", // Em produção: usar MP SDK para tokenizar
+          installments: card.installments,
+          payer: {
+            email: customer.email,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            identification: { type: "CPF", number: card.cpf || customer.cpf },
+            address: shippingAddress
+              ? {
+                  zipCode: shippingAddress.cep,
+                  streetName: shippingAddress.street,
+                  streetNumber: shippingAddress.number,
+                  neighborhood: shippingAddress.neighborhood,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  complement: shippingAddress.complement,
+                }
+              : undefined,
+          },
+          items,
+          subtotal,
+          discount,
+          shippingPrice,
+          shippingMethod: shippingMethod ?? undefined,
+        },
+      });
+
+      if (!res.success) throw new Error(res.error);
+
       const last4 = card.number.replace(/\D/g, "").slice(-4);
-      const orderId = "ORD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
       toast.success("Pagamento aprovado!");
-      onDone({ orderId, status: "approved", cardLast4: last4, installments: card.installments });
+      onDone({
+        orderId: res.data.orderId || res.data.id,
+        status: res.data.status || "approved",
+        cardLast4: last4,
+        installments: card.installments
+      });
+    } catch (e: any) {
+      toast.error(e.message || "Erro ao processar pagamento");
+    } finally {
       setLoading(false);
-    }, 2000);
+    }
   };
 
   return (
@@ -176,12 +267,13 @@ function CardForm({ total, onDone }: { total: number; onDone: (d: any) => void }
   );
 }
 
-function PixForm({ total, customer, onDone }: { total: number; customer: any; onDone: (d: any) => void }) {
+function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [qrBase64, setQrBase64] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(30 * 60);
 
   useEffect(() => {
@@ -204,13 +296,30 @@ function PixForm({ total, customer, onDone }: { total: number; customer: any; on
             firstName: customer.firstName,
             lastName: customer.lastName,
             identification: { type: "CPF", number: customer.cpf },
+            address: shippingAddress
+              ? {
+                  zipCode: shippingAddress.cep,
+                  streetName: shippingAddress.street,
+                  streetNumber: shippingAddress.number,
+                  neighborhood: shippingAddress.neighborhood,
+                  city: shippingAddress.city,
+                  state: shippingAddress.state,
+                  complement: shippingAddress.complement,
+                }
+              : undefined,
           },
+          items,
+          subtotal,
+          discount,
+          shippingPrice,
+          shippingMethod: shippingMethod ?? undefined,
         },
       });
       if (!res.success) throw new Error(res.error);
       setCode(res.data.pixQrCode ?? "");
       setQrBase64(res.data.pixQrCodeBase64 ?? null);
       setPaymentId(res.data.id);
+      setOrderId(res.data.orderId ?? null);
       toast.success("PIX gerado! Escaneie o QR Code ou copie o código.");
     } catch (e: any) {
       toast.error(e.message || "Erro ao gerar PIX");
@@ -226,7 +335,7 @@ function PixForm({ total, customer, onDone }: { total: number; customer: any; on
   };
 
   const confirm = () => {
-    onDone({ orderId: paymentId ?? "PENDING", status: "pending", pixCode: code ?? undefined });
+    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", pixCode: code ?? undefined });
   };
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -274,22 +383,13 @@ function PixForm({ total, customer, onDone }: { total: number; customer: any; on
   );
 }
 
-function BoletoForm({
-  total,
-  customer,
-  shippingAddress,
-  onDone,
-}: {
-  total: number;
-  customer: any;
-  shippingAddress: any;
-  onDone: (d: any) => void;
-}) {
+function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
   const [boletoUrl, setBoletoUrl] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [orderId, setOrderId] = useState<string | null>(null);
 
   const generate = async () => {
     if (!customer) { toast.error("Dados do cliente ausentes"); return; }
@@ -313,15 +413,22 @@ function BoletoForm({
                   neighborhood: shippingAddress.neighborhood,
                   city: shippingAddress.city,
                   state: shippingAddress.state,
+                  complement: shippingAddress.complement,
                 }
               : undefined,
           },
+          items,
+          subtotal,
+          discount,
+          shippingPrice,
+          shippingMethod: shippingMethod ?? undefined,
         },
       });
       if (!res.success) throw new Error(res.error);
       setCode(res.data.boletoBarcode ?? "");
       setBoletoUrl(res.data.boletoUrl ?? null);
       setPaymentId(res.data.id);
+      setOrderId(res.data.orderId ?? null);
       toast.success("Boleto gerado!");
     } catch (e: any) {
       toast.error(e.message || "Erro ao gerar boleto");
@@ -337,7 +444,7 @@ function BoletoForm({
   };
 
   const confirm = () => {
-    onDone({ orderId: paymentId ?? "PENDING", status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
+    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
   };
 
   return (
