@@ -43,6 +43,7 @@ interface CheckoutState {
   customer: Customer | null;
   shippingAddress: ShippingAddress | null;
   shippingMethod: ShippingMethodId | null;
+  shippingPrice: number;
   paymentMethod: PaymentMethodId | null;
   paymentData: PaymentData | null;
   coupon: CheckoutCoupon | null;
@@ -50,6 +51,7 @@ interface CheckoutState {
   setCustomer: (c: Customer) => void;
   setShippingAddress: (a: ShippingAddress) => void;
   setShippingMethod: (m: ShippingMethodId) => void;
+  setShippingPrice: (p: number) => void;
   setPaymentMethod: (m: PaymentMethodId) => void;
   setPaymentData: (d: PaymentData) => void;
   setCoupon: (c: CheckoutCoupon | null) => void;
@@ -63,6 +65,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       customer: null,
       shippingAddress: null,
       shippingMethod: null,
+      shippingPrice: 0,
       paymentMethod: null,
       paymentData: null,
       coupon: null,
@@ -70,6 +73,7 @@ export const useCheckoutStore = create<CheckoutState>()(
       setCustomer: (customer) => set({ customer }),
       setShippingAddress: (shippingAddress) => set({ shippingAddress }),
       setShippingMethod: (shippingMethod) => set({ shippingMethod }),
+      setShippingPrice: (shippingPrice) => set({ shippingPrice }),
       setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
       setPaymentData: (paymentData) => set({ paymentData }),
       setCoupon: (coupon) => set({ coupon }),
@@ -78,6 +82,7 @@ export const useCheckoutStore = create<CheckoutState>()(
           step: 'shipping',
           paymentMethod: null,
           paymentData: null,
+          shippingPrice: 0,
         }),
     }),
     {
@@ -87,6 +92,7 @@ export const useCheckoutStore = create<CheckoutState>()(
         customer: state.customer,
         shippingAddress: state.shippingAddress,
         shippingMethod: state.shippingMethod,
+        shippingPrice: state.shippingPrice,
         coupon: state.coupon,
       }),
     }
