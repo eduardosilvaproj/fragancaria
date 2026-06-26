@@ -8,6 +8,7 @@ const FOOTER_LINKS = {
     { label: "Marcas", href: "/produtos" },
   ],
   support: [
+    { label: "Rastrear Pedido", href: "/rastrear-pedido" },
     { label: "Política de Privacidade", href: "/privacidade" },
     { label: "Trocas e Devoluções", href: "/trocas" },
     { label: "Termos de Uso", href: "/termos" },
