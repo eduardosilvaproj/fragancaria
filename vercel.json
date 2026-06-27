@@ -1,5 +1,10 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/server"
+  "outputDirectory": "dist/server",
+  "functions": {
+    "dist/server/index.mjs": {
+      "runtime": "nodejs20.x"
+    }
+  }
 }
