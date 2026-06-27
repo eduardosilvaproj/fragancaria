@@ -39,9 +39,24 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud. Set these in Railway: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY`;
+    console.warn(`[Supabase] ${message}`);
+    // Return a mock client instead of throwing - allows SSR to continue
+    // This will fail gracefully when actual DB operations are attempted
+    return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
+      global: {
+        fetch: createSupabaseFetch('placeholder-key'),
+      },
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      realtime: {
+        // @ts-ignore - ws types may not match exactly
+        transport: ws,
+      },
+    });
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
