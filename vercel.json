@@ -1,16 +1,19 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "framework": null,
+  "outputDirectory": ".",
+  "publicDirectory": "dist/client",
+  "nodeVersion": "20.x",
   "installCommand": "npm install",
   "functions": {
+    "dist/server/server.js": {
+      "runtime": "@vercel/node@3.0.0"
+    },
     "api/*.ts": {
       "runtime": "@vercel/node@3.0.0"
     }
   },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*" },
-    { "source": "/(.*)", "destination": "/" }
+    { "source": "/(.*)", "destination": "/dist/server/server.js" }
   ]
 }
