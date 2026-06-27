@@ -12,8 +12,8 @@ RUN npm ci
 # Copy source code
 COPY . .
 
-# Build
-RUN npm run build
+# Build with verbose output
+RUN echo "Starting build..." && npm run build 2>&1 && echo "Build completed. Checking output:" && ls -la dist/client/assets/*.css 2>/dev/null | head -2 || echo "No CSS found in dist/client/assets"
 
 # Runtime stage
 FROM node:20-alpine
@@ -31,3 +31,4 @@ RUN npm ci --only=production
 EXPOSE 3000
 
 CMD ["node", "start.js"]
+
