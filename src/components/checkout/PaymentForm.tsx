@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { CreditCard, Loader2, Copy, QrCode, FileText, Check } from "lucide-react";
+import { CreditCard, Loader2, Copy, QrCode, FileText, Check, AlertCircle, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
@@ -16,6 +16,101 @@ declare global {
     MercadoPago: any;
   }
 }
+
+// Detectar bandeira do cartão
+type CardBrand = "visa" | "mastercard" | "amex" | "elo" | "hipercard" | "unknown";
+
+const detectCardBrand = (number: string): CardBrand => {
+  const cleaned = number.replace(/\s/g, "");
+  if (/^4/.test(cleaned)) return "visa";
+  if (/^5[1-5]/.test(cleaned) || /^2[2-7]/.test(cleaned)) return "mastercard";
+  if (/^3[47]/.test(cleaned)) return "amex";
+  if (/^636368|438935|504175|451416|636297|5067|4576|4011/.test(cleaned)) return "elo";
+  if (/^606282|3841/.test(cleaned)) return "hipercard";
+  return "unknown";
+};
+
+const CARD_BRAND_NAMES: Record<CardBrand, string> = {
+  visa: "Visa",
+  mastercard: "Mastercard",
+  amex: "American Express",
+  elo: "Elo",
+  hipercard: "Hipercard",
+  unknown: "",
+};
+
+const CARD_BRAND_COLORS: Record<CardBrand, string> = {
+  visa: "#1A1F71",
+  mastercard: "#EB001B",
+  amex: "#006FCF",
+  elo: "#00A4E0",
+  hipercard: "#B3131B",
+  unknown: "#51635F",
+};
+
+// Algoritmo de Luhn para validar número de cartão
+const validateLuhn = (number: string): boolean => {
+  const cleaned = number.replace(/\s/g, "");
+  if (!/^\d+$/.test(cleaned) || cleaned.length < 13) return false;
+
+  let sum = 0;
+  let isEven = false;
+
+  for (let i = cleaned.length - 1; i >= 0; i--) {
+    let digit = parseInt(cleaned[i], 10);
+
+    if (isEven) {
+      digit *= 2;
+      if (digit > 9) digit -= 9;
+    }
+
+    sum += digit;
+    isEven = !isEven;
+  }
+
+  return sum % 10 === 0;
+};
+
+// Validar CPF
+const validateCpf = (cpf: string): boolean => {
+  const digits = cpf.replace(/\D/g, "");
+  if (digits.length !== 11) return false;
+  if (/^(\d)\1+$/.test(digits)) return false;
+
+  let sum = 0;
+  for (let i = 0; i < 9; i++) sum += parseInt(digits[i]) * (10 - i);
+  let rest = (sum * 10) % 11;
+  if (rest === 10 || rest === 11) rest = 0;
+  if (rest !== parseInt(digits[9])) return false;
+
+  sum = 0;
+  for (let i = 0; i < 10; i++) sum += parseInt(digits[i]) * (11 - i);
+  rest = (sum * 10) % 11;
+  if (rest === 10 || rest === 11) rest = 0;
+  return rest === parseInt(digits[10]);
+};
+
+// Máscaras
+const maskCardNumber = (v: string): string => {
+  const cleaned = v.replace(/\D/g, "").slice(0, 16);
+  const brand = detectCardBrand(cleaned);
+
+  // Amex tem formato diferente: 4-6-5
+  if (brand === "amex") {
+    return cleaned
+      .replace(/(\d{4})(\d)/, "$1 $2")
+      .replace(/(\d{4} \d{6})(\d)/, "$1 $2");
+  }
+
+  // Padrão: 4-4-4-4
+  return cleaned.replace(/(\d{4})(?=\d)/g, "$1 ");
+};
+
+const maskCpf = (v: string): string =>
+  v.replace(/\D/g, "").slice(0, 11)
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1-$2");
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -128,14 +223,21 @@ export function PaymentForm() {
   );
 }
 
-const inputCls =
-  "w-full border border-[#E9E1D2] bg-white px-4 py-3 text-sm text-[#0F3A3E] focus:outline-none focus:border-[#B07B1E] transition-colors";
+const inputCls = (error?: string) =>
+  `w-full border bg-white px-4 py-3 text-sm text-[#0F3A3E] focus:outline-none transition-colors ${
+    error ? "border-red-400 focus:border-red-500" : "border-[#E9E1D2] focus:border-[#B07B1E]"
+  }`;
 
-function Field({ label, full, children }: { label: string; full?: boolean; children: React.ReactNode }) {
+function Field({ label, full, error, children }: { label: string; full?: boolean; error?: string; children: React.ReactNode }) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
       <label className="block text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-1.5">{label}</label>
       {children}
+      {error && (
+        <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
+          <AlertCircle className="w-3 h-3" /> {error}
+        </p>
+      )}
     </div>
   );
 }
@@ -157,10 +259,17 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
   const [loading, setLoading] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
   const [card, setCard] = useState({ number: "", name: "", month: "", year: "", cvv: "", installments: 1, cpf: "" });
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const mpRef = useRef<any>(null);
 
   const months = Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, "0"));
   const years = Array.from({ length: 10 }, (_, i) => String(new Date().getFullYear() + i));
+
+  // Detectar bandeira do cartão
+  const cardBrand = detectCardBrand(card.number);
+  const isAmex = cardBrand === "amex";
+  const cvvLength = isAmex ? 4 : 3;
 
   // Carregar SDK do Mercado Pago
   useEffect(() => {
@@ -182,19 +291,94 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
     };
     document.body.appendChild(script);
 
-    return () => {
-      // Não remover o script para evitar problemas de re-render
-    };
+    return () => {};
   }, []);
+
+  // Validação de campo
+  const validateField = (field: string, value: string): string | undefined => {
+    switch (field) {
+      case "number":
+        if (!value) return "Número do cartão é obrigatório";
+        if (!validateLuhn(value)) return "Número do cartão inválido";
+        break;
+      case "name":
+        if (!value) return "Nome é obrigatório";
+        if (value.length < 3) return "Nome muito curto";
+        if (!/^[A-Z\s]+$/.test(value)) return "Use apenas letras maiúsculas";
+        break;
+      case "month":
+        if (!value) return "Mês é obrigatório";
+        break;
+      case "year":
+        if (!value) return "Ano é obrigatório";
+        break;
+      case "cvv":
+        if (!value) return "CVV é obrigatório";
+        if (value.length < cvvLength) return `CVV deve ter ${cvvLength} dígitos`;
+        break;
+      case "cpf":
+        if (!value) return "CPF é obrigatório";
+        if (!validateCpf(value)) return "CPF inválido";
+        break;
+    }
+    return undefined;
+  };
+
+  // Validar expiração
+  const validateExpiration = (): string | undefined => {
+    if (!card.month || !card.year) return undefined;
+    const now = new Date();
+    const expDate = new Date(parseInt(card.year), parseInt(card.month) - 1, 1);
+    if (expDate < now) return "Cartão expirado";
+    return undefined;
+  };
+
+  const handleBlur = (field: string, value: string) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+    const error = validateField(field, value);
+    setErrors(prev => ({ ...prev, [field]: error || "" }));
+
+    // Validar expiração quando mês ou ano mudam
+    if (field === "month" || field === "year") {
+      const expError = validateExpiration();
+      if (expError) {
+        setErrors(prev => ({ ...prev, expiration: expError }));
+      } else {
+        setErrors(prev => ({ ...prev, expiration: "" }));
+      }
+    }
+  };
+
+  const validateAll = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    newErrors.number = validateField("number", card.number) || "";
+    newErrors.name = validateField("name", card.name) || "";
+    newErrors.month = validateField("month", card.month) || "";
+    newErrors.year = validateField("year", card.year) || "";
+    newErrors.cvv = validateField("cvv", card.cvv) || "";
+    newErrors.cpf = validateField("cpf", card.cpf) || "";
+    newErrors.expiration = validateExpiration() || "";
+
+    setErrors(newErrors);
+    setTouched({ number: true, name: true, month: true, year: true, cvv: true, cpf: true });
+
+    return !Object.values(newErrors).some(Boolean);
+  };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) { toast.error("Dados do cliente ausentes"); return; }
     if (!sdkLoaded || !mpRef.current) { toast.error("SDK de pagamento não carregado. Aguarde..."); return; }
+
+    if (!validateAll()) {
+      toast.error("Corrija os campos em vermelho");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      // Tokenizar cartão com o SDK do Mercado Pago
       const cardNumber = card.number.replace(/\s/g, "");
       const expirationMonth = card.month;
       const expirationYear = card.year;
@@ -202,23 +386,9 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
       const cardholderName = card.name;
       const identificationNumber = card.cpf.replace(/\D/g, "");
 
-      // Validações básicas
-      if (cardNumber.length < 13 || cardNumber.length > 19) {
-        throw new Error("Número do cartão inválido");
-      }
-      if (!expirationMonth || !expirationYear) {
-        throw new Error("Data de validade inválida");
-      }
-      if (securityCode.length < 3) {
-        throw new Error("CVV inválido");
-      }
-      if (identificationNumber.length !== 11) {
-        throw new Error("CPF deve ter 11 dígitos");
-      }
-
       let token: string;
       try {
-        console.log("Dados para tokenização:", {
+        const tokenResponse = await mpRef.current.createCardToken({
           cardNumber: cardNumber,
           cardholderName: cardholderName,
           cardExpirationMonth: expirationMonth,
@@ -228,40 +398,21 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
           identificationNumber: identificationNumber,
         });
 
-        // O SDK v2 do MP usa createCardToken com objeto específico
-        const tokenResponse = await mpRef.current.createCardToken({
-          cardNumber: cardNumber,
-          cardholderName: cardholderName,
-          cardExpirationMonth: expirationMonth,
-          cardExpirationYear: expirationYear.slice(-2), // MP espera apenas 2 dígitos do ano
-          securityCode: securityCode,
-          identificationType: "CPF",
-          identificationNumber: identificationNumber,
-        });
-
-        console.log("Token response:", tokenResponse);
-
         if (!tokenResponse || !tokenResponse.id) {
           throw new Error("Falha ao tokenizar cartão");
         }
         token = tokenResponse.id;
       } catch (tokenError: any) {
-        console.error("Erro completo ao tokenizar:", JSON.stringify(tokenError, null, 2));
-        console.error("Erro objeto:", tokenError);
-        // Extrair mensagem de erro mais específica
         let errorMsg = "Dados do cartão inválidos";
         if (tokenError?.cause && Array.isArray(tokenError.cause)) {
           const causes = tokenError.cause.map((c: any) => c.description || c.message).filter(Boolean);
-          if (causes.length > 0) {
-            errorMsg = causes.join(". ");
-          }
+          if (causes.length > 0) errorMsg = causes.join(". ");
         } else if (tokenError?.message) {
           errorMsg = tokenError.message;
         }
         throw new Error(errorMsg);
       }
 
-      // Enviar pagamento com o token
       const res: any = await createPaymentFn({
         data: {
           method: "credit_card",
@@ -310,6 +461,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
         orderId: res.data.orderId || res.data.id,
         status: res.data.status || "approved",
         cardLast4: last4,
+        cardBrand: CARD_BRAND_NAMES[cardBrand],
         installments: card.installments
       });
     } catch (e: any) {
@@ -321,42 +473,109 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
 
   return (
     <form onSubmit={submit} className="bg-white border border-[#E9E1D2] p-6 space-y-5">
-      <div className="flex items-center gap-2 text-[#0F3A3E]">
-        <CreditCard className="w-5 h-5" />
-        <h4 className="font-serif text-lg">Dados do Cartão</h4>
+      {/* Header com segurança */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-[#0F3A3E]">
+          <CreditCard className="w-5 h-5" />
+          <h4 className="font-serif text-lg">Dados do Cartão</h4>
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-[#51635F] uppercase tracking-wider">
+          <Lock className="w-3 h-3" />
+          Pagamento Seguro
+        </div>
       </div>
+
+      {/* Bandeira detectada */}
+      {cardBrand !== "unknown" && card.number.length >= 4 && (
+        <div className="flex items-center gap-2 p-2 bg-[#F3EEE3] border border-[#E9E1D2]">
+          <div
+            className="w-8 h-5 rounded flex items-center justify-center text-white text-[10px] font-bold"
+            style={{ backgroundColor: CARD_BRAND_COLORS[cardBrand] }}
+          >
+            {cardBrand === "visa" && "VISA"}
+            {cardBrand === "mastercard" && "MC"}
+            {cardBrand === "amex" && "AMEX"}
+            {cardBrand === "elo" && "ELO"}
+            {cardBrand === "hipercard" && "HIPER"}
+          </div>
+          <span className="text-xs text-[#51635F]">
+            {CARD_BRAND_NAMES[cardBrand]} detectado
+          </span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Número do Cartão" full>
+        <Field label="Número do Cartão" full error={touched.number ? errors.number : undefined}>
           <input
             required
             value={card.number}
-            onChange={(e) => setCard({ ...card, number: e.target.value.replace(/\D/g, "").slice(0, 16).replace(/(\d{4})(?=\d)/g, "$1 ") })}
-            placeholder="0000 0000 0000 0000"
-            className={inputCls}
+            onChange={(e) => setCard({ ...card, number: maskCardNumber(e.target.value) })}
+            onBlur={() => handleBlur("number", card.number)}
+            placeholder={isAmex ? "0000 000000 00000" : "0000 0000 0000 0000"}
+            className={inputCls(touched.number ? errors.number : undefined)}
+            autoComplete="cc-number"
           />
         </Field>
-        <Field label="Nome no Cartão" full>
-          <input required value={card.name} onChange={(e) => setCard({ ...card, name: e.target.value.toUpperCase() })} className={inputCls} />
+
+        <Field label="Nome no Cartão" full error={touched.name ? errors.name : undefined}>
+          <input
+            required
+            value={card.name}
+            onChange={(e) => setCard({ ...card, name: e.target.value.toUpperCase().replace(/[^A-Z\s]/g, "") })}
+            onBlur={() => handleBlur("name", card.name)}
+            placeholder="COMO ESTÁ NO CARTÃO"
+            className={inputCls(touched.name ? errors.name : undefined)}
+            autoComplete="cc-name"
+          />
         </Field>
+
         <div className="grid grid-cols-3 gap-2 md:col-span-1">
-          <Field label="Mês">
-            <select required value={card.month} onChange={(e) => setCard({ ...card, month: e.target.value })} className={inputCls}>
+          <Field label="Mês" error={touched.month ? errors.month || errors.expiration : undefined}>
+            <select
+              required
+              value={card.month}
+              onChange={(e) => setCard({ ...card, month: e.target.value })}
+              onBlur={() => handleBlur("month", card.month)}
+              className={inputCls(touched.month ? errors.month || errors.expiration : undefined)}
+              autoComplete="cc-exp-month"
+            >
               <option value="">MM</option>
               {months.map((m) => <option key={m} value={m}>{m}</option>)}
             </select>
           </Field>
-          <Field label="Ano">
-            <select required value={card.year} onChange={(e) => setCard({ ...card, year: e.target.value })} className={inputCls}>
+          <Field label="Ano" error={touched.year ? errors.year : undefined}>
+            <select
+              required
+              value={card.year}
+              onChange={(e) => setCard({ ...card, year: e.target.value })}
+              onBlur={() => handleBlur("year", card.year)}
+              className={inputCls(touched.year ? errors.year : undefined)}
+              autoComplete="cc-exp-year"
+            >
               <option value="">AAAA</option>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
           </Field>
-          <Field label="CVV">
-            <input required value={card.cvv} onChange={(e) => setCard({ ...card, cvv: e.target.value.replace(/\D/g, "").slice(0, 3) })} placeholder="000" className={inputCls} />
+          <Field label={`CVV${isAmex ? " (4 dígitos)" : ""}`} error={touched.cvv ? errors.cvv : undefined}>
+            <input
+              required
+              value={card.cvv}
+              onChange={(e) => setCard({ ...card, cvv: e.target.value.replace(/\D/g, "").slice(0, cvvLength) })}
+              onBlur={() => handleBlur("cvv", card.cvv)}
+              placeholder={isAmex ? "0000" : "000"}
+              className={inputCls(touched.cvv ? errors.cvv : undefined)}
+              autoComplete="cc-csc"
+              type="password"
+            />
           </Field>
         </div>
+
         <Field label="Parcelas">
-          <select value={card.installments} onChange={(e) => setCard({ ...card, installments: Number(e.target.value) })} className={inputCls}>
+          <select
+            value={card.installments}
+            onChange={(e) => setCard({ ...card, installments: Number(e.target.value) })}
+            className={inputCls()}
+          >
             {INSTALLMENTS_OPTIONS.map((o) => (
               <option key={o.installments} value={o.installments}>
                 {o.installments}x de {formatBRL(total / o.installments)} sem juros
@@ -364,16 +583,52 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
             ))}
           </select>
         </Field>
-        <Field label="CPF do Titular" full>
-          <input required value={card.cpf} onChange={(e) => setCard({ ...card, cpf: e.target.value })} placeholder="000.000.000-00" className={inputCls} />
+
+        <Field label="CPF do Titular" full error={touched.cpf ? errors.cpf : undefined}>
+          <input
+            required
+            value={card.cpf}
+            onChange={(e) => setCard({ ...card, cpf: maskCpf(e.target.value) })}
+            onBlur={() => handleBlur("cpf", card.cpf)}
+            placeholder="000.000.000-00"
+            className={inputCls(touched.cpf ? errors.cpf : undefined)}
+          />
         </Field>
       </div>
+
+      {/* Selos de segurança */}
+      <div className="flex items-center justify-center gap-4 pt-2 border-t border-[#E9E1D2]">
+        <div className="flex items-center gap-1 text-[10px] text-[#51635F]">
+          <Shield className="w-3 h-3 text-[#1C6B4A]" />
+          Criptografia SSL
+        </div>
+        <div className="flex items-center gap-1 text-[10px] text-[#51635F]">
+          <Lock className="w-3 h-3 text-[#1C6B4A]" />
+          Dados protegidos
+        </div>
+      </div>
+
       <button
         type="submit"
-        disabled={loading}
-        className="w-full bg-[#0F3A3E] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+        disabled={loading || !sdkLoaded}
+        className="w-full bg-[#0F3A3E] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
-        {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : `Pagar ${formatBRL(total)}`}
+        {loading ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Processando...
+          </>
+        ) : !sdkLoaded ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Carregando...
+          </>
+        ) : (
+          <>
+            <Lock className="w-4 h-4" />
+            Pagar {formatBRL(total)}
+          </>
+        )}
       </button>
     </form>
   );
