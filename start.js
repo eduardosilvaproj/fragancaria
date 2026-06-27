@@ -102,6 +102,31 @@ const server = http.createServer((req, res) => {
     }
   }
 
+  // Handle /images/* - serve from dist/client/images
+  if (req.url.startsWith('/images/')) {
+    const filePath = path.join(__dirname, 'dist/client', req.url);
+    try {
+      const stat = fs.statSync(filePath);
+      if (stat.isFile()) {
+        const ext = path.extname(filePath).toLowerCase();
+        const mimeTypes = {
+          '.png': 'image/png',
+          '.jpg': 'image/jpeg',
+          '.jpeg': 'image/jpeg',
+          '.gif': 'image/gif',
+          '.svg': 'image/svg+xml',
+          '.webp': 'image/webp',
+        };
+        const contentType = mimeTypes[ext] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000' });
+        fs.createReadStream(filePath).pipe(res);
+        return;
+      }
+    } catch (e) {
+      // File not found - fall through to Nitro handler
+    }
+  }
+
   // All other routes → Nitro handler
   return nodeListener(req, res);
 });
