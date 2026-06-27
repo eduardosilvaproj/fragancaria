@@ -71,6 +71,10 @@
     "zod": "^3.24.2",
     "zustand": "^5.0.14"
   },
+  "engines": {
+    "node": ">=18.0.0 <25.0.0",
+    "npm": ">=8.0.0"
+  },
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.5.3",

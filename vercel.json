@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "framework": null,
+  "nodeVersion": "20.x",
   "installCommand": "npm install --legacy-peer-deps",
   "functions": {
     "api/*.ts": {
