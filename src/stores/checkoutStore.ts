@@ -24,12 +24,13 @@ export interface ShippingAddress {
 
 export interface PaymentData {
   orderId?: string;
-  status?: 'pending' | 'approved' | 'rejected';
+  status?: 'pending' | 'approved' | 'rejected' | 'in_process';
   pixCode?: string;
   pixQrCode?: string;
   boletoCode?: string;
   boletoUrl?: string;
   cardLast4?: string;
+  cardBrand?: string;
   installments?: number;
 }
 
