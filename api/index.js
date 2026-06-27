@@ -1,51 +1,74 @@
-// Vercel Node.js server entry point
-// Runs the Nitro server built by TanStack Start + Lovable
-import { fileURLToPath } from 'url';
-import path from 'path';
+import { createServer } from 'http';
+import { URL } from 'url';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Lazy load the server module on first request
+let serverModule = null;
 
-// Dynamically import the server from built output
-const getServer = async () => {
-  try {
-    // Import from the built server output
-    const { default: server } = await import('../dist/server/server.js');
-    return server;
-  } catch (err) {
-    console.error('Failed to load server:', err);
-    throw err;
+async function getServer() {
+  if (!serverModule) {
+    try {
+      serverModule = await import('../dist/server/server.js');
+    } catch (err) {
+      console.error('Failed to load server module:', err);
+      throw err;
+    }
   }
-};
+  return serverModule.default;
+}
 
 export default async (req, res) => {
   try {
     const server = await getServer();
 
-    if (!server || !server.fetch) {
-      res.status(500).json({ error: 'Server not initialized' });
+    if (!server || typeof server.fetch !== 'function') {
+      console.error('Server does not have fetch method');
+      res.status(500).json({ error: 'Server not properly initialized' });
       return;
     }
 
-    const request = new Request(`http://${req.headers.host}${req.url}`, {
+    // Convert Node.js request to fetch API Request
+    const url = new URL(req.url, `http://${req.headers.host}`);
+
+    // Read body if present
+    let body = undefined;
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      body = await new Promise((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => { data += chunk; });
+        req.on('end', () => resolve(data || undefined));
+        req.on('error', reject);
+      });
+    }
+
+    // Create fetch request
+    const fetchReq = new Request(url.toString(), {
       method: req.method,
-      headers: req.headers,
-      body: ['GET', 'HEAD'].includes(req.method) ? undefined : req,
+      headers: Object.fromEntries(
+        Object.entries(req.headers).map(([k, v]) => [k, Array.isArray(v) ? v[0] : v])
+      ),
+      body,
     });
 
-    const response = await server.fetch(request);
+    // Call server
+    const fetchRes = await server.fetch(fetchReq);
 
-    res.status(response.status);
-    response.headers.forEach((value, name) => {
+    // Send response
+    res.status(fetchRes.status);
+
+    // Copy headers
+    fetchRes.headers.forEach((value, name) => {
       res.setHeader(name, value);
     });
 
-    if (response.body) {
-      res.end(await response.text());
+    // Send body
+    if (fetchRes.body) {
+      const text = await fetchRes.text();
+      res.end(text);
     } else {
       res.end();
     }
   } catch (error) {
     console.error('Server error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: error.message || 'Internal server error' });
   }
 };
