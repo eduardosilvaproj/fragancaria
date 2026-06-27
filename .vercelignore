@@ -1,0 +1,5 @@
+# Vercel should use our custom build output
+node_modules
+src
+dist
+*.config.*
