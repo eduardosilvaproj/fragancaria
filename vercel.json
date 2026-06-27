@@ -2,5 +2,11 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist/server",
-  "installCommand": "npm install"
+  "installCommand": "npm install",
+  "framework": null,
+  "functions": {
+    "dist/server/index.js": {
+      "runtime": "nodejs20.x"
+    }
+  }
 }
