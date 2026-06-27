@@ -1,5 +1,5 @@
 import { createServer } from 'http';
-import server from './dist/server/server.js';
+import server from '../dist/server/server.js';
 
 const PORT = process.env.PORT || 3000;
 
