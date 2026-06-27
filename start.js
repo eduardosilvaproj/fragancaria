@@ -8,8 +8,14 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 
+// Convert Nitro handler to Node.js listener
+const nodeListener = toNodeListener(handler);
+
 // Serve static assets + Nitro handler
-const server = http.createServer(async (req, res) => {
+const server = http.createServer((req, res) => {
+  // Debug: write to file
+  fs.appendFileSync('/tmp/requests.log', `${new Date().toISOString()} ${req.method} ${req.url}\n`);
+
   // Handle /assets/* - serve from dist/client/assets/ (where Vite puts client-side assets)
   if (req.url.startsWith('/assets/')) {
     const filePath = path.join(__dirname, 'dist/client', req.url);
@@ -35,11 +41,11 @@ const server = http.createServer(async (req, res) => {
       }
     } catch (e) {
       // File not found, fall through to handler
+      console.error(`[static] 404: ${filePath}`, e.code);
     }
   }
 
   // All other routes → Nitro handler
-  const nodeListener = toNodeListener(handler);
   return nodeListener(req, res);
 });
 
