@@ -1,8 +1,7 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": ".",
-  "publicDirectory": "dist/client",
+  "outputDirectory": "dist",
   "nodeVersion": "20.x",
   "installCommand": "npm install",
   "functions": {
@@ -14,6 +13,7 @@
     }
   },
   "rewrites": [
+    { "source": "/static/(.*)", "destination": "/dist/client/$1" },
     { "source": "/(.*)", "destination": "/dist/server/server.js" }
   ]
 }
