@@ -13,6 +13,10 @@ console.log('=== Dist Structure ===');
 console.log('dist/client exists:', fs.existsSync(path.join(__dirname, 'dist/client')));
 if (fs.existsSync(path.join(__dirname, 'dist/client'))) {
   console.log('dist/client contents:', fs.readdirSync(path.join(__dirname, 'dist/client')));
+  const assetsPath = path.join(__dirname, 'dist/client/assets');
+  if (fs.existsSync(assetsPath)) {
+    console.log('dist/client/assets contents (first 5):', fs.readdirSync(assetsPath).slice(0, 5));
+  }
 }
 console.log('dist/server exists:', fs.existsSync(path.join(__dirname, 'dist/server')));
 if (fs.existsSync(path.join(__dirname, 'dist/server'))) {
@@ -52,7 +56,7 @@ const server = http.createServer((req, res) => {
       }
     } catch (e) {
       // File not found, fall through to handler
-      console.error(`[static] 404: ${filePath}`, e.code);
+      console.error(`[static] 404: ${filePath}`, e.code, 'Available:', fs.existsSync(path.dirname(filePath)) ? fs.readdirSync(path.dirname(filePath)).slice(0, 3) : 'N/A');
     }
   }
 
