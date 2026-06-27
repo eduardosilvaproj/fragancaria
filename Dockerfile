@@ -1,42 +1,25 @@
-# Build stage
-FROM node:20-alpine as builder
-
-WORKDIR /app
-
-# Copy package files
-COPY package.json package-lock.json* ./
-
-# Install dependencies
-RUN npm ci
-
-# Copy source code
-COPY . .
-
-# Build
-RUN npm run build
-
-# Verify outputs
-RUN find dist/client/assets -type f -name "*.css" | head -2
-
-# Runtime stage
+# Single stage build
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Copy built artifacts from builder - make sure all are included
-COPY --from=builder /app/dist ./dist
+# Copy everything first
+COPY . .
 
-# Verify copy worked
-RUN ls -la dist/client/assets/ | head -5 && echo "Total CSS files:" && find dist/client/assets -type f -name "*.css" | wc -l
+# Install dependencies
+RUN npm ci
 
-COPY --from=builder /app/start.js ./start.js
-COPY --from=builder /app/package.json ./package.json
+# Run build
+RUN npm run build
 
-# Install only production dependencies
-RUN npm ci --only=production
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
+# Expose port
 EXPOSE 3000
 
+# Start server
 CMD ["node", "start.js"]
+
 
 
