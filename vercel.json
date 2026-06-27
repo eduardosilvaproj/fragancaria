@@ -1,18 +1,6 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
-  "functions": {
-    "dist/server/server.js": {
-      "runtime": "@vercel/node@3.0.0"
-    },
-    "api/*.ts": {
-      "runtime": "@vercel/node@3.0.0"
-    }
-  },
-  "rewrites": [
-    { "source": "/static/(.*)", "destination": "/dist/client/$1" },
-    { "source": "/(.*)", "destination": "/dist/server/server.js" }
-  ]
+  "outputDirectory": "dist/server",
+  "installCommand": "npm install"
 }
