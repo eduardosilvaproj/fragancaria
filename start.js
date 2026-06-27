@@ -8,6 +8,17 @@ import fs from 'fs';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 
+// Debug: print dist structure
+console.log('=== Dist Structure ===');
+console.log('dist/client exists:', fs.existsSync(path.join(__dirname, 'dist/client')));
+if (fs.existsSync(path.join(__dirname, 'dist/client'))) {
+  console.log('dist/client contents:', fs.readdirSync(path.join(__dirname, 'dist/client')));
+}
+console.log('dist/server exists:', fs.existsSync(path.join(__dirname, 'dist/server')));
+if (fs.existsSync(path.join(__dirname, 'dist/server'))) {
+  console.log('dist/server files:', fs.readdirSync(path.join(__dirname, 'dist/server')).filter(f => !f.startsWith('assets')).slice(0, 5));
+}
+
 // Convert Nitro handler to Node.js listener
 const nodeListener = toNodeListener(handler);
 
