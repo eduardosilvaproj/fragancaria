@@ -51,39 +51,53 @@ const nodeListener = toNodeListener(handler);
 
 // Serve static assets + Nitro handler
 const server = http.createServer((req, res) => {
-  // Handle /assets/* - serve from dist/client/assets/ (where Vite puts client-side assets)
+  // Handle /assets/* - try BOTH dist/client/assets (client-side) and dist/server/assets (server-side)
   if (req.url.startsWith('/assets/')) {
-    const filePath = path.join(__dirname, 'dist/client', req.url);
+    // First try dist/server/assets (server-side bundles needed for SSR)
+    let filePath = path.join(__dirname, 'dist/server', req.url);
+    let found = false;
     try {
       const stat = fs.statSync(filePath);
       if (stat.isFile()) {
-        const ext = path.extname(filePath).toLowerCase();
-        const mimeTypes = {
-          '.js': 'application/javascript',
-          '.css': 'text/css',
-          '.json': 'application/json',
-          '.svg': 'image/svg+xml',
-          '.png': 'image/png',
-          '.jpg': 'image/jpeg',
-          '.gif': 'image/gif',
-          '.woff': 'font/woff',
-          '.woff2': 'font/woff2',
-        };
-        const contentType = mimeTypes[ext] || 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000' });
-        fs.createReadStream(filePath).pipe(res);
-        return;
+        found = true;
       }
     } catch (e) {
-      // File not found
-      console.error(`[static] 404: ${filePath} (${e.code})`);
-      // Check what's in assets directory
+      // Try dist/client/assets instead
+      filePath = path.join(__dirname, 'dist/client', req.url);
       try {
-        const assetsDir = path.dirname(filePath);
-        const available = fs.readdirSync(assetsDir).slice(0, 3);
-        console.error(`Available in ${assetsDir}:`, available);
+        const stat = fs.statSync(filePath);
+        if (stat.isFile()) {
+          found = true;
+        }
       } catch (e2) {
-        console.error(`Cannot list ${path.dirname(filePath)}:`, e2.code);
+        // File not found in either location
+      }
+    }
+
+    if (found) {
+      try {
+        const stat = fs.statSync(filePath);
+        if (stat.isFile()) {
+          const ext = path.extname(filePath).toLowerCase();
+          const mimeTypes = {
+            '.js': 'application/javascript',
+            '.css': 'text/css',
+            '.json': 'application/json',
+            '.svg': 'image/svg+xml',
+            '.png': 'image/png',
+            '.jpg': 'image/jpeg',
+            '.gif': 'image/gif',
+            '.woff': 'font/woff',
+            '.woff2': 'font/woff2',
+          };
+          const contentType = mimeTypes[ext] || 'application/octet-stream';
+          res.writeHead(200, { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000' });
+          fs.createReadStream(filePath).pipe(res);
+          return;
+        }
+      } catch (e) {
+        // Log and fall through
+        console.error(`[static] Error serving ${filePath}:`, e.message);
       }
     }
   }
