@@ -4,7 +4,7 @@ import server from '../dist/server/server.js';
 export default async (req: VercelRequest, res: VercelResponse) => {
   try {
     const origin = `https://${req.headers.host}`;
-    const url = req.url || '/';
+    const url = '/';
 
     const fetchReq = new Request(new URL(url, origin), {
       method: req.method || 'GET',
@@ -13,7 +13,6 @@ export default async (req: VercelRequest, res: VercelResponse) => {
           .filter(([key]) => key !== 'content-length')
           .map(([key, value]) => [key, Array.isArray(value) ? value[0] : (value || '')])
       ),
-      body: ['GET', 'HEAD'].includes(req.method || 'GET') ? undefined : (req as any),
     });
 
     const fetchRes = await server.fetch(fetchReq);
@@ -26,9 +25,7 @@ export default async (req: VercelRequest, res: VercelResponse) => {
     const text = await fetchRes.text();
     res.end(text);
   } catch (error) {
-    console.error('Error in catch-all handler:', error);
+    console.error('Error in index handler:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
-
-
