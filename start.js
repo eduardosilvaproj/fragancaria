@@ -12,20 +12,30 @@ const PORT = process.env.PORT || 3000;
 console.log('=== Startup Info ===');
 console.log('CWD:', process.cwd());
 console.log('__dirname:', __dirname);
-console.log('APP_ROOT:', process.env.APP_ROOT || 'not set');
 
 console.log('=== Dist Structure ===');
 const clientPath = path.join(__dirname, 'dist/client');
 const serverPath = path.join(__dirname, 'dist/server');
 
-console.log('dist/client path:', clientPath);
+console.log('dist/client:', clientPath);
 console.log('dist/client exists:', fs.existsSync(clientPath));
 if (fs.existsSync(clientPath)) {
-  console.log('dist/client contents:', fs.readdirSync(clientPath));
+  const contents = fs.readdirSync(clientPath);
+  console.log('dist/client contents:', contents);
   const assetsPath = path.join(clientPath, 'assets');
+  console.log('dist/client/assets exists:', fs.existsSync(assetsPath));
   if (fs.existsSync(assetsPath)) {
-    const files = fs.readdirSync(assetsPath).slice(0, 5);
-    console.log('dist/client/assets sample files:', files);
+    try {
+      const files = fs.readdirSync(assetsPath);
+      console.log('dist/client/assets is empty:', files.length === 0);
+      console.log('dist/client/assets files count:', files.length);
+      console.log('dist/client/assets sample:', files.slice(0, 3));
+      // Show CSS files specifically
+      const cssFiles = files.filter(f => f.endsWith('.css'));
+      console.log('CSS files:', cssFiles);
+    } catch (e) {
+      console.log('Error reading assets:', e.message);
+    }
   }
 }
 
