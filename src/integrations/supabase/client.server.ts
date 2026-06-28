@@ -6,6 +6,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import ws from 'ws';
 
+// Node < 22 has no native WebSocket. @supabase/realtime-js's WebSocketFactory
+// detects the runtime statically (and throws "Node.js N detected without native
+// WebSocket support") BEFORE it ever consults the client's `transport` option.
+// The factory's first check is `typeof WebSocket !== 'undefined'` -> treated as
+// native. Polyfilling the global here makes that check pass, so the realtime
+// client never throws during SSR. This file is server-only.
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === 'undefined') {
+  (globalThis as { WebSocket?: unknown }).WebSocket = ws;
+}
+
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
