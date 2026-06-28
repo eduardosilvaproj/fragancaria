@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 
 // Debug: print dist structure
-console.log('=== Startup Info ===');
+console.log('=== Startup Info (v21:45 - npm start fix deployed) ===');
 console.log('CWD:', process.cwd());
 console.log('__dirname:', __dirname);
 
