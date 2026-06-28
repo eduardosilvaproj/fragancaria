@@ -53,7 +53,9 @@ function createSupabaseAdminClient() {
         autoRefreshToken: false,
       },
       realtime: {
-        enabled: false,
+        // Node < 22 has no native WebSocket; supabase-js still constructs a
+        // RealtimeClient and throws unless a transport is provided.
+        transport: ws as unknown as typeof WebSocket,
       },
     });
   }
@@ -68,7 +70,9 @@ function createSupabaseAdminClient() {
       autoRefreshToken: false,
     },
     realtime: {
-      enabled: false,
+      // Node < 22 has no native WebSocket; supabase-js still constructs a
+      // RealtimeClient and throws unless a transport is provided.
+      transport: ws as unknown as typeof WebSocket,
     },
   });
 }
