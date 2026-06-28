@@ -53,8 +53,7 @@ function createSupabaseAdminClient() {
         autoRefreshToken: false,
       },
       realtime: {
-        // @ts-ignore - ws types may not match exactly
-        transport: ws,
+        enabled: false,
       },
     });
   }
@@ -69,8 +68,7 @@ function createSupabaseAdminClient() {
       autoRefreshToken: false,
     },
     realtime: {
-      // @ts-ignore - ws types may not match exactly
-      transport: ws,
+      enabled: false,
     },
   });
 }
