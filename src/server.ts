@@ -42,11 +42,7 @@ const BUILD_VERSION = new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      const normalizedResponse = await normalizeCatastrophicSsrResponse(response);
-
-      // Handle version.json requests
+      // Handle version.json requests immediately (no SSR needed)
       const url = new URL(request.url);
       if (url.pathname === "/version.json") {
         return new Response(
@@ -61,6 +57,11 @@ export default {
           }
         );
       }
+
+      // SSR with timeout protection
+      const handler = await getServerEntry();
+      const response = await handler.fetch(request, env, ctx);
+      const normalizedResponse = await normalizeCatastrophicSsrResponse(response);
 
       return normalizedResponse;
     } catch (error) {
