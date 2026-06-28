@@ -1,3 +1,14 @@
+// WebSocket polyfill — MUST run before any Supabase client is constructed.
+// Node < 22 has no global WebSocket; @supabase/realtime-js throws on construct.
+// Inlined (not a side-effect import) so the bundler can't tree-shake it away.
+import ws from "ws";
+{
+  const g = globalThis as { WebSocket?: unknown };
+  if (typeof g.WebSocket === "undefined") {
+    g.WebSocket = ws;
+  }
+}
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
