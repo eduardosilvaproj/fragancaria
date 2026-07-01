@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import {
+  listConversations,
+  getMessages,
+  sendMessage,
+} from "@/lib/whatsapp.functions";
 import {
   MessageSquare,
   Search,
@@ -51,87 +56,6 @@ interface Message {
   read: boolean;
 }
 
-const MOCK_CONVERSATIONS: Conversation[] = [
-  {
-    id: "1",
-    customer: { name: "Maria Silva", phone: "(11) 99999-1234" },
-    channel: "whatsapp",
-    lastMessage: "Oi, queria saber sobre o prazo de entrega",
-    lastMessageTime: "10:32",
-    unread: true,
-    status: "open",
-    priority: "high",
-    tags: ["Entrega", "Urgente"],
-  },
-  {
-    id: "2",
-    customer: { name: "João Santos", instagram: "@joaosantos" },
-    channel: "instagram",
-    lastMessage: "Esse produto tem em outras cores?",
-    lastMessageTime: "09:45",
-    unread: true,
-    status: "open",
-    priority: "medium",
-    tags: ["Produto"],
-  },
-  {
-    id: "3",
-    customer: { name: "Ana Costa", email: "ana@email.com" },
-    channel: "email",
-    lastMessage: "Gostaria de fazer uma troca do produto",
-    lastMessageTime: "Ontem",
-    unread: false,
-    status: "pending",
-    priority: "medium",
-    tags: ["Troca"],
-  },
-  {
-    id: "4",
-    customer: { name: "Pedro Lima", phone: "(21) 98888-5678" },
-    channel: "whatsapp",
-    lastMessage: "Obrigado pela ajuda!",
-    lastMessageTime: "Ontem",
-    unread: false,
-    status: "resolved",
-    priority: "low",
-    tags: [],
-  },
-  {
-    id: "5",
-    customer: { name: "Carla Oliveira", instagram: "@carlaoliveira" },
-    channel: "instagram",
-    lastMessage: "Vocês tem parceria com influencers?",
-    lastMessageTime: "2 dias",
-    unread: false,
-    status: "pending",
-    priority: "low",
-    tags: ["Parceria"],
-  },
-];
-
-const MOCK_MESSAGES: Message[] = [
-  {
-    id: "1",
-    content: "Olá! Fiz um pedido ontem e queria saber sobre o prazo de entrega.",
-    sender: "customer",
-    timestamp: "10:30",
-    read: true,
-  },
-  {
-    id: "2",
-    content: "Meu pedido é o #12345",
-    sender: "customer",
-    timestamp: "10:31",
-    read: true,
-  },
-  {
-    id: "3",
-    content: "Oi, queria saber sobre o prazo de entrega",
-    sender: "customer",
-    timestamp: "10:32",
-    read: false,
-  },
-];
 
 const CHANNEL_CONFIG = {
   whatsapp: { icon: Phone, color: "text-green-600 bg-green-100", label: "WhatsApp" },
@@ -146,29 +70,71 @@ const STATUS_CONFIG = {
 };
 
 function AdminSAC() {
-  const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(
-    MOCK_CONVERSATIONS[0]
-  );
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [selectedConversation, setSelectedConversation] =
+    useState<Conversation | null>(null);
   const [channelFilter, setChannelFilter] = useState<Channel | "all">("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [messageInput, setMessageInput] = useState("");
+  const [loadingConvs, setLoadingConvs] = useState(true);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
 
-  const filteredConversations = MOCK_CONVERSATIONS.filter((conv) => {
+  // Carrega a lista de conversas reais.
+  const loadConversations = useCallback(async () => {
+    const res = await listConversations();
+    if (res.success) setConversations(res.data);
+    setLoadingConvs(false);
+  }, []);
+
+  useEffect(() => {
+    loadConversations();
+  }, [loadConversations]);
+
+  // Ao selecionar uma conversa, carrega suas mensagens (e marca como lida).
+  const selectConversation = useCallback(async (conv: Conversation) => {
+    setSelectedConversation(conv);
+    setMessages([]);
+    const res = await getMessages({ data: { conversationId: conv.id } });
+    if (res.success) setMessages(res.data);
+    // Reflete localmente que a conversa foi lida.
+    setConversations((prev) =>
+      prev.map((c) => (c.id === conv.id ? { ...c, unread: false } : c))
+    );
+  }, []);
+
+  const filteredConversations = conversations.filter((conv) => {
     const matchesChannel = channelFilter === "all" || conv.channel === channelFilter;
     const matchesStatus = statusFilter === "all" || conv.status === statusFilter;
     const matchesSearch = conv.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesChannel && matchesStatus && matchesSearch;
   });
 
-  const unreadCount = MOCK_CONVERSATIONS.filter((c) => c.unread).length;
-  const openCount = MOCK_CONVERSATIONS.filter((c) => c.status === "open").length;
+  const unreadCount = conversations.filter((c) => c.unread).length;
+  const openCount = conversations.filter((c) => c.status === "open").length;
 
-  const handleSendMessage = () => {
-    if (!messageInput.trim()) return;
-    // TODO: Implement message sending
-    console.log("Sending:", messageInput);
+  const handleSendMessage = async () => {
+    const text = messageInput.trim();
+    if (!text || !selectedConversation || sending) return;
+    setSending(true);
+    setSendError(null);
+    const res = await sendMessage({
+      data: { conversationId: selectedConversation.id, content: text },
+    });
+    setSending(false);
+    if (!res.success) {
+      setSendError(res.error || "Falha ao enviar");
+      return;
+    }
     setMessageInput("");
+    // Recarrega as mensagens da conversa e a lista (resumo atualizado).
+    const refreshed = await getMessages({
+      data: { conversationId: selectedConversation.id },
+    });
+    if (refreshed.success) setMessages(refreshed.data);
+    loadConversations();
   };
 
   return (
@@ -228,12 +194,23 @@ function AdminSAC() {
 
         {/* Conversations */}
         <div className="flex-1 overflow-y-auto">
+          {loadingConvs && (
+            <div className="p-6 text-center text-sm text-[#8A938E]">
+              Carregando conversas...
+            </div>
+          )}
+          {!loadingConvs && filteredConversations.length === 0 && (
+            <div className="p-6 text-center text-sm text-[#8A938E]">
+              Nenhuma conversa ainda. Mensagens recebidas no WhatsApp aparecerão
+              aqui.
+            </div>
+          )}
           {filteredConversations.map((conv) => {
             const ChannelIcon = CHANNEL_CONFIG[conv.channel].icon;
             return (
               <button
                 key={conv.id}
-                onClick={() => setSelectedConversation(conv)}
+                onClick={() => selectConversation(conv)}
                 className={cn(
                   "w-full p-4 border-b border-[#E9E1D2] text-left hover:bg-[#F9F7F3] transition-colors",
                   selectedConversation?.id === conv.id && "bg-[#F3EEE3]"
@@ -356,7 +333,7 @@ function AdminSAC() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {MOCK_MESSAGES.map((message) => (
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={cn(
@@ -424,21 +401,35 @@ function AdminSAC() {
               </div>
               <button
                 onClick={handleSendMessage}
-                className="p-3 bg-[#0F3A3E] text-white rounded-lg hover:bg-[#16504F] transition-colors"
+                disabled={sending}
+                className="p-3 bg-[#0F3A3E] text-white rounded-lg hover:bg-[#16504F] transition-colors disabled:opacity-50"
               >
                 <Send className="h-5 w-5" />
               </button>
             </div>
 
+            {sendError && (
+              <p className="text-xs text-red-600 mt-2">{sendError}</p>
+            )}
+
             {/* Quick replies */}
             <div className="flex gap-2 mt-3">
-              <button className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors">
+              <button
+                onClick={() => setMessageInput("Olá! Como posso ajudar?")}
+                className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors"
+              >
                 Olá! Como posso ajudar?
               </button>
-              <button className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors">
+              <button
+                onClick={() => setMessageInput("Um momento, vou verificar")}
+                className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors"
+              >
                 Um momento, vou verificar
               </button>
-              <button className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors">
+              <button
+                onClick={() => setMessageInput("Posso ajudar em algo mais?")}
+                className="text-xs bg-[#F5F3EE] text-[#51635F] px-3 py-1.5 rounded-full hover:bg-[#E9E1D2] transition-colors"
+              >
                 Posso ajudar em algo mais?
               </button>
             </div>

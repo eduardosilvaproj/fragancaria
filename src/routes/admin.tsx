@@ -1,4 +1,4 @@
-import { createFileRoute, Link, Outlet, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
 import {
   Users,
   MessageSquare,
@@ -25,6 +25,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin")({
+  beforeLoad: async () => {
+    const { getAdminSession } = await import("@/lib/admin.functions");
+    const session = await getAdminSession();
+    if (!session) {
+      throw redirect({ to: "/admin-login" });
+    }
+    return { admin: session };
+  },
   component: AdminLayout,
 });
 
@@ -53,6 +61,9 @@ const SIDEBAR_ITEMS = [
 function AdminLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const location = useLocation();
+  const { admin } = Route.useRouteContext();
+  const adminEmail = admin?.email || "admin@fragranciaria.com";
+  const adminInitial = adminEmail.charAt(0).toUpperCase();
 
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return location.pathname === href;
@@ -108,11 +119,11 @@ function AdminLayout() {
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-[#B07B1E] flex items-center justify-center text-white font-medium">
-              A
+              {adminInitial}
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm text-white truncate">Admin</p>
-              <p className="text-xs text-white/50 truncate">admin@fragranciaria.com</p>
+              <p className="text-xs text-white/50 truncate">{adminEmail}</p>
             </div>
           </div>
         </div>
@@ -219,7 +230,7 @@ function AdminLayout() {
           {/* User */}
           <div className="flex items-center gap-2">
             <div className="w-9 h-9 rounded-full bg-[#B07B1E] flex items-center justify-center text-white text-sm font-medium">
-              A
+              {adminInitial}
             </div>
           </div>
         </header>

@@ -20,6 +20,7 @@ import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CompararRouteImport } from './routes/comparar'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
@@ -45,6 +46,7 @@ import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimen
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAfiliadosRouteImport } from './routes/admin/afiliados'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
@@ -104,6 +106,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const CarrinhoRoute = CarrinhoRouteImport.update({
   id: '/carrinho',
   path: '/carrinho',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -231,6 +238,12 @@ const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AfiliadoDashboardRoute,
 } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp-webhook',
+    path: '/api/public/whatsapp-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp-webhook',
   path: '/api/public/mp-webhook',
@@ -262,6 +275,7 @@ const AfiliadoDashboardConfiguracoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
@@ -300,10 +314,12 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
@@ -341,12 +357,14 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
@@ -385,6 +403,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
 }
 export interface FileRouteTypes {
@@ -392,6 +411,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin-login'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
@@ -430,10 +450,12 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
     | '/afiliado/dashboard/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-login'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
@@ -471,11 +493,13 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
     | '/afiliado/dashboard'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin-login'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
@@ -514,12 +538,14 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
     | '/afiliado/dashboard/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
   CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompararRoute: typeof CompararRoute
@@ -539,6 +565,7 @@ export interface RootRouteChildren {
   PedidoIdRoute: typeof PedidoIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -618,6 +645,13 @@ declare module '@tanstack/react-router' {
       path: '/carrinho'
       fullPath: '/carrinho'
       preLoaderRoute: typeof CarrinhoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-login': {
+      id: '/admin-login'
+      path: '/admin-login'
+      fullPath: '/admin-login'
+      preLoaderRoute: typeof AdminLoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -795,6 +829,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
     }
+    '/api/public/whatsapp-webhook': {
+      id: '/api/public/whatsapp-webhook'
+      path: '/api/public/whatsapp-webhook'
+      fullPath: '/api/public/whatsapp-webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/mp-webhook': {
       id: '/api/public/mp-webhook'
       path: '/api/public/mp-webhook'
@@ -893,6 +934,7 @@ const AfiliadoDashboardRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
   CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
   CompararRoute: CompararRoute,
@@ -912,6 +954,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoIdRoute: PedidoIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

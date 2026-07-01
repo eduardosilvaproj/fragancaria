@@ -24,6 +24,8 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
     error?: string;
   }> => {
     try {
+      const { requireAdmin } = await import("./admin-auth");
+      await requireAdmin();
       const { supabaseAdmin } = await import(
         "@/integrations/supabase/client.server"
       );
