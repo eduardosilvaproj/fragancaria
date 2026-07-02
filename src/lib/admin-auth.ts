@@ -8,6 +8,16 @@
 // function (and the /admin beforeLoad), refreshing the token when expired.
 import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
+import ws from "ws";
+
+// Node < 22 has no native WebSocket. supabase-js constructs a RealtimeClient on
+// createClient() and throws "Node.js N detected without native WebSocket
+// support" unless the global is polyfilled AND a transport is provided. This
+// file's createClient runs before client.server.ts is imported, so we must
+// polyfill here too. Server-only module.
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === "undefined") {
+  (globalThis as { WebSocket?: unknown }).WebSocket = ws;
+}
 
 export const ADMIN_COOKIE = "fa_admin_session";
 
@@ -32,6 +42,11 @@ function getAuthClient() {
   }
   return createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false, storage: undefined },
+    realtime: {
+      // Node < 22 has no native WebSocket; supabase-js still constructs a
+      // RealtimeClient and throws unless a transport is provided.
+      transport: ws as unknown as typeof WebSocket,
+    },
   });
 }
 
