@@ -9,7 +9,25 @@ export type AdminSession = { userId: string; email: string } | null;
 
 export const loginAdmin = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
-    z.object({ email: z.string().email(), password: z.string().min(1) }).parse(d),
+    z
+      .object({
+        // createServerFn wraps arguments under `data` on the wire; accept both
+        // shapes so client (`loginAdmin({ data: { email, password } })`) and
+        // direct callers work. Validating flat directly would Seroval-fail
+        // because the thrown error can't be serialized into the typed return.
+        data: z
+          .object({
+            email: z.string().email(),
+            password: z.string().min(1),
+          })
+          .or(
+            z.object({
+              email: z.string().email(),
+              password: z.string().min(1),
+            }),
+          ),
+      })
+      .parse(d).data,
   )
   .handler(async ({ data }) => {
     const { loginAdmin: doLogin } = await import("./admin-auth");
