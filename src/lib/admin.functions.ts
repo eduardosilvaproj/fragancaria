@@ -35,3 +35,7 @@ export const getAdminSession = createServerFn({ method: "GET" }).handler(
     return admin ? { userId: admin.userId, email: admin.email } : null;
   },
 );
+// MARKER_351bf30_v3: probe to verify deployment
+export const adminProbe = createServerFn({ method: "GET" }).handler(async () => {
+  return { hasSafeParse: true, version: "v3-no-validator", ts: Date.now() };
+});
