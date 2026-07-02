@@ -1,32 +1,19 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// Server functions do painel admin. loginAdmin/logoutAdmin/getAdminSession
-// delegam para src/lib/admin-auth.ts (server-only). O cookie httpOnly é a
-// fonte de verdade da sessão — o cliente nunca vê os tokens.
-
 export type AdminSession = { userId: string; email: string } | null;
 
 export const loginAdmin = createServerFn({ method: "POST" })
-  .validator((d: unknown) => {
-    // createServerFn transporta os argumentos sob `data`. Aceitar tanto o
-    // formato envelopado (`{ data: { email, password } }`) quanto o flat
-    // (`{ email, password }`), normalizando para o handler receber
-    // `{ email, password }` direto.
-    const inner = z.object({
-      email: z.string().email(),
-      password: z.string().min(1),
-    });
-    const wrapped = z
-      .object({ data: inner })
-      .transform((v) => v.data);
-    const flat = inner;
-    return z.union([wrapped, flat]).parse(d);
-  })
-  .handler(async ({ data }) => {
+  .handler(async ({ data }: { data: unknown }) => {
+    const parsed = z
+      .object({ email: z.string().email(), password: z.string().min(1) })
+      .safeParse(data);
+    if (!parsed.success) {
+      return { success: false as const, error: "DADOS_INVALIDOS" };
+    }
     const { loginAdmin: doLogin } = await import("./admin-auth");
     try {
-      const admin = await doLogin(data.email, data.password);
+      const admin = await doLogin(parsed.data.email, parsed.data.password);
       return { success: true as const, email: admin.email };
     } catch (err: any) {
       return { success: false as const, error: err?.message || "ERRO" };
