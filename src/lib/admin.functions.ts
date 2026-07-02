@@ -8,27 +8,21 @@ import { z } from "zod";
 export type AdminSession = { userId: string; email: string } | null;
 
 export const loginAdmin = createServerFn({ method: "POST" })
-  .validator((d: unknown) =>
-    z
-      .object({
-        // createServerFn wraps arguments under `data` on the wire; accept both
-        // shapes so client (`loginAdmin({ data: { email, password } })`) and
-        // direct callers work. Validating flat directly would Seroval-fail
-        // because the thrown error can't be serialized into the typed return.
-        data: z
-          .object({
-            email: z.string().email(),
-            password: z.string().min(1),
-          })
-          .or(
-            z.object({
-              email: z.string().email(),
-              password: z.string().min(1),
-            }),
-          ),
-      })
-      .parse(d).data,
-  )
+  .validator((d: unknown) => {
+    // createServerFn transporta os argumentos sob `data`. Aceitar tanto o
+    // formato envelopado (`{ data: { email, password } }`) quanto o flat
+    // (`{ email, password }`), normalizando para o handler receber
+    // `{ email, password }` direto.
+    const inner = z.object({
+      email: z.string().email(),
+      password: z.string().min(1),
+    });
+    const wrapped = z
+      .object({ data: inner })
+      .transform((v) => v.data);
+    const flat = inner;
+    return z.union([wrapped, flat]).parse(d);
+  })
   .handler(async ({ data }) => {
     const { loginAdmin: doLogin } = await import("./admin-auth");
     try {
