@@ -15,17 +15,20 @@ import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CompararRouteImport } from './routes/comparar'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
+import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
+import { Route as MinhaContaPedidosRouteImport } from './routes/minha-conta/pedidos'
 import { Route as AfiliadoRecuperarSenhaRouteImport } from './routes/afiliado/recuperar-senha'
 import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
@@ -83,6 +86,11 @@ const PrivacidadeRoute = PrivacidadeRouteImport.update({
   path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FavoritosRoute = FavoritosRouteImport.update({
   id: '/favoritos',
   path: '/favoritos',
@@ -106,6 +114,11 @@ const CheckoutRoute = CheckoutRouteImport.update({
 const CarrinhoRoute = CarrinhoRouteImport.update({
   id: '/carrinho',
   path: '/carrinho',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminLoginRoute = AdminLoginRouteImport.update({
@@ -136,6 +149,11 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
 const PedidoIdRoute = PedidoIdRouteImport.update({
   id: '/pedido/$id',
   path: '/pedido/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaContaPedidosRoute = MinhaContaPedidosRouteImport.update({
+  id: '/minha-conta/pedidos',
+  path: '/minha-conta/pedidos',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AfiliadoRecuperarSenhaRoute = AfiliadoRecuperarSenhaRouteImport.update({
@@ -276,11 +294,13 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -306,6 +326,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -320,11 +341,13 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -349,6 +372,7 @@ export interface FileRoutesByTo {
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
@@ -365,11 +389,13 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
   '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -395,6 +421,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosRoute
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
@@ -412,11 +439,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -442,6 +471,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/minha-conta/pedidos'
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
@@ -456,11 +486,13 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -485,6 +517,7 @@ export interface FileRouteTypes {
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/minha-conta/pedidos'
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin'
@@ -500,11 +533,13 @@ export interface FileRouteTypes {
     | '/'
     | '/admin'
     | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -530,6 +565,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/minha-conta/pedidos'
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
@@ -546,11 +582,13 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
   AdminLoginRoute: typeof AdminLoginRoute
+  CadastroRoute: typeof CadastroRoute
   CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompararRoute: typeof CompararRoute
   ContatoRoute: typeof ContatoRoute
   FavoritosRoute: typeof FavoritosRoute
+  LoginRoute: typeof LoginRoute
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   RastrearPedidoRoute: typeof RastrearPedidoRoute
@@ -562,6 +600,7 @@ export interface RootRouteChildren {
   AfiliadoDashboardRoute: typeof AfiliadoDashboardRouteWithChildren
   AfiliadoLoginRoute: typeof AfiliadoLoginRoute
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
+  MinhaContaPedidosRoute: typeof MinhaContaPedidosRoute
   PedidoIdRoute: typeof PedidoIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -612,6 +651,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/favoritos': {
       id: '/favoritos'
       path: '/favoritos'
@@ -645,6 +691,13 @@ declare module '@tanstack/react-router' {
       path: '/carrinho'
       fullPath: '/carrinho'
       preLoaderRoute: typeof CarrinhoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin-login': {
@@ -687,6 +740,13 @@ declare module '@tanstack/react-router' {
       path: '/pedido/$id'
       fullPath: '/pedido/$id'
       preLoaderRoute: typeof PedidoIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/minha-conta/pedidos': {
+      id: '/minha-conta/pedidos'
+      path: '/minha-conta/pedidos'
+      fullPath: '/minha-conta/pedidos'
+      preLoaderRoute: typeof MinhaContaPedidosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/afiliado/recuperar-senha': {
@@ -935,11 +995,13 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
   AdminLoginRoute: AdminLoginRoute,
+  CadastroRoute: CadastroRoute,
   CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
   CompararRoute: CompararRoute,
   ContatoRoute: ContatoRoute,
   FavoritosRoute: FavoritosRoute,
+  LoginRoute: LoginRoute,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   RastrearPedidoRoute: RastrearPedidoRoute,
@@ -951,6 +1013,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoDashboardRoute: AfiliadoDashboardRouteWithChildren,
   AfiliadoLoginRoute: AfiliadoLoginRoute,
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
+  MinhaContaPedidosRoute: MinhaContaPedidosRoute,
   PedidoIdRoute: PedidoIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,

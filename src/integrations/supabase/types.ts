@@ -41,6 +41,7 @@ export type Database = {
           total: number | null
           tracking_code: string | null
           updated_at: string
+          user_id: string | null
         }
         Insert: {
           amount?: number | null
@@ -68,6 +69,7 @@ export type Database = {
           total?: number | null
           tracking_code?: string | null
           updated_at?: string
+          user_id?: string | null
         }
         Update: {
           amount?: number | null
