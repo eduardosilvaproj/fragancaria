@@ -42,6 +42,8 @@ const inputSchema = z.object({
   discount: z.number().optional(),
   shippingPrice: z.number().optional(),
   shippingMethod: z.string().optional(),
+  // user_id do Supabase Auth quando o cliente está logado
+  userId: z.string().uuid().optional(),
 });
 
 export const createPayment = createServerFn({ method: "POST" })
@@ -164,6 +166,7 @@ export const createPayment = createServerFn({ method: "POST" })
         shipping_price: data.shippingPrice ?? 0,
         shipping_method: data.shippingMethod ?? null,
         payment_method: data.method,
+        user_id: data.userId ?? null,
         customer_name: `${data.payer.firstName} ${data.payer.lastName}`,
         customer_email: data.payer.email,
         payer_email: data.payer.email,

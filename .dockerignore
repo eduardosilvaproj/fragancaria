@@ -1,0 +1,12 @@
+node_modules
+dist
+.output
+.nitro
+.vinxi
+.tanstack
+.git
+.gitignore
+.env
+.env.*
+bun.lock
+*.log

@@ -1,3 +1,14 @@
+// WebSocket polyfill — MUST run before any Supabase client is constructed.
+// Node < 22 has no global WebSocket; @supabase/realtime-js throws on construct.
+// Inlined (not a side-effect import) so the bundler can't tree-shake it away.
+import ws from "ws";
+{
+  const g = globalThis as { WebSocket?: unknown };
+  if (typeof g.WebSocket === "undefined") {
+    g.WebSocket = ws;
+  }
+}
+
 import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
@@ -42,11 +53,7 @@ const BUILD_VERSION = new Date().toISOString().replace(/[:.-]/g, "").slice(0, 14
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
-      const handler = await getServerEntry();
-      const response = await handler.fetch(request, env, ctx);
-      const normalizedResponse = await normalizeCatastrophicSsrResponse(response);
-
-      // Handle version.json requests
+      // Handle version.json requests immediately (no SSR needed)
       const url = new URL(request.url);
       if (url.pathname === "/version.json") {
         return new Response(
@@ -61,6 +68,11 @@ export default {
           }
         );
       }
+
+      // SSR with timeout protection
+      const handler = await getServerEntry();
+      const response = await handler.fetch(request, env, ctx);
+      const normalizedResponse = await normalizeCatastrophicSsrResponse(response);
 
       return normalizedResponse;
     } catch (error) {

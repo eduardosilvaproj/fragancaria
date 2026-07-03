@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { CreditCard, Loader2, Copy, QrCode, FileText, Check, AlertCircle, Shield, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, SHIPPING_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
 import { useServerFn } from "@tanstack/react-start";
@@ -255,6 +256,7 @@ interface PaymentFormProps {
 }
 
 function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+  const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
@@ -442,6 +444,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
+        userId: user?.id,
         },
       });
 
@@ -458,7 +461,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
       }
 
       onDone({
-        orderId: res.data.orderId || res.data.id,
+        orderId: res.data.orderId,
         status: res.data.status || "approved",
         cardLast4: last4,
         cardBrand: CARD_BRAND_NAMES[cardBrand],
@@ -635,6 +638,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
 }
 
 function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+  const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
@@ -680,6 +684,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
+        userId: user?.id,
         },
       });
       if (!res.success) throw new Error(res.error);
@@ -702,7 +707,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", pixCode: code ?? undefined });
+    onDone({ orderId: orderId ?? undefined, status: "pending", pixCode: code ?? undefined });
   };
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -751,6 +756,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
 }
 
 function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+  const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [code, setCode] = useState<string | null>(null);
@@ -789,6 +795,7 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
+        userId: user?.id,
         },
       });
       if (!res.success) throw new Error(res.error);
@@ -811,7 +818,7 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
+    onDone({ orderId: orderId ?? undefined, status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
   };
 
   return (

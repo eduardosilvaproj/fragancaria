@@ -257,15 +257,11 @@ export const CartDrawerEditorial = () => {
                   </div>
                 </div>
               ))}
-            </div>
-          )}
-        </div>
 
-        {/* Footer */}
-        {items.length > 0 && (
-          <div className="px-6 py-6 border-t border-[#E0D8C7] bg-[#F8F4EA]">
-            {/* Coupon Section */}
-            <div className="mb-5 pb-5 border-b border-[#E0D8C7]">
+              {/* Cupom, frete, summary e Total ficam DENTRO do scroll (mesma
+                  estratégia Amazon/Shopee). Em telas baixas, o usuário rola até
+                  eles. O botão "Finalizar Compra" fica no footer fixo abaixo. */}
+              <div className="mb-5 pb-5 border-b border-[#E0D8C7]">
               {appliedCoupon ? (
                 <div className="flex items-center justify-between bg-[#1c6b4a]/10 px-3 py-2.5 border border-[#1c6b4a]/20">
                   <div className="flex items-center gap-2">
@@ -427,24 +423,16 @@ export const CartDrawerEditorial = () => {
               </span>
             </div>
 
-            {/* Checkout Button */}
-            <Link
-              to="/checkout"
-              onClick={() => setIsOpen(false)}
-              className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mt-4 mb-3"
-            >
-              Finalizar Compra
-            </Link>
-
+            {/* Continuar Comprando */}
             <button
               onClick={() => setIsOpen(false)}
-              className="w-full text-center text-[12px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
+              className="w-full text-center text-[12px] text-[#51635F] hover:text-[#0F3A3E] transition-colors mb-4"
             >
               Continuar Comprando
             </button>
 
             {/* Trust */}
-            <div className="flex items-center justify-center gap-4 mt-5 pt-4 border-t border-[#E0D8C7]">
+            <div className="flex items-center justify-center gap-4 pt-4 border-t border-[#E0D8C7]">
               <span className="text-[10px] text-[#9AA39F] uppercase tracking-wider">
                 Pagamento Seguro
               </span>
@@ -454,6 +442,28 @@ export const CartDrawerEditorial = () => {
                 <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">MC</span>
               </div>
             </div>
+          </div>
+          )}
+        </div>
+
+        {/* Footer fixo: Total + botão CTA sempre visível (não rola).
+            Em telas baixas, o usuário rola o conteúdo acima até o cupom/frete;
+            o Total + botão ficam SEMPRE visíveis no rodapé. */}
+        {items.length > 0 && (
+          <div className="px-6 py-4 border-t border-[#E0D8C7] bg-[#F8F4EA]">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[14px] font-medium text-[#0F3A3E]">Total</span>
+              <span className="font-serif text-[24px] text-[#0F3A3E]">
+                {formatPrice(total)}
+              </span>
+            </div>
+            <Link
+              to="/checkout"
+              onClick={() => setIsOpen(false)}
+              className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors"
+            >
+              Finalizar Compra
+            </Link>
           </div>
         )}
       </div>

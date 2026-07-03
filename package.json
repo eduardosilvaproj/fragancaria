@@ -8,7 +8,7 @@
     "build": "vite build && node scripts/create-index.mjs",
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
-    "start": "node dist/server/server.js",
+    "start": "node start.js",
     "lint": "eslint .",
     "format": "prettier --write ."
   },
@@ -89,6 +89,6 @@
     "prettier": "^3.7.3",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.56.1",
-    "vite": "^7.3.1"
+    "vite": "^7.3.6"
   }
 }
