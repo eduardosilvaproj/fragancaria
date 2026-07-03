@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, Heart, Menu, X, ShoppingBag, ChevronDown, ChevronRight } from "lucide-react";
+import { Search, Heart, Menu, X, ShoppingBag, ChevronDown, ChevronRight, User } from "lucide-react";
 import { CartDrawerEditorial } from "../shop/CartDrawerEditorial";
 import { SearchAutocomplete } from "../shop/SearchAutocomplete";
 import { cn } from "@/lib/utils";
@@ -243,6 +243,14 @@ export const NavbarEditorial = () => {
           </button>
 
           <Link
+            to="/login"
+            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
+            aria-label="Minha conta"
+          >
+            <User className="h-[15px] w-[15px]" />
+          </Link>
+
+          <Link
             to="/favoritos"
             className="relative cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
             aria-label="Favoritos"
@@ -445,6 +453,16 @@ export const NavbarEditorial = () => {
                       className="block font-serif text-2xl text-[#B07B1E]"
                     >
                       Ofertas
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
+                      to="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Minha conta
                     </Link>
                   </li>
 

@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
@@ -41,7 +41,9 @@ function ProductPage() {
   const [expandedSection, setExpandedSection] = useState<string | null>("descricao");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const addToCart = useCartStore((state) => state.addItem);
+  const setCartOpen = useCartStore((state) => state.setIsOpen);
   const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
+  const navigate = useNavigate();
 
   const product = useMemo(() => {
     return PRODUCTS.find((p) => p.id === id);
@@ -144,6 +146,19 @@ function ProductPage() {
       description: `${quantity}x ${product.name}`,
     });
     setTimeout(() => setIsAdding(false), 1500);
+  };
+
+  const handleBuyNow = () => {
+    addToCart({
+      id: product.id,
+      title: product.name,
+      price: product.price,
+      quantity,
+      image: product.images[0],
+      vendor: product.brand || "",
+    });
+    setCartOpen(false);
+    navigate({ to: "/checkout" });
   };
 
   const toggleSection = (section: string) => {
@@ -365,7 +380,10 @@ function ProductPage() {
                 </button>
 
                 {/* Buy Now */}
-                <button className="w-full py-[18px] border border-[#B07B1E] text-[#B07B1E] text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#B07B1E] hover:text-white transition-colors">
+                <button
+                  onClick={handleBuyNow}
+                  className="w-full py-[18px] border border-[#B07B1E] text-[#B07B1E] text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#B07B1E] hover:text-white transition-colors"
+                >
                   Comprar Agora
                 </button>
               </div>

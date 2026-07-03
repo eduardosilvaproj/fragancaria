@@ -156,6 +156,21 @@ export const affiliateAuth = {
   },
 
   /**
+   * Login com Google OAuth
+   */
+  async signInWithGoogle() {
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      servico: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/afiliado/dashboard`,
+      },
+    });
+
+    if (error) throw error;
+    return data;
+  },
+
+  /**
    * Recuperar senha
    */
   async resetPassword(email: string) {

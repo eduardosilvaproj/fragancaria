@@ -1,10 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Users,
   Search,
   Filter,
-  MoreHorizontal,
   Check,
   X,
   Eye,
@@ -13,96 +12,59 @@ import {
   DollarSign,
   TrendingUp,
   UserPlus,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { listAffiliates, type AdminAffiliateRow } from "@/lib/affiliates-admin.functions";
 
 export const Route = createFileRoute("/admin/afiliados")({
+  loader: async () => {
+    const result = await listAffiliates();
+    return { affiliates: result.data, error: result.error ?? null };
+  },
   component: AdminAfiliados,
 });
 
-// Mock data
-const MOCK_AFFILIATES = [
-  {
-    id: "1",
-    full_name: "Maria Silva",
-    email: "maria@email.com",
-    phone: "(11) 99999-1234",
-    status: "pending",
-    created_at: "2024-01-15",
-    instagram: "@mariasilva",
-    total_sales: 0,
-    total_commission: 0,
-  },
-  {
-    id: "2",
-    full_name: "João Santos",
-    email: "joao@email.com",
-    phone: "(21) 98888-5678",
-    status: "active",
-    created_at: "2024-01-10",
-    instagram: "@joaosantos",
-    total_sales: 15420,
-    total_commission: 1234,
-  },
-  {
-    id: "3",
-    full_name: "Ana Costa",
-    email: "ana@email.com",
-    phone: "(31) 97777-9012",
-    status: "active",
-    created_at: "2024-01-05",
-    instagram: "@anacosta",
-    total_sales: 8750,
-    total_commission: 700,
-  },
-  {
-    id: "4",
-    full_name: "Pedro Lima",
-    email: "pedro@email.com",
-    phone: "(41) 96666-3456",
-    status: "suspended",
-    created_at: "2024-01-01",
-    instagram: "@pedrolima",
-    total_sales: 2300,
-    total_commission: 184,
-  },
-  {
-    id: "5",
-    full_name: "Carla Oliveira",
-    email: "carla@email.com",
-    phone: "(51) 95555-7890",
-    status: "pending",
-    created_at: "2024-01-18",
-    instagram: "@carlaoliveira",
-    total_sales: 0,
-    total_commission: 0,
-  },
-];
-
 const STATUS_CONFIG = {
   pending: { label: "Pendente", color: "bg-amber-100 text-amber-700" },
-  active: { label: "Ativo", color: "bg-emerald-100 text-emerald-700" },
+  approved: { label: "Ativo", color: "bg-emerald-100 text-emerald-700" },
   suspended: { label: "Suspenso", color: "bg-red-100 text-red-700" },
   rejected: { label: "Rejeitado", color: "bg-gray-100 text-gray-700" },
 };
 
+function statusConfigFor(status: string) {
+  return (
+    STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? {
+      label: status,
+      color: "bg-gray-100 text-gray-700",
+    }
+  );
+}
+
 function AdminAfiliados() {
+  const { affiliates, error } = Route.useLoaderData() as {
+    affiliates: AdminAffiliateRow[];
+    error: string | null;
+  };
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [selectedAffiliate, setSelectedAffiliate] = useState<string | null>(null);
 
-  const filteredAffiliates = MOCK_AFFILIATES.filter((affiliate) => {
-    const matchesSearch =
-      affiliate.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      affiliate.email.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = statusFilter === "all" || affiliate.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredAffiliates = useMemo(
+    () =>
+      affiliates.filter((affiliate) => {
+        const matchesSearch =
+          affiliate.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          affiliate.email.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesStatus = statusFilter === "all" || affiliate.status === statusFilter;
+        return matchesSearch && matchesStatus;
+      }),
+    [affiliates, searchQuery, statusFilter],
+  );
 
-  const pendingCount = MOCK_AFFILIATES.filter((a) => a.status === "pending").length;
-  const activeCount = MOCK_AFFILIATES.filter((a) => a.status === "active").length;
-  const totalSales = MOCK_AFFILIATES.reduce((sum, a) => sum + a.total_sales, 0);
-  const totalCommissions = MOCK_AFFILIATES.reduce((sum, a) => sum + a.total_commission, 0);
+  const pendingCount = affiliates.filter((a) => a.status === "pending").length;
+  const activeCount = affiliates.filter((a) => a.status === "approved").length;
+  const totalSales = affiliates.reduce((sum, a) => sum + a.total_sales, 0);
+  const totalCommissions = affiliates.reduce((sum, a) => sum + a.total_commission, 0);
 
   const formatCurrency = (value: number) =>
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
@@ -119,9 +81,29 @@ function AdminAfiliados() {
         </div>
         <h1 className="font-serif text-3xl md:text-4xl text-[#0F3A3E]">Afiliados</h1>
         <p className="text-[#51635F] mt-2">
-          Gerencie seus afiliados, aprove cadastros e acompanhe comissões.
+          Acompanhe cadastros, vendas e comissões dos seus afiliados.
         </p>
       </div>
+
+      {/* Read-only notice */}
+      <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
+        <Lock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+        <div className="text-sm text-amber-800">
+          <span className="font-medium">Modo somente leitura.</span> Aprovar,
+          rejeitar e suspender afiliados ficam desabilitados até o painel
+          administrativo ter autenticação. Os dados abaixo são reais (Supabase).
+        </div>
+      </div>
+
+      {/* Load error */}
+      {error && (
+        <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
+          <X className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+          <div className="text-sm text-red-800">
+            Erro ao carregar afiliados: {error}
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -254,14 +236,14 @@ function AdminAfiliados() {
                     <span
                       className={cn(
                         "inline-block px-3 py-1 rounded-full text-xs font-medium",
-                        STATUS_CONFIG[affiliate.status as keyof typeof STATUS_CONFIG].color
+                        statusConfigFor(affiliate.status).color
                       )}
                     >
-                      {STATUS_CONFIG[affiliate.status as keyof typeof STATUS_CONFIG].label}
+                      {statusConfigFor(affiliate.status).label}
                     </span>
                   </td>
                   <td className="p-4 hidden md:table-cell">
-                    <span className="text-sm text-[#51635F]">{affiliate.instagram}</span>
+                    <span className="text-sm text-[#51635F]">{affiliate.instagram ?? "—"}</span>
                   </td>
                   <td className="p-4 text-right hidden lg:table-cell">
                     <span className="font-medium text-[#0F3A3E]">
@@ -278,37 +260,35 @@ function AdminAfiliados() {
                       {affiliate.status === "pending" && (
                         <>
                           <button
-                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                            title="Aprovar"
+                            disabled
+                            className="p-2 text-emerald-600 rounded-lg opacity-40 cursor-not-allowed"
+                            title="Aprovar (requer autenticação admin)"
                           >
                             <Check className="h-4 w-4" />
                           </button>
                           <button
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Rejeitar"
+                            disabled
+                            className="p-2 text-red-600 rounded-lg opacity-40 cursor-not-allowed"
+                            title="Rejeitar (requer autenticação admin)"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </>
                       )}
                       <button
-                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
-                        title="Ver detalhes"
+                        disabled
+                        className="p-2 text-[#51635F] rounded-lg opacity-40 cursor-not-allowed"
+                        title="Ver detalhes (em breve)"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <button
-                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
+                      <a
+                        href={`mailto:${affiliate.email}`}
+                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors inline-flex"
                         title="Enviar email"
                       >
                         <Mail className="h-4 w-4" />
-                      </button>
-                      <button
-                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
-                        title="Mais opções"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </button>
+                      </a>
                     </div>
                   </td>
                 </tr>

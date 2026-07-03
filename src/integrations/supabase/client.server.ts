@@ -6,6 +6,16 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from './types';
 import ws from 'ws';
 
+// Node < 22 has no native WebSocket. @supabase/realtime-js's WebSocketFactory
+// detects the runtime statically (and throws "Node.js N detected without native
+// WebSocket support") BEFORE it ever consults the client's `transport` option.
+// The factory's first check is `typeof WebSocket !== 'undefined'` -> treated as
+// native. Polyfilling the global here makes that check pass, so the realtime
+// client never throws during SSR. This file is server-only.
+if (typeof (globalThis as { WebSocket?: unknown }).WebSocket === 'undefined') {
+  (globalThis as { WebSocket?: unknown }).WebSocket = ws;
+}
+
 function isNewSupabaseApiKey(value: string): boolean {
   return value.startsWith('sb_publishable_') || value.startsWith('sb_secret_');
 }
@@ -39,9 +49,25 @@ function createSupabaseAdminClient() {
       ...(!SUPABASE_URL ? ['SUPABASE_URL'] : []),
       ...(!SUPABASE_SERVICE_ROLE_KEY ? ['SUPABASE_SERVICE_ROLE_KEY'] : []),
     ];
-    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud.`;
-    console.error(`[Supabase] ${message}`);
-    throw new Error(message);
+    const message = `Missing Supabase environment variable(s): ${missing.join(', ')}. Connect Supabase in Lovable Cloud. Set these in Railway: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY`;
+    console.warn(`[Supabase] ${message}`);
+    // Return a mock client instead of throwing - allows SSR to continue
+    // This will fail gracefully when actual DB operations are attempted
+    return createClient<Database>('https://placeholder.supabase.co', 'placeholder-key', {
+      global: {
+        fetch: createSupabaseFetch('placeholder-key'),
+      },
+      auth: {
+        storage: undefined,
+        persistSession: false,
+        autoRefreshToken: false,
+      },
+      realtime: {
+        // Node < 22 has no native WebSocket; supabase-js still constructs a
+        // RealtimeClient and throws unless a transport is provided.
+        transport: ws as unknown as typeof WebSocket,
+      },
+    });
   }
 
   return createClient<Database>(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
@@ -54,8 +80,9 @@ function createSupabaseAdminClient() {
       autoRefreshToken: false,
     },
     realtime: {
-      // @ts-ignore - ws types may not match exactly
-      transport: ws,
+      // Node < 22 has no native WebSocket; supabase-js still constructs a
+      // RealtimeClient and throws unless a transport is provided.
+      transport: ws as unknown as typeof WebSocket,
     },
   });
 }

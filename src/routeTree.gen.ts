@@ -15,16 +15,22 @@ import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as MinhaContaRouteImport } from './routes/minha-conta'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as ContatoRouteImport } from './routes/contato'
 import { Route as CompararRouteImport } from './routes/comparar'
 import { Route as CheckoutRouteImport } from './routes/checkout'
 import { Route as CarrinhoRouteImport } from './routes/carrinho'
+import { Route as CadastroRouteImport } from './routes/cadastro'
+import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MinhaContaIndexRouteImport } from './routes/minha-conta/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
+import { Route as MinhaContaPedidosRouteImport } from './routes/minha-conta/pedidos'
 import { Route as AfiliadoRecuperarSenhaRouteImport } from './routes/afiliado/recuperar-senha'
 import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
@@ -44,7 +50,14 @@ import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configura
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAfiliadosRouteImport } from './routes/admin/afiliados'
+import { Route as MinhaContaPerfilIndexRouteImport } from './routes/minha-conta/perfil/index'
+import { Route as MinhaContaPedidosIndexRouteImport } from './routes/minha-conta/pedidos/index'
+import { Route as MinhaContaNotificacoesIndexRouteImport } from './routes/minha-conta/notificacoes/index'
+import { Route as MinhaContaFavoritosIndexRouteImport } from './routes/minha-conta/favoritos/index'
+import { Route as MinhaContaCancelamentosIndexRouteImport } from './routes/minha-conta/cancelamentos/index'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
+import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
@@ -81,6 +94,16 @@ const PrivacidadeRoute = PrivacidadeRouteImport.update({
   path: '/privacidade',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MinhaContaRoute = MinhaContaRouteImport.update({
+  id: '/minha-conta',
+  path: '/minha-conta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FavoritosRoute = FavoritosRouteImport.update({
   id: '/favoritos',
   path: '/favoritos',
@@ -106,6 +129,16 @@ const CarrinhoRoute = CarrinhoRouteImport.update({
   path: '/carrinho',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CadastroRoute = CadastroRouteImport.update({
+  id: '/cadastro',
+  path: '/cadastro',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminLoginRoute = AdminLoginRouteImport.update({
+  id: '/admin-login',
+  path: '/admin-login',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRoute = AdminRouteImport.update({
   id: '/admin',
   path: '/admin',
@@ -115,6 +148,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaContaIndexRoute = MinhaContaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MinhaContaRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -130,6 +168,11 @@ const PedidoIdRoute = PedidoIdRouteImport.update({
   id: '/pedido/$id',
   path: '/pedido/$id',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaContaPedidosRoute = MinhaContaPedidosRouteImport.update({
+  id: '/pedidos',
+  path: '/pedidos',
+  getParentRoute: () => MinhaContaRoute,
 } as any)
 const AfiliadoRecuperarSenhaRoute = AfiliadoRecuperarSenhaRouteImport.update({
   id: '/afiliado/recuperar-senha',
@@ -226,11 +269,51 @@ const AdminAfiliadosRoute = AdminAfiliadosRouteImport.update({
   path: '/afiliados',
   getParentRoute: () => AdminRoute,
 } as any)
+const MinhaContaPerfilIndexRoute = MinhaContaPerfilIndexRouteImport.update({
+  id: '/perfil/',
+  path: '/perfil/',
+  getParentRoute: () => MinhaContaRoute,
+} as any)
+const MinhaContaPedidosIndexRoute = MinhaContaPedidosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MinhaContaPedidosRoute,
+} as any)
+const MinhaContaNotificacoesIndexRoute =
+  MinhaContaNotificacoesIndexRouteImport.update({
+    id: '/notificacoes/',
+    path: '/notificacoes/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaFavoritosIndexRoute =
+  MinhaContaFavoritosIndexRouteImport.update({
+    id: '/favoritos/',
+    path: '/favoritos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaCancelamentosIndexRoute =
+  MinhaContaCancelamentosIndexRouteImport.update({
+    id: '/cancelamentos/',
+    path: '/cancelamentos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
 const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AfiliadoDashboardRoute,
 } as any)
+const MinhaContaPedidosOrderIdRoute =
+  MinhaContaPedidosOrderIdRouteImport.update({
+    id: '/$orderId',
+    path: '/$orderId',
+    getParentRoute: () => MinhaContaPedidosRoute,
+  } as any)
+const ApiPublicWhatsappWebhookRoute =
+  ApiPublicWhatsappWebhookRouteImport.update({
+    id: '/api/public/whatsapp-webhook',
+    path: '/api/public/whatsapp-webhook',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp-webhook',
   path: '/api/public/mp-webhook',
@@ -262,11 +345,15 @@ const AfiliadoDashboardConfiguracoesRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
+  '/minha-conta': typeof MinhaContaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -292,23 +379,35 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosRouteWithChildren
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/minha-conta/': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -336,22 +435,34 @@ export interface FileRoutesByTo {
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/minha-conta': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/admin': typeof AdminRouteWithChildren
+  '/admin-login': typeof AdminLoginRoute
+  '/cadastro': typeof CadastroRoute
   '/carrinho': typeof CarrinhoRoute
   '/checkout': typeof CheckoutRoute
   '/comparar': typeof CompararRoute
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
+  '/login': typeof LoginRoute
+  '/minha-conta': typeof MinhaContaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -377,26 +488,39 @@ export interface FileRoutesById {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosRouteWithChildren
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/minha-conta/': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/admin'
+    | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
+    | '/minha-conta'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -422,23 +546,35 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/minha-conta/pedidos'
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
+    | '/minha-conta/'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard/'
+    | '/minha-conta/cancelamentos/'
+    | '/minha-conta/favoritos/'
+    | '/minha-conta/notificacoes/'
+    | '/minha-conta/pedidos/'
+    | '/minha-conta/perfil/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -466,21 +602,33 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin'
+    | '/minha-conta'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard'
+    | '/minha-conta/cancelamentos'
+    | '/minha-conta/favoritos'
+    | '/minha-conta/notificacoes'
+    | '/minha-conta/pedidos'
+    | '/minha-conta/perfil'
   id:
     | '__root__'
     | '/'
     | '/admin'
+    | '/admin-login'
+    | '/cadastro'
     | '/carrinho'
     | '/checkout'
     | '/comparar'
     | '/contato'
     | '/favoritos'
+    | '/login'
+    | '/minha-conta'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -506,25 +654,38 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
+    | '/minha-conta/pedidos'
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
+    | '/minha-conta/'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/api/public/whatsapp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard/'
+    | '/minha-conta/cancelamentos/'
+    | '/minha-conta/favoritos/'
+    | '/minha-conta/notificacoes/'
+    | '/minha-conta/pedidos/'
+    | '/minha-conta/perfil/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AdminLoginRoute: typeof AdminLoginRoute
+  CadastroRoute: typeof CadastroRoute
   CarrinhoRoute: typeof CarrinhoRoute
   CheckoutRoute: typeof CheckoutRoute
   CompararRoute: typeof CompararRoute
   ContatoRoute: typeof ContatoRoute
   FavoritosRoute: typeof FavoritosRoute
+  LoginRoute: typeof LoginRoute
+  MinhaContaRoute: typeof MinhaContaRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   RastrearPedidoRoute: typeof RastrearPedidoRoute
@@ -539,6 +700,7 @@ export interface RootRouteChildren {
   PedidoIdRoute: typeof PedidoIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
+  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -585,6 +747,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacidadeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/minha-conta': {
+      id: '/minha-conta'
+      path: '/minha-conta'
+      fullPath: '/minha-conta'
+      preLoaderRoute: typeof MinhaContaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/favoritos': {
       id: '/favoritos'
       path: '/favoritos'
@@ -620,6 +796,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CarrinhoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cadastro': {
+      id: '/cadastro'
+      path: '/cadastro'
+      fullPath: '/cadastro'
+      preLoaderRoute: typeof CadastroRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin-login': {
+      id: '/admin-login'
+      path: '/admin-login'
+      fullPath: '/admin-login'
+      preLoaderRoute: typeof AdminLoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin': {
       id: '/admin'
       path: '/admin'
@@ -633,6 +823,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/minha-conta/': {
+      id: '/minha-conta/'
+      path: '/'
+      fullPath: '/minha-conta/'
+      preLoaderRoute: typeof MinhaContaIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -654,6 +851,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/pedido/$id'
       preLoaderRoute: typeof PedidoIdRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/minha-conta/pedidos': {
+      id: '/minha-conta/pedidos'
+      path: '/pedidos'
+      fullPath: '/minha-conta/pedidos'
+      preLoaderRoute: typeof MinhaContaPedidosRouteImport
+      parentRoute: typeof MinhaContaRoute
     }
     '/afiliado/recuperar-senha': {
       id: '/afiliado/recuperar-senha'
@@ -788,12 +992,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAfiliadosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/minha-conta/perfil/': {
+      id: '/minha-conta/perfil/'
+      path: '/perfil'
+      fullPath: '/minha-conta/perfil/'
+      preLoaderRoute: typeof MinhaContaPerfilIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/pedidos/': {
+      id: '/minha-conta/pedidos/'
+      path: '/'
+      fullPath: '/minha-conta/pedidos/'
+      preLoaderRoute: typeof MinhaContaPedidosIndexRouteImport
+      parentRoute: typeof MinhaContaPedidosRoute
+    }
+    '/minha-conta/notificacoes/': {
+      id: '/minha-conta/notificacoes/'
+      path: '/notificacoes'
+      fullPath: '/minha-conta/notificacoes/'
+      preLoaderRoute: typeof MinhaContaNotificacoesIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/favoritos/': {
+      id: '/minha-conta/favoritos/'
+      path: '/favoritos'
+      fullPath: '/minha-conta/favoritos/'
+      preLoaderRoute: typeof MinhaContaFavoritosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/cancelamentos/': {
+      id: '/minha-conta/cancelamentos/'
+      path: '/cancelamentos'
+      fullPath: '/minha-conta/cancelamentos/'
+      preLoaderRoute: typeof MinhaContaCancelamentosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
     '/afiliado/dashboard/': {
       id: '/afiliado/dashboard/'
       path: '/'
       fullPath: '/afiliado/dashboard/'
       preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/minha-conta/pedidos/$orderId': {
+      id: '/minha-conta/pedidos/$orderId'
+      path: '/$orderId'
+      fullPath: '/minha-conta/pedidos/$orderId'
+      preLoaderRoute: typeof MinhaContaPedidosOrderIdRouteImport
+      parentRoute: typeof MinhaContaPedidosRoute
+    }
+    '/api/public/whatsapp-webhook': {
+      id: '/api/public/whatsapp-webhook'
+      path: '/api/public/whatsapp-webhook'
+      fullPath: '/api/public/whatsapp-webhook'
+      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/public/mp-webhook': {
       id: '/api/public/mp-webhook'
@@ -871,6 +1124,41 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface MinhaContaPedidosRouteChildren {
+  MinhaContaPedidosOrderIdRoute: typeof MinhaContaPedidosOrderIdRoute
+  MinhaContaPedidosIndexRoute: typeof MinhaContaPedidosIndexRoute
+}
+
+const MinhaContaPedidosRouteChildren: MinhaContaPedidosRouteChildren = {
+  MinhaContaPedidosOrderIdRoute: MinhaContaPedidosOrderIdRoute,
+  MinhaContaPedidosIndexRoute: MinhaContaPedidosIndexRoute,
+}
+
+const MinhaContaPedidosRouteWithChildren =
+  MinhaContaPedidosRoute._addFileChildren(MinhaContaPedidosRouteChildren)
+
+interface MinhaContaRouteChildren {
+  MinhaContaPedidosRoute: typeof MinhaContaPedidosRouteWithChildren
+  MinhaContaIndexRoute: typeof MinhaContaIndexRoute
+  MinhaContaCancelamentosIndexRoute: typeof MinhaContaCancelamentosIndexRoute
+  MinhaContaFavoritosIndexRoute: typeof MinhaContaFavoritosIndexRoute
+  MinhaContaNotificacoesIndexRoute: typeof MinhaContaNotificacoesIndexRoute
+  MinhaContaPerfilIndexRoute: typeof MinhaContaPerfilIndexRoute
+}
+
+const MinhaContaRouteChildren: MinhaContaRouteChildren = {
+  MinhaContaPedidosRoute: MinhaContaPedidosRouteWithChildren,
+  MinhaContaIndexRoute: MinhaContaIndexRoute,
+  MinhaContaCancelamentosIndexRoute: MinhaContaCancelamentosIndexRoute,
+  MinhaContaFavoritosIndexRoute: MinhaContaFavoritosIndexRoute,
+  MinhaContaNotificacoesIndexRoute: MinhaContaNotificacoesIndexRoute,
+  MinhaContaPerfilIndexRoute: MinhaContaPerfilIndexRoute,
+}
+
+const MinhaContaRouteWithChildren = MinhaContaRoute._addFileChildren(
+  MinhaContaRouteChildren,
+)
+
 interface AfiliadoDashboardRouteChildren {
   AfiliadoDashboardConfiguracoesRoute: typeof AfiliadoDashboardConfiguracoesRoute
   AfiliadoDashboardLinksRoute: typeof AfiliadoDashboardLinksRoute
@@ -893,11 +1181,15 @@ const AfiliadoDashboardRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
+  AdminLoginRoute: AdminLoginRoute,
+  CadastroRoute: CadastroRoute,
   CarrinhoRoute: CarrinhoRoute,
   CheckoutRoute: CheckoutRoute,
   CompararRoute: CompararRoute,
   ContatoRoute: ContatoRoute,
   FavoritosRoute: FavoritosRoute,
+  LoginRoute: LoginRoute,
+  MinhaContaRoute: MinhaContaRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   RastrearPedidoRoute: RastrearPedidoRoute,
@@ -912,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   PedidoIdRoute: PedidoIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
+  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
