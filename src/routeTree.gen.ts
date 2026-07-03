@@ -15,6 +15,7 @@ import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
+import { Route as MinhaContaRouteImport } from './routes/minha-conta'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as FavoritosRouteImport } from './routes/favoritos'
 import { Route as ContatoRouteImport } from './routes/contato'
@@ -24,6 +25,7 @@ import { Route as CarrinhoRouteImport } from './routes/carrinho'
 import { Route as CadastroRouteImport } from './routes/cadastro'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as MinhaContaIndexRouteImport } from './routes/minha-conta/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
@@ -46,7 +48,13 @@ import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configura
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAfiliadosRouteImport } from './routes/admin/afiliados'
+import { Route as MinhaContaPerfilIndexRouteImport } from './routes/minha-conta/perfil/index'
+import { Route as MinhaContaPedidosIndexRouteImport } from './routes/minha-conta/pedidos/index'
+import { Route as MinhaContaNotificacoesIndexRouteImport } from './routes/minha-conta/notificacoes/index'
+import { Route as MinhaContaFavoritosIndexRouteImport } from './routes/minha-conta/favoritos/index'
+import { Route as MinhaContaCancelamentosIndexRouteImport } from './routes/minha-conta/cancelamentos/index'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
@@ -81,6 +89,11 @@ const ProdutosRoute = ProdutosRouteImport.update({
 const PrivacidadeRoute = PrivacidadeRouteImport.update({
   id: '/privacidade',
   path: '/privacidade',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaContaRoute = MinhaContaRouteImport.update({
+  id: '/minha-conta',
+  path: '/minha-conta',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -127,6 +140,11 @@ const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const MinhaContaIndexRoute = MinhaContaIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => MinhaContaRoute,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -238,11 +256,45 @@ const AdminAfiliadosRoute = AdminAfiliadosRouteImport.update({
   path: '/afiliados',
   getParentRoute: () => AdminRoute,
 } as any)
+const MinhaContaPerfilIndexRoute = MinhaContaPerfilIndexRouteImport.update({
+  id: '/perfil/',
+  path: '/perfil/',
+  getParentRoute: () => MinhaContaRoute,
+} as any)
+const MinhaContaPedidosIndexRoute = MinhaContaPedidosIndexRouteImport.update({
+  id: '/pedidos/',
+  path: '/pedidos/',
+  getParentRoute: () => MinhaContaRoute,
+} as any)
+const MinhaContaNotificacoesIndexRoute =
+  MinhaContaNotificacoesIndexRouteImport.update({
+    id: '/notificacoes/',
+    path: '/notificacoes/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaFavoritosIndexRoute =
+  MinhaContaFavoritosIndexRouteImport.update({
+    id: '/favoritos/',
+    path: '/favoritos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaCancelamentosIndexRoute =
+  MinhaContaCancelamentosIndexRouteImport.update({
+    id: '/cancelamentos/',
+    path: '/cancelamentos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
 const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AfiliadoDashboardRoute,
 } as any)
+const MinhaContaPedidosOrderIdRoute =
+  MinhaContaPedidosOrderIdRouteImport.update({
+    id: '/pedidos/$orderId',
+    path: '/pedidos/$orderId',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   id: '/api/public/mp-webhook',
   path: '/api/public/mp-webhook',
@@ -281,6 +333,7 @@ export interface FileRoutesByFullPath {
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
   '/login': typeof LoginRoute
+  '/minha-conta': typeof MinhaContaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -309,12 +362,19 @@ export interface FileRoutesByFullPath {
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/minha-conta/': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -352,12 +412,19 @@ export interface FileRoutesByTo {
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/minha-conta': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -370,6 +437,7 @@ export interface FileRoutesById {
   '/contato': typeof ContatoRoute
   '/favoritos': typeof FavoritosRoute
   '/login': typeof LoginRoute
+  '/minha-conta': typeof MinhaContaRouteWithChildren
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
@@ -398,12 +466,19 @@ export interface FileRoutesById {
   '/pedido/$id': typeof PedidoIdRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/minha-conta/': typeof MinhaContaIndexRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
+  '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
+  '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
+  '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
+  '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -417,6 +492,7 @@ export interface FileRouteTypes {
     | '/contato'
     | '/favoritos'
     | '/login'
+    | '/minha-conta'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -445,12 +521,19 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
+    | '/minha-conta/'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard/'
+    | '/minha-conta/cancelamentos/'
+    | '/minha-conta/favoritos/'
+    | '/minha-conta/notificacoes/'
+    | '/minha-conta/pedidos/'
+    | '/minha-conta/perfil/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -488,12 +571,19 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin'
+    | '/minha-conta'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard'
+    | '/minha-conta/cancelamentos'
+    | '/minha-conta/favoritos'
+    | '/minha-conta/notificacoes'
+    | '/minha-conta/pedidos'
+    | '/minha-conta/perfil'
   id:
     | '__root__'
     | '/'
@@ -505,6 +595,7 @@ export interface FileRouteTypes {
     | '/contato'
     | '/favoritos'
     | '/login'
+    | '/minha-conta'
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
@@ -533,12 +624,19 @@ export interface FileRouteTypes {
     | '/pedido/$id'
     | '/produto/$id'
     | '/admin/'
+    | '/minha-conta/'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/public/mp-webhook'
+    | '/minha-conta/pedidos/$orderId'
     | '/afiliado/dashboard/'
+    | '/minha-conta/cancelamentos/'
+    | '/minha-conta/favoritos/'
+    | '/minha-conta/notificacoes/'
+    | '/minha-conta/pedidos/'
+    | '/minha-conta/perfil/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -551,6 +649,7 @@ export interface RootRouteChildren {
   ContatoRoute: typeof ContatoRoute
   FavoritosRoute: typeof FavoritosRoute
   LoginRoute: typeof LoginRoute
+  MinhaContaRoute: typeof MinhaContaRouteWithChildren
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   RastrearPedidoRoute: typeof RastrearPedidoRoute
@@ -609,6 +708,13 @@ declare module '@tanstack/react-router' {
       path: '/privacidade'
       fullPath: '/privacidade'
       preLoaderRoute: typeof PrivacidadeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/minha-conta': {
+      id: '/minha-conta'
+      path: '/minha-conta'
+      fullPath: '/minha-conta'
+      preLoaderRoute: typeof MinhaContaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -673,6 +779,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/minha-conta/': {
+      id: '/minha-conta/'
+      path: '/'
+      fullPath: '/minha-conta/'
+      preLoaderRoute: typeof MinhaContaIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
     }
     '/admin/': {
       id: '/admin/'
@@ -828,12 +941,54 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAfiliadosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/minha-conta/perfil/': {
+      id: '/minha-conta/perfil/'
+      path: '/perfil'
+      fullPath: '/minha-conta/perfil/'
+      preLoaderRoute: typeof MinhaContaPerfilIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/pedidos/': {
+      id: '/minha-conta/pedidos/'
+      path: '/pedidos'
+      fullPath: '/minha-conta/pedidos/'
+      preLoaderRoute: typeof MinhaContaPedidosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/notificacoes/': {
+      id: '/minha-conta/notificacoes/'
+      path: '/notificacoes'
+      fullPath: '/minha-conta/notificacoes/'
+      preLoaderRoute: typeof MinhaContaNotificacoesIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/favoritos/': {
+      id: '/minha-conta/favoritos/'
+      path: '/favoritos'
+      fullPath: '/minha-conta/favoritos/'
+      preLoaderRoute: typeof MinhaContaFavoritosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/cancelamentos/': {
+      id: '/minha-conta/cancelamentos/'
+      path: '/cancelamentos'
+      fullPath: '/minha-conta/cancelamentos/'
+      preLoaderRoute: typeof MinhaContaCancelamentosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
     '/afiliado/dashboard/': {
       id: '/afiliado/dashboard/'
       path: '/'
       fullPath: '/afiliado/dashboard/'
       preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
+    }
+    '/minha-conta/pedidos/$orderId': {
+      id: '/minha-conta/pedidos/$orderId'
+      path: '/pedidos/$orderId'
+      fullPath: '/minha-conta/pedidos/$orderId'
+      preLoaderRoute: typeof MinhaContaPedidosOrderIdRouteImport
+      parentRoute: typeof MinhaContaRoute
     }
     '/api/public/mp-webhook': {
       id: '/api/public/mp-webhook'
@@ -911,6 +1066,30 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface MinhaContaRouteChildren {
+  MinhaContaIndexRoute: typeof MinhaContaIndexRoute
+  MinhaContaPedidosOrderIdRoute: typeof MinhaContaPedidosOrderIdRoute
+  MinhaContaCancelamentosIndexRoute: typeof MinhaContaCancelamentosIndexRoute
+  MinhaContaFavoritosIndexRoute: typeof MinhaContaFavoritosIndexRoute
+  MinhaContaNotificacoesIndexRoute: typeof MinhaContaNotificacoesIndexRoute
+  MinhaContaPedidosIndexRoute: typeof MinhaContaPedidosIndexRoute
+  MinhaContaPerfilIndexRoute: typeof MinhaContaPerfilIndexRoute
+}
+
+const MinhaContaRouteChildren: MinhaContaRouteChildren = {
+  MinhaContaIndexRoute: MinhaContaIndexRoute,
+  MinhaContaPedidosOrderIdRoute: MinhaContaPedidosOrderIdRoute,
+  MinhaContaCancelamentosIndexRoute: MinhaContaCancelamentosIndexRoute,
+  MinhaContaFavoritosIndexRoute: MinhaContaFavoritosIndexRoute,
+  MinhaContaNotificacoesIndexRoute: MinhaContaNotificacoesIndexRoute,
+  MinhaContaPedidosIndexRoute: MinhaContaPedidosIndexRoute,
+  MinhaContaPerfilIndexRoute: MinhaContaPerfilIndexRoute,
+}
+
+const MinhaContaRouteWithChildren = MinhaContaRoute._addFileChildren(
+  MinhaContaRouteChildren,
+)
+
 interface AfiliadoDashboardRouteChildren {
   AfiliadoDashboardConfiguracoesRoute: typeof AfiliadoDashboardConfiguracoesRoute
   AfiliadoDashboardLinksRoute: typeof AfiliadoDashboardLinksRoute
@@ -940,6 +1119,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContatoRoute: ContatoRoute,
   FavoritosRoute: FavoritosRoute,
   LoginRoute: LoginRoute,
+  MinhaContaRoute: MinhaContaRouteWithChildren,
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   RastrearPedidoRoute: RastrearPedidoRoute,
