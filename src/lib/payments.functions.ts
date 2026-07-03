@@ -1,230 +1,151 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-
 const MP_API = "https://api.mercadopago.com/v1/payments";
-
+const cpfSchema = z.string().min(11).max(14).transform((v) => v.replace(/\D/g, "")).refine((d) => d.length === 11, "CPF deve ter 11 digitos");
 const payerSchema = z.object({
   email: z.string().email(),
-  firstName: z.string().min(1),
-  lastName: z.string().min(1),
-  identification: z.object({ type: z.string(), number: z.string().min(1) }),
-  address: z
-    .object({
-      zipCode: z.string(),
-      streetName: z.string(),
-      streetNumber: z.string(),
-      neighborhood: z.string(),
-      city: z.string(),
-      state: z.string(),
-      complement: z.string().optional(),
-    })
-    .optional(),
+  firstName: z.string().min(1).max(120),
+  lastName: z.string().min(1).max(120),
+  identification: z.object({ type: z.literal("CPF"), number: cpfSchema }),
+  address: z.object({ zipCode: z.string().min(8).max(9), streetName: z.string().min(1), streetNumber: z.string().min(1), neighborhood: z.string().min(1), city: z.string().min(1), state: z.string().length(2), complement: z.string().optional() }).optional(),
 });
-
-const cartItemSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  quantity: z.number().int().positive(),
-  price: z.number().positive(),
-  image: z.string().optional(),
-});
-
+const cartItemSchema = z.object({ id: z.string(), title: z.string(), quantity: z.number().int().positive(), price: z.number().positive(), image: z.string().optional() });
 const inputSchema = z.object({
   method: z.enum(["pix", "boleto", "credit_card"]),
-  amount: z.number().positive(),
-  description: z.string().min(1),
+  amount: z.number().positive().max(1_000_000),
+  description: z.string().min(1).max(256),
   payer: payerSchema,
   token: z.string().optional(),
   installments: z.number().int().min(1).max(12).optional(),
-  // Dados extras para salvar no pedido
-  items: z.array(cartItemSchema).optional(),
-  subtotal: z.number().optional(),
-  discount: z.number().optional(),
-  shippingPrice: z.number().optional(),
+  paymentMethodId: z.string().optional(),
+  issuerId: z.string().optional(),
+  items: z.array(cartItemSchema).min(1).optional(),
+  subtotal: z.number().nonnegative().optional(),
+  discount: z.number().nonnegative().optional(),
+  shippingPrice: z.number().nonnegative().optional(),
   shippingMethod: z.string().optional(),
-  // user_id do Supabase Auth quando o cliente está logado
   userId: z.string().uuid().optional(),
+  externalReference: z.string().uuid().optional(),
 });
-
-export const createPayment = createServerFn({ method: "POST" })
-  .validator((data: unknown) => inputSchema.parse(data))
-  .handler(async ({ data }) => {
-    const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
-    if (!MP_ACCESS_TOKEN) {
-      return { success: false as const, error: "MP_ACCESS_TOKEN não configurado" };
-    }
-
-    const basePayer = {
-      email: data.payer.email,
-      first_name: data.payer.firstName,
-      last_name: data.payer.lastName,
-      identification: data.payer.identification,
-    };
-
-    let body: Record<string, unknown>;
-
-    if (data.method === "pix") {
-      body = {
-        transaction_amount: data.amount,
-        description: data.description,
-        payment_method_id: "pix",
-        payer: basePayer,
-      };
-    } else if (data.method === "boleto") {
-      body = {
-        transaction_amount: data.amount,
-        description: data.description,
-        payment_method_id: "bolbradesco",
-        payer: {
-          ...basePayer,
-          address: data.payer.address
-            ? {
-                zip_code: data.payer.address.zipCode,
-                street_name: data.payer.address.streetName,
-                street_number: data.payer.address.streetNumber,
-                neighborhood: data.payer.address.neighborhood,
-                city: data.payer.address.city,
-                federal_unit: data.payer.address.state,
-              }
-            : undefined,
-        },
-      };
-    } else {
-      if (!data.token) {
-        return { success: false as const, error: "Token do cartão ausente" };
+function translateMpError(msg: string, method: string): string {
+  const lower = (msg || "").toLowerCase();
+  if (lower.includes('collector user without key enabled for qr render')) return 'PIX nao habilitado. Use cartao.';
+  if (lower.includes('invalid card_token') || lower.includes('invalid token')) return 'Dados do cartao invalidos.';
+  if (lower.includes('invalid installments')) return 'Parcelas invalidas.';
+  if (lower.includes('invalid access token')) return 'Token MP invalido.';
+  return msg;
+}
+function mpWebhookUrl(req: Request | undefined, fallback: string): string {
+  try {
+    const host = req?.headers?.get('host') || req?.headers?.get('x-forwarded-host');
+    const proto = req?.headers?.get('x-forwarded-proto') || 'https';
+    if (!host) return fallback;
+    return `${proto}://${host}/api/public/mp-webhook`;
+  } catch { return fallback; }
+}
+function itemsForMp(items: Array<{ id: string; title: string; quantity: number; price: number }> | undefined) {
+  if (!items || items.length === 0) return undefined;
+  return items.map((i) => ({ id: i.id, title: i.title, quantity: i.quantity, unit_price: Number(i.price.toFixed(2)) }));
+}
+type CreatePaymentInput = z.infer<typeof inputSchema>;
+export const createPayment = createServerFn({ method: 'POST' })
+  .validator((d: unknown) => inputSchema.parse(d))
+  .handler(async ({ data, request }) => {
+    const token = process.env.MP_ACCESS_TOKEN;
+    if (!token) return { success: false, error: 'MP_ACCESS_TOKEN nao configurado' };
+    try {
+      const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
+      // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
+      //    se o cliente reenviar, o id do pedido continua igual (idempotente).
+      let orderId = data.externalReference;
+      if (!orderId) {
+        const { data: inserted, error: orderErr } = await supabaseAdmin
+          .from('orders')
+          .insert({
+            status: 'pending',
+            payment_status: 'pending',
+            payment_method: data.method,
+            total: data.amount,
+            subtotal: data.subtotal ?? data.amount,
+            discount: data.discount ?? 0,
+            shipping_price: data.shippingPrice ?? 0,
+            shipping_method: data.shippingMethod ?? null,
+            items: data.items ?? [],
+            user_id: data.userId ?? null,
+            customer_email: data.payer.email,
+            customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+          })
+          .select('id')
+          .single();
+        if (orderErr || !inserted) {
+          return { success: false, error: orderErr?.message || 'Falha ao criar pedido' };
+        }
+        orderId = inserted.id;
       }
-      body = {
-        transaction_amount: data.amount,
+      // 2) monta body do pagamento com external_reference, notification_url, items[].
+      const body: any = {
+        transaction_amount: Number(data.amount.toFixed(2)),
         description: data.description,
-        token: data.token,
-        installments: data.installments ?? 1,
+        payment_method_id: data.method === 'pix' ? 'pix' : data.method === 'boleto' ? 'bolbradesco' : (data.paymentMethodId || ''),
+        external_reference: orderId,
+        notification_url: mpWebhookUrl(request, `${process.env.PUBLIC_URL || 'https://www.fragranciaria.com'}/api/public/mp-webhook`),
         payer: {
           email: data.payer.email,
+          first_name: data.payer.firstName,
+          last_name: data.payer.lastName,
           identification: data.payer.identification,
+          address: data.payer.address,
         },
       };
-    }
-
-    const idempotencyKey =
-      (globalThis.crypto?.randomUUID?.() as string | undefined) ??
-      `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-    const res = await fetch(MP_API, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${MP_ACCESS_TOKEN}`,
-        "Content-Type": "application/json",
-        "X-Idempotency-Key": idempotencyKey,
-      },
-      body: JSON.stringify(body),
-    });
-
-    const json: any = await res.json().catch(() => ({}));
-
-    if (!res.ok) {
-      console.error("MP error", res.status, json);
-
-      // Tratar erros específicos com mensagens amigáveis
-      let errorMessage = json?.message || `Erro Mercado Pago (${res.status})`;
-
-      // Erro de PIX não habilitado na conta
-      if (errorMessage.includes("Collector user without key enabled for QR render")) {
-        errorMessage = "PIX não está habilitado nesta conta do Mercado Pago. Por favor, habilite o PIX na sua conta ou use outro método de pagamento (cartão ou boleto).";
+      if (data.items) body.items = itemsForMp(data.items);
+      if (data.method === 'credit_card') {
+        body.token = data.token;
+        body.installments = data.installments || 1;
+        if (data.issuerId) body.issuer_id = data.issuerId;
       }
-
-      // Erro de boleto não habilitado
-      if (errorMessage.includes("payment_method_id") && data.method === "boleto") {
-        errorMessage = "Boleto não está habilitado nesta conta do Mercado Pago. Por favor, use outro método de pagamento.";
+      const resp = await fetch(MP_API, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Idempotency-Key': orderId },
+        body: JSON.stringify(body),
+      });
+      const json: any = await resp.json().catch(() => ({}));
+      if (!resp.ok) {
+        const mpMsg = json?.message || json?.error || `HTTP ${resp.status}`;
+        // apaga o pedido "pending" para nao ficar orfao.
+        await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null);
+        return { success: false, error: translateMpError(mpMsg, data.method) };
       }
-
-      return {
-        success: false as const,
-        error: errorMessage,
-      };
-    }
-
-    // Salvar pedido no Supabase
-    let orderId: string | undefined;
-    let dbError: string | undefined;
-
-    console.log("=== SALVANDO PEDIDO NO SUPABASE ===");
-    console.log("Payment ID do MP:", json.id);
-    console.log("Status do MP:", json.status);
-
-    try {
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      console.log("Supabase Admin client carregado com sucesso");
-
-      const orderData = {
-        payment_id: String(json.id),
-        status: json.status as string,
-        payment_status: json.status as string,
-        amount: json.transaction_amount,
-        total: data.amount,
-        subtotal: data.subtotal ?? data.amount,
-        discount: data.discount ?? 0,
-        shipping_price: data.shippingPrice ?? 0,
-        shipping_method: data.shippingMethod ?? null,
-        payment_method: data.method,
-        user_id: data.userId ?? null,
-        customer_name: `${data.payer.firstName} ${data.payer.lastName}`,
-        customer_email: data.payer.email,
-        payer_email: data.payer.email,
-        items: data.items ?? [],
-        shipping_address: data.payer.address ? {
-          street: data.payer.address.streetName,
-          number: data.payer.address.streetNumber,
-          complement: data.payer.address.complement || "",
-          neighborhood: data.payer.address.neighborhood,
-          city: data.payer.address.city,
-          state: data.payer.address.state,
-          zipCode: data.payer.address.zipCode,
-        } : null,
-        raw: json,
-        metadata: {},
-        status_history: [{ status: json.status, date: new Date().toISOString() }],
-      };
-
-      console.log("Dados do pedido a inserir:", JSON.stringify(orderData, null, 2));
-
-      const { data: insertedOrder, error: insertError } = await supabaseAdmin
-        .from("orders")
-        .insert(orderData)
-        .select("id")
-        .single();
-
-      if (insertError) {
-        console.error("=== ERRO AO SALVAR PEDIDO ===");
-        console.error("Código:", insertError.code);
-        console.error("Mensagem:", insertError.message);
-        console.error("Detalhes:", insertError.details);
-        console.error("Hint:", insertError.hint);
-        dbError = insertError.message;
-      } else {
-        orderId = insertedOrder?.id;
-        console.log("=== PEDIDO SALVO COM SUCESSO ===");
-        console.log("Order ID:", orderId);
+      // 3) vincula payment_id ao pedido e guarda a primeira versao do status.
+      const paymentId = json?.id;
+      const status = json?.status || 'pending';
+      const statusDetail = json?.status_detail || null;
+      if (paymentId) {
+        await supabaseAdmin.from('orders').update({
+          payment_id: String(paymentId),
+          payment_status: status,
+          payment_method_id: json?.payment_method_id || null,
+          transaction_amount: json?.transaction_amount ?? null,
+          payer_email: data.payer.email,
+          raw_payment: json,
+        }).eq('id', orderId);
       }
-    } catch (err: any) {
-      console.error("=== ERRO AO CONECTAR SUPABASE ===");
-      console.error("Erro:", err?.message || err);
-      dbError = err?.message || "Erro desconhecido ao conectar Supabase";
+      const result: any = { id: paymentId, orderId, status };
+      if (data.method === 'pix') {
+        const tx = json?.point_of_interaction?.transaction_data || {};
+        result.pixQrCode = tx.qr_code_base64 || null;
+        result.pixCode = tx.qr_code || null;
+        result.pixTicketUrl = tx.ticket_url || null;
+        result.expiresAt = tx.expiration_date || json?.date_of_expiration || null;
+      }
+      if (data.method === 'boleto') {
+        result.boletoUrl = json?.transaction_details?.external_resource_url || json?.point_of_interaction?.transaction_data?.ticket_url || null;
+        result.boletoBarcode = json?.barcode?.content || null;
+        result.expiresAt = json?.date_of_expiration || null;
+      }
+      result.installments = json?.installments || null;
+      result.statusDetail = statusDetail;
+      return { success: true, data: result };
+    } catch (e: any) {
+      return { success: false, error: e?.message || 'erro' };
     }
-
-    return {
-      success: true as const,
-      data: {
-        id: String(json.id),
-        orderId,
-        status: json.status as string,
-        statusDetail: json.status_detail as string | undefined,
-        pixQrCode: json.point_of_interaction?.transaction_data?.qr_code as string | undefined,
-        pixQrCodeBase64: json.point_of_interaction?.transaction_data?.qr_code_base64 as
-          | string
-          | undefined,
-        boletoUrl: json.transaction_details?.external_resource_url as string | undefined,
-        boletoBarcode: json.barcode?.content as string | undefined,
-        dbError, // Incluir erro do banco se houver (para debug)
-      },
-    };
   });
