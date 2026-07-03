@@ -65,7 +65,7 @@ function CadastroPage() {
   const handleGoogleSignup = async () => {
     try {
       await supabase.auth.signInWithOAuth({
-        servico: "google",
+        servico: 'google',
         options: { redirectTo: `${window.location.origin}/` },
       });
     } catch (err: any) {
