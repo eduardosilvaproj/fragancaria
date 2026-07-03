@@ -458,7 +458,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
       }
 
       onDone({
-        orderId: res.data.orderId || res.data.id,
+        orderId: res.data.orderId,
         status: res.data.status || "approved",
         cardLast4: last4,
         cardBrand: CARD_BRAND_NAMES[cardBrand],
@@ -702,7 +702,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", pixCode: code ?? undefined });
+    onDone({ orderId: orderId ?? undefined, status: "pending", pixCode: code ?? undefined });
   };
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
@@ -811,7 +811,7 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId || paymentId || "PENDING", status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
+    onDone({ orderId: orderId ?? undefined, status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
   };
 
   return (

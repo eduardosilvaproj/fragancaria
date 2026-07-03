@@ -3,6 +3,15 @@ import { CheckCircle2, Package, MapPin, CreditCard } from "lucide-react";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, SHIPPING_METHODS } from "@/config/mercadopago";
 
+// Só aceitamos UUIDs reais do Supabase. O `payment_id` do Mercado Pago é
+// numérico (ex: 165965290803) e quebra o `.eq("id", ...)` na rota
+// /pedido/$id. Sem essa guarda, o link "Acompanhar Pedido" abre página
+// com erro 22P02 (invalid input syntax for type uuid).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isValidUuid(id: string | undefined | null): boolean {
+  return typeof id === "string" && UUID_RE.test(id);
+}
+
 export function OrderConfirmation() {
   const { customer, shippingAddress, shippingMethod, paymentMethod, paymentData, clearCheckout } = useCheckoutStore();
 
@@ -62,14 +71,21 @@ export function OrderConfirmation() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        {paymentData?.orderId && (
+        {isValidUuid(paymentData?.orderId) ? (
           <Link
             to="/pedido/$id"
-            params={{ id: String(paymentData.orderId) }}
+            params={{ id: String(paymentData!.orderId) }}
             className="flex-1 bg-[#B07B1E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#8f6418]"
           >
             Acompanhar Pedido →
           </Link>
+        ) : (
+          <a
+            href={`/minha-conta/pedidos`}
+            className="flex-1 bg-[#B07B1E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#8f6418]"
+          >
+            Ver Meus Pedidos
+          </a>
         )}
         <Link
           to="/"
