@@ -4,6 +4,7 @@ import {
   createFileRoute,
 } from "@tanstack/react-router";
 import { SidebarAccount } from "@/components/account/SidebarAccount";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 // Layout de /minha-conta. NAO tem beforeLoad SSR (evita supabaseUrl is required).
@@ -31,6 +32,7 @@ function AccountLayout() {
 
   return (
     <div className="min-h-screen bg-[#F5F3EE]">
+      <NavbarEditorial />
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         <header className="mb-6">
           <h1 className="text-2xl font-semibold text-[#0F3A3E]">

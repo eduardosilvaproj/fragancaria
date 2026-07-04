@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate, useSearch } from "@tanstack/react-r
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { LogIn, Loader2 } from "lucide-react";
 
 type LoginSearch = { redirect?: string };
@@ -98,7 +99,9 @@ function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F3EE] flex items-center justify-center px-4 py-10">
+    <div className="min-h-screen bg-[#F5F3EE]">
+      <NavbarEditorial />
+      <div className="flex items-center justify-center px-4 py-10">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-4">
@@ -164,6 +167,7 @@ function LoginPage() {
             Cadastre-se
           </Link>
         </p>
+      </div>
       </div>
     </div>
   );

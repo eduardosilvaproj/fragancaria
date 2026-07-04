@@ -12,6 +12,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 
 export const Route = createFileRoute("/pedido/$id")({
   ssr: false,
@@ -119,27 +120,20 @@ function OrderTrackingPage() {
 
   return (
     <div className="min-h-screen bg-[#F3EEE3]">
-      <header className="bg-white border-b border-[#E9E1D2]">
-        <div className="max-w-5xl mx-auto px-4 py-5 flex items-center gap-4">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-[#51635F] hover:text-[#0F3A3E]"
-          >
-            <ArrowLeft className="w-4 h-4" /> Voltar
+      <NavbarEditorial />
+      <nav className="bg-white border-b border-[#E9E1D2]">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center gap-2 text-[12px] text-[#51635F]">
+          <Link to="/" className="hover:text-[#0F3A3E]">
+            Home
           </Link>
-          <nav className="text-[12px] text-[#51635F] ml-auto">
-            <Link to="/" className="hover:text-[#0F3A3E]">
-              Home
-            </Link>
-            <span className="mx-2">/</span>
-            <Link to="/rastrear-pedido" className="hover:text-[#0F3A3E]">
-              Meus Pedidos
-            </Link>
-            <span className="mx-2">/</span>
-            <span className="text-[#0F3A3E]">Pedido #{String(id).slice(0, 8)}</span>
-          </nav>
+          <span>/</span>
+          <Link to="/rastrear-pedido" className="hover:text-[#0F3A3E]">
+            Meus Pedidos
+          </Link>
+          <span>/</span>
+          <span className="text-[#0F3A3E]">Pedido #{String(id).slice(0, 8)}</span>
         </div>
-      </header>
+      </nav>
 
       <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
         {isLoading && <LoadingSkeleton />}
