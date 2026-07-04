@@ -13,10 +13,10 @@ export const Route = createFileRoute("/")({
     // 4 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
     // a home ainda renderiza — os carrosseis sao independentes.
     const [best, novo, promo, kit] = await Promise.all([
-      listFeatured({ data: { slot: "bestsellers" } }),
-      listFeatured({ data: { slot: "new_arrivals" } }),
-      listFeatured({ data: { slot: "on_sale" } }),
-      listFeatured({ data: { slot: "kits" } }),
+      listFeatured({ data: "bestsellers" }),
+      listFeatured({ data: "new_arrivals" }),
+      listFeatured({ data: "on_sale" }),
+      listFeatured({ data: "kits" }),
     ]);
     return {
       slots: {
