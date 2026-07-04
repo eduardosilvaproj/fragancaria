@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(cat)",
-      "Read(//c/Users/eduar/.claude/plans/**)"
+      "Read(//c/Users/eduar/.claude/plans/**)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const c=Buffer.from\\('IyBGUkFHUkFOQ0lBUklBIC0gQVVESVRPUklBIMOpQ05JQ0Egw4AgVk9MIj1USVJPwqAgw4JUKApzdGF0dXM6IHByb2R1w6fDo28gKHJldmlzYb86IDIwMjYtMDctMDMpCgpBbyBpbnN0YW5jaWFyIG1vY2RvcyBkZSBwb3IiIHRyYXZhbGhhciIgbyBzaXRlIGNvbXByYWRzIiwgcmV2aXNhbmRvIGFyY3F1aXZvcywgY29tYW5kb3MgZGUgY2zDrWVyaW1lbnRvIGRlIGRpc2NvcmRpYSBlIG1vbnRhbmRvIG5hIMOQcmVhZGEgZGUgc2VndXJhbjphIG91IHRyYWJhbGhvIGNvbSByZXN1bHRhZG9zIGNvbnN1bHRhbnRlcyBmw6FzaWNvcy4gTm9zIGRpc2N1dGlyb3MgY29tbyAjI2dvb2Rjb2RlLCBwZWdhbSBhcyBwYWxhdGFzIHF1ZSBlc3TDo28gY29tbyAiTsOjbyBmaXplIG5hIGNpbmNhIChjYXJ0YWNpbykgcHJpbWVpcm8iLiBBcyBub3RhcyDDlyBDoSBwcsOpLW5lbmNhcmFtIGRlICMjYmVzdC1wbGFjZWQgZW0gc2lzdGVtYSBzaW1pbGFyIG91IHN1cGVyaW9yLiBCYXNlYWRvIG5vIG1vZGVsbyBjbGFzc2lmaWNhw6fDo28gKEPDqSAwLTU/KQ==','base64'\\).toString\\('utf8'\\);fs.writeFileSync\\('docs/probe.txt',c\\);console.log\\('ok',c.length\\);\")",
+      "Bash(node -e ' *)"
     ]
   }
 }
