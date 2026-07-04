@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,14 +131,25 @@ function NotificationsPage() {
                   <p className="text-[11px] text-[#8A938E] mt-2">
                     {new Date(n.createdAt).toLocaleString("pt-BR")}
                   </p>
-                  {n.link && (
-                    <a
-                      href={n.link}
-                      className="inline-block mt-2 text-xs text-[#0F3A3E] underline"
-                    >
-                      Ver detalhes
-                    </a>
-                  )}
+                  {n.link &&
+                    (n.link.startsWith("http://") ||
+                    n.link.startsWith("https://") ? (
+                      <a
+                        href={n.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-xs text-[#0F3A3E] underline"
+                      >
+                        Ver detalhes
+                      </a>
+                    ) : (
+                      <Link
+                        to={n.link}
+                        className="inline-block mt-2 text-xs text-[#0F3A3E] underline"
+                      >
+                        Ver detalhes
+                      </Link>
+                    ))}
                 </div>
               </div>
             </li>
