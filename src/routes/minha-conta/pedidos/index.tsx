@@ -1,4 +1,4 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { getMyOrders } from "@/lib/orders.functions";
@@ -6,21 +6,13 @@ import type { MyOrderRow } from "@/lib/orders.functions";
 import { Package, ChevronRight, ShoppingBag, LogIn } from "lucide-react";
 
 export const Route = createFileRoute("/minha-conta/pedidos/")({
-  // Guard no servidor: se não houver sessão, manda pro /login
-  // com redirect de volta após autenticar.
-  beforeLoad: async ({ location }) => {
-    const { requireSupabaseAuth } = await import(
-      "@/integrations/supabase/auth-middleware"
-    );
-    try {
-      await requireSupabaseAuth();
-    } catch {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.pathname + location.search },
-      });
-    }
-  },
+  // A guarda de auth é client-side: o supabase.auth.getUser() precisa do
+  // header Authorization com o token da sessão, que só existe no browser
+  // (a sessão Supabase fica no localStorage). No SSR, caímos em
+  // "Carregando..." até o client hidratar e useSupabaseSession resolver.
+  // O beforeLoad que usava requireSupabaseAuth quebrou o SSR ("Cannot
+  // convert object to primitive value") porque o client criado com a
+  // chave publishable exige Bearer para getClaims.
   component: MinhaContaPedidosPage,
 });
 
