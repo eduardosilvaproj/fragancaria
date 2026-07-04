@@ -58,6 +58,7 @@ import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/da
 import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
 import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
@@ -313,6 +314,11 @@ const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiDebugFeaturedRoute = ApiDebugFeaturedRouteImport.update({
+  id: '/api/debug/featured',
+  path: '/api/debug/featured',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AfiliadoDashboardVendasRoute = AfiliadoDashboardVendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
@@ -382,6 +388,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
@@ -434,6 +441,7 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
@@ -490,6 +498,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
@@ -547,6 +556,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
@@ -599,6 +609,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
@@ -654,6 +665,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
@@ -689,6 +701,7 @@ export interface RootRouteChildren {
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
   PedidoIdRoute: typeof PedidoIdRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
 }
@@ -1038,6 +1051,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/debug/featured': {
+      id: '/api/debug/featured'
+      path: '/api/debug/featured'
+      fullPath: '/api/debug/featured'
+      preLoaderRoute: typeof ApiDebugFeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/afiliado/dashboard/vendas': {
       id: '/afiliado/dashboard/vendas'
       path: '/vendas'
@@ -1184,6 +1204,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
   PedidoIdRoute: PedidoIdRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
 }
