@@ -8,17 +8,27 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
+import { PRODUCTS } from "@/data/products";
 
 // IMPORTANTE: productType deve bater com `category` em data/products.ts (slug em lowercase)
 // para que o filtro em /produtos (p.category === selectedCategory) funcione.
-const CATEGORIES = [
-  { label: "Shampoo", productType: "shampoos", count: 111 },
-  { label: "Condicionador", productType: "condicionadores", count: 51 },
-  { label: "Máscara", productType: "mascaras", count: 45 },
-  { label: "Coloração", productType: "coloracao", count: 87 },
-  { label: "Finalizador", productType: "finalizadores", count: 29 },
-  { label: "Óleo", productType: "oleos", count: 11 },
-  { label: "Leave-in", productType: "leave-in", count: 10 },
+// O `count` é calculado em runtime a partir de PRODUCTS, então nunca fica desatualizado
+// quando o catálogo muda (alinhado com o categoriesWithCounts da página /produtos).
+function countByCategory(slug: string): number {
+  return PRODUCTS.filter((p) => p.category === slug).length;
+}
+
+const CATEGORIES: Array<{ label: string; productType: string }> = [
+  { label: "Shampoo", productType: "shampoos" },
+  { label: "Condicionador", productType: "condicionadores" },
+  { label: "Máscara", productType: "mascaras" },
+  { label: "Coloração", productType: "coloracao" },
+  { label: "Finalizador", productType: "finalizadores" },
+  { label: "Óleo", productType: "oleos" },
+  { label: "Leave-in", productType: "leave-in" },
+  { label: "Maquiagem", productType: "maquiagem" },
+  { label: "Kits", productType: "kits" },
+  { label: "Tratamentos", productType: "tratamentos" },
 ];
 
 const BRANDS = [
@@ -115,7 +125,7 @@ export const NavbarEditorial = () => {
                           className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
                           <span>{cat.label}</span>
-                          <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
+                          <span className="text-[12px] text-[#9AA39F]">({countByCategory(cat.productType)})</span>
                         </Link>
                       </li>
                     ))}
@@ -219,7 +229,7 @@ export const NavbarEditorial = () => {
 
           <Link
             to="/produtos"
-            search={{ productType: "Maquiagem" }}
+            search={{ productType: "maquiagem" }}
             className="text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors"
           >
             Maquiagem
@@ -384,7 +394,7 @@ export const NavbarEditorial = () => {
                                   className="flex justify-between text-[14px] text-[#51635F]"
                                 >
                                   <span>{cat.label}</span>
-                                  <span className="text-[12px] text-[#9AA39F]">({cat.count})</span>
+                                  <span className="text-[12px] text-[#9AA39F]">({countByCategory(cat.productType)})</span>
                                 </Link>
                               </li>
                             ))}
