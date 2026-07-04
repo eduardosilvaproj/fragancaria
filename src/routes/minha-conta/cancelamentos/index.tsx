@@ -143,7 +143,7 @@ function RefundsPage() {
                 <option value="">Selecione um pedido...</option>
                 {cand.map((o) => (
                   <option key={o.id} value={o.id}>
-                    #{o.id.slice(0, 8).toUpperCase()} &middot;{" "}
+                    #{o.id.slice(0, 8).toUpperCase()} ·{" "}
                     {new Date(o.createdAt).toLocaleDateString("pt-BR")}
                   </option>
                 ))}

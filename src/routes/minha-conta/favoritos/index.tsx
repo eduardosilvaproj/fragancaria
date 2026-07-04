@@ -145,13 +145,15 @@ function FavoritesPage() {
               <Link
                 to="/produto/$slug"
                 params={{ slug: it.slug ?? it.productId }}
-                className="aspect-square overflow-hidden bg-[#F5F3EE]"
+                aria-label={`Ver ${it.name}`}
+                className="aspect-square overflow-hidden bg-[#F5F3EE] block"
               >
                 {it.image ? (
                   <img
                     src={it.image}
                     alt={it.name}
                     className="w-full h-full object-cover hover:scale-105 transition-transform"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-[#8A938E] text-xs">
@@ -160,18 +162,23 @@ function FavoritesPage() {
                 )}
               </Link>
               <div className="p-3 flex-1 flex flex-col">
-                <p className="text-sm font-medium text-[#0F3A3E] line-clamp-2">
+                <Link
+                  to="/produto/$slug"
+                  params={{ slug: it.slug ?? it.productId }}
+                  className="text-sm font-medium text-[#0F3A3E] line-clamp-2 hover:text-[#0c2e31]"
+                >
                   {it.name}
-                </p>
+                </Link>
                 <p className="text-base text-[#B07B1E] font-semibold mt-1">
                   {formatBRL(it.price)}
                 </p>
                 <button
                   type="button"
                   onClick={() => remove.mutate(it.productId)}
-                  className="mt-2 inline-flex items-center gap-1 text-xs text-red-700 hover:text-red-900"
+                  aria-label={`Remover ${it.name} dos favoritos`}
+                  className="mt-2 inline-flex items-center gap-1 text-xs text-red-700 hover:text-red-900 focus:outline-none focus:ring-2 focus:ring-red-300 rounded px-1 -mx-1 self-start transition-colors"
                 >
-                  <Trash2 className="h-3 w-3" />
+                  <Trash2 className="h-3 w-3" aria-hidden />
                   Remover
                 </button>
               </div>

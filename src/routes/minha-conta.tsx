@@ -1,9 +1,8 @@
 import {
+  Navigate,
   Outlet,
   createFileRoute,
-  useNavigate,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import { SidebarAccount } from "@/components/account/SidebarAccount";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
@@ -14,30 +13,33 @@ export const Route = createFileRoute("/minha-conta")({
 });
 
 function AccountLayout() {
-  const navigate = useNavigate();
   const { data, isLoading } = useSupabaseUser();
   const user = data?.user ?? null;
 
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate({ to: "/login", search: { redirect: "/minha-conta" } as any });
-    }
-  }, [isLoading, user, navigate]);
-
-  if (isLoading || !user) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-[#F5F3EE] flex items-center justify-center">
-        <div className="text-sm text-[#51635F]">Carregando...</div>
+        <div className="text-sm text-[#51635F]">Carregando sua conta...</div>
       </div>
     );
+  }
+
+  if (!user) {
+    // Render-time redirect: sem flash de "Carregando" extra.
+    return <Navigate to="/login" search={{ redirect: "/minha-conta" } as any} />;
   }
 
   return (
     <div className="min-h-screen bg-[#F5F3EE]">
       <div className="container mx-auto px-4 py-8 max-w-6xl">
-        <h1 className="text-2xl font-semibold text-[#0F3A3E] mb-6">
-          Minha conta
-        </h1>
+        <header className="mb-6">
+          <h1 className="text-2xl font-semibold text-[#0F3A3E]">
+            Minha conta
+          </h1>
+          <p className="text-sm text-[#51635F] mt-1">
+            Gerencie seus dados, pedidos, favoritos e notificacoes.
+          </p>
+        </header>
         <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
           <SidebarAccount />
           <main>
