@@ -8,6 +8,22 @@ import { SortDropdown, sortProducts } from "@/components/ui/SortDropdown";
 import { PRODUCTS } from "@/data/products";
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+// Labels amigáveis para os chips de categoria (slug -> label).
+// Mantem-se em sincronia com o `category` em data/products.ts.
+const CATEGORY_CHIPS: Array<{ label: string; productType: string }> = [
+  { label: "Shampoo", productType: "shampoos" },
+  { label: "Condicionador", productType: "condicionadores" },
+  { label: "Mascara", productType: "mascaras" },
+  { label: "Coloracao", productType: "coloracao" },
+  { label: "Finalizador", productType: "finalizadores" },
+  { label: "Oleo", productType: "oleos" },
+  { label: "Leave-in", productType: "leave-in" },
+  { label: "Maquiagem", productType: "maquiagem" },
+  { label: "Kits", productType: "kits" },
+  { label: "Tratamentos", productType: "tratamentos" },
+];
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -485,6 +501,51 @@ function ProdutosPage() {
           <p className="text-[#75827E] text-[15px] mt-2">
             {filteredProducts.length} {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
           </p>
+
+          {/* Quick category chips — atalho de Categorias */}
+          <div className="mt-6 -mx-2 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+            <Link
+              to="/produtos"
+              className={cn(
+                "px-4 py-2 text-[12px] uppercase tracking-[0.14em] font-medium whitespace-nowrap rounded-full border transition-colors",
+                !selectedCategory && !selectedBrand && !showOnlyOfertas
+                  ? "bg-[#0F3A3E] text-white border-[#0F3A3E]"
+                  : "bg-white text-[#2B413F] border-[#E0D8C7] hover:border-[#0F3A3E] hover:text-[#0F3A3E]"
+              )}
+            >
+              Todos
+            </Link>
+            {CATEGORY_CHIPS.map((cat) => {
+              const isActive = selectedCategory === cat.productType;
+              return (
+                <Link
+                  key={cat.productType}
+                  to="/produtos"
+                  search={{ productType: cat.productType }}
+                  className={cn(
+                    "px-4 py-2 text-[12px] uppercase tracking-[0.14em] font-medium whitespace-nowrap rounded-full border transition-colors",
+                    isActive
+                      ? "bg-[#0F3A3E] text-white border-[#0F3A3E]"
+                      : "bg-white text-[#2B413F] border-[#E0D8C7] hover:border-[#0F3A3E] hover:text-[#0F3A3E]"
+                  )}
+                >
+                  {cat.label}
+                </Link>
+              );
+            })}
+            <Link
+              to="/produtos"
+              search={{ ofertas: true }}
+              className={cn(
+                "px-4 py-2 text-[12px] uppercase tracking-[0.14em] font-medium whitespace-nowrap rounded-full border transition-colors",
+                showOnlyOfertas
+                  ? "bg-[#B07B1E] text-white border-[#B07B1E]"
+                  : "bg-white text-[#B07B1E] border-[#B07B1E] hover:bg-[#B07B1E] hover:text-white"
+              )}
+            >
+              Ofertas
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { ArrowLeft, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/rastrear-pedido")({
@@ -53,16 +54,7 @@ function TrackOrderPage() {
 
   return (
     <div className="min-h-screen bg-[#F3EEE3]">
-      <header className="bg-white border-b border-[#E9E1D2]">
-        <div className="max-w-5xl mx-auto px-4 py-5">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-[#51635F] hover:text-[#0F3A3E]"
-          >
-            <ArrowLeft className="w-4 h-4" /> Voltar
-          </Link>
-        </div>
-      </header>
+      <NavbarEditorial />
 
       <main className="max-w-md mx-auto px-4 py-16">
         <div className="bg-white border border-[#E9E1D2] p-8">

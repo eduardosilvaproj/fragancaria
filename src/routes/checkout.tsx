@@ -1,8 +1,8 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
+import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
 import { ShippingForm } from "@/components/checkout/ShippingForm";
@@ -32,17 +32,10 @@ function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-[#F3EEE3]">
+      <NavbarEditorial />
       <header className="bg-white border-b border-[#E9E1D2]">
-        <div className="max-w-6xl mx-auto px-4 py-5 flex items-center gap-4">
-          <Link
-            to="/"
-            className="flex items-center gap-2 text-sm text-[#51635F] hover:text-[#0F3A3E]"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline uppercase tracking-wider text-[11px] font-semibold">Voltar</span>
-          </Link>
-          <h1 className="font-serif text-2xl text-[#0F3A3E] flex-1 text-center">Finalizar Compra</h1>
-          <div className="w-16" />
+        <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-center">
+          <h1 className="font-serif text-xl text-[#0F3A3E]">Finalizar Compra</h1>
         </div>
         <CheckoutSteps current={step} />
       </header>
