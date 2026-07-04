@@ -9,14 +9,16 @@ import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 
+// IMPORTANTE: productType deve bater com `category` em data/products.ts (slug em lowercase)
+// para que o filtro em /produtos (p.category === selectedCategory) funcione.
 const CATEGORIES = [
-  { label: "Shampoo", productType: "Shampoo", count: 111 },
-  { label: "Condicionador", productType: "Condicionador", count: 51 },
-  { label: "Máscara", productType: "Máscara", count: 45 },
-  { label: "Coloração", productType: "Coloração", count: 87 },
-  { label: "Finalizador", productType: "Finalizador", count: 29 },
-  { label: "Óleo", productType: "Óleo", count: 11 },
-  { label: "Leave-in", productType: "Leave-in", count: 10 },
+  { label: "Shampoo", productType: "shampoos", count: 111 },
+  { label: "Condicionador", productType: "condicionadores", count: 51 },
+  { label: "Máscara", productType: "mascaras", count: 45 },
+  { label: "Coloração", productType: "coloracao", count: 87 },
+  { label: "Finalizador", productType: "finalizadores", count: 29 },
+  { label: "Óleo", productType: "oleos", count: 11 },
+  { label: "Leave-in", productType: "leave-in", count: 10 },
 ];
 
 const BRANDS = [
@@ -159,12 +161,12 @@ export const NavbarEditorial = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link to="/produtos" search={{ productType: "Coloração" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                      <Link to="/produtos" search={{ productType: "coloracao" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
                         Coloração Profissional
                       </Link>
                     </li>
                     <li>
-                      <Link to="/produtos" search={{ productType: "Kit" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                      <Link to="/produtos" search={{ productType: "kits" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
                         Kits Promocionais
                       </Link>
                     </li>
@@ -437,7 +439,7 @@ export const NavbarEditorial = () => {
                   <li>
                     <Link
                       to="/produtos"
-                      search={{ productType: "Maquiagem" }}
+                      search={{ productType: "maquiagem" }}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block font-serif text-2xl text-[#0F3A3E]"
                     >
