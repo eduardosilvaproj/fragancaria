@@ -3,7 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
-import { LogIn, Loader2 } from "lucide-react";
+import { LogIn, Loader2, UserPlus } from "lucide-react";
 
 type CadastroSearch = { redirect?: string };
 
