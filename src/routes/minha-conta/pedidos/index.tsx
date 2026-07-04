@@ -1,11 +1,11 @@
-import { createFileRoute, Link, Outlet, redirect, useLocation } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect } from "@tanstack/react-router";
 import { useState } from "react";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { getMyOrders } from "@/lib/orders.functions";
 import type { MyOrderRow } from "@/lib/orders.functions";
 import { Package, ChevronRight, ShoppingBag, LogIn } from "lucide-react";
 
-export const Route = createFileRoute("/minha-conta/pedidos")({
+export const Route = createFileRoute("/minha-conta/pedidos/")({
   // Guard no servidor: se não houver sessão, manda pro /login
   // com redirect de volta após autenticar.
   beforeLoad: async ({ location }) => {
@@ -70,8 +70,6 @@ function statusLabel(status: string): string {
 }
 
 function MinhaContaPedidosPage() {
-  const loc = useLocation();
-  const isDetail = /\/minha-conta\/pedidos\/[^/]+$/.test(loc.pathname);
   const { user, loading: sessionLoading } = useSupabaseSession();
   const [orders, setOrders] = useState<MyOrderRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -97,24 +95,6 @@ function MinhaContaPedidosPage() {
       setLoading(false);
     }
   };
-
-  // Carrega quando a sessão do user estiver pronta.
-  // Sub-rota de detalhe ($orderId): só mostra o Outlet + voltar.
-  if (isDetail) {
-    return (
-      <div className="min-h-screen bg-[#F5F3EE]">
-        <div className="max-w-3xl mx-auto px-4 py-10">
-          <Link
-            to="/minha-conta/pedidos"
-            className="inline-flex items-center gap-1 text-sm text-[#51635F] hover:text-[#0F3A3E] mb-4"
-          >
-            &larr; Voltar para pedidos
-          </Link>
-          <Outlet />
-        </div>
-      </div>
-    );
-  }
 
   if (sessionLoading) {
     return (
