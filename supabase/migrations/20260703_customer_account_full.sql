@@ -53,7 +53,7 @@ CREATE INDEX IF NOT EXISTS idx_orders_auth_user_id ON public.orders(auth_user_id
 -- Quando um cliente passa a ter auth_user_id, retroalimenta pedidos antigos
 -- (guest) com o mesmo email.
 CREATE OR REPLACE FUNCTION public.sync_orders_to_auth_user()
-RETURNS TRIGGER AS $$
+RETURNS TRIGGER AS $_$
 BEGIN
   IF NEW.auth_user_id IS NOT NULL AND (OLD.auth_user_id IS NULL OR OLD.auth_user_id <> NEW.auth_user_id) THEN
     UPDATE public.orders
@@ -63,7 +63,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$_$ LANGUAGE plpgsql SECURITY DEFINER;
 
 DROP TRIGGER IF EXISTS trg_sync_orders_to_auth_user ON public.customers;
 CREATE TRIGGER trg_sync_orders_to_auth_user
