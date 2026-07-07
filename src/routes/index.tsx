@@ -1,14 +1,32 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
-import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
-import { PRODUCTS } from "@/data/products";
-import { useMemo } from "react";
+import { HomeCarousels } from "@/components/home/HomeCarousels";
+import { listFeatured, type Slot } from "@/lib/home-featured.functions";
+import type { Product } from "@/data/products";
 import { ArrowRight } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
 
 export const Route = createFileRoute("/")({
+  loader: async () => {
+    // 4 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
+    // a home ainda renderiza — os carrosseis sao independentes.
+    const [best, novo, promo, kit] = await Promise.all([
+      listFeatured({ data: "bestsellers" }),
+      listFeatured({ data: "new_arrivals" }),
+      listFeatured({ data: "on_sale" }),
+      listFeatured({ data: "kits" }),
+    ]);
+    return {
+      slots: {
+        bestsellers: best.data ?? [],
+        new_arrivals: novo.data ?? [],
+        on_sale: promo.data ?? [],
+        kits: kit.data ?? [],
+      } as Partial<Record<Slot, Product[]>>,
+    };
+  },
   head: () => ({
     meta: [
       { title: "Fragranciaria | Especialista em Cabelo Profissional" },
@@ -61,13 +79,7 @@ const NEEDS = [
 ];
 
 function IndexEditorial() {
-  const featuredProducts = useMemo(() => {
-    const withDiscount = PRODUCTS.filter(
-      (p) => p.originalPrice && p.originalPrice > p.price
-    ).slice(0, 4);
-    if (withDiscount.length >= 4) return withDiscount;
-    return PRODUCTS.slice(0, 4);
-  }, []);
+  const { slots } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans overflow-x-hidden">
@@ -142,42 +154,18 @@ function IndexEditorial() {
               <Link
                 to="/produtos"
                 search={{ productType: "Tratamento" }}
-                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
+                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto"
               >
-                Descobrir meu Ritual
+                Tratamentos capilares
               </Link>
             </div>
-
-            {/* Trust badges */}
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-8 mt-7 md:mt-9 animate-[fadeUp_1s_ease_0.65s_both]">
-              <div className="flex items-center gap-2 text-[11px] md:text-[12px] tracking-[0.04em] text-[#3A4A3A]">
-                <span className="text-[#B07B1E] text-[14px]">➟</span>
-                Frete grátis acima de R$199
-              </div>
-              <div className="flex items-center gap-2 text-[11px] md:text-[12px] tracking-[0.04em] text-[#3A4A3A]">
-                <span className="text-[#B07B1E] text-[14px]">◈</span>
-                Até 10x sem juros
-              </div>
-            </div>
-          </div>
-
-          {/* Mobile Hero Image - subtle overlay */}
-          <div className="lg:hidden absolute inset-0 -z-10">
-            <img
-              src="/images/hero-model-nobg.png"
-              alt="Modelo"
-              className="w-full h-full object-contain object-right-bottom opacity-20"
-            />
           </div>
         </section>
 
         {/* ===== BRAND MARQUEE ===== */}
-        <section className="bg-[#0F3A3E] py-5 md:py-[26px] overflow-hidden">
-          <div
-            className="flex gap-0 w-max animate-marquee"
-            style={{ animationDuration: '28s' }}
-          >
-            {/* First set */}
+        <section className="bg-[#0F3A3E] py-6 md:py-8 overflow-hidden">
+          <div className="flex gap-0 animate-[marquee_30s_linear_infinite]">
+            {/* Duplicate for seamless loop */}
             <div className="flex gap-0">
               {BRAND_MARQUEE.map((brand, i) => (
                 <span
@@ -203,6 +191,9 @@ function IndexEditorial() {
             </div>
           </div>
         </section>
+
+        {/* ===== CARROSSÉIS DA VITRINE (bestsellers + novidades + promo + kits) ===== */}
+        <HomeCarousels data={slots} />
 
         {/* ===== POR NECESSIDADE ===== */}
         <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
@@ -260,42 +251,19 @@ function IndexEditorial() {
           </div>
         </section>
 
-        {/* ===== MAIS VENDIDOS ===== */}
-        <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">
-          <div className="max-w-[1280px] mx-auto">
-            {/* Header */}
-            <ScrollReveal className="text-center mb-10 md:mb-14">
+        {/* ===== CTA FINAL ===== */}
+        <section className="py-16 md:py-24 px-6 md:px-14 bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto text-center">
+            <ScrollReveal>
               <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
-                Destaques
+                Fragranciaria
               </span>
-              <h2 className="font-serif font-medium text-[28px] md:text-[42px] lg:text-[52px] text-[#0F3A3E] mt-2 md:mt-3">
-                Mais Vendidos da <em className="text-[#B07B1E]">Semana</em>
+              <h2 className="font-serif font-medium text-[28px] md:text-[42px] text-[#0F3A3E] mt-3 max-w-[640px] mx-auto leading-tight">
+                A curadoria que o seu salão confia, agora na sua casa.
               </h2>
-            </ScrollReveal>
-
-            {/* Grid de 4 produtos */}
-            <StaggerContainer className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6" staggerDelay={0.1}>
-              {featuredProducts.map((product) => (
-                <StaggerItem key={product.id}>
-                  <ProductCardEditorial
-                    id={product.id}
-                    title={product.name}
-                    vendor={product.brand || ""}
-                    price={product.price}
-                    originalPrice={product.originalPrice}
-                    image={product.images[0]}
-                    rating={4.5}
-                    reviewCount={Math.floor(Math.random() * 100) + 20}
-                  />
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
-
-            {/* Ver todos */}
-            <ScrollReveal delay={0.4} className="text-center mt-10 md:mt-12">
               <Link
                 to="/produtos"
-                className="inline-flex items-center gap-2 text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors"
+                className="inline-flex items-center gap-2 mt-8 bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-10 py-4 text-[12px] md:text-[13px] tracking-[0.18em] uppercase font-medium transition-colors"
               >
                 Ver todos os produtos
                 <ArrowRight className="h-4 w-4" />

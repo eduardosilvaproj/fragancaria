@@ -1,26 +1,18 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { getMyOrders } from "@/lib/orders.functions";
 import type { MyOrderRow } from "@/lib/orders.functions";
 import { Package, ChevronRight, ShoppingBag, LogIn } from "lucide-react";
 
-export const Route = createFileRoute("/minha-conta/pedidos")({
-  // Guard no servidor: se não houver sessão, manda pro /login
-  // com redirect de volta após autenticar.
-  beforeLoad: async ({ location }) => {
-    const { requireSupabaseAuth } = await import(
-      "@/integrations/supabase/auth-middleware"
-    );
-    try {
-      await requireSupabaseAuth();
-    } catch {
-      throw redirect({
-        to: "/login",
-        search: { redirect: location.pathname + location.search },
-      });
-    }
-  },
+export const Route = createFileRoute("/minha-conta/pedidos/")({
+  // A guarda de auth é client-side: o supabase.auth.getUser() precisa do
+  // header Authorization com o token da sessão, que só existe no browser
+  // (a sessão Supabase fica no localStorage). No SSR, caímos em
+  // "Carregando..." até o client hidratar e useSupabaseSession resolver.
+  // O beforeLoad que usava requireSupabaseAuth quebrou o SSR ("Cannot
+  // convert object to primitive value") porque o client criado com a
+  // chave publishable exige Bearer para getClaims.
   component: MinhaContaPedidosPage,
 });
 
@@ -96,7 +88,6 @@ function MinhaContaPedidosPage() {
     }
   };
 
-  // Carrega quando a sessão do user estiver pronta.
   if (sessionLoading) {
     return (
       <div className="min-h-screen bg-[#F5F3EE] flex items-center justify-center">
@@ -151,7 +142,7 @@ function MinhaContaPedidosPage() {
           <h1 className="text-2xl font-semibold text-[#0F3A3E]">Meus Pedidos</h1>
         </div>
         <p className="text-sm text-[#51635F] mb-8">
-          Acompanhe o histórico das suas compras em {user.email}.
+          Acompanhe o histórico das suas compras em {String(user?.email ?? "")}.
         </p>
 
         {loading ? (

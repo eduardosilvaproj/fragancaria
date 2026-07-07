@@ -48,3 +48,7 @@ frag-backup/
 # OS / editor
 Thumbs.db
 desktop.ini
+
+# Credential dumps (existem em algum lugar na origem; nunca commitar)
+_link.txt
+_tok.txt

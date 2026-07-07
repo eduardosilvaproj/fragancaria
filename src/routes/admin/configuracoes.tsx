@@ -15,8 +15,10 @@ import {
   EyeOff,
   Copy,
   Check,
+  LayoutGrid,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { VitrineManager } from "@/components/admin/VitrineManager";
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: AdminConfiguracoes,
@@ -48,6 +50,7 @@ function AdminConfiguracoes() {
     { id: "email", label: "Email", icon: Mail },
     { id: "seguranca", label: "Segurança", icon: Shield },
     { id: "integracoes", label: "Integrações", icon: Globe },
+    { id: "vitrine", label: "Vitrine da Home", icon: LayoutGrid },
   ];
 
   return (
@@ -570,6 +573,8 @@ function AdminConfiguracoes() {
               </div>
             </div>
           )}
+
+          {activeSection === "vitrine" && <VitrineManager />}
         </div>
       </div>
     </div>
