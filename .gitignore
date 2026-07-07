@@ -36,3 +36,15 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Backup files
+*.BACKUP-*.txt
+*.bak
+frag-backup/
+
+# Screenshot dumps at root
+/imagens/
+
+# OS / editor
+Thumbs.db
+desktop.ini
