@@ -76,7 +76,7 @@ CREATE TRIGGER trg_sync_orders_to_auth_user
 CREATE TABLE IF NOT EXISTS public.wishlist (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-  product_id UUID NOT NULL REFERENCES public.products(id) ON DELETE CASCADE,
+  product_id TEXT NOT NULL,  -- ID do produto (ex: "MLB1234") — sem FK pois produtos vêm de data/products.ts
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, product_id)
 );
