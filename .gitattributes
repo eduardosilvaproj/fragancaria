@@ -1,0 +1,24 @@
+# Garante que arquivos binários não sejam submetidos a normalização de
+# line endings (CRLF↔LF) e sejam marcados como binary no diff do git.
+# Incluir novos patterns aqui sempre que entrar novo tipo de asset.
+
+# Imagens de produto
+src/assets/products/** binary
+
+# Imagens públicas
+public/images/** binary
+public/**/*.png binary
+public/**/*.jpg binary
+public/**/*.jpeg binary
+public/**/*.gif binary
+public/**/*.webp binary
+public/**/*.ico binary
+
+# Mídia geral
+**/*.mp4 binary
+**/*.mp3 binary
+**/*.woff binary
+**/*.woff2 binary
+
+# Padrão geral para qualquer binário (exceto pelos específicos acima)
+# já é coberto pela extensão nas regras
