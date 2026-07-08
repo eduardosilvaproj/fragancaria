@@ -78,7 +78,7 @@ export const Route = createFileRoute('/api/public/mp-webhook')({
             payer_email: payment?.payer?.email || null,
             transaction_amount: payment?.transaction_amount ?? null,
             status_history: trimmedHistory,
-            raw_payment: payment,
+            raw: payment,
             updated_at: new Date().toISOString(),
           };
           let upErr: any = null;

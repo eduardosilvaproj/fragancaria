@@ -71,7 +71,7 @@ export const createPayment = createServerFn({ method: 'POST' })
             shipping_price: data.shippingPrice ?? 0,
             shipping_method: data.shippingMethod ?? null,
             items: data.items ?? [],
-            user_id: data.userId ?? null,
+            auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
           })
@@ -126,7 +126,7 @@ export const createPayment = createServerFn({ method: 'POST' })
           payment_method_id: json?.payment_method_id || null,
           transaction_amount: json?.transaction_amount ?? null,
           payer_email: data.payer.email,
-          raw_payment: json,
+          raw: json,
         }).eq('id', orderId);
       }
       const result: any = { id: paymentId, orderId, status };
