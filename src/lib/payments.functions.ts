@@ -53,11 +53,12 @@ export const createPayment = createServerFn({ method: 'POST' })
   .handler(async ({ data, request }) => {
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) return { success: false, error: 'MP_ACCESS_TOKEN nao configurado' };
+    let orderId: string | undefined;
     try {
       const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
       // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
       //    se o cliente reenviar, o id do pedido continua igual (idempotente).
-      let orderId = data.externalReference;
+      orderId = data.externalReference;
       if (!orderId) {
         const { data: inserted, error: orderErr } = await supabaseAdmin
           .from('orders')
@@ -82,7 +83,21 @@ export const createPayment = createServerFn({ method: 'POST' })
         }
         orderId = inserted.id;
       }
-      // 2) monta body do pagamento com external_reference, notification_url, items[].
+      // 2) monta body do pagamento conforme spec /v1/payments (sdk mercadopago v2.x).
+      //    - payer.address: snake_case (zip_code, street_name, street_number, federal_unit)
+      //    - 'state' (BR) -> 'federal_unit'; 'complement' NAO EXISTE no AddressRequest -> omitir.
+      //    - items vao em additional_info.items (nao na raiz).
+      const itemsForAdditionalInfo = data.items ? itemsForMp(data.items) : undefined;
+      const payerAddress = data.payer.address
+        ? {
+            zip_code: data.payer.address.zipCode,
+            street_name: data.payer.address.streetName,
+            street_number: data.payer.address.streetNumber,
+            neighborhood: data.payer.address.neighborhood,
+            city: data.payer.address.city,
+            federal_unit: data.payer.address.state,
+          }
+        : undefined;
       const body: any = {
         transaction_amount: Number(data.amount.toFixed(2)),
         description: data.description,
@@ -94,10 +109,12 @@ export const createPayment = createServerFn({ method: 'POST' })
           first_name: data.payer.firstName,
           last_name: data.payer.lastName,
           identification: data.payer.identification,
-          address: data.payer.address,
+          ...(payerAddress && { address: payerAddress }),
         },
       };
-      if (data.items) body.items = itemsForMp(data.items);
+      if (itemsForAdditionalInfo && itemsForAdditionalInfo.length > 0) {
+        body.additional_info = { items: itemsForAdditionalInfo };
+      }
       if (data.method === 'credit_card') {
         body.token = data.token;
         body.installments = data.installments || 1;
@@ -117,6 +134,11 @@ export const createPayment = createServerFn({ method: 'POST' })
       }
       // 3) vincula payment_id ao pedido e guarda a primeira versao do status.
       const paymentId = json?.id;
+      // guarda contra MP retornar 200 sem id (resposta degenerada): trata como falha e apaga orfao.
+      if (!paymentId) {
+        await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null);
+        return { success: false, error: 'Resposta MP sem payment_id (rejeitada sem detalhe).' };
+      }
       const status = json?.status || 'pending';
       const statusDetail = json?.status_detail || null;
       if (paymentId) {
@@ -146,6 +168,11 @@ export const createPayment = createServerFn({ method: 'POST' })
       result.statusDetail = statusDetail;
       return { success: true, data: result };
     } catch (e: any) {
+      // se o INSERT passou antes do erro (ex.: fetch do MP estourou), apaga o orfao.
+      if (orderId) {
+        try { await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null); }
+        catch { /* ignore secondary error */ }
+      }
       return { success: false, error: e?.message || 'erro' };
     }
   });
