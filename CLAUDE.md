@@ -104,6 +104,47 @@ Em outras palavras:
 Ver `docs/agente-fase1.md` para o bot WhatsApp (Bloco A aplicado, B proximo).
 Ver `docs/OPERACAO.md` para deploy/Railway.
 
+## Projeto Supabase de producao
+
+- **Project ID**: `gzxlupgdmrtkprwhiutp` (este e o projeto real).
+- **Nome**: `Fragranciaria` (aparece no topo do dashboard Supabase).
+- **Regiao**: `sa-east-1` (Sao Paulo). CONFIRMADO em 2026-07-08.
+- **Antes de rodar qualquer query no SQL Editor**: confirmar visualmente
+  que o nome "Fragranciaria" esta no topo do dashboard. Episodio
+  registrado em 2026-07-08 (`docs/assets-restore-20260707.md` §4): uma
+  query em `information_schema.tables` retornou 0 linhas e levantou
+  alarme de "projeto vazio" — era engano operacional (outro projeto
+  Supabase aberto em outra aba). Nunca confiar em query sem conferir
+  o nome do projeto no topo do dashboard.
+- **Migrations do Bloco A** sao reescritas contra o dump do schema real
+  deste projeto, NAO contra os arquivos `001_*.sql` / `002_*.sql`
+  (esses estao marcados como `-- HISTORICO`, ver §4 do doc acima).
+
+## Regra permanente: mensagens de commit descrevem o que esta no commit
+
+**Mensagens de commit sao escritas a partir de `git show --stat` / `git show --diff`
+do PROPRIO commit, nunca de memoria, plano, intencao, ou descricao anterior.**
+
+Caso real (2026-07-09): o commit `d70dc7c` ("Bloco B — add tracking_token + lockdown
+anon policies on orders") tinha uma mensagem que descrevia:
+
+- tracking_token "12-char base32 from gen_random_bytes(8)" — mentira;
+  o codigo usa 16-char nanoid com `randomBytes(32)` (31 glyphs, ~77.5 bits).
+- "view public.orders_tracking_lookup" — mentira; a migration (a) NAO cria view.
+- "drops 3 anon policies on orders (...) + locks down refund_requests
+  (anon INSERT removed; service_role only) + locks down order_items
+  (anon SELECT/INSERT/UPDATE removed)" — mentira; a migration (b) so
+  mexe em `public.orders` (revoke + drop 3 policies + recreate 2).
+  Nenhuma referencia a `order_items` ou `refund_requests` no SQL.
+
+Nenhuma das descricoes erradas correspondia ao que estava no diff. O re-QA
+do commit (que o owner pediu apos receber o report) descobriu as 3 mentiras
+confrontando mensagem x `git show d70dc7c --stat -- supabase/migrations/`.
+
+Regra daqui pra frente: **antes de `git commit`, rodar `git diff --stat` e
+`git diff` no staging, ler a mensagem proposta contra o diff real, e so
+entao commitar**. Se a mensagem diz "faz X", o diff tem que ter X.
+
 ## Ao iniciar uma nova sessao
 
 1. Confirmar que o working dir esta em `C:\dev\fragancaria\`
