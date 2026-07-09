@@ -1,6 +1,27 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
+import { randomBytes } from "node:crypto";
 const MP_API = "https://api.mercadopago.com/v1/payments";
+
+// A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
+// regex enforced by getOrderByTrackingToken. randomBytes(32) gives ~256 bits
+// of entropy from /dev/urandom; modulo-31 with rejection sampling means we
+// draw uniform over the 31 glyphs. 16 chars * log2(31) = ~77.5 bits output.
+const TRACKING_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function generateTrackingToken(): string {
+  const buf = randomBytes(32);
+  const len = TRACKING_ALPHABET.length;
+  let out = "";
+  for (let i = 0; out.length < 16 && i < buf.length; i++) {
+    const b = buf[i]!;
+    if (b < 256 - (256 % len)) out += TRACKING_ALPHABET[b % len];
+  }
+  return out.length === 16 ? out : generateTrackingToken();
+}
+function formatToken(t: string): string {
+  return `${t.slice(0, 4)}-${t.slice(4, 8)}-${t.slice(8, 12)}-${t.slice(12, 16)}`;
+}
 const cpfSchema = z.string().min(11).max(14).transform((v) => v.replace(/\D/g, "")).refine((d) => d.length === 11, "CPF deve ter 11 digitos");
 const payerSchema = z.object({
   email: z.string().email(),
@@ -50,17 +71,20 @@ function itemsForMp(items: Array<{ id: string; title: string; quantity: number; 
 type CreatePaymentInput = z.infer<typeof inputSchema>;
 export const createPayment = createServerFn({ method: 'POST' })
   .validator((d: unknown) => inputSchema.parse(d))
-  .handler(async ({ data, request }) => {
+  .handler(async ({ data }) => {
+    const request = getRequest();
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) return { success: false, error: 'MP_ACCESS_TOKEN nao configurado' };
+    const { supabaseAdmin: admin } = await import(
+      '@/integrations/supabase/client.server'
+    );
     let orderId: string | undefined;
     try {
-      const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
       // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
       //    se o cliente reenviar, o id do pedido continua igual (idempotente).
       orderId = data.externalReference;
       if (!orderId) {
-        const { data: inserted, error: orderErr } = await supabaseAdmin
+        const { data: inserted, error: orderErr } = await admin
           .from('orders')
           .insert({
             status: 'pending',
@@ -72,9 +96,12 @@ export const createPayment = createServerFn({ method: 'POST' })
             shipping_price: data.shippingPrice ?? 0,
             shipping_method: data.shippingMethod ?? null,
             items: data.items ?? [],
+            // @ts-expect-error auth_user_id added in prior migration; generated types stale. See agente-fase1.md.
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+            // @ts-expect-error tracking_token added in 20260708a; generated types stale. See agente-fase1.md.
+            tracking_token: generateTrackingToken(),
           })
           .select('id')
           .single();
@@ -129,29 +156,38 @@ export const createPayment = createServerFn({ method: 'POST' })
       if (!resp.ok) {
         const mpMsg = json?.message || json?.error || `HTTP ${resp.status}`;
         // apaga o pedido "pending" para nao ficar orfao.
-        await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null);
+        await admin.from('orders').delete().eq('id', orderId).is('payment_id', null);
         return { success: false, error: translateMpError(mpMsg, data.method) };
       }
       // 3) vincula payment_id ao pedido e guarda a primeira versao do status.
       const paymentId = json?.id;
       // guarda contra MP retornar 200 sem id (resposta degenerada): trata como falha e apaga orfao.
       if (!paymentId) {
-        await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null);
+        await admin.from('orders').delete().eq('id', orderId).is('payment_id', null);
         return { success: false, error: 'Resposta MP sem payment_id (rejeitada sem detalhe).' };
       }
       const status = json?.status || 'pending';
       const statusDetail = json?.status_detail || null;
       if (paymentId) {
-        await supabaseAdmin.from('orders').update({
+        await admin.from('orders').update({
           payment_id: String(paymentId),
           payment_status: status,
+          // @ts-expect-error payment_method_id added in prior migration; generated types stale. See agente-fase1.md.
           payment_method_id: json?.payment_method_id || null,
+          // @ts-expect-error transaction_amount added in prior migration; generated types stale. See agente-fase1.md.
           transaction_amount: json?.transaction_amount ?? null,
           payer_email: data.payer.email,
           raw: json,
         }).eq('id', orderId);
       }
       const result: any = { id: paymentId, orderId, status };
+// devolve o token (raw + formatado) para a UI do checkout exibir o banner.
+      const { data: freshOrder } = await admin.from('orders').select('tracking_token').eq('id', orderId).maybeSingle();
+      const trackingToken = (freshOrder as unknown as { tracking_token?: string | null } | null)?.tracking_token;
+      if (trackingToken) {
+        result.trackingToken = trackingToken;
+        result.trackingTokenFormatted = formatToken(trackingToken);
+      }
       if (data.method === 'pix') {
         const tx = json?.point_of_interaction?.transaction_data || {};
         result.pixQrCode = tx.qr_code_base64 || null;
@@ -170,7 +206,7 @@ export const createPayment = createServerFn({ method: 'POST' })
     } catch (e: any) {
       // se o INSERT passou antes do erro (ex.: fetch do MP estourou), apaga o orfao.
       if (orderId) {
-        try { await supabaseAdmin.from('orders').delete().eq('id', orderId).is('payment_id', null); }
+        try { await admin.from('orders').delete().eq('id', orderId).is('payment_id', null); }
         catch { /* ignore secondary error */ }
       }
       return { success: false, error: e?.message || 'erro' };
