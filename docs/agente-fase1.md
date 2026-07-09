@@ -124,8 +124,10 @@ o agente durante o desenvolvimento de C), E por ultimo.
 
 ## Pendencias conhecidas
 
-- [ ] **Regiao Supabase** nao documentada — afeta decisao D2 (regiao
-      do agent-service). Ver DECISOES FECHADAS.
+- [x] **Regiao Supabase CONFIRMADA em 2026-07-08: sa-east-1 (Sao Paulo)**.
+      D2 do Bloco B desbloqueada: hosting do agent-service deve ser
+      **Fly.io GRU** (mesma regiao do banco). Railway US East fica
+      descartado para evitar latencia + custo de egress.
 - [ ] **`\df public.set_updated_at`** precisa ser confirmado no
       SQL Editor do Supabase antes de aplicar
       `20260707_agent_policies.sql`. Migration tem `IF NOT EXISTS`
@@ -147,8 +149,9 @@ explicita, nao "porque eu acho melhor".
 
 ### Bloco A (dados)
 
-- **(a) Regiao Supabase**: NAO CONFIRMADO. Determina regiao do
-  agent-service (ver D2). A investigar.
+- **(a) Regiao Supabase CONFIRMADA**: `sa-east-1` (Sao Paulo), verificada
+  em 2026-07-08 via dashboard do projeto Fragranciaria
+  (`gzxlupgdmrtkprwhiutp`). D2 do Bloco B desbloqueada. Travada.
 - **(b) Realtime — corrigido**: publicacao `supabase_realtime` existe
   por default em todo projeto Supabase, MAS isso NAO significa que as
   tabelas estao nela. Eh necessario adicionar `agent_sessions`,
@@ -174,10 +177,12 @@ explicita, nao "porque eu acho melhor".
 - **D1. Estrutura**: monorepo, subdiretorio `agent-service/` na raiz
   do projeto. Railway service **separado** apontando para esse
   subdiretorio. Nao deploya junto com a storefront.
-- **D2. Regiao do agent-service**: depende do item (a) acima.
-  - Se Supabase em `sa-east-1`: avaliar Fly.io GRU (Sao Paulo).
-  - Se Supabase em `us-east-*`: Railway US East.
-  - Regiao NAO PODE ser diferente do banco (latencia + egress).
+- **D2. Regiao do agent-service** (CONFIRMADA 2026-07-08, depende de a):
+  - Supabase em `sa-east-1` (CONFIRMADO) → **Fly.io GRU** (Sao Paulo).
+    Mesma regiao do banco: zero latencia inter-regiao, sem custo de
+    egress adicional.
+  - Railway US East: descartado (latencia ~150ms + egress USD/GB).
+  - Regiao NAO PODE ser diferente do banco (regra mantida).
 - **D3. War Room (UI de auditoria em tempo real)**: usa Supabase
   Realtime direto, mesmo padrao de `admin/pedidos.tsx`. Tabelas
   `agent_sessions` e `agent_events` adicionadas a publication
@@ -250,3 +255,23 @@ instagram, site_chat), as tools tem politica:
    (somente apos confirmar `set_updated_at` e coluna de telefone).
 3. Iniciar Bloco B: scaffold de `agent-service/` (Node + Fastify,
    1 endpoint `/agent/message`, prompt caching desde o comeco).
+---
+
+## Pendência tsc: tipos do Supabase (regen)
+
+Erros residuais em `src/lib/payments.functions.ts`,
+`src/lib/order-tracking.functions.ts` e `src/lib/orders-admin.functions.ts`
+sobre colunas `tracking_token`, `auth_user_id`, `refund_status`,
+`payment_method_id`, `transaction_amount` foram temporariamente
+silenciados com `@ts-expect-error` cirúrgicos (cada um com
+comentário apontando para esta nota).
+
+Como zerar definitivamente:
+
+1. Garantir que todas as migrations foram aplicadas no Supabase:
+   `20260708a_orders_tracking_token.sql` (e anteriores).
+2. Localmente: `supabase gen types typescript --project-id gzxlupgdmrtkprwhiutp > src/integrations/supabase/types.ts`.
+3. Remover todas as 3 (ou 5) diretivas `@ts-expect-error` e rerodar `tsc --noEmit`.
+
+Não é bloqueante para o build de produção (vite ignora diretivas TS), apenas
+para `npx tsc --noEmit` passar limpo.

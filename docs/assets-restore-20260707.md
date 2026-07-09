@@ -85,8 +85,8 @@ e353d22 feat(agent): Bloco A — migrations + docs + scripts [PRESERVADO]
 
 ## 4. Correção de alvo Supabase (CRÍTICO)
 
-### Achado
-O `gzxlupgdmrtkprwhiutp` registrado na memória como projeto Supabase é **vazio**. Verificação: queries em `information_schema.tables` retornaram 0 linhas para todas as tabelas esperadas do schema histórico.
+### Registro do episódio (corrigido em 2026-07-08)
+Em 2026-07-08, queries em `information_schema.tables` no dashboard retornaram 0 linhas para o projeto `gzxlupgdmrtkprwhiutp`, e levantou-se a hipótese de que o projeto Supabase estava vazio ou divergente. **A hipótese estava errada**: nova verificação no mesmo dia, com o projeto "Fragranciaria" corretamente selecionado no topo do dashboard (sa-east-1), confirmou que **as 19 tabelas reais existem em produção**. O sintoma original foi **engano operacional** — a query foi rodada com outro projeto Supabase aberto em outra aba/janela. A lista abaixo continua válida como referência, mas o alarme de "projeto vazio" foi cancelado.
 
 ### Tabelas reais em prod (19)
 admins, affiliate_clicks, affiliate_links, affiliate_notifications, affiliate_payouts, affiliate_sales, affiliate_settings, affiliate_tier_history, affiliate_tiers, affiliates, conversations, customers, home_featured_manual, messages, notifications, orders, refund_requests, wishlist.
@@ -125,4 +125,5 @@ Próximo (sua fila):
 - Smoke test em produção (home, produto, carrinho, checkout, `/admin-login`).
 - Dump schema-only → commit `schema-baseline-20260708.sql`.
 - Reescrever migrations Bloco A conforme §3.
-- Adicionar regra no `CLAUDE.md` sobre projeto Supabase correto e migrations contra baseline (não contra arquivos 001/002 históricos).
+- ✅ Adicionar regra no `CLAUDE.md` sobre projeto Supabase correto (project ID + região + checagem visual do dashboard) e migrations contra baseline (não contra arquivos 001/002 históricos).
+- ✅ Confirmar região sa-east-1 e desbloquear decisão D2 do Bloco B (hosting do agent-service → Fly.io GRU recomendado).
