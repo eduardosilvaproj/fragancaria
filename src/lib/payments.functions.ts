@@ -189,17 +189,19 @@ export const createPayment = createServerFn({ method: 'POST' })
             .select("tracking_token, total, items")
             .eq("id", orderId)
             .maybeSingle();
-          const order = orderRes.data;
+          const order = orderRes.data as unknown as {
+            tracking_token?: string | null;
+            total?: number | null;
+            items?: unknown;
+          } | null;
           if (order?.tracking_token) {
             await sendOrderConfirmationEmail({
-              data: {
-                orderId,
-                customerName: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
-                customerEmail: data.payer.email,
-                total: Number(order.total ?? data.amount ?? 0),
-                trackingTokenFormatted: formatToken(order.tracking_token),
-                items: Array.isArray(order.items) ? order.items : data.items ?? [],
-              },
+              orderId,
+              customerName: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+              customerEmail: data.payer.email,
+              total: Number(order.total ?? data.amount ?? 0),
+              trackingTokenFormatted: formatToken(order.tracking_token),
+              items: Array.isArray(order.items) ? (order.items as any[]) : data.items ?? [],
             }).catch((err) => {
               console.warn("[email] Falha ao enviar (não quebra checkout)", { err });
             });

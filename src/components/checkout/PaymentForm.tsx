@@ -692,8 +692,8 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
         },
       });
       if (!res.success) throw new Error(res.error);
-      setCode(res.data.pixQrCode ?? "");
-      setQrBase64(res.data.pixQrCodeBase64 ?? null);
+      setCode(res.data.pixCode ?? "");
+      setQrBase64(res.data.pixQrCode ?? null);
       setPaymentId(res.data.id);
       setOrderId(res.data.orderId ?? null);
       setTrackingToken(res.data.trackingToken ?? null);
