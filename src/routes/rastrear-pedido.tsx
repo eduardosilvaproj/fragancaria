@@ -1,7 +1,6 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { ArrowLeft, Search } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Search } from "lucide-react";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { toast } from "sonner";
 
@@ -16,6 +15,11 @@ export const Route = createFileRoute("/rastrear-pedido")({
   component: TrackOrderPage,
 });
 
+// Normaliza o código digitado (remove hífens/espaços do formato XXXX-XXXX-...).
+function normalizeToken(raw: string): string {
+  return raw.replace(/[\s-]/g, "").toUpperCase();
+}
+
 function TrackOrderPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState("");
@@ -23,28 +27,13 @@ function TrackOrderPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const value = query.trim();
-    if (!value) return;
+    const token = normalizeToken(query.trim());
+    if (!token) return;
 
     setLoading(true);
     try {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-      let { data, error } = isUuid
-        ? await supabase.from("orders").select("id").eq("id", value).maybeSingle()
-        : await supabase
-            .from("orders")
-            .select("id")
-            .eq("customer_email", value)
-            .order("created_at", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-      if (error) throw error;
-      if (!data) {
-        toast.error("Pedido não encontrado.");
-        return;
-      }
-      navigate({ to: "/pedido/$id", params: { id: data.id } });
+      // A rota /pedido/$token valida o código via server fn segura.
+      await navigate({ to: "/pedido/$token", params: { token } });
     } catch (err) {
       toast.error((err as Error).message || "Erro ao buscar pedido.");
     } finally {
@@ -62,21 +51,21 @@ function TrackOrderPage() {
             Rastrear Pedido
           </h1>
           <p className="text-sm text-[#51635F] mb-6">
-            Digite o número do pedido ou o e-mail usado na compra.
+            Digite o código de rastreio que você recebeu ao finalizar a compra.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-2">
-                Pedido ou e-mail
+                Código de rastreio
               </label>
               <input
                 type="text"
                 required
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="ID do pedido ou seu@email.com"
-                className="w-full px-4 py-3 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E] text-sm bg-white"
+                placeholder="XXXX-XXXX-XXXX-XXXX"
+                className="w-full px-4 py-3 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E] text-sm bg-white font-mono tracking-wider"
               />
             </div>
 

@@ -465,7 +465,9 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
         status: res.data.status || "approved",
         cardLast4: last4,
         cardBrand: CARD_BRAND_NAMES[cardBrand],
-        installments: card.installments
+        installments: card.installments,
+        trackingToken: res.data.trackingToken,
+        trackingTokenFormatted: res.data.trackingTokenFormatted,
       });
     } catch (e: any) {
       toast.error(e.message || "Erro ao processar pagamento");
@@ -645,6 +647,8 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
   const [qrBase64, setQrBase64] = useState<string | null>(null);
   const [paymentId, setPaymentId] = useState<string | null>(null);
   const [orderId, setOrderId] = useState<string | null>(null);
+  const [trackingToken, setTrackingToken] = useState<string | null>(null);
+  const [trackingTokenFormatted, setTrackingTokenFormatted] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(30 * 60);
 
   useEffect(() => {
@@ -692,6 +696,8 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
       setQrBase64(res.data.pixQrCodeBase64 ?? null);
       setPaymentId(res.data.id);
       setOrderId(res.data.orderId ?? null);
+      setTrackingToken(res.data.trackingToken ?? null);
+      setTrackingTokenFormatted(res.data.trackingTokenFormatted ?? null);
       toast.success("PIX gerado! Escaneie o QR Code ou copie o código.");
     } catch (e: any) {
       toast.error(e.message || "Erro ao gerar PIX");
@@ -707,7 +713,13 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId ?? undefined, status: "pending", pixCode: code ?? undefined });
+    onDone({
+      orderId: orderId ?? undefined,
+      status: "pending",
+      pixCode: code ?? undefined,
+      trackingToken: trackingToken ?? undefined,
+      trackingTokenFormatted: trackingTokenFormatted ?? undefined,
+    });
   };
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, "0");

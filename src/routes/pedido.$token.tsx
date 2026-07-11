@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Clock,
   CheckCircle,
@@ -8,13 +9,12 @@ import {
   Truck,
   MapPin,
   XCircle,
-  ArrowLeft,
   ExternalLink,
 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getOrderByTrackingToken } from "@/lib/order-tracking.functions";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 
-export const Route = createFileRoute("/pedido/$id")({
+export const Route = createFileRoute("/pedido/$token")({
   ssr: false,
   head: () => ({
     meta: [
@@ -23,10 +23,6 @@ export const Route = createFileRoute("/pedido/$id")({
     ],
   }),
   component: OrderTrackingPage,
-  errorComponent: ({ error }) => (
-    <ErrorState message={error.message || "Erro ao carregar pedido."} />
-  ),
-  notFoundComponent: () => <ErrorState message="Pedido não encontrado." />,
 });
 
 type OrderStatus =
@@ -76,9 +72,10 @@ const formatDate = (d?: string | null) =>
       })
     : "";
 
-function mapMpStatus(s?: string | null): OrderStatus {
+function mapStatus(s?: string | null): OrderStatus {
   switch (s) {
     case "approved":
+    case "paid":
       return "paid";
     case "in_process":
     case "pending":
@@ -91,32 +88,22 @@ function mapMpStatus(s?: string | null): OrderStatus {
   }
 }
 
+// Remove hífens/espaços do token digitado ou vindo da URL.
+function normalizeToken(raw: string): string {
+  return (raw || "").replace(/[\s-]/g, "").toUpperCase();
+}
+
 function OrderTrackingPage() {
-  const { id } = Route.useParams();
+  const { token } = Route.useParams();
+  const getOrder = useServerFn(getOrderByTrackingToken);
 
-  const { data: order, isLoading, error } = useQuery({
-    queryKey: ["order", id],
-    queryFn: async () => {
-      // Primeiro tenta buscar por UUID (id do Supabase)
-      let result = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", id)
-        .maybeSingle();
-
-      // Se não encontrou, tenta buscar por payment_id (id do Mercado Pago)
-      if (!result.data && !result.error) {
-        result = await supabase
-          .from("orders")
-          .select("*")
-          .eq("payment_id", id)
-          .maybeSingle();
-      }
-
-      if (result.error) throw result.error;
-      return result.data;
-    },
+  const { data: result, isLoading } = useQuery({
+    queryKey: ["order-tracking", token],
+    queryFn: async () => getOrder({ data: { token: normalizeToken(token) } }),
+    retry: false,
   });
+
+  const order = result?.success ? result.data : null;
 
   return (
     <div className="min-h-screen bg-[#F3EEE3]">
@@ -128,10 +115,8 @@ function OrderTrackingPage() {
           </Link>
           <span>/</span>
           <Link to="/rastrear-pedido" className="hover:text-[#0F3A3E]">
-            Meus Pedidos
+            Rastrear Pedido
           </Link>
-          <span>/</span>
-          <span className="text-[#0F3A3E]">Pedido #{String(id).slice(0, 8)}</span>
         </div>
       </nav>
 
@@ -139,57 +124,40 @@ function OrderTrackingPage() {
         {isLoading && <LoadingSkeleton />}
 
         {!isLoading && !order && (
-          <ErrorState message="Pedido não encontrado." />
+          <ErrorState message="Código não encontrado." />
         )}
 
-        {!isLoading && order && (
-          <OrderContent order={order} />
-        )}
-
-        {error && (
-          <p className="text-sm text-red-600">{(error as Error).message}</p>
-        )}
+        {!isLoading && order && <OrderContent order={order} />}
       </main>
     </div>
   );
 }
 
-function OrderContent({ order }: { order: any }) {
-  const currentStatus = mapMpStatus(order.status);
-  const history: Array<{ status: OrderStatus; date: string }> = Array.isArray(
-    order.status_history,
-  )
-    ? order.status_history
-    : [];
-
-  const historyMap = new Map(history.map((h) => [h.status, h.date]));
+function OrderContent({
+  order,
+}: {
+  order: {
+    id: string;
+    status: string;
+    paymentStatus: string;
+    trackingCode: string | null;
+    createdAt: string;
+    items: Array<{ title: string; quantity: number; price: number }>;
+    statusHistory: Array<{ status: string; date: string }>;
+  };
+}) {
+  const currentStatus = mapStatus(order.status);
+  const historyMap = new Map(
+    order.statusHistory.map((h) => [mapStatus(h.status), h.date]),
+  );
   const currentIndex = FLOW.indexOf(currentStatus);
   const cancelled = currentStatus === "cancelled";
 
   const cfg = STATUS_CONFIG[currentStatus] ?? STATUS_CONFIG.pending;
   const StatusIcon = cfg.icon;
 
-  const address = order.shipping_address as
-    | {
-        street?: string;
-        number?: string;
-        complement?: string;
-        neighborhood?: string;
-        city?: string;
-        state?: string;
-        zip?: string;
-      }
-    | null;
-
-  const items = (order.items ?? []) as Array<{
-    title: string;
-    quantity: number;
-    price: number;
-  }>;
-
   return (
     <>
-      {/* Status header */}
       <section className="bg-white border border-[#E9E1D2] p-6">
         <div className="flex items-center gap-3 mb-2">
           <StatusIcon className="w-6 h-6" style={{ color: cfg.color }} />
@@ -204,11 +172,10 @@ function OrderContent({ order }: { order: any }) {
           Pedido #{String(order.id).slice(0, 8).toUpperCase()}
         </h1>
         <p className="text-sm text-[#51635F] mt-1">
-          Realizado em {formatDate(order.created_at)}
+          Realizado em {formatDate(order.createdAt)}
         </p>
       </section>
 
-      {/* Timeline */}
       <section className="bg-white border border-[#E9E1D2] p-6">
         <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-5">
           Acompanhamento
@@ -232,10 +199,8 @@ function OrderContent({ order }: { order: any }) {
                     <div
                       className="w-9 h-9 rounded-full flex items-center justify-center border-2"
                       style={{
-                        backgroundColor:
-                          completed || current ? c.color : "#fff",
-                        borderColor:
-                          completed || current ? c.color : "#E9E1D2",
+                        backgroundColor: completed || current ? c.color : "#fff",
+                        borderColor: completed || current ? c.color : "#E9E1D2",
                         color: completed || current ? "#fff" : "#9AA39F",
                       }}
                     >
@@ -254,15 +219,16 @@ function OrderContent({ order }: { order: any }) {
                   <div className="pt-1.5 flex-1">
                     <div
                       className="text-sm font-semibold"
-                      style={{
-                        color:
-                          completed || current ? "#0F3A3E" : "#9AA39F",
-                      }}
+                      style={{ color: completed || current ? "#0F3A3E" : "#9AA39F" }}
                     >
                       {c.label}
                     </div>
                     <div className="text-xs text-[#51635F] mt-0.5">
-                      {date ? formatDate(date) : current ? "Em andamento" : "Aguardando"}
+                      {date
+                        ? formatDate(date)
+                        : current
+                        ? "Em andamento"
+                        : "Aguardando"}
                     </div>
                   </div>
                 </li>
@@ -273,68 +239,35 @@ function OrderContent({ order }: { order: any }) {
       </section>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Shipping */}
+        {order.trackingCode && (
+          <section className="bg-white border border-[#E9E1D2] p-6">
+            <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
+              Envio
+            </h2>
+            <div className="text-[10px] uppercase tracking-[0.18em] text-[#51635F]">
+              Código de rastreio
+            </div>
+            <div className="font-mono text-sm text-[#0F3A3E]">
+              {order.trackingCode}
+            </div>
+            <a
+              href={`https://rastreamento.correios.com.br/app/index.php?objetos=${order.trackingCode}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 mt-2 text-[12px] uppercase tracking-[0.18em] font-semibold text-[#B07B1E] hover:underline"
+            >
+              Rastrear envio <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </section>
+        )}
+
         <section className="bg-white border border-[#E9E1D2] p-6">
           <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
-            Dados da Entrega
-          </h2>
-          <div className="text-sm text-[#0F3A3E] space-y-1">
-            <p className="font-semibold">{order.customer_name || "—"}</p>
-            {address ? (
-              <>
-                <p>
-                  {address.street}, {address.number}
-                  {address.complement ? ` — ${address.complement}` : ""}
-                </p>
-                <p>{address.neighborhood}</p>
-                <p>
-                  {address.city} - {address.state}
-                </p>
-                <p>{address.zip}</p>
-              </>
-            ) : (
-              <p className="text-[#51635F]">Endereço não informado.</p>
-            )}
-          </div>
-
-          <div className="mt-4 pt-4 border-t border-[#E9E1D2] text-sm text-[#0F3A3E]">
-            <p>
-              <span className="text-[#51635F]">Frete:</span>{" "}
-              {order.shipping_method || "—"}
-            </p>
-            {order.estimated_delivery && (
-              <p>
-                <span className="text-[#51635F]">Previsão:</span>{" "}
-                {new Date(order.estimated_delivery).toLocaleDateString("pt-BR")}
-              </p>
-            )}
-            {order.tracking_code && (
-              <div className="mt-3">
-                <div className="text-[10px] uppercase tracking-[0.18em] text-[#51635F]">
-                  Código de rastreio
-                </div>
-                <div className="font-mono text-sm">{order.tracking_code}</div>
-                <a
-                  href={`https://rastreamento.correios.com.br/app/index.php?objetos=${order.tracking_code}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 mt-2 text-[12px] uppercase tracking-[0.18em] font-semibold text-[#B07B1E] hover:underline"
-                >
-                  Rastrear envio <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </div>
-            )}
-          </div>
-        </section>
-
-        {/* Summary */}
-        <section className="bg-white border border-[#E9E1D2] p-6">
-          <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-4">
-            Resumo do Pedido
+            Itens do Pedido
           </h2>
           <div className="space-y-2 text-sm">
-            {items.length > 0 ? (
-              items.map((it, i) => (
+            {order.items.length > 0 ? (
+              order.items.map((it, i) => (
                 <div key={i} className="flex justify-between text-[#0F3A3E]">
                   <span>
                     {it.quantity}x {it.title}
@@ -346,49 +279,9 @@ function OrderContent({ order }: { order: any }) {
               <p className="text-[#51635F]">Sem itens.</p>
             )}
           </div>
-          <div className="mt-4 pt-4 border-t border-[#E9E1D2] space-y-1.5 text-sm">
-            <Row label="Subtotal" value={BRL(order.subtotal)} />
-            <Row label="Frete" value={BRL(order.shipping_price)} />
-            {order.discount ? (
-              <Row label="Desconto" value={`- ${BRL(order.discount)}`} />
-            ) : null}
-            <div className="flex justify-between font-serif text-lg text-[#0F3A3E] pt-2 border-t border-[#E9E1D2] mt-2">
-              <span>Total</span>
-              <span>{BRL(order.total ?? order.amount)}</span>
-            </div>
-          </div>
         </section>
       </div>
-
-      {/* Payment */}
-      <section className="bg-white border border-[#E9E1D2] p-6">
-        <h2 className="text-[11px] uppercase tracking-[0.2em] text-[#B07B1E] font-semibold mb-3">
-          Pagamento
-        </h2>
-        <div className="flex flex-wrap gap-4 items-center justify-between text-sm text-[#0F3A3E]">
-          <div>
-            <p className="font-semibold uppercase">
-              {order.payment_method || "—"}{" "}
-              <span style={{ color: cfg.color }}>· {cfg.label}</span>
-            </p>
-            {order.payment_id && (
-              <p className="text-xs text-[#51635F] mt-1">
-                ID: {order.payment_id}
-              </p>
-            )}
-          </div>
-        </div>
-      </section>
     </>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex justify-between text-[#51635F]">
-      <span>{label}</span>
-      <span className="text-[#0F3A3E]">{value}</span>
-    </div>
   );
 }
 
@@ -398,8 +291,8 @@ function LoadingSkeleton() {
       <div className="bg-white border border-[#E9E1D2] p-6 h-32" />
       <div className="bg-white border border-[#E9E1D2] p-6 h-80" />
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white border border-[#E9E1D2] p-6 h-60" />
-        <div className="bg-white border border-[#E9E1D2] p-6 h-60" />
+        <div className="bg-white border border-[#E9E1D2] p-6 h-40" />
+        <div className="bg-white border border-[#E9E1D2] p-6 h-40" />
       </div>
     </div>
   );

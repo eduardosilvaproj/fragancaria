@@ -200,8 +200,8 @@ function OrderCard({ order }: { order: MyOrderRow }) {
 
   return (
     <Link
-      to="/pedido/$id"
-      params={{ id: order.id }}
+      to="/minha-conta/pedidos/$orderId"
+      params={{ orderId: order.id }}
       className="block bg-white rounded-2xl border border-[#E9E1D2] p-5 hover:border-[#0F3A3E] transition-colors"
     >
       <div className="flex items-start justify-between gap-3">

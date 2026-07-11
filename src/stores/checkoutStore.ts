@@ -32,6 +32,8 @@ export interface PaymentData {
   cardLast4?: string;
   cardBrand?: string;
   installments?: number;
+  trackingToken?: string;
+  trackingTokenFormatted?: string;
 }
 
 export interface CheckoutCoupon {

@@ -29,7 +29,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as MinhaContaIndexRouteImport } from './routes/minha-conta/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
-import { Route as PedidoIdRouteImport } from './routes/pedido.$id'
+import { Route as PedidoTokenRouteImport } from './routes/pedido.$token'
 import { Route as AfiliadoRecuperarSenhaRouteImport } from './routes/afiliado/recuperar-senha'
 import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
@@ -164,9 +164,9 @@ const ProdutoIdRoute = ProdutoIdRouteImport.update({
   path: '/produto/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PedidoIdRoute = PedidoIdRouteImport.update({
-  id: '/pedido/$id',
-  path: '/pedido/$id',
+const PedidoTokenRoute = PedidoTokenRouteImport.update({
+  id: '/pedido/$token',
+  path: '/pedido/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AfiliadoRecuperarSenhaRoute = AfiliadoRecuperarSenhaRouteImport.update({
@@ -379,7 +379,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
-  '/pedido/$id': typeof PedidoIdRoute
+  '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
@@ -432,7 +432,7 @@ export interface FileRoutesByTo {
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
-  '/pedido/$id': typeof PedidoIdRoute
+  '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
   '/minha-conta': typeof MinhaContaIndexRoute
@@ -489,7 +489,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
   '/afiliado/login': typeof AfiliadoLoginRoute
   '/afiliado/recuperar-senha': typeof AfiliadoRecuperarSenhaRoute
-  '/pedido/$id': typeof PedidoIdRoute
+  '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
@@ -547,7 +547,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
-    | '/pedido/$id'
+    | '/pedido/$token'
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
@@ -600,7 +600,7 @@ export interface FileRouteTypes {
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
-    | '/pedido/$id'
+    | '/pedido/$token'
     | '/produto/$id'
     | '/admin'
     | '/minha-conta'
@@ -656,7 +656,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/afiliado/login'
     | '/afiliado/recuperar-senha'
-    | '/pedido/$id'
+    | '/pedido/$token'
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
@@ -699,7 +699,7 @@ export interface RootRouteChildren {
   AfiliadoDashboardRoute: typeof AfiliadoDashboardRouteWithChildren
   AfiliadoLoginRoute: typeof AfiliadoLoginRoute
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
-  PedidoIdRoute: typeof PedidoIdRoute
+  PedidoTokenRoute: typeof PedidoTokenRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -848,11 +848,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProdutoIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/pedido/$id': {
-      id: '/pedido/$id'
-      path: '/pedido/$id'
-      fullPath: '/pedido/$id'
-      preLoaderRoute: typeof PedidoIdRouteImport
+    '/pedido/$token': {
+      id: '/pedido/$token'
+      path: '/pedido/$token'
+      fullPath: '/pedido/$token'
+      preLoaderRoute: typeof PedidoTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/afiliado/recuperar-senha': {
@@ -1193,7 +1193,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoDashboardRoute: AfiliadoDashboardRouteWithChildren,
   AfiliadoLoginRoute: AfiliadoLoginRoute,
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
-  PedidoIdRoute: PedidoIdRoute,
+  PedidoTokenRoute: PedidoTokenRoute,
   ProdutoIdRoute: ProdutoIdRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,

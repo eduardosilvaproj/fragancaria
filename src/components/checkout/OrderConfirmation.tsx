@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Package, MapPin, CreditCard } from "lucide-react";
+import { CheckCircle2, Package, MapPin, CreditCard, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, SHIPPING_METHODS } from "@/config/mercadopago";
 
@@ -61,6 +62,36 @@ export function OrderConfirmation() {
         )}
       </div>
 
+      {paymentData?.trackingTokenFormatted && (
+        <div className="bg-white border border-[#E9E1D2] p-6 space-y-3">
+          <div className="text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold">
+            Código de rastreio
+          </div>
+          <p className="text-sm text-[#51635F]">
+            Guarde este código. Use-o em "Rastrear pedido" para acompanhar sua compra
+            sem precisar de conta.
+          </p>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 font-mono text-lg text-[#0F3A3E] tracking-wider bg-[#F3EEE3] border border-[#E9E1D2] px-4 py-3 text-center">
+              {paymentData.trackingTokenFormatted}
+            </code>
+            <button
+              type="button"
+              onClick={() => {
+                navigator.clipboard.writeText(
+                  paymentData.trackingToken ?? paymentData.trackingTokenFormatted ?? "",
+                );
+                toast.success("Código copiado!");
+              }}
+              className="border border-[#0F3A3E] text-[#0F3A3E] px-4 py-3 hover:bg-[#0F3A3E] hover:text-white"
+              aria-label="Copiar código de rastreio"
+            >
+              <Copy className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="bg-[#F3EEE3] border border-[#E9E1D2] p-6">
         <h3 className="font-serif text-lg text-[#0F3A3E] mb-3">Próximos passos</h3>
         <ul className="space-y-2 text-sm text-[#51635F] list-disc list-inside">
@@ -71,10 +102,10 @@ export function OrderConfirmation() {
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
-        {isValidUuid(paymentData?.orderId) ? (
+        {paymentData?.trackingToken ? (
           <Link
-            to="/pedido/$id"
-            params={{ id: String(paymentData!.orderId) }}
+            to="/pedido/$token"
+            params={{ token: paymentData.trackingToken }}
             className="flex-1 bg-[#B07B1E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#8f6418]"
           >
             Acompanhar Pedido →

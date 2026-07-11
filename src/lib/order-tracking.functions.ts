@@ -43,8 +43,11 @@ export type GuestOrderDTO = {
   trackingCode: string | null;
   createdAt: string;
   items: Array<{ title: string; quantity: number; price: number }>;
+  statusHistory: Array<{ status: string; date: string }>;
 };
 
+// status_history e coluna JSON (nao PII): [{ status, detail, at }] gravado pelo
+// mp-webhook. Alimenta a timeline do rastreio de convidado.
 const SAFE_COLUMNS = [
   "id",
   "status",
@@ -52,6 +55,7 @@ const SAFE_COLUMNS = [
   "tracking_code",
   "created_at",
   "items",
+  "status_history",
 ].join(", ");
 
 function getClientIp(request: Request | undefined): string {
@@ -99,6 +103,12 @@ export const getOrderByTrackingToken = createServerFn({ method: "GET" })
               title: String(it.title ?? it.name ?? ""),
               quantity: Number(it.quantity ?? 0),
               price: Number(it.price ?? 0),
+            }))
+          : [],
+        statusHistory: Array.isArray(r.status_history)
+          ? (r.status_history as Array<Record<string, unknown>>).map((h) => ({
+              status: String(h.status ?? ""),
+              date: String(h.at ?? h.date ?? h.created_at ?? ""),
             }))
           : [],
       };
