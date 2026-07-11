@@ -32,35 +32,29 @@ function OrderDetailPage() {
         )
         .maybeSingle();
       if (error || !o) return null;
-      const [{ data: items }, { data: history }] = await Promise.all([
-        supabase
-          .from("order_items")
-          .select("name, quantity, price")
-          .eq("order_id", orderId),
-        supabase
-          .from("order_status_history")
-          .select("status, created_at, notes")
-          .eq("order_id", orderId)
-          .order("created_at", { ascending: true }),
-      ]);
+      // Itens e histórico ficam nas colunas JSON orders.items / orders.status_history
+      // (schema canônico); não há tabelas order_items / order_status_history em prod.
+      const oo = o as any;
+      const rawItems = Array.isArray(oo.items) ? oo.items : [];
+      const rawHistory = Array.isArray(oo.status_history) ? oo.status_history : [];
       return {
-        id: (o as any).id,
-        createdAt: (o as any).created_at ?? "",
-        status: (o as any).status ?? "pending",
-        paymentStatus: (o as any).payment_status ?? "pending",
-        refundStatus: (o as any).refund_status ?? null,
-        total: Number((o as any).total ?? 0),
-        trackingCode: (o as any).tracking_code ?? null,
-        trackingUrl: (o as any).tracking_url ?? null,
-        items: (items ?? []).map((it: any) => ({
-          name: it.name ?? "",
+        id: oo.id,
+        createdAt: oo.created_at ?? "",
+        status: oo.status ?? "pending",
+        paymentStatus: oo.payment_status ?? "pending",
+        refundStatus: oo.refund_status ?? null,
+        total: Number(oo.total ?? 0),
+        trackingCode: oo.tracking_code ?? null,
+        trackingUrl: null,
+        items: rawItems.map((it: any) => ({
+          name: it.title ?? it.name ?? "",
           quantity: Number(it.quantity ?? 0),
           price: Number(it.price ?? 0),
         })),
-        history: (history ?? []).map((h: any) => ({
+        history: rawHistory.map((h: any) => ({
           status: h.status ?? "",
-          createdAt: h.created_at ?? "",
-          notes: h.notes ?? null,
+          createdAt: h.at ?? h.created_at ?? "",
+          notes: h.detail ?? h.notes ?? null,
         })),
         shippingAddress: (o as any).shipping_address ?? null,
         customer: {
@@ -136,7 +130,7 @@ function OrderDetailPage() {
       <div className="bg-white rounded-2xl border border-[#E9E1D2] p-5">
         <h3 className="text-sm font-semibold text-[#0F3A3E] mb-3">Itens</h3>
         <ul className="divide-y divide-[#E9E1D2]">
-          {o.items.map((it, i) => (
+          {o.items.map((it: { name: string; quantity: number; price: number }, i: number) => (
             <li key={i} className="flex justify-between py-3 text-sm">
               <span className="text-[#0F3A3E]">
                 {it.quantity}x {it.name}

@@ -96,11 +96,9 @@ export const createPayment = createServerFn({ method: 'POST' })
             shipping_price: data.shippingPrice ?? 0,
             shipping_method: data.shippingMethod ?? null,
             items: data.items ?? [],
-            // @ts-expect-error auth_user_id added in prior migration; generated types stale. See agente-fase1.md.
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
-            // @ts-expect-error tracking_token added in 20260708a; generated types stale. See agente-fase1.md.
             tracking_token: generateTrackingToken(),
           })
           .select('id')

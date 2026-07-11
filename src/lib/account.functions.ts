@@ -1,16 +1,34 @@
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
-// Server functions da area do cliente (/minha-conta). RLS decide o que cada
-// user pode ver/mexer; nunca usar service_role aqui.
+// Server functions da area do cliente (/minha-conta).
+//
+// Pos-lockdown de RLS em orders (20260708b), seguimos o mesmo padrao de
+// payments/orders-admin/tracking: validar o Bearer token do usuario (anexado
+// no cliente por attachSupabaseAuth) e usar supabaseAdmin (service role) com
+// escopo manual por user.id / customer_email em cada query. Assim nao
+// dependemos de haver policy RLS por tabela, e o fluxo funciona esteja ou nao
+// o lockdown aplicado em prod.
 
 async function getUserClient() {
-  const { getSupabaseServerClient } = await import(
+  const authHeader = getRequest()?.headers?.get("authorization");
+  if (!authHeader?.startsWith("Bearer ")) throw new Error("UNAUTHENTICATED");
+  const token = authHeader.slice("Bearer ".length).trim();
+  if (!token) throw new Error("UNAUTHENTICATED");
+  const { supabaseAdmin } = await import(
     "@/integrations/supabase/client.server"
   );
-  const { user, supabase } = await getSupabaseServerClient();
-  if (!user) throw new Error("UNAUTHENTICATED");
-  return { user, supabase } as const;
+  const { data, error } = await supabaseAdmin.auth.getUser(token);
+  if (error || !data?.user) throw new Error("UNAUTHENTICATED");
+  // types.ts esta incompleto (faltam customers/wishlist/notifications/etc — ver
+  // B2). Cast frouxo ate a regeneracao dos types; o file ja faz `as any` nos
+  // resultados. Nao depende do B2 para compilar/rodar.
+  return {
+    user: data.user,
+    supabase: supabaseAdmin as unknown as SupabaseClient,
+  } as const;
 }
 
 export type DashboardSummary = {
@@ -94,24 +112,16 @@ export const listMyOrders = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ success: boolean; data: MyOrder[]; error?: string }> => {
     try {
       const { user, supabase } = await getUserClient();
+      // Itens ficam na coluna JSON orders.items (schema canonico); nao existe
+      // tabela order_items em prod. Shape gravado por createPayment: cartItem
+      // { id, title, quantity, price, image }.
       const { data: orders, error } = await supabase
         .from("orders")
-        .select("id, created_at, status, payment_status, refund_status, total, tracking_code, tracking_url")
+        .select("id, created_at, status, payment_status, refund_status, total, tracking_code, items")
         .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) return { success: false, data: [], error: error.message };
-      const orderIds = (orders ?? []).map((o: any) => o.id);
-      const { data: items } = await supabase
-        .from("order_items")
-        .select("order_id, name, quantity, price")
-        .in("order_id", orderIds);
-      const itemsByOrder = new Map<string, Array<any>>();
-      for (const it of items ?? []) {
-        const arr = itemsByOrder.get((it as any).order_id) ?? [];
-        arr.push(it);
-        itemsByOrder.set((it as any).order_id, arr);
-      }
       const mapped: MyOrder[] = (orders ?? []).map((o: any) => ({
         id: o.id,
         createdAt: o.created_at ?? "",
@@ -120,9 +130,9 @@ export const listMyOrders = createServerFn({ method: "GET" }).handler(
         refundStatus: o.refund_status ?? null,
         total: Number(o.total ?? 0),
         trackingCode: o.tracking_code ?? null,
-        trackingUrl: o.tracking_url ?? null,
-        items: (itemsByOrder.get(o.id) ?? []).map((it: any) => ({
-          name: it.name ?? "",
+        trackingUrl: null,
+        items: (Array.isArray(o.items) ? o.items : []).map((it: any) => ({
+          name: it.title ?? it.name ?? "",
           quantity: Number(it.quantity ?? 0),
           price: Number(it.price ?? 0),
         })),
@@ -443,11 +453,11 @@ export const updateProfile = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { user, supabase } = await getUserClient();
-      const { error } = await supabase.auth.updateUser({
-        data: {
+      const { error } = await supabase.auth.admin.updateUserById(user.id, {
+        user_metadata: {
           full_name: data.fullName,
           phone: data.phone,
-        } as any,
+        },
       });
       if (error) return { success: false as const, error: error.message };
       const { data: cust } = await supabase

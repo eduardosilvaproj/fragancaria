@@ -90,6 +90,8 @@ async function persistMessages(msgs: IncomingMessage[]) {
       conversationId = (created.data as any).id;
     }
 
+    if (!conversationId) continue;
+
     // Insere a mensagem recebida (sender = customer).
     const ins = await supabaseAdmin.from("messages").insert({
       conversation_id: conversationId,

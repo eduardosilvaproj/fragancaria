@@ -77,7 +77,6 @@ export const getOrderByTrackingToken = createServerFn({ method: "GET" })
       const { data: row, error } = await supabaseAdmin
         .from("orders")
         .select(SAFE_COLUMNS)
-        // @ts-expect-error tracking_token added in 20260708a; generated types stale. See agente-fase1.md.
         .eq("tracking_token", data.token)
         .maybeSingle();
       if (error) {
