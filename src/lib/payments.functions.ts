@@ -178,6 +178,37 @@ export const createPayment = createServerFn({ method: 'POST' })
           raw: json,
         }).eq('id', orderId);
       }
+
+      // Dispara e-mail de confirmação com token de rastreio (se Resend estiver configurado).
+      // Não quebra o fluxo se o envio falhar — o token continua no frontend.
+      if (orderId && data.payer?.email) {
+        try {
+          const { sendOrderConfirmationEmail } = await import("@/lib/email.functions");
+          const orderRes = await admin
+            .from("orders")
+            .select("tracking_token, total, items")
+            .eq("id", orderId)
+            .maybeSingle();
+          const order = orderRes.data;
+          if (order?.tracking_token) {
+            await sendOrderConfirmationEmail({
+              data: {
+                orderId,
+                customerName: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+                customerEmail: data.payer.email,
+                total: Number(order.total ?? data.amount ?? 0),
+                trackingTokenFormatted: formatToken(order.tracking_token),
+                items: Array.isArray(order.items) ? order.items : data.items ?? [],
+              },
+            }).catch((err) => {
+              console.warn("[email] Falha ao enviar (não quebra checkout)", { err });
+            });
+          }
+        } catch (emailErr) {
+          console.warn("[email] Erro ao preparar envio", { emailErr });
+        }
+      }
+
       const result: any = { id: paymentId, orderId, status };
 // devolve o token (raw + formatado) para a UI do checkout exibir o banner.
       const { data: freshOrder } = await admin.from('orders').select('tracking_token').eq('id', orderId).maybeSingle();

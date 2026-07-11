@@ -38,6 +38,7 @@ puro nesta conversa e estao marcadas para rotacao.
 | `OPENAI_API_KEY` | **nao** | sim (`SECRETA`) | OpenAI (embeddings/RAG) |
 | `CHATWOOT_API_TOKEN` | **nao** | sim (`SECRETA`) | so se integrarmos Chatwoot |
 | `CHATWOOT_WEBHOOK_HMAC` | **nao** | sim (`SECRETA`) | so se integrarmos Chatwoot |
+| `RESEND_API_KEY` | sim (`SECRETA`) | **nao** | envio de e-mails transacionais (checkout, rastreio) |
 
 ### Regras
 
