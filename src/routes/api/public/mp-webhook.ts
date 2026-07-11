@@ -57,16 +57,18 @@ export const Route = createFileRoute('/api/public/mp-webhook')({
           const externalRef = payment?.external_reference || null;
           const { supabaseAdmin } = await import('@/integrations/supabase/client.server');
           // 1) dedupe: se o ultimo pagamento registrado for igual ao atual e ja foi processado, ignora.
+          let existing: any = null;
           if (externalRef) {
-            const { data: existing } = await supabaseAdmin.from('orders').select('payment_id, payment_status, status_history').eq('id', externalRef).single();
-            if (existing && (existing as any).payment_id === paymentId && (existing as any).payment_status === payment?.status) {
+            const res = await supabaseAdmin.from('orders').select('payment_id, payment_status, status_history').eq('id', externalRef).single();
+            existing = res.data;
+            if (existing && existing.payment_id === paymentId && existing.payment_status === payment?.status) {
               console.log('[mp-webhook] reentrega ignorada para', paymentId, 'status', payment?.status);
               return Response.json({ received: true, deduplicated: true }, { headers: corsHeaders });
             }
           }
           const mapped = mapMpStatus(payment);
           // 2) monta status_history (mantem os 20 ultimos).
-          const history = Array.isArray((existing as any)?.status_history) ? (existing as any).status_history : [];
+          const history = Array.isArray(existing?.status_history) ? existing.status_history : [];
           history.push({ status: payment?.status || 'unknown', detail: payment?.status_detail || null, at: new Date().toISOString() });
           const trimmedHistory = history.slice(-20);
           // 3) update por external_reference (preferencial) OU por payment_id (fallback).
