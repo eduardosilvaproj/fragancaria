@@ -7,7 +7,7 @@ import { ImageLightbox } from "@/components/shop/ImageLightbox";
 import { ShareButtons } from "@/components/shop/ShareButtons";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { generateProductSchema, generateBreadcrumbSchema } from "@/lib/seo";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
@@ -45,9 +45,11 @@ function ProductPage() {
   const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
   const navigate = useNavigate();
 
+  const { products, isPending } = useProducts();
+
   const product = useMemo(() => {
-    return PRODUCTS.find((p) => p.id === id);
-  }, [id]);
+    return products.find((p) => p.id === id) ?? null;
+  }, [products, id]);
 
   // Track product view
   useEffect(() => {
@@ -65,14 +67,14 @@ function ProductPage() {
 
   const relatedProducts = useMemo(() => {
     if (!product) return [];
-    return PRODUCTS.filter(
-      (p) =>
-        p.id !== product.id &&
-        (p.category === product.category || p.brand === product.brand)
+    return products.filter(
+      (pr) =>
+        pr.id !== product.id &&
+        (pr.category === product.category || pr.brand === product.brand)
     ).slice(0, 4);
-  }, [product]);
+  }, [products, product]);
 
-  if (!product) {
+  if (!product && !isPending) {
     return (
       <div className="min-h-screen bg-[#F3EEE3]">
         <NavbarEditorial />
@@ -92,23 +94,26 @@ function ProductPage() {
     );
   }
 
-  const hasDiscount = product.originalPrice && product.originalPrice > product.price;
-  const discount = hasDiscount && product.originalPrice
-    ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+  // TypeScript nao faz narrowing de product apos a guarda acima
+  const p = product!;
+
+  const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+  const discount = hasDiscount && p.originalPrice
+    ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)
     : 0;
 
   // SEO schemas
   const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://fragranciaria.com.br";
 
   const productSchema = generateProductSchema({
-    id: product.id,
-    name: product.name,
-    description: product.description || `${product.name} - ${product.brand || "Fragranciaria"}`,
-    brand: product.brand,
-    price: product.price,
-    originalPrice: product.originalPrice,
-    images: product.images,
-    category: product.category,
+    id: p.id,
+    name: p.name,
+    description: p.description || `${p.name} - ${p.brand || "Fragranciaria"}`,
+    brand: p.brand,
+    price: p.price,
+    originalPrice: p.originalPrice,
+    images: p.images,
+    category: p.category,
     inStock: true,
     rating: 4.5,
     reviewCount: 42,
@@ -118,10 +123,10 @@ function ProductPage() {
     { name: "Home", url: "/" },
     { name: "Produtos", url: "/produtos" },
   ];
-  if (product.category) {
-    breadcrumbItems.push({ name: product.category, url: `/produtos?productType=${encodeURIComponent(product.category)}` });
+  if (p.category) {
+    breadcrumbItems.push({ name: p.category, url: `/produtos?productType=${encodeURIComponent(p.category)}` });
   }
-  breadcrumbItems.push({ name: product.name, url: `/produto/${product.id}` });
+  breadcrumbItems.push({ name: p.name, url: `/produto/${p.id}` });
 
   const breadcrumbSchema = generateBreadcrumbSchema(breadcrumbItems, baseUrl);
 
@@ -135,27 +140,27 @@ function ProductPage() {
   const handleAddToCart = () => {
     setIsAdding(true);
     addToCart({
-      id: product.id,
-      title: product.name,
-      price: product.price,
+      id: p.id,
+      title: p.name,
+      price: p.price,
       quantity,
-      image: product.images[0],
-      vendor: product.brand || "",
+      image: p.images[0],
+      vendor: p.brand || "",
     });
     toast.success("Adicionado ao carrinho!", {
-      description: `${quantity}x ${product.name}`,
+      description: `${quantity}x ${p.name}`,
     });
     setTimeout(() => setIsAdding(false), 1500);
   };
 
   const handleBuyNow = () => {
     addToCart({
-      id: product.id,
-      title: product.name,
-      price: product.price,
+      id: p.id,
+      title: p.name,
+      price: p.price,
       quantity,
-      image: product.images[0],
-      vendor: product.brand || "",
+      image: p.images[0],
+      vendor: p.brand || "",
     });
     setCartOpen(false);
     navigate({ to: "/checkout" });
@@ -183,32 +188,32 @@ function ProductPage() {
             <Link to="/produtos" className="hover:text-[#0F3A3E] transition-colors">
               Produtos
             </Link>
-            {product.category && (
+            {p.category && (
               <>
                 <ChevronRight className="w-3 h-3" />
                 <Link
                   to="/produtos"
-                  search={{ productType: product.category }}
+                  search={{ productType: p.category }}
                   className="hover:text-[#0F3A3E] transition-colors"
                 >
-                  {product.category}
+                  {p.category}
                 </Link>
               </>
             )}
-            {product.brand && (
+            {p.brand && (
               <>
                 <ChevronRight className="w-3 h-3" />
                 <Link
                   to="/produtos"
-                  search={{ vendor: product.brand }}
+                  search={{ vendor: p.brand }}
                   className="hover:text-[#0F3A3E] transition-colors"
                 >
-                  {product.brand}
+                  {p.brand}
                 </Link>
               </>
             )}
             <ChevronRight className="w-3 h-3" />
-            <span className="text-[#0F3A3E] line-clamp-1">{product.name}</span>
+            <span className="text-[#0F3A3E] line-clamp-1">{p.name}</span>
           </nav>
         </div>
       </div>
@@ -220,9 +225,9 @@ function ProductPage() {
             {/* Image Gallery */}
             <div className="flex gap-4">
               {/* Thumbnails - Vertical */}
-              {product.images.length > 1 && (
+              {p.images.length > 1 && (
                 <div className="hidden md:flex flex-col gap-3 w-[80px] flex-shrink-0">
-                  {product.images.slice(0, 5).map((img, i) => (
+                  {p.images.slice(0, 5).map((img, i) => (
                     <button
                       key={i}
                       onClick={() => setSelectedImage(i)}
@@ -274,8 +279,8 @@ function ProductPage() {
                 </button>
 
                 <img
-                  src={product.images[selectedImage] || product.images[0]}
-                  alt={product.name}
+                  src={p.images[selectedImage] || p.images[0]}
+                  alt={p.name}
                   className="w-full aspect-square object-contain p-12 cursor-zoom-in"
                   onClick={() => setIsLightboxOpen(true)}
                 />
@@ -285,19 +290,19 @@ function ProductPage() {
             {/* Product Info */}
             <div className="lg:pt-4">
               {/* Brand */}
-              {product.brand && (
+              {p.brand && (
                 <Link
                   to="/produtos"
-                  search={{ vendor: product.brand }}
+                  search={{ vendor: p.brand }}
                   className="text-[12px] uppercase tracking-[0.2em] text-[#B07B1E] font-medium hover:underline"
                 >
-                  {product.brand}
+                  {p.brand}
                 </Link>
               )}
 
               {/* Title */}
               <h1 className="font-serif text-[28px] md:text-[36px] text-[#0F3A3E] leading-[1.15] mt-3 mb-5">
-                {product.name}
+                {p.name}
               </h1>
 
               {/* Rating */}
@@ -320,20 +325,20 @@ function ProductPage() {
               {/* Price */}
               <div className="mb-8">
                 <div className="flex items-baseline gap-3">
-                  {hasDiscount && product.originalPrice && (
+                  {hasDiscount && p.originalPrice && (
                     <span className="text-[16px] text-[#9AA39F] line-through">
-                      {formatPrice(product.originalPrice)}
+                      {formatPrice(p.originalPrice)}
                     </span>
                   )}
                   <span className="font-serif text-[36px] text-[#0F3A3E]">
-                    {formatPrice(product.price)}
+                    {formatPrice(p.price)}
                   </span>
                 </div>
                 <p className="text-[14px] text-[#75827E] mt-2">
-                  ou <strong className="text-[#0F3A3E]">10x de {formatPrice(product.price / 10)}</strong> sem juros
+                  ou <strong className="text-[#0F3A3E]">10x de {formatPrice(p.price / 10)}</strong> sem juros
                 </p>
                 <p className="text-[13px] text-[#1c6b4a] mt-1">
-                  ✦ {formatPrice(product.price * 0.95)} no PIX (5% off)
+                  ✦ {formatPrice(p.price * 0.95)} no PIX (5% off)
                 </p>
               </div>
 
@@ -413,10 +418,10 @@ function ProductPage() {
               {/* Share Buttons */}
               <div className="mt-6 pt-6 border-t border-[#E0D8C7]">
                 <ShareButtons
-                  productName={product.name}
-                  productUrl={`/produto/${product.id}`}
-                  productImage={product.images[0]}
-                  productPrice={product.price}
+                  productName={p.name}
+                  productUrl={`/produto/${p.id}`}
+                  productImage={p.images[0]}
+                  productPrice={p.price}
                 />
               </div>
             </div>
@@ -446,7 +451,7 @@ function ProductPage() {
               {expandedSection === "descricao" && (
                 <div className="pb-6 text-[#51635F] leading-[1.75] text-[15px]">
                   <p>
-                    {product.description ||
+                    {p.description ||
                       "Este produto oferece o melhor da tecnologia capilar profissional para uso doméstico. Formulado com ingredientes de alta qualidade para resultados visíveis desde a primeira aplicação."}
                   </p>
                   <p className="mt-4">
@@ -502,9 +507,9 @@ function ProductPage() {
                 <div className="pb-6">
                   <ul className="space-y-3">
                     {[
-                      { label: "Marca", value: product.brand || "N/A" },
-                      { label: "Categoria", value: product.category || "N/A" },
-                      { label: "SKU", value: product.id },
+                      { label: "Marca", value: p.brand || "N/A" },
+                      { label: "Categoria", value: p.category || "N/A" },
+                      { label: "SKU", value: p.id },
                       { label: "Peso", value: "Conforme embalagem" },
                     ].map((spec) => (
                       <li
@@ -572,11 +577,11 @@ function ProductPage() {
 
       {/* Image Lightbox */}
       <ImageLightbox
-        images={product.images}
+        images={p.images}
         initialIndex={selectedImage}
         isOpen={isLightboxOpen}
         onClose={() => setIsLightboxOpen(false)}
-        productName={product.name}
+        productName={p.name}
       />
     </div>
   );

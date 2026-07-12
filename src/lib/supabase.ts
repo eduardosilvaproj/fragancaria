@@ -160,7 +160,7 @@ export const affiliateAuth = {
    */
   async signInWithGoogle() {
     const { data, error } = await supabase.auth.signInWithOAuth({
-      servico: 'google',
+      provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/afiliado/dashboard`,
       },

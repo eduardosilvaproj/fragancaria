@@ -5,7 +5,7 @@ import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { Breadcrumbs } from "@/components/ui/Breadcrumbs";
 import { PriceRangeSlider } from "@/components/ui/PriceRangeSlider";
 import { SortDropdown, sortProducts } from "@/components/ui/SortDropdown";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,10 +26,6 @@ const CATEGORY_CHIPS: Array<{ label: string; productType: string }> = [
 ];
 
 const PRODUCTS_PER_PAGE = 12;
-
-// Calculate min/max prices from products
-const PRICE_MIN = Math.floor(Math.min(...PRODUCTS.map(p => p.price)));
-const PRICE_MAX = Math.ceil(Math.max(...PRODUCTS.map(p => p.price)));
 
 type ProductsSearch = {
   vendor?: string;
@@ -188,14 +184,24 @@ function ProdutosPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(search.productType || null);
   const [selectedBrand, setSelectedBrand] = useState<string | null>(search.vendor || null);
   const [sortBy, setSortBy] = useState<string>(search.sort || "relevance");
+  const [showOnlyOfertas, setShowOnlyOfertas] = useState(search.ofertas || false);
+  const { products } = useProducts();
+
+  // Default price range from loaded products
+  const priceMinDefault = products.length > 0
+    ? Math.floor(Math.min(...products.map(p => p.price)))
+    : 0;
+  const priceMaxDefault = products.length > 0
+    ? Math.ceil(Math.max(...products.map(p => p.price)))
+    : 1000;
+
   const [priceRange, setPriceRange] = useState<[number, number]>([
-    search.priceMin || PRICE_MIN,
-    search.priceMax || PRICE_MAX,
+    search.priceMin || priceMinDefault,
+    search.priceMax || priceMaxDefault,
   ]);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(search.page || 1);
   const [searchTerm, setSearchTerm] = useState(search.q || "");
-  const [showOnlyOfertas, setShowOnlyOfertas] = useState(search.ofertas || false);
 
   // Expandable sections
   const [expandedSections, setExpandedSections] = useState({
@@ -212,14 +218,23 @@ function ProdutosPage() {
     setShowOnlyOfertas(search.ofertas || false);
     if (search.sort) setSortBy(search.sort);
     if (search.priceMin || search.priceMax) {
-      setPriceRange([search.priceMin || PRICE_MIN, search.priceMax || PRICE_MAX]);
+      setPriceRange([search.priceMin || priceMinDefault, search.priceMax || priceMaxDefault]);
     }
-  }, [search.vendor, search.productType, search.page, search.q, search.sort, search.priceMin, search.priceMax]);
+  }, [search.vendor, search.productType, search.page, search.q, search.sort, search.priceMin, search.priceMax, priceMinDefault, priceMaxDefault]);
+
+  // Sync price range when products load
+  useEffect(() => {
+    if (products.length > 0) {
+      const min = Math.floor(Math.min(...products.map(p => p.price)));
+      const max = Math.ceil(Math.max(...products.map(p => p.price)));
+      setPriceRange(prev => [prev[0] === 0 && prev[1] === 1000 ? min : prev[0], prev[1] === 1000 ? max : prev[1]]);
+    }
+  }, [products]);
 
   // Extract unique categories with counts
   const categoriesWithCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    PRODUCTS.forEach(p => {
+    products.forEach(p => {
       if (p.category) {
         counts[p.category] = (counts[p.category] || 0) + 1;
       }
@@ -227,12 +242,12 @@ function ProdutosPage() {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, []);
+  }, [products]);
 
   // Extract unique brands with counts
   const brandsWithCounts = useMemo(() => {
     const counts: Record<string, number> = {};
-    PRODUCTS.forEach(p => {
+    products.forEach(p => {
       if (p.brand) {
         counts[p.brand] = (counts[p.brand] || 0) + 1;
       }
@@ -240,11 +255,11 @@ function ProdutosPage() {
     return Object.entries(counts)
       .sort((a, b) => b[1] - a[1])
       .map(([name, count]) => ({ name, count }));
-  }, []);
+  }, [products]);
 
   // Filtered products
   const filteredProducts = useMemo(() => {
-    let filtered = [...PRODUCTS];
+    let filtered = [...products];
 
     // Filter only products with discount if ofertas is enabled
     if (showOnlyOfertas) {
@@ -275,7 +290,7 @@ function ProdutosPage() {
 
     // Use the sortProducts function
     return sortProducts(filtered, sortBy);
-  }, [selectedCategory, selectedBrand, sortBy, searchTerm, priceRange, showOnlyOfertas]);
+  }, [products, selectedCategory, selectedBrand, sortBy, searchTerm, priceRange, showOnlyOfertas]);
 
   const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
 
@@ -302,8 +317,8 @@ function ProdutosPage() {
       ...(selectedBrand && { vendor: selectedBrand }),
       ...(searchTerm && { q: searchTerm }),
       ...(sortBy !== "relevance" && { sort: sortBy }),
-      ...(priceRange[0] !== PRICE_MIN && { priceMin: priceRange[0] }),
-      ...(priceRange[1] !== PRICE_MAX && { priceMax: priceRange[1] }),
+      ...(priceRange[0] !== priceMinDefault && { priceMin: priceRange[0] }),
+      ...(priceRange[1] !== priceMaxDefault && { priceMax: priceRange[1] }),
       ...(showOnlyOfertas && { ofertas: true }),
       page: currentPage,
       ...updates,
@@ -315,7 +330,7 @@ function ProdutosPage() {
     setSelectedCategory(null);
     setSelectedBrand(null);
     setSearchTerm("");
-    setPriceRange([PRICE_MIN, PRICE_MAX]);
+    setPriceRange([priceMinDefault, priceMaxDefault]);
     setSortBy("relevance");
     setCurrentPage(1);
     setShowOnlyOfertas(false);
@@ -346,12 +361,12 @@ function ProdutosPage() {
   };
 
   const hasActiveFilters = selectedCategory || selectedBrand || searchTerm ||
-    priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX || showOnlyOfertas;
+    priceRange[0] !== priceMinDefault || priceRange[1] !== priceMaxDefault || showOnlyOfertas;
 
   // Count ofertas
   const ofertasCount = useMemo(() => {
-    return PRODUCTS.filter(p => p.originalPrice && p.originalPrice > p.price).length;
-  }, []);
+    return products.filter(p => p.originalPrice && p.originalPrice > p.price).length;
+  }, [products]);
 
   // Sidebar Filter Component
   const FilterSidebar = ({ isMobile = false }: { isMobile?: boolean }) => (
@@ -457,8 +472,8 @@ function ProdutosPage() {
         </button>
         {expandedSections.price && (
           <PriceRangeSlider
-            min={PRICE_MIN}
-            max={PRICE_MAX}
+            min={priceMinDefault}
+            max={priceMaxDefault}
             value={priceRange}
             onChange={handlePriceChange}
             step={10}
@@ -592,10 +607,10 @@ function ProdutosPage() {
                       </button>
                     </span>
                   )}
-                  {(priceRange[0] !== PRICE_MIN || priceRange[1] !== PRICE_MAX) && (
+                  {(priceRange[0] !== priceMinDefault || priceRange[1] !== priceMaxDefault) && (
                     <span className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#0F3A3E] text-white text-[11px]">
                       R${priceRange[0]} - R${priceRange[1]}
-                      <button onClick={() => setPriceRange([PRICE_MIN, PRICE_MAX])}>
+                      <button onClick={() => setPriceRange([priceMinDefault, priceMaxDefault])}>
                         <X className="h-3 w-3" />
                       </button>
                     </span>

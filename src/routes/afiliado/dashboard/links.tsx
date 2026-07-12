@@ -14,7 +14,8 @@ import {
 import { toast } from "sonner";
 import { useAffiliateStore } from "@/stores/affiliateStore";
 import { linkService } from "@/lib/supabase";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import type { Product } from "@/data/products";
 
 export const Route = createFileRoute("/afiliado/dashboard/links")({
   component: LinksPage,
@@ -25,19 +26,20 @@ function LinksPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedProduct, setSelectedProduct] = useState<typeof PRODUCTS[0] | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { products } = useProducts();
 
   useEffect(() => {
     loadLinks();
   }, [loadLinks]);
 
-  const filteredProducts = PRODUCTS.filter(
+  const filteredProducts = products.filter(
     (p) =>
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.brand?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleCreateLink = async (product?: typeof PRODUCTS[0]) => {
+  const handleCreateLink = async (product?: Product) => {
     setIsCreating(true);
     try {
       const newLink = await createLink(
