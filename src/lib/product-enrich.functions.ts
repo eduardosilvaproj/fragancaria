@@ -1,6 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import type { Product } from "@/data/products";
 
 // =====================================================
 // TIPOS
@@ -10,6 +9,7 @@ type ProductRow = {
   id: string;
   name: string;
   brand: string | null;
+  category: string | null;
   images: string[];
   tags: string[];
 };
@@ -18,11 +18,17 @@ type EnrichResult = {
   success: boolean;
   images?: string[];
   tags?: string[];
+  dimensions?: {
+    weight_grams: number | null;
+    height_cm: number | null;
+    width_cm: number | null;
+    length_cm: number | null;
+  };
   error?: string;
 };
 
 // =====================================================
-// GERAR TAGS AUTOMATICAMENTE
+// GERAR TAGS AMPLIADAS
 // =====================================================
 
 function generateTags(product: Pick<ProductRow, "name" | "brand" | "category" | "tags">): string[] {
@@ -32,43 +38,174 @@ function generateTags(product: Pick<ProductRow, "name" | "brand" | "category" | 
   // Tags baseadas na marca
   if (product.brand) {
     newTags.add(product.brand.toLowerCase());
+    // Variações da marca
+    const brandLower = product.brand.toLowerCase();
+    if (!newTags.has(brandLower)) newTags.add(brandLower);
   }
 
   // Tags baseadas na categoria
   if (product.category) {
     newTags.add(product.category.toLowerCase());
+    // Variações da categoria
+    const cat = product.category.toLowerCase();
+    if (cat === "shampoos") {
+      newTags.add("shampoo");
+      newTags.add("lavagem");
+      newTags.add("limpeza");
+    } else if (cat === "condicionadores") {
+      newTags.add("condicionador");
+      newTags.add("hidratação");
+    } else if (cat === "mascaras") {
+      newTags.add("máscara");
+      newTags.add("tratamento");
+      newTags.add("reposição");
+    } else if (cat === "leave-in") {
+      newTags.add("leave in");
+      newTags.add("sem enxágue");
+      newTags.add("finalização");
+    } else if (cat === "coloracao") {
+      newTags.add("coloração");
+      newTags.add("tintura");
+      newTags.add("pintura");
+    } else if (cat === "maquiagem") {
+      newTags.add("make");
+      newTags.add("beleza");
+    }
   }
 
-  // Extrair palavras-chave do nome
+  // Stop words mais completas
   const stopWords = new Set([
-    "de", "da", "do", "para", "com", "em", "ml", "g", "kg", "l", " unidades",
-    "kit", "refil", "original", "profissional"
+    "de", "da", "do", "das", "dos", "para", "com", "em", "no", "na", "nos", "nas",
+    "ml", "g", "kg", "l", "unidades", "und", "peça", "pç",
+    "kit", "kits", "refil", "original", "profissional", "profissional",
+    "nano", "plus", "max", "ultra", "super", "premium", "gold", "silver",
+    "e", "o", "a", "os", "as", "um", "uma", "uns", "umas",
+    "tipo", "linha", "série", "versão", "cor", "tom",
+    "ml", "-", "/", "(", ")", "[", "]", "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
   ]);
 
+  // Extrair palavras-chave do nome com mais inteligência
   const words = product.name
     .toLowerCase()
     .split(/\s+/)
-    .map((w) => w.replace(/[^a-z0-9]/g, ""))
+    .map((w) => w.replace(/[^a-z0-9àáâãäåæçèéêëìíîïðñòóôõöøùúûüýþÿ\s]/g, ""))
     .filter((w) => w.length > 2 && !stopWords.has(w));
 
   words.forEach((w) => newTags.add(w));
 
-  // Tags específicas comuns para cosméticos
-  const cosmeticTerms = ["cabelo", "tratamento", "hidratação", "reposição", "proteção", "finalização"];
-  cosmeticTerms.forEach((term) => {
-    if (product.name.toLowerCase().includes(term)) {
+  // Termos de cosméticos expandidos
+  const cosmeticTerms: Record<string, string[]> = {
+    // Cabelo
+    "cabelo": ["cabelos", "fios", "mechas"],
+    "hidratação": ["hidratar", "hidratante", "úmido", "nutrição"],
+    "reposição": ["repor", "reposição", "reconstrói", "reconstrução"],
+    "tratamento": ["tratar", "cuidado", "terapia", "repair"],
+    "reparação": ["reparar", "corrigir", "restauração"],
+    "proteção": ["proteger", "proteção", "guardar", "escudo"],
+    "finalização": ["finalizar", "acabamento", "styling"],
+    "antifrizz": ["anti-frizz", "anti frizz", "antifriz"],
+    "queda": ["queda", "fortalecimento", "queda", "anti-queda"],
+    "cronograma": ["cronograma capilar", "rotina", "dias"],
+    "lowell": ["lowell", "linha lowell"],
+    "truss": ["truss", "linha truss"],
+    "loreal": ["l'oreal", "loreal", "lóreal", "loregal", "l'oréal"],
+    "wella": ["wella", "linha wella"],
+    "botox": ["botox capilar", "reconstrução"],
+    "queratina": ["queratina", "keratina", "cisteína"],
+    "arginina": ["arginina", "aminoácido"],
+
+    // Maquiagem
+    "base": ["base facial", "make base", "cobertura"],
+    "batom": ["lábios", "boca", "labial"],
+    "blush": ["bochecha", "maçã do rosto", "rubor"],
+    "delineador": ["olho", "linha", "gatinho"],
+    "sombra": ["olhos", "paleta", "cores"],
+    "rimel": ["cílios", "mascara", "volume"],
+    "pó": ["powder", "finishing", "定妆"],
+
+    // Tipos de produto
+    "shampoo": ["lavagem", "cleanse", "xampu"],
+    "condicionador": ["cond", "after", "detangler"],
+    "máscara": ["mask", "ampola", "tratamento intensivo"],
+    "leave-in": ["sem enxágue", "creme para pentear", "milk"],
+    "óleo": ["oil", "serum", "elixir"],
+    "serum": [" Ampola", "concentrado", "intensivo"],
+    "pomada": ["wax", "pasta", "fixação"],
+    "gel": ["gelatina", " efecto", "moldar"],
+    "mousse": ["espuma", "volume", "body"],
+    "spray": ["aerossol", "jato", "fixação"],
+
+    // Ingredientes/Fragrâncias
+    "mirtilo": ["blueberry", "antioxidante", "frutas"],
+    "coco": ["coconut", "tropical", "hydrating"],
+    "morango": ["strawberry", "frutas vermelhas"],
+    "floral": ["flor", "bouquet", "perfume"],
+    "doce": ["sweet", "açucarado", "gourmet"],
+    "lavanda": ["lavender", "calmante", "relaxante"],
+    "baunilha": ["vanilla", "doce", "aconchegante"],
+    "âmbar": ["amber", "quente", "oriental"],
+    "rosa": ["rose", "romântico", "floral"],
+
+    // Benefícios
+    "brilho": ["brilhante", "luminoso", "glossy"],
+    "maciez": ["macio", "suave", "sedoso"],
+    "força": ["forte", "resistente", "power"],
+    "volume": ["volumoso", "cheio", "body"],
+    "lisura": ["liso", "liss", "alinhado"],
+    "definição": ["definido", "cacheado", "ondulado"],
+
+    // Problemas
+    "oleoso": ["oleosidade", "engordurado", "brilhante"],
+    "ressecado": ["ressecamento", "seco", "desidratado"],
+    "danificado": ["dano", "quebradiço", "quebrado"],
+  };
+
+  // Verificar cada termo e adicionar variações
+  const nameLower = product.name.toLowerCase();
+  Object.entries(cosmeticTerms).forEach(([term, variations]) => {
+    if (nameLower.includes(term)) {
       newTags.add(term);
+      variations.forEach((v) => newTags.add(v));
     }
   });
 
-  return Array.from(newTags).slice(0, 20); // Máximo 20 tags
+  // Adicionar tags genéricas úteis
+  newTags.add("cosmético");
+  newTags.add("beleza");
+  newTags.add("capilar");
+  if (product.category?.toLowerCase().includes("cabelo") ||
+      ["shampoos", "condicionadores", "mascaras", "leave-in"].includes(product.category?.toLowerCase() || "")) {
+    newTags.add("cabelo");
+    newTags.add("cosmético capilar");
+    newTags.add("tratamento capilar");
+  }
+  if (product.category?.toLowerCase().includes("maquiagem")) {
+    newTags.add("maquiagem");
+    newTags.add("make");
+  }
+
+  return Array.from(newTags).slice(0, 25); // Máximo 25 tags
 }
 
 // =====================================================
-// BUSCAR IMAGEM NO MERCADO LIVRE
+// BUSCAR DADOS NO MERCADO LIVRE
 // =====================================================
 
-const ML_API_BASE = "https://api.mercadolibre.com";
+const ML_API_BASE = "https://api.mercadolivre.com.br"; // Brasil
+
+interface MLItem {
+  id: string;
+  title: string;
+  thumbnail: string;
+  pictures: Array<{ url: string }>;
+  attributes: Array<{ id: string; value_name: string }>;
+  dimensions: {
+    height: string | null;
+    width: string | null;
+    depth: string | null;
+  };
+  weight: string | null;
+}
 
 interface MLSearchResult {
   results: Array<{
@@ -77,127 +214,27 @@ interface MLSearchResult {
     thumbnail: string;
     pictures: Array<{ url: string }>;
     attributes: Array<{ id: string; value_name: string }>;
-    price: number;
+    dimensions: {
+      height: string | null;
+      width: string | null;
+      depth: string | null;
+    };
+    weight: string | null;
   }>;
 }
 
-interface MLProductDetail {
-  id: string;
-  title: string;
-  pictures: Array<{ url: string }>;
-  attributes: Array<{ id: string; value_name: string }>;
-}
-
 /**
- * Busca imagens de produtos similares no Mercado Livre
- * Usa a busca por termo (nome + marca) e pega a melhor imagem do primeiro resultado
+ * Busca dados completos de um produto no Mercado Livre pelo ID
  */
-async function searchProductImageFromML(
-  name: string,
-  brand?: string | null
-): Promise<{ imageUrl: string | null; mlProductId?: string }> {
+async function fetchMLProductData(mlId: string): Promise<{
+  imageUrl: string | null;
+  weight: number | null;
+  height: number | null;
+  width: number | null;
+  length: number | null;
+  category?: string;
+} | null> {
   try {
-    // Montar query de busca: marca + nome (primeiras 3 palavras)
-    const nameWords = name.split(/\s+/).slice(0, 3).join(" ");
-    const query = brand ? `${brand} ${nameWords}` : nameWords;
-    const encodedQuery = encodeURIComponent(query);
-
-    // Buscar no Mercado Livre
-    const searchUrl = `${ML_API_BASE}/sites/MLB/search?q=${encodedQuery}&limit=5&sort_by=relevance`;
-    const response = await fetch(searchUrl);
-
-    if (!response.ok) {
-      console.error(`[ML API] Search failed: ${response.status}`);
-      return { imageUrl: null };
-    }
-
-    const data: MLSearchResult = await response.json();
-
-    if (!data.results || data.results.length === 0) {
-      console.log(`[ML API] No results for query: ${query}`);
-      return { imageUrl: null };
-    }
-
-    // Encontrar o melhor match - prioriza thumbnail do ML ou primeira foto disponível
-    for (const item of data.results) {
-      // Tenta usar thumbnail do ML (já é uma boa imagem em tamanho adequado)
-      if (item.thumbnail && item.thumbnail.includes("http")) {
-        // Melhora a qualidade: troca tamanho thumbnail (T) por grande (G)
-        const imageUrl = item.thumbnail.replace(/-T\./, "-G.");
-        return { imageUrl, mlProductId: item.id };
-      }
-
-      // Tenta primeira foto das pictures
-      if (item.pictures && item.pictures.length > 0) {
-        const imageUrl = item.pictures[0].url;
-        if (imageUrl.includes("http")) {
-          return { imageUrl, mlProductId: item.id };
-        }
-      }
-    }
-
-    return { imageUrl: null };
-  } catch (error) {
-    console.error("[ML API] Error searching:", error);
-    return { imageUrl: null };
-  }
-}
-
-/**
- * Busca NCM de um produto similar no Mercado Livre
- * O NCM não vem diretamente na busca, mas podemos usar a categoria do ML
- */
-async function searchNCMFromML(
-  name: string,
-  brand?: string | null
-): Promise<string | null> {
-  try {
-    const nameWords = name.split(/\s+/).slice(0, 3).join(" ");
-    const query = brand ? `${brand} ${nameWords}` : nameWords;
-    const encodedQuery = encodeURIComponent(query);
-
-    const searchUrl = `${ML_API_BASE}/sites/MLB/search?q=${encodedQuery}&limit=3`;
-    const response = await fetch(searchUrl);
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data: MLSearchResult = await response.json();
-
-    if (!data.results || data.results.length === 0) {
-      return null;
-    }
-
-    // Pega a categoria do primeiro resultado
-    // O ML não fornece NCM diretamente, mas a categoria pode ajudar
-    // Em uma implementação futura, poderíamos mapear categorias ML para NCMs
-    const categoryId = data.results[0].attributes?.find(
-      (attr) => attr.id === "PRODUCT_TYPE"
-    )?.value_name;
-
-    return categoryId || null;
-  } catch (error) {
-    console.error("[ML API] Error fetching NCM:", error);
-    return null;
-  }
-}
-
-/**
- * Wrapper principal: busca imagem no ML
- */
-async function searchProductImage(name: string, brand?: string | null): Promise<string | null> {
-  const result = await searchProductImageFromML(name, brand);
-  return result.imageUrl;
-}
-
-/**
- * Busca imagem diretamente pelo ID do Mercado Livre
- * Útil quando o produto já tem ID do ML (como MLB...)
- */
-async function searchImageByMLId(mlId: string): Promise<string | null> {
-  try {
-    // Verifica se é um ID válido do ML
     if (!mlId.startsWith("MLB")) {
       return null;
     }
@@ -209,20 +246,115 @@ async function searchImageByMLId(mlId: string): Promise<string | null> {
       return null;
     }
 
-    const data: MLProductDetail = await response.json();
+    const data: MLItem = await response.json();
 
-    // Pega a melhor foto disponível
+    // Extrair imagem de maior qualidade
+    let imageUrl: string | null = null;
     if (data.pictures && data.pictures.length > 0) {
-      // Tenta pegar a foto em maior resolução (a última geralmente é maior)
+      // Pegar a última foto que geralmente é a maior
       const bestPicture = data.pictures[data.pictures.length - 1]?.url;
-      if (bestPicture && bestPicture.includes("http")) {
-        return bestPicture;
+      if (bestPicture) {
+        imageUrl = bestPicture;
       }
+    } else if (data.thumbnail) {
+      imageUrl = data.thumbnail.replace(/-T\./, "-G.");
+    }
+
+    // Extrair dimensões do atributo ou diretamente
+    let height: number | null = null;
+    let width: number | null = null;
+    let length: number | null = null;
+    let weight: number | null = null;
+
+    // Tentar pegar dos atributos primeiro
+    const heightAttr = data.attributes?.find((a) => a.id === "HEIGHT");
+    const widthAttr = data.attributes?.find((a) => a.id === "WIDTH");
+    const lengthAttr = data.attributes?.find((a) => a.id === "DEPTH");
+    const weightAttr = data.attributes?.find((a) => a.id === "WEIGHT");
+
+    if (heightAttr?.value_name) {
+      height = parseFloat(heightAttr.value_name.replace(/[^0-9.,]/g, "").replace(",", "."));
+    }
+    if (widthAttr?.value_name) {
+      width = parseFloat(widthAttr.value_name.replace(/[^0-9.,]/g, "").replace(",", "."));
+    }
+    if (lengthAttr?.value_name) {
+      length = parseFloat(lengthAttr.value_name.replace(/[^0-9.,]/g, "").replace(",", "."));
+    }
+    if (weightAttr?.value_name) {
+      weight = parseFloat(weightAttr.value_name.replace(/[^0-9.,]/g, "").replace(",", "."));
+      // Converter para gramas se necessário
+      if (weight && weightAttr.value_name.toLowerCase().includes("kg")) {
+        weight = weight * 1000;
+      }
+    }
+
+    // Se não encontrou nos atributos, tentar do objeto dimensions diretamente
+    if (!height && data.dimensions?.height) {
+      height = parseFloat(data.dimensions.height);
+    }
+    if (!width && data.dimensions?.width) {
+      width = parseFloat(data.dimensions.width);
+    }
+    if (!length && data.dimensions?.depth) {
+      length = parseFloat(data.dimensions.depth);
+    }
+    if (!weight && data.weight) {
+      weight = parseFloat(data.weight);
+      // Peso do ML geralmente vem em kg
+      if (weight) weight = weight * 1000;
+    }
+
+    return {
+      imageUrl,
+      weight,
+      height,
+      width,
+      length,
+    };
+  } catch (error) {
+    console.error("[ML API] Error fetching item:", error);
+    return null;
+  }
+}
+
+/**
+ * Busca imagem por nome no Mercado Livre (fallback)
+ */
+async function searchProductByName(
+  name: string,
+  brand?: string | null
+): Promise<string | null> {
+  try {
+    const nameWords = name.split(/\s+/).slice(0, 4).join(" ");
+    const query = brand ? `${brand} ${nameWords}` : nameWords;
+    const encodedQuery = encodeURIComponent(query);
+
+    const searchUrl = `${ML_API_BASE}/sites/MLB/search?q=${encodedQuery}&limit=5&sort_by=relevance`;
+    const response = await fetch(searchUrl);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data: MLSearchResult = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      return null;
+    }
+
+    // Pegar thumbnail do primeiro resultado
+    const item = data.results[0];
+    if (item.thumbnail) {
+      return item.thumbnail.replace(/-T\./, "-G.");
+    }
+    if (item.pictures && item.pictures.length > 0) {
+      return item.pictures[0].url;
     }
 
     return null;
   } catch (error) {
-    console.error("[ML API] Error fetching by ID:", error);
+    console.error("[ML API] Error searching:", error);
     return null;
   }
 }
@@ -239,8 +371,8 @@ export const listProductsNeedingEnrichment = createServerFn({ method: "GET" })
 
       const { data, error, count } = await supabaseAdmin
         .from("products")
-        .select("id, name, brand, images, tags")
-        .or("images.eq.{},images.is.null,tags.eq.{},tags.is.null")
+        .select("id, name, brand, category, images, tags")
+        .or("images.eq.{},images.is.null,tags.eq.{},tags.is.null,weight_grams.is.null")
         .limit(100);
 
       if (error) {
@@ -257,7 +389,7 @@ export const listProductsNeedingEnrichment = createServerFn({ method: "GET" })
 // Enriquecer um produto específico
 const EnrichProductSchema = z.object({
   id: z.string().min(1),
-  fields: z.array(z.enum(["images", "tags"])).min(1),
+  fields: z.array(z.enum(["images", "tags", "dimensions"])).min(1),
 });
 
 export const enrichProduct = createServerFn({ method: "POST" })
@@ -293,26 +425,43 @@ export const enrichProduct = createServerFn({ method: "POST" })
         updates.tags = newTags;
       }
 
-      // Buscar imagem se solicitado
-      if (data.fields.includes("images")) {
+      // Buscar dados do ML se solicitado
+      if (data.fields.includes("images") || data.fields.includes("dimensions")) {
         let imageUrl: string | null = null;
+        let mlData: { weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
-        // Primeiro tenta buscar pelo ID do ML (se o ID começar com MLB)
+        // Primeiro tenta buscar pelo ID do ML
         if (product.id.startsWith("MLB")) {
-          imageUrl = await searchImageByMLId(product.id);
+          mlData = await fetchMLProductData(product.id);
+          if (mlData) {
+            imageUrl = mlData.imageUrl;
+          }
         }
 
-        // Se não encontrou pelo ID, busca por nome
-        if (!imageUrl) {
-          imageUrl = await searchProductImage(product.name, product.brand);
+        // Fallback: busca por nome
+        if (!imageUrl && data.fields.includes("images")) {
+          imageUrl = await searchProductByName(product.name, product.brand);
         }
 
-        if (imageUrl) {
-          updates.images = [imageUrl]; // Substitui imagens existentes com a do ML
+        // Atualizar imagem
+        if (imageUrl && data.fields.includes("images")) {
+          updates.images = [imageUrl];
+        }
+
+        // Atualizar dimensões do ML
+        if (mlData && data.fields.includes("dimensions")) {
+          if (mlData.weight) updates.weight_grams = Math.round(mlData.weight);
+          if (mlData.height) updates.height_cm = mlData.height;
+          if (mlData.width) updates.width_cm = mlData.width;
+          if (mlData.length) updates.length_cm = mlData.length;
         }
       }
 
       // Atualizar no banco
+      if (Object.keys(updates).length === 0) {
+        return { success: true };
+      }
+
       const { error: updateError } = await supabaseAdmin
         .from("products")
         .update(updates)
@@ -326,6 +475,12 @@ export const enrichProduct = createServerFn({ method: "POST" })
         success: true,
         images: updates.images as string[] | undefined,
         tags: updates.tags as string[] | undefined,
+        dimensions: {
+          weight_grams: updates.weight_grams as number | null,
+          height_cm: updates.height_cm as number | null,
+          width_cm: updates.width_cm as number | null,
+          length_cm: updates.length_cm as number | null,
+        },
       };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) {
@@ -339,7 +494,7 @@ export const enrichProduct = createServerFn({ method: "POST" })
 // Enriquecer múltiplos produtos em lote
 const EnrichBatchSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(50),
-  fields: z.array(z.enum(["images", "tags"])).min(1),
+  fields: z.array(z.enum(["images", "tags", "dimensions"])).min(1),
 });
 
 export const enrichProductsBatch = createServerFn({ method: "POST" })
@@ -373,6 +528,7 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
 
           const updates: Record<string, unknown> = {};
 
+          // Gerar tags
           if (data.fields.includes("tags")) {
             updates.tags = generateTags({
               name: product.name,
@@ -382,21 +538,35 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
             });
           }
 
-          if (data.fields.includes("images") && (!product.images || product.images.length === 0)) {
+          // Buscar dados do ML
+          if (data.fields.includes("images") || data.fields.includes("dimensions")) {
             let imageUrl: string | null = null;
+            let mlData: { weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
             // Primeiro tenta buscar pelo ID do ML
             if (product.id.startsWith("MLB")) {
-              imageUrl = await searchImageByMLId(product.id);
+              mlData = await fetchMLProductData(product.id);
+              if (mlData) {
+                imageUrl = mlData.imageUrl;
+              }
             }
 
-            // Se não encontrou pelo ID, busca por nome
-            if (!imageUrl) {
-              imageUrl = await searchProductImage(product.name, product.brand);
+            // Fallback: busca por nome
+            if (!imageUrl && data.fields.includes("images")) {
+              imageUrl = await searchProductByName(product.name, product.brand);
             }
 
-            if (imageUrl) {
+            // Atualizar imagem
+            if (imageUrl && data.fields.includes("images") && (!product.images || product.images.length === 0)) {
               updates.images = [imageUrl];
+            }
+
+            // Atualizar dimensões do ML
+            if (mlData && data.fields.includes("dimensions")) {
+              if (mlData.weight) updates.weight_grams = Math.round(mlData.weight);
+              if (mlData.height) updates.height_cm = mlData.height;
+              if (mlData.width) updates.width_cm = mlData.width;
+              if (mlData.length) updates.length_cm = mlData.length;
             }
           }
 

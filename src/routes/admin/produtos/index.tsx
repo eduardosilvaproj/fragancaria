@@ -968,16 +968,17 @@ function EnrichmentModal({
   onClose: () => void;
   onComplete: () => void;
 }) {
-  const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
+  const [enrichFields, setEnrichFields] = useState<("images" | "tags" | "dimensions")[]>(["tags", "dimensions"]);
   const [enriching, setEnriching] = useState(false);
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ processed: number; updated: number } | null>(null);
 
-  // Produtos sem foto ou sem tags
+  // Produtos sem foto, sem tags ou sem peso (precisam de enriquecimento)
+  // A API do ML vai buscar esses dados automaticamente
   const productsNeedingEnrichment = useMemo(() => {
-    return allProducts.filter(
-      (p) => !p.image || (Array.isArray(p.tags) && p.tags.length === 0)
-    );
+    // Por ora, enriquecer todos os produtos que têm ID do ML
+    // já que a busca é gratuita e pode trazer muitos dados úteis
+    return allProducts.filter((p) => p.id.startsWith("MLB"));
   }, [allProducts]);
 
   const handleEnrich = async () => {
@@ -1013,7 +1014,7 @@ function EnrichmentModal({
     }
   };
 
-  const toggleField = (field: "images" | "tags") => {
+  const toggleField = (field: "images" | "tags" | "dimensions") => {
     if (enrichFields.includes(field)) {
       setEnrichFields(enrichFields.filter((f) => f !== field));
     } else {
@@ -1076,6 +1077,24 @@ function EnrichmentModal({
                   />
                   <span className="text-sm">Buscar imagens na internet</span>
                 </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enrichFields.includes("dimensions")}
+                    onChange={() => toggleField("dimensions")}
+                    className="w-4 h-4 accent-[#B07B1E]"
+                  />
+                  <span className="text-sm">Buscar peso e dimensões (Mercado Livre)</span>
+                </label>
+              </div>
+
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                <p className="text-xs text-amber-800">
+                  <strong>O que será feito:</strong><br />
+                  - Tags: Gera tags inteligentes baseadas no nome, marca e categoria<br />
+                  - Imagens: Busca foto do Mercado Livre pelo ID do produto<br />
+                  - Dimensões: Captura peso, altura, largura e comprimento do ML
+                </p>
               </div>
 
               {enriching && (
