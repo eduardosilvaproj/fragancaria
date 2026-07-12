@@ -242,6 +242,13 @@ export const NavbarEditorial = () => {
           >
             Ofertas
           </Link>
+
+          <Link
+            to="/simulador"
+            className="text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors"
+          >
+            Simulador de Cor
+          </Link>
         </nav>
 
         {/* Actions */}
@@ -465,6 +472,16 @@ export const NavbarEditorial = () => {
                       className="block font-serif text-2xl text-[#B07B1E]"
                     >
                       Ofertas
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
+                      to="/simulador"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Simulador de Cor
                     </Link>
                   </li>
 
