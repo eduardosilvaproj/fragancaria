@@ -3,7 +3,7 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { useCartStore } from "@/stores/cartStore";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo } from "react";
 import { Minus, Plus, Trash2, ShoppingBag, Truck, Shield, Tag } from "lucide-react";
 
@@ -40,9 +40,10 @@ function CarrinhoPage() {
   };
 
   // Produtos sugeridos
+  const { products } = useProducts();
   const suggestedProducts = useMemo(() => {
-    return PRODUCTS.filter(p => p.featured).slice(0, 4);
-  }, []);
+    return products.filter(p => p.featured).slice(0, 4);
+  }, [products]);
 
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans">

@@ -83,7 +83,7 @@ function LoginPage() {
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : "";
       const { error: err } = await supabase.auth.signInWithOAuth({
-        servico: "google",
+        provider: "google",
         options: {
           redirectTo: origin + target,
         },
