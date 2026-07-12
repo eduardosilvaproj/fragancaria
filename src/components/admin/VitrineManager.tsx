@@ -22,6 +22,18 @@ import {
 } from "@/lib/home-featured.functions";
 import type { Product } from "@/data/products";
 
+interface SimplifiedProduct {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  originalPrice?: number;
+  image: string;
+  isNew: boolean;
+  isOnSale: boolean;
+  isKit: boolean;
+}
+
 interface VitrineManagerProps {
   // Sem props. O componente faz fetch via server functions.
 }
@@ -78,7 +90,8 @@ export function VitrineManager(_: VitrineManagerProps) {
 // Painel de um slot especifico (busca + lista + acoes).
 function SlotPanel({ slot }: { slot: Slot }) {
   const [featured, setFeatured] = useState<Product[] | null>(null);
-  const [catalog, setCatalog] = useState<Product[] | null>(null);
+  const [catalog, setCatalog] = useState<SimplifiedProduct[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -87,6 +100,7 @@ function SlotPanel({ slot }: { slot: Slot }) {
   // Carrega lista do slot + catalogo (para busca).
   const refresh = async () => {
     setError(null);
+    setCatalogLoading(true);
     try {
       const [slotData, catalogData] = await Promise.all([
         listManualFeatured({ data: { slot } }),
@@ -97,6 +111,8 @@ function SlotPanel({ slot }: { slot: Slot }) {
       setCatalog(catalogData.success ? catalogData.data : []);
     } catch (e: any) {
       setError(e?.message || "Erro de conexão");
+    } finally {
+      setCatalogLoading(false);
     }
   };
 
@@ -303,7 +319,7 @@ function SlotPanel({ slot }: { slot: Slot }) {
         <ul className="space-y-1 max-h-[480px] overflow-y-auto border border-[#E9E1D2] p-2">
           {filteredCatalog.length === 0 ? (
             <li className="text-center text-sm text-[#8A938E] py-6">
-              {catalog === null
+              {catalogLoading
                 ? "Carregando catalogo..."
                 : "Nenhum produto encontrado"}
             </li>
@@ -314,7 +330,7 @@ function SlotPanel({ slot }: { slot: Slot }) {
                 className="flex items-center gap-3 p-2 hover:bg-[#F5F3EE] transition-colors"
               >
                 <img
-                  src={p.images[0]}
+                  src={p.image}
                   alt={p.name}
                   className="w-10 h-10 object-contain bg-white border border-[#E9E1D2] flex-shrink-0"
                 />

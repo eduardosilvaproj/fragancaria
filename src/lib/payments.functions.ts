@@ -1,5 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { getRequest } from "@tanstack/start-server-core/request-response";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
 const MP_API = "https://api.mercadopago.com/v1/payments";
@@ -241,5 +241,194 @@ export const createPayment = createServerFn({ method: 'POST' })
         catch { /* ignore secondary error */ }
       }
       return { success: false, error: e?.message || 'erro' };
+    }
+  });
+
+// =============================================================================
+// ADMIN: listagem de transacoes + configuracoes de pagamento
+// =============================================================================
+
+export type PaymentTransaction = {
+  id: string;
+  order_id: string;
+  gateway: string;
+  gateway_transaction_id: string | null;
+  gateway_status: string | null;
+  amount: number;
+  currency: string;
+  transaction_type: string;
+  payment_method: string | null;
+  installments: number;
+  card_brand: string | null;
+  card_last_four: string | null;
+  pix_qr_code: string | null;
+  pix_qr_code_base64: string | null;
+  boleto_url: string | null;
+  boleto_barcode: string | null;
+  status: "pending" | "processing" | "approved" | "rejected" | "refunded";
+  gateway_response: Record<string, unknown> | null;
+  created_at: string;
+  updated_at: string;
+  order_number?: number;
+  customer_name?: string;
+  customer_email?: string;
+};
+
+export type PaymentSettings = {
+  id: number;
+  mp_public_key: string | null;
+  mp_access_token: string | null;
+  mp_sandbox: boolean;
+  min_installments: number;
+  max_installments: number;
+  free_installments: number;
+  enabled_methods: string[];
+  updated_at: string;
+};
+
+export const listPaymentTransactions = createServerFn({ method: "GET" })
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  .validator((d: unknown) => (d ?? {}) as any)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // @ts-expect-error TanStack Start ServerFn type mismatch
+  .handler(async ({ data }: any) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const limit = data.limit ?? 50;
+      const offset = data.offset ?? 0;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let query: any = db.from("payment_transactions").select(`
+        *,
+        order:orders(
+          order_number,
+          customer_name,
+          customer_email
+        )
+      `).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+
+      if (data.status) query = query.eq("status", data.status);
+      if (data.orderId) query = query.eq("order_id", data.orderId);
+
+      const { data: rows, error } = await query;
+
+      if (error) return { success: false as const, error: error.message };
+
+      const transactions: PaymentTransaction[] = (rows || []).map((r: any) => ({
+        ...r,
+        order_number: r.order?.order_number,
+        customer_name: r.order?.customer_name,
+        customer_email: r.order?.customer_email,
+      }));
+
+      return { success: true as const, data: transactions };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+export const getPaymentStats = createServerFn({ method: "GET" })
+  .handler(async () => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await db.from("payment_transactions").select("status, amount, payment_method");
+
+      if (error) return { success: false as const, error: error.message };
+
+      const byStatus: Record<string, number> = {};
+      let totalTx = 0;
+      let pixCount = 0;
+      for (const t of data || []) {
+        const s = String((t as any).status);
+        byStatus[s] = (byStatus[s] || 0) + Number((t as any).amount);
+        totalTx++;
+        if ((t as any).payment_method === "pix") pixCount++;
+      }
+
+      const approved = byStatus.approved || 0;
+
+      return {
+        success: true as const,
+        data: {
+          totalApproved: approved,
+          totalPending: byStatus.pending || 0,
+          totalRejected: byStatus.rejected || 0,
+          approvalRate: totalTx > 0 ? Math.round((approved / totalTx) * 100) : 0,
+          pixRate: totalTx > 0 ? Math.round((pixCount / totalTx) * 100) : 0,
+        }
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+export const getPaymentSettings = createServerFn({ method: "GET" })
+  .handler(async () => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data, error } = await db.from("payment_settings").select("*").eq("id", 1).single();
+
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const, data: data as unknown as PaymentSettings };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+export const savePaymentSettings = createServerFn({ method: "POST" })
+  .validator((d: unknown) => (d as {
+    mpPublicKey?: string;
+    mpAccessToken?: string;
+    mpSandbox?: boolean;
+    minInstallments?: number;
+    maxInstallments?: number;
+    freeInstallments?: number;
+    enabledMethods?: string[];
+  }))
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+      if (data.mpPublicKey !== undefined) patch.mp_public_key = data.mpPublicKey || null;
+      if (data.mpAccessToken !== undefined) patch.mp_access_token = data.mpAccessToken || null;
+      if (data.mpSandbox !== undefined) patch.mp_sandbox = data.mpSandbox;
+      if (data.minInstallments !== undefined) patch.min_installments = data.minInstallments;
+      if (data.maxInstallments !== undefined) patch.max_installments = data.maxInstallments;
+      if (data.freeInstallments !== undefined) patch.free_installments = data.freeInstallments;
+      if (data.enabledMethods !== undefined) patch.enabled_methods = data.enabledMethods;
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: updated, error } = await db.from("payment_settings").update(patch).eq("id", 1).select().single();
+
+      if (error) return { success: false as const, error: error.message };
+      return { success: true as const, data: updated as unknown as PaymentSettings };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
