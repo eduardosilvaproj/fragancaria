@@ -5,6 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, Package } from "lucide-react";
 import { createProduct } from "@/lib/products-admin.functions";
 import { listCategories } from "@/lib/categories-admin.functions";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/produtos/novo")({
@@ -21,7 +22,7 @@ interface FormState {
   quantity: string;
   sku: string;
   description: string;
-  images: string;
+  images: string[];
   tags: string;
   inStock: boolean;
   featured: boolean;
@@ -39,7 +40,7 @@ const EMPTY_FORM: FormState = {
   quantity: "0",
   sku: "",
   description: "",
-  images: "",
+  images: [],
   tags: "",
   inStock: true,
   featured: false,
@@ -91,10 +92,7 @@ function NovoProduto() {
           quantity: form.quantity ? Number(form.quantity) : 0,
           sku: form.sku.trim() || null,
           description: form.description.trim() || null,
-          images: form.images
-            .split("|")
-            .map((v) => v.trim())
-            .filter(Boolean),
+          images: form.images,
           tags: form.tags
             .split(",")
             .map((v) => v.trim())
@@ -235,14 +233,12 @@ function NovoProduto() {
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs text-[#8A938E] mb-1">
-              Imagens (URLs separadas por &quot;|&quot;)
+              Imagens
             </label>
-            <input
-              type="text"
+            <ImageUploader
               value={form.images}
-              onChange={(e) => set("images", e.target.value)}
-              placeholder="https://exemplo.com/1.jpg|https://exemplo.com/2.jpg"
-              className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              onChange={(urls) => set("images", urls)}
+              maxImages={5}
             />
           </div>
           <div className="md:col-span-2">

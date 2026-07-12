@@ -27,6 +27,7 @@ import {
   importProducts,
   exportProducts,
 } from "@/lib/products-admin.functions";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/produtos/")({
