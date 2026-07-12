@@ -2,20 +2,47 @@ import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Upload, Loader2, ShoppingBag, RefreshCw, Download, AlertCircle } from "lucide-react";
 
-// Paleta curada de tons — só efeito visual. O tom real é escolhido na lista de produtos.
-const PALETTE: { label: string; hex: string }[] = [
-  { label: "Preto Azulado", hex: "#1c1c28" },
-  { label: "Castanho Escuro", hex: "#3b2416" },
-  { label: "Castanho Médio", hex: "#5c3a21" },
-  { label: "Castanho Claro", hex: "#8a5a2b" },
-  { label: "Loiro Escuro", hex: "#a97e46" },
-  { label: "Loiro Médio", hex: "#c99a54" },
-  { label: "Loiro Claro", hex: "#e3c67e" },
-  { label: "Loiro Platinado", hex: "#d9cebb" },
-  { label: "Ruivo Acobreado", hex: "#a5451d" },
-  { label: "Ruivo Intenso", hex: "#7c2c16" },
-  { label: "Rosé", hex: "#c56b83" },
-  { label: "Violeta", hex: "#6b4a7a" },
+// Paleta baseada nos tons Igora Royal (Schwarzkopf). O hex é uma aproximação
+// visual do sistema nível-tom; o tom real é escolhido na lista de produtos.
+const GROUP_ORDER = [
+  "Naturais",
+  "Acinzentados",
+  "Beges & Dourados",
+  "Chocolates",
+  "Cobres & Vermelhos",
+  "Claríssimos & Pastéis",
+] as const;
+
+const PALETTE: { code: string; label: string; hex: string; group: string }[] = [
+  { code: "1-0", label: "Preto Natural", hex: "#1a1512", group: "Naturais" },
+  { code: "3-0", label: "Castanho Escuro", hex: "#2c2019", group: "Naturais" },
+  { code: "5-0", label: "Castanho Claro", hex: "#574029", group: "Naturais" },
+  { code: "6-0", label: "Louro Escuro", hex: "#6f4f33", group: "Naturais" },
+  { code: "7-0", label: "Louro Médio", hex: "#8a6741", group: "Naturais" },
+  { code: "8-0", label: "Louro Claro", hex: "#a8814f", group: "Naturais" },
+  { code: "9-0", label: "Louro Extra Claro", hex: "#c39d66", group: "Naturais" },
+
+  { code: "6-1", label: "Louro Escuro Cendré", hex: "#5c5240", group: "Acinzentados" },
+  { code: "7-1", label: "Louro Médio Cendré", hex: "#7b6f55", group: "Acinzentados" },
+  { code: "8-11", label: "Louro Claro Cendré Extra", hex: "#9a8c6f", group: "Acinzentados" },
+  { code: "9-1", label: "Louro Extra Claro Cendré", hex: "#b9a888", group: "Acinzentados" },
+
+  { code: "8-4", label: "Louro Claro Bege", hex: "#ac7e4b", group: "Beges & Dourados" },
+  { code: "9-4", label: "Louro Extra Claro Bege", hex: "#caa168", group: "Beges & Dourados" },
+  { code: "8-55", label: "Louro Claro Dourado Extra", hex: "#b6823d", group: "Beges & Dourados" },
+  { code: "9-55", label: "Louro Extra Claro Dourado Extra", hex: "#cd9b4a", group: "Beges & Dourados" },
+
+  { code: "4-6", label: "Castanho Médio Chocolate", hex: "#3a281d", group: "Chocolates" },
+  { code: "6-63", label: "Louro Escuro Chocolate Mate", hex: "#5b3b28", group: "Chocolates" },
+  { code: "6-68", label: "Louro Escuro Chocolate Vermelho", hex: "#5f3323", group: "Chocolates" },
+
+  { code: "7-77", label: "Louro Médio Cobre Extra", hex: "#a34e20", group: "Cobres & Vermelhos" },
+  { code: "8-77", label: "Louro Claro Cobre Extra", hex: "#ba642a", group: "Cobres & Vermelhos" },
+  { code: "6-88", label: "Louro Escuro Vermelho Extra", hex: "#7e3023", group: "Cobres & Vermelhos" },
+  { code: "6-99", label: "Louro Escuro Violeta Extra", hex: "#6b3443", group: "Cobres & Vermelhos" },
+
+  { code: "10-0", label: "Louro Claríssimo", hex: "#d5b985", group: "Claríssimos & Pastéis" },
+  { code: "9,5-1", label: "Louro Pastel Cendré", hex: "#d9ceb5", group: "Claríssimos & Pastéis" },
 ];
 
 const MAX_DIM = 720;
@@ -285,29 +312,36 @@ export function HairColorStudio() {
           Toque numa cor para ver no seu cabelo.
         </p>
 
-        <div className="grid grid-cols-4 gap-3">
-          {PALETTE.map((c) => (
-            <button
-              key={c.hex}
-              onClick={() => selectColor(c.hex)}
-              disabled={!hasImage}
-              title={c.label}
-              className={`group flex flex-col items-center gap-1.5 ${
-                hasImage ? "cursor-pointer" : "cursor-not-allowed opacity-40"
-              }`}
-            >
-              <span
-                className={`h-12 w-12 rounded-full border-2 transition-transform ${
-                  selected === c.hex
-                    ? "border-[#0F3A3E] scale-110"
-                    : "border-[#E0D8C7] group-hover:scale-105"
-                }`}
-                style={{ backgroundColor: c.hex }}
-              />
-              <span className="text-[10px] leading-tight text-center text-[#51635F]">
-                {c.label}
-              </span>
-            </button>
+        <div className="space-y-5 max-h-[52vh] overflow-y-auto pr-1">
+          {GROUP_ORDER.map((group) => (
+            <div key={group}>
+              <p className="text-[10px] uppercase tracking-[0.2em] text-[#B07B1E] font-bold mb-2">
+                {group}
+              </p>
+              <div className="grid grid-cols-4 gap-3">
+                {PALETTE.filter((c) => c.group === group).map((c) => (
+                  <button
+                    key={c.code}
+                    onClick={() => selectColor(c.hex)}
+                    disabled={!hasImage}
+                    title={`${c.code} · ${c.label}`}
+                    className={`group flex flex-col items-center gap-1 ${
+                      hasImage ? "cursor-pointer" : "cursor-not-allowed opacity-40"
+                    }`}
+                  >
+                    <span
+                      className={`h-11 w-11 rounded-full border-2 transition-transform ${
+                        selected === c.hex
+                          ? "border-[#0F3A3E] scale-110"
+                          : "border-[#E0D8C7] group-hover:scale-105"
+                      }`}
+                      style={{ backgroundColor: c.hex }}
+                    />
+                    <span className="text-[10px] font-semibold text-[#1C302E]">{c.code}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           ))}
         </div>
 
