@@ -305,6 +305,8 @@ async function fetchMLProductData(mlId: string): Promise<{
       if (weight) weight = weight * 1000;
     }
 
+    console.log(`[ML API] Product ${mlId}: weight=${weight}g, height=${height}cm, width=${width}cm, length=${length}cm`);
+
     return {
       imageUrl,
       weight,
@@ -517,7 +519,7 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
           // Buscar produto
           const { data: product } = await supabaseAdmin
             .from("products")
-            .select("id, name, brand, category, images, tags")
+            .select("id, name, brand, category, images, tags, weight_grams, height_cm, width_cm, length_cm")
             .eq("id", id)
             .single();
 
@@ -561,12 +563,25 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
               updates.images = [imageUrl];
             }
 
-            // Atualizar dimensões do ML
-            if (mlData && data.fields.includes("dimensions")) {
-              if (mlData.weight) updates.weight_grams = Math.round(mlData.weight);
-              if (mlData.height) updates.height_cm = mlData.height;
-              if (mlData.width) updates.width_cm = mlData.width;
-              if (mlData.length) updates.length_cm = mlData.length;
+            // Atualizar dimensões do ML - sempre busca se solicitado
+            if (data.fields.includes("dimensions")) {
+              console.log(`[Enrich] Processing dimensions for ${id}, current: weight=${product.weight_grams}, h=${product.height_cm}, w=${product.width_cm}, l=${product.length_cm}`);
+              // Só atualiza se não tem ou se o valor é 0/null
+              if (!product.weight_grams && mlData?.weight) {
+                updates.weight_grams = Math.round(mlData.weight);
+              }
+              if (!product.height_cm && mlData?.height) {
+                updates.height_cm = mlData.height;
+              }
+              if (!product.width_cm && mlData?.width) {
+                updates.width_cm = mlData.width;
+              }
+              if (!product.length_cm && mlData?.length) {
+                updates.length_cm = mlData.length;
+              }
+              if (Object.keys(updates).length > 0) {
+                console.log(`[Enrich] Will update dimensions for ${id}:`, updates);
+              }
             }
           }
 
