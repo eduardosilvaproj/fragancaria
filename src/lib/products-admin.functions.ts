@@ -31,6 +31,14 @@ const productInput = z.object({
   featured: z.boolean().optional(),
   isNew: z.boolean().optional(),
   isActive: z.boolean().optional(),
+  // Dimensões para frete
+  weightGrams: z.number().int().nonnegative().nullable().optional(),
+  heightCm: z.number().nonnegative().nullable().optional(),
+  widthCm: z.number().nonnegative().nullable().optional(),
+  lengthCm: z.number().nonnegative().nullable().optional(),
+  // Dados fiscais
+  ncm: z.string().max(10).nullable().optional(),
+  eanBarcode: z.string().max(20).nullable().optional(),
 });
 
 type ProductInput = z.infer<typeof productInput>;
@@ -56,6 +64,14 @@ function inputToRow(data: ProductInput) {
     featured: data.featured ?? false,
     is_new: data.isNew ?? false,
     is_active: data.isActive ?? true,
+    // Dimensões para frete
+    weight_grams: data.weightGrams ?? null,
+    height_cm: data.heightCm ?? null,
+    width_cm: data.widthCm ?? null,
+    length_cm: data.lengthCm ?? null,
+    // Dados fiscais
+    ncm: data.ncm ?? null,
+    ean_barcode: data.eanBarcode ?? null,
   };
 }
 

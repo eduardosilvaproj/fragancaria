@@ -28,6 +28,14 @@ interface FormState {
   featured: boolean;
   isNew: boolean;
   isActive: boolean;
+  // Dimensões para frete
+  weightGrams: string;
+  heightCm: string;
+  widthCm: string;
+  lengthCm: string;
+  // Dados fiscais
+  ncm: string;
+  eanBarcode: string;
 }
 
 const EMPTY_FORM: FormState = {
@@ -46,6 +54,14 @@ const EMPTY_FORM: FormState = {
   featured: false,
   isNew: false,
   isActive: true,
+  // Dimensões para frete
+  weightGrams: "",
+  heightCm: "",
+  widthCm: "",
+  lengthCm: "",
+  // Dados fiscais
+  ncm: "",
+  eanBarcode: "",
 };
 
 function EditarProduto() {
@@ -96,6 +112,14 @@ function EditarProduto() {
         featured: p.featured ?? false,
         isNew: p.is_new ?? false,
         isActive: p.is_active ?? true,
+        // Dimensões para frete
+        weightGrams: p.weight_grams != null ? String(p.weight_grams) : "",
+        heightCm: p.height_cm != null ? String(p.height_cm) : "",
+        widthCm: p.width_cm != null ? String(p.width_cm) : "",
+        lengthCm: p.length_cm != null ? String(p.length_cm) : "",
+        // Dados fiscais
+        ncm: p.ncm ?? "",
+        eanBarcode: p.ean_barcode ?? "",
       });
       setLoading(false);
     })();
@@ -142,6 +166,14 @@ function EditarProduto() {
             featured: form.featured,
             isNew: form.isNew,
             isActive: form.isActive,
+            // Dimensões para frete
+            weightGrams: form.weightGrams ? Number(form.weightGrams) : null,
+            heightCm: form.heightCm ? Number(form.heightCm) : null,
+            widthCm: form.widthCm ? Number(form.widthCm) : null,
+            lengthCm: form.lengthCm ? Number(form.lengthCm) : null,
+            // Dados fiscais
+            ncm: form.ncm.trim() || null,
+            eanBarcode: form.eanBarcode.trim() || null,
           },
         },
       });
@@ -319,6 +351,93 @@ function EditarProduto() {
               placeholder="floral, doce, verão"
               className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
             />
+          </div>
+        </div>
+
+        {/* Dimensões para Frete */}
+        <div className="border-t border-[#E9E1D2] pt-6 mt-6">
+          <h3 className="text-xs uppercase tracking-wider text-[#B07B1E] font-medium mb-4">
+            Dimensões para Frete
+          </h3>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Peso (g)</label>
+              <input
+                type="number"
+                value={form.weightGrams}
+                onChange={(e) => set("weightGrams", e.target.value)}
+                placeholder="0"
+                min="0"
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Altura (cm)</label>
+              <input
+                type="number"
+                value={form.heightCm}
+                onChange={(e) => set("heightCm", e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.1"
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Largura (cm)</label>
+              <input
+                type="number"
+                value={form.widthCm}
+                onChange={(e) => set("widthCm", e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.1"
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Comprimento (cm)</label>
+              <input
+                type="number"
+                value={form.lengthCm}
+                onChange={(e) => set("lengthCm", e.target.value)}
+                placeholder="0"
+                min="0"
+                step="0.1"
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Dados Fiscais */}
+        <div className="border-t border-[#E9E1D2] pt-6 mt-6">
+          <h3 className="text-xs uppercase tracking-wider text-[#B07B1E] font-medium mb-4">
+            Dados Fiscais (NF-e)
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">NCM</label>
+              <input
+                type="text"
+                value={form.ncm}
+                onChange={(e) => set("ncm", e.target.value)}
+                placeholder="3304.99.00"
+                maxLength={10}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Código EAN/GTIN</label>
+              <input
+                type="text"
+                value={form.eanBarcode}
+                onChange={(e) => set("eanBarcode", e.target.value)}
+                placeholder="7891234567890"
+                maxLength={20}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
           </div>
         </div>
 

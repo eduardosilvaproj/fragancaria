@@ -8,16 +8,17 @@ import {
   Search,
   Filter,
   Edit,
-  Trash2,
   Eye,
+  Trash2,
+  Sparkles,
+  X,
+  Loader2,
   Upload,
   Download,
   Image,
   AlertCircle,
   CheckCircle,
   XCircle,
-  X,
-  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -28,6 +29,7 @@ import {
   exportProducts,
 } from "@/lib/products-admin.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { ProductEnrichButton } from "@/components/admin/ProductEnrichButton";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/produtos/")({
@@ -47,6 +49,7 @@ interface AdminProduct {
   stock_status: "in_stock" | "low_stock" | "out_of_stock";
   is_active: boolean;
   image: string | null;
+  tags: string[];
 }
 
 function rowToAdmin(p: any): AdminProduct {
@@ -69,6 +72,7 @@ function rowToAdmin(p: any): AdminProduct {
     stock_status,
     is_active: p.is_active,
     image: Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : null,
+    tags: Array.isArray(p.tags) ? p.tags : [],
   };
 }
 
@@ -172,6 +176,9 @@ function AdminProdutos() {
   const [currentPage, setCurrentPage] = useState(1);
   const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null);
   const [importing, setImporting] = useState(false);
+  const [showEnrichModal, setShowEnrichModal] = useState(false);
+  const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
+  const [enriching, setEnriching] = useState(false);
 
   // Carrega todos os produtos do banco (via server fn / service role).
   // Pagina em lotes de 200; para ~434 itens são 3 chamadas. Filtro e
@@ -572,6 +579,13 @@ function AdminProdutos() {
             <Plus className="h-4 w-4" />
             Novo Produto
           </Link>
+          <button
+            onClick={() => setShowEnrichModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-[#B07B1E] text-[#B07B1E] hover:bg-amber-50 transition-colors"
+          >
+            <Sparkles className="h-4 w-4" />
+            Enriquecer
+          </button>
         </div>
       </div>
 
@@ -927,6 +941,170 @@ function AdminProdutos() {
               Próximo
             </button>
           </div>
+        </div>
+      </div>
+
+      {/* Modal de Enriquecimento em Massa */}
+      {showEnrichModal && (
+        <EnrichmentModal
+          allProducts={allProducts}
+          onClose={() => setShowEnrichModal(false)}
+          onComplete={() => {
+            setShowEnrichModal(false);
+            refetch();
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+function EnrichmentModal({
+  allProducts,
+  onClose,
+  onComplete,
+}: {
+  allProducts: AdminProduct[];
+  onClose: () => void;
+  onComplete: () => void;
+}) {
+  const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
+  const [enriching, setEnriching] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [result, setResult] = useState<{ processed: number; updated: number } | null>(null);
+
+  // Produtos sem foto ou sem tags
+  const productsNeedingEnrichment = useMemo(() => {
+    return allProducts.filter(
+      (p) => !p.image || (Array.isArray(p.tags) && p.tags.length === 0)
+    );
+  }, [allProducts]);
+
+  const handleEnrich = async () => {
+    if (productsNeedingEnrichment.length === 0) {
+      toast.info("Não há produtos para enriquecer");
+      return;
+    }
+
+    setEnriching(true);
+    setProgress(0);
+
+    try {
+      const { enrichProductsBatch } = await import("@/lib/product-enrich.functions");
+      const fn = useServerFn(enrichProductsBatch);
+
+      const res = await fn({
+        data: {
+          ids: productsNeedingEnrichment.map((p) => p.id),
+          fields: enrichFields,
+        },
+      });
+
+      if (res?.success) {
+        setResult({ processed: res.processed, updated: res.updated });
+        toast.success(`Processados ${res.processed} produtos, ${res.updated} atualizados`);
+      } else {
+        toast.error("Erro ao enriquecer", { description: res?.error || "Erro desconhecido" });
+      }
+    } catch (e: any) {
+      toast.error("Erro ao enriquecer", { description: e?.message });
+    } finally {
+      setEnriching(false);
+    }
+  };
+
+  const toggleField = (field: "images" | "tags") => {
+    if (enrichFields.includes(field)) {
+      setEnrichFields(enrichFields.filter((f) => f !== field));
+    } else {
+      setEnrichFields([...enrichFields, field]);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white max-w-md w-full rounded-lg shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-[#E9E1D2]">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-[#B07B1E]" />
+            <h2 className="font-serif text-lg text-[#0F3A3E]">Enriquecer Produtos</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-[#F3EEE3] rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="p-6">
+          {result ? (
+            <div className="text-center py-4">
+              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+              <p className="text-lg font-medium text-[#0F3A3E] mb-2">Concluído!</p>
+              <p className="text-sm text-[#51635F]">
+                {result.updated} de {result.processed} produtos atualizados
+              </p>
+              <button
+                onClick={onComplete}
+                className="mt-6 px-6 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-[#51635F] mb-4">
+                Enrichecer <strong>{productsNeedingEnrichment.length}</strong> produtos que estão sem foto ou tags.
+              </p>
+
+              <div className="space-y-3 mb-6">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enrichFields.includes("tags")}
+                    onChange={() => toggleField("tags")}
+                    className="w-4 h-4 accent-[#B07B1E]"
+                  />
+                  <span className="text-sm">Gerar tags automaticamente</span>
+                </label>
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={enrichFields.includes("images")}
+                    onChange={() => toggleField("images")}
+                    className="w-4 h-4 accent-[#B07B1E]"
+                  />
+                  <span className="text-sm">Buscar imagens na internet</span>
+                </label>
+              </div>
+
+              {enriching && (
+                <div className="mb-4">
+                  <div className="h-2 bg-[#E9E1D2] rounded overflow-hidden">
+                    <div className="h-full bg-[#B07B1E] transition-all" style={{ width: "50%" }} />
+                  </div>
+                  <p className="text-xs text-[#8A938E] mt-2 text-center">Processando...</p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleEnrich}
+                  disabled={enriching || enrichFields.length === 0 || productsNeedingEnrichment.length === 0}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#B07B1E] text-white hover:bg-[#9A6A1A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {enriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                  Enriquecer {productsNeedingEnrichment.length} produtos
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
