@@ -159,11 +159,11 @@ function MinhaContaPedidosPage() {
               Tentar de novo
             </button>
           </div>
-        ) : orders.length === 0 ? (
+        ) : orders!.length === 0 ? (
           <EmptyState />
         ) : (
           <div className="space-y-3">
-            {orders.map((o) => (
+            {orders!.map((o) => (
               <OrderCard key={o.id} order={o} />
             ))}
           </div>

@@ -143,8 +143,8 @@ function FavoritesPage() {
               className="bg-white rounded-2xl border border-[#E9E1D2] overflow-hidden flex flex-col"
             >
               <Link
-                to="/produto/$slug"
-                params={{ slug: it.slug ?? it.productId }}
+                to="/produto/$id"
+                params={{ id: it.productId }}
                 aria-label={`Ver ${it.name}`}
                 className="aspect-square overflow-hidden bg-[#F5F3EE] block"
               >
@@ -163,8 +163,8 @@ function FavoritesPage() {
               </Link>
               <div className="p-3 flex-1 flex flex-col">
                 <Link
-                  to="/produto/$slug"
-                  params={{ slug: it.slug ?? it.productId }}
+                  to="/produto/$id"
+                  params={{ id: it.productId }}
                   className="text-sm font-medium text-[#0F3A3E] line-clamp-2 hover:text-[#0c2e31]"
                 >
                   {it.name}
