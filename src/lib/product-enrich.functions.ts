@@ -493,7 +493,7 @@ export const enrichProduct = createServerFn({ method: "POST" })
 
 // Enriquecer múltiplos produtos em lote
 const EnrichBatchSchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(50),
+  ids: z.array(z.string().min(1)).min(1).max(500),
   fields: z.array(z.enum(["images", "tags", "dimensions"])).min(1),
 });
 
