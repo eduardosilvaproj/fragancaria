@@ -8,14 +8,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
+import type { Product } from "@/data/products";
 
-// IMPORTANTE: productType deve bater com `category` em data/products.ts (slug em lowercase)
-// para que o filtro em /produtos (p.category === selectedCategory) funcione.
-// O `count` é calculado em runtime a partir de PRODUCTS, então nunca fica desatualizado
-// quando o catálogo muda (alinhado com o categoriesWithCounts da página /produtos).
-function countByCategory(slug: string): number {
-  return PRODUCTS.filter((p) => p.category === slug).length;
+// IMPORTANTE: productType deve bater com `category` em public.products (slug em
+// lowercase) para que o filtro em /produtos (p.category === selectedCategory) funcione.
+function countByCategory(products: Product[], slug: string): number {
+  return products.filter((p) => p.category === slug).length;
 }
 
 const CATEGORIES: Array<{ label: string; productType: string }> = [
@@ -52,6 +51,7 @@ export const NavbarEditorial = () => {
   const navigate = useNavigate();
   const { items, setIsOpen } = useCartStore();
   const wishlistItems = useWishlistStore((state) => state.items);
+  const { products } = useProducts();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
 
@@ -125,7 +125,7 @@ export const NavbarEditorial = () => {
                           className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
                           <span>{cat.label}</span>
-                          <span className="text-[12px] text-[#9AA39F]">({countByCategory(cat.productType)})</span>
+                          <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>
                         </Link>
                       </li>
                     ))}
@@ -401,7 +401,7 @@ export const NavbarEditorial = () => {
                                   className="flex justify-between text-[14px] text-[#51635F]"
                                 >
                                   <span>{cat.label}</span>
-                                  <span className="text-[12px] text-[#9AA39F]">({countByCategory(cat.productType)})</span>
+                                  <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>
                                 </Link>
                               </li>
                             ))}

@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { toast } from "sonner";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 
 const MotionDiv = motion.div as any;
 
@@ -23,8 +23,9 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
 
   const addToCart = useCartStore((state) => state.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();
+  const { products } = useProducts();
 
-  const product = productId ? PRODUCTS.find((p) => p.id === productId) : null;
+  const product = productId ? products.find((p) => p.id === productId) : null;
   const isWishlisted = product ? isInWishlist(product.id) : false;
 
   if (!product) return null;

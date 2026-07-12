@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Search, Clock, TrendingUp, X } from "lucide-react";
-import { PRODUCTS } from "@/data/products";
+import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 import { trackSearch } from "@/lib/analytics";
 
@@ -71,6 +71,7 @@ export function SearchAutocomplete({
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const { products } = useProducts();
 
   // Load search history on mount
   useEffect(() => {
@@ -93,10 +94,10 @@ export function SearchAutocomplete({
     setIsLoading(true);
     setShowSuggestions(false);
 
-    // Simulate async search (in real app, this would be an API call)
+    // Search products from DB
     setTimeout(() => {
       const normalizedQuery = searchQuery.toLowerCase().trim();
-      const filtered = PRODUCTS.filter(
+      const filtered = products.filter(
         (p) =>
           p.name.toLowerCase().includes(normalizedQuery) ||
           p.brand.toLowerCase().includes(normalizedQuery) ||
@@ -117,7 +118,7 @@ export function SearchAutocomplete({
       setIsLoading(false);
       setSelectedIndex(-1);
     }, 150);
-  }, []);
+  }, [products]);
 
   // Debounced search
   useEffect(() => {

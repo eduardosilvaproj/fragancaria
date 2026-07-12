@@ -1,4 +1,4 @@
-import { PRODUCTS, CATEGORIES } from "@/data/products";
+import { fetchActiveProducts } from "./products.functions";
 
 const BASE_URL = "https://fragranciaria.com.br";
 
@@ -9,7 +9,21 @@ interface SitemapUrl {
   priority?: number;
 }
 
-export function generateSitemapUrls(): SitemapUrl[] {
+// Categorias estáticas (não mudam frequentemente)
+const STATIC_CATEGORIES = [
+  { name: "Shampoos", slug: "shampoos" },
+  { name: "Condicionadores", slug: "condicionadores" },
+  { name: "Máscaras", slug: "mascaras" },
+  { name: "Leave-in", slug: "leave-in" },
+  { name: "Óleos", slug: "oleos" },
+  { name: "Coloração", slug: "coloracao" },
+  { name: "Kits", slug: "kits" },
+  { name: "Finalizadores", slug: "finalizadores" },
+  { name: "Tratamentos", slug: "tratamentos" },
+  { name: "Maquiagem", slug: "maquiagem" },
+];
+
+export async function generateSitemapUrls(): Promise<SitemapUrl[]> {
   const today = new Date().toISOString().split("T")[0];
 
   const urls: SitemapUrl[] = [
@@ -30,7 +44,7 @@ export function generateSitemapUrls(): SitemapUrl[] {
   ];
 
   // Category pages
-  CATEGORIES.forEach((category) => {
+  STATIC_CATEGORIES.forEach((category) => {
     urls.push({
       loc: `${BASE_URL}/produtos?productType=${encodeURIComponent(category.name)}`,
       lastmod: today,
@@ -39,21 +53,26 @@ export function generateSitemapUrls(): SitemapUrl[] {
     });
   });
 
-  // Product pages
-  PRODUCTS.forEach((product) => {
-    urls.push({
-      loc: `${BASE_URL}/produto/${product.id}`,
-      lastmod: today,
-      changefreq: "weekly",
-      priority: 0.7,
+  // Product pages from database
+  try {
+    const products = await fetchActiveProducts();
+    products.forEach((product) => {
+      urls.push({
+        loc: `${BASE_URL}/produto/${product.id}`,
+        lastmod: today,
+        changefreq: "weekly",
+        priority: 0.7,
+      });
     });
-  });
+  } catch (error) {
+    console.error("Error fetching products for sitemap:", error);
+  }
 
   return urls;
 }
 
-export function generateSitemapXml(): string {
-  const urls = generateSitemapUrls();
+export async function generateSitemapXml(): Promise<string> {
+  const urls = await generateSitemapUrls();
 
   const urlsXml = urls
     .map(
@@ -72,6 +91,3 @@ export function generateSitemapXml(): string {
 ${urlsXml}
 </urlset>`;
 }
-
-// For static generation, export the XML content
-export const SITEMAP_XML = generateSitemapXml();
