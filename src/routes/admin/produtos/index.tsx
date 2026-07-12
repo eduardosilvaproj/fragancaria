@@ -28,6 +28,7 @@ import {
   importProducts,
   exportProducts,
 } from "@/lib/products-admin.functions";
+import { enrichProductsBatch } from "@/lib/product-enrich.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { ProductEnrichButton } from "@/components/admin/ProductEnrichButton";
 import { toast } from "sonner";
@@ -973,6 +974,9 @@ function EnrichmentModal({
   const [progress, setProgress] = useState(0);
   const [result, setResult] = useState<{ processed: number; updated: number } | null>(null);
 
+  // Importar server fn fora do handler
+  const enrichBatchFn = useServerFn(enrichProductsBatch);
+
   // Produtos sem foto, sem tags ou sem peso (precisam de enriquecimento)
   // A API do ML vai buscar esses dados automaticamente
   const productsNeedingEnrichment = useMemo(() => {
@@ -991,10 +995,7 @@ function EnrichmentModal({
     setProgress(0);
 
     try {
-      const { enrichProductsBatch } = await import("@/lib/product-enrich.functions");
-      const fn = useServerFn(enrichProductsBatch);
-
-      const res = await fn({
+      const res = await enrichBatchFn({
         data: {
           ids: productsNeedingEnrichment.map((p) => p.id),
           fields: enrichFields,
