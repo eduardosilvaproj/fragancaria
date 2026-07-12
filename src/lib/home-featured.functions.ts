@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { PRODUCTS, type Product } from "@/data/products";
+import type { Product } from "@/data/products";
+import { fetchActiveProducts } from "./products.functions";
 
 // ============================================
 // Vitrine da Home — destaque de produtos nos carrosseis
@@ -58,7 +59,8 @@ export const listFeatured = createServerFn({ method: "GET" })
           console.error("listFeatured manual error:", error.message);
         }
 
-        const byId = new Map<string, Product>(PRODUCTS.map((p) => [p.id, p]));
+        const products = await fetchActiveProducts();
+        const byId = new Map<string, Product>(products.map((p) => [p.id, p]));
         const result: Product[] = [];
         const used = new Set<string>();
 
@@ -73,7 +75,7 @@ export const listFeatured = createServerFn({ method: "GET" })
         }
 
         // 2) Produtos com flag correspondente ao slot
-        const flagged = filterBySlot(PRODUCTS, slot).filter((p) => !used.has(p.id));
+        const flagged = filterBySlot(products, slot).filter((p) => !used.has(p.id));
         const sortedFlagged = stableSort(flagged, slot);
         for (const p of sortedFlagged) {
           result.push(p);
@@ -82,7 +84,7 @@ export const listFeatured = createServerFn({ method: "GET" })
         }
 
         // 3) Restante: aleatorio estavel
-        const rest = PRODUCTS.filter((p) => !used.has(p.id));
+        const rest = products.filter((p) => !used.has(p.id));
         const seeded = seededShuffle(rest, dailySeed(slot));
         for (const p of seeded) {
           result.push(p);
@@ -104,7 +106,8 @@ export const listProductsForAdmin = createServerFn({ method: "GET" }).handler(
     data: Array<{ id: string; name: string; brand: string; price: number; originalPrice?: number; image: string; isNew: boolean; isOnSale: boolean; isKit: boolean }>;
     error?: string;
   }> => {
-    const data = PRODUCTS.map((p) => ({
+    const products = await fetchActiveProducts();
+    const data = products.map((p) => ({
       id: p.id,
       name: p.name,
       brand: p.brand,
@@ -137,7 +140,8 @@ export const listManualFeatured = createServerFn({ method: "GET" })
           .eq("slot", slot)
           .order("position", { ascending: true });
         if (error) return { success: false, data: [], error: error.message };
-        const byId = new Map<string, Product>(PRODUCTS.map((p) => [p.id, p]));
+        const products = await fetchActiveProducts();
+        const byId = new Map<string, Product>(products.map((p) => [p.id, p]));
         const out: Product[] = [];
         for (const r of (manual ?? []) as Array<{ product_id: string }>) {
           const p = byId.get(r.product_id);
