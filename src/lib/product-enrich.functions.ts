@@ -224,6 +224,58 @@ interface MLSearchResult {
 }
 
 /**
+ * Estima dimensões baseado na categoria do produto
+ * Usado quando a API do ML não retorna dados de dimensões
+ */
+function estimateDimensionsByCategory(
+  category: string | null,
+  name: string
+): { weight: number; height: number; width: number; length: number } {
+  const catLower = (category || "").toLowerCase();
+  const nameLower = name.toLowerCase();
+
+  // Dimensões padrão por categoria (em cm e gramas)
+  const defaults: Record<string, { weight: number; height: number; width: number; length: number }> = {
+    // Cabelo
+    shampoos: { weight: 350, height: 20, width: 8, length: 8 },
+    "shampoo": { weight: 350, height: 20, width: 8, length: 8 },
+   condicionadores: { weight: 400, height: 22, width: 8, length: 8 },
+    "condicionador": { weight: 400, height: 22, width: 8, length: 8 },
+    mascaras: { weight: 300, height: 15, width: 10, length: 10 },
+    "máscara": { weight: 300, height: 15, width: 10, length: 10 },
+    "leave-in": { weight: 250, height: 18, width: 6, length: 6 },
+    finalizadores: { weight: 200, height: 15, width: 6, length: 6 },
+    coloracao: { weight: 150, height: 12, width: 6, length: 6 },
+    "tintura": { weight: 150, height: 12, width: 6, length: 6 },
+
+    // Maquiagem
+    maquiagem: { weight: 100, height: 10, width: 5, length: 5 },
+    "base": { weight: 80, height: 8, width: 5, length: 3 },
+    batom: { weight: 30, height: 8, width: 2, length: 2 },
+    blush: { weight: 50, height: 6, width: 5, length: 3 },
+    sombra: { weight: 40, height: 5, width: 8, length: 5 },
+    delineador: { weight: 25, height: 13, width: 2, length: 2 },
+  };
+
+  // Primeiro tenta encontrar categoria exata
+  for (const [key, values] of Object.entries(defaults)) {
+    if (catLower.includes(key)) {
+      return values;
+    }
+  }
+
+  // Depois tenta encontrar no nome
+  for (const [key, values] of Object.entries(defaults)) {
+    if (nameLower.includes(key)) {
+      return values;
+    }
+  }
+
+  // Padrão geral para cosméticos
+  return { weight: 250, height: 15, width: 7, length: 7 };
+}
+
+/**
  * Busca dados completos de um produto no Mercado Livre pelo ID
  */
 async function fetchMLProductData(mlId: string): Promise<{
@@ -565,22 +617,20 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
 
             // Atualizar dimensões do ML - sempre busca se solicitado
             if (data.fields.includes("dimensions")) {
-              console.log(`[Enrich] Processing dimensions for ${id}, current: weight=${product.weight_grams}, h=${product.height_cm}, w=${product.width_cm}, l=${product.length_cm}`);
-              // Só atualiza se não tem ou se o valor é 0/null
-              if (!product.weight_grams && mlData?.weight) {
-                updates.weight_grams = Math.round(mlData.weight);
+              // Se ML não retornou dados,估算 baseado na categoria
+              const estimated = !mlData?.weight ? estimateDimensionsByCategory(product.category, product.name) : null;
+
+              if (!product.weight_grams) {
+                updates.weight_grams = mlData?.weight ? Math.round(mlData.weight) : estimated?.weight || 250;
               }
-              if (!product.height_cm && mlData?.height) {
-                updates.height_cm = mlData.height;
+              if (!product.height_cm) {
+                updates.height_cm = mlData?.height || estimated?.height || 15;
               }
-              if (!product.width_cm && mlData?.width) {
-                updates.width_cm = mlData.width;
+              if (!product.width_cm) {
+                updates.width_cm = mlData?.width || estimated?.width || 7;
               }
-              if (!product.length_cm && mlData?.length) {
-                updates.length_cm = mlData.length;
-              }
-              if (Object.keys(updates).length > 0) {
-                console.log(`[Enrich] Will update dimensions for ${id}:`, updates);
+              if (!product.length_cm) {
+                updates.length_cm = mlData?.length || estimated?.length || 7;
               }
             }
           }
