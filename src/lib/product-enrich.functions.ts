@@ -65,21 +65,166 @@ function generateTags(product: Pick<ProductRow, "name" | "brand" | "category" | 
 }
 
 // =====================================================
-// BUSCAR IMAGEM (MOCK - sem API real)
-// Para produção: integrar com SerpAPI, Google Custom Search, ou Mercado Livre
+// BUSCAR IMAGEM NO MERCADO LIVRE
 // =====================================================
 
+const ML_API_BASE = "https://api.mercadolibre.com";
+
+interface MLSearchResult {
+  results: Array<{
+    id: string;
+    title: string;
+    thumbnail: string;
+    pictures: Array<{ url: string }>;
+    attributes: Array<{ id: string; value_name: string }>;
+    price: number;
+  }>;
+}
+
+interface MLProductDetail {
+  id: string;
+  title: string;
+  pictures: Array<{ url: string }>;
+  attributes: Array<{ id: string; value_name: string }>;
+}
+
+/**
+ * Busca imagens de produtos similares no Mercado Livre
+ * Usa a busca por termo (nome + marca) e pega a melhor imagem do primeiro resultado
+ */
+async function searchProductImageFromML(
+  name: string,
+  brand?: string | null
+): Promise<{ imageUrl: string | null; mlProductId?: string }> {
+  try {
+    // Montar query de busca: marca + nome (primeiras 3 palavras)
+    const nameWords = name.split(/\s+/).slice(0, 3).join(" ");
+    const query = brand ? `${brand} ${nameWords}` : nameWords;
+    const encodedQuery = encodeURIComponent(query);
+
+    // Buscar no Mercado Livre
+    const searchUrl = `${ML_API_BASE}/sites/MLB/search?q=${encodedQuery}&limit=5&sort_by=relevance`;
+    const response = await fetch(searchUrl);
+
+    if (!response.ok) {
+      console.error(`[ML API] Search failed: ${response.status}`);
+      return { imageUrl: null };
+    }
+
+    const data: MLSearchResult = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      console.log(`[ML API] No results for query: ${query}`);
+      return { imageUrl: null };
+    }
+
+    // Encontrar o melhor match - prioriza thumbnail do ML ou primeira foto disponível
+    for (const item of data.results) {
+      // Tenta usar thumbnail do ML (já é uma boa imagem em tamanho adequado)
+      if (item.thumbnail && item.thumbnail.includes("http")) {
+        // Melhora a qualidade: troca tamanho thumbnail (T) por grande (G)
+        const imageUrl = item.thumbnail.replace(/-T\./, "-G.");
+        return { imageUrl, mlProductId: item.id };
+      }
+
+      // Tenta primeira foto das pictures
+      if (item.pictures && item.pictures.length > 0) {
+        const imageUrl = item.pictures[0].url;
+        if (imageUrl.includes("http")) {
+          return { imageUrl, mlProductId: item.id };
+        }
+      }
+    }
+
+    return { imageUrl: null };
+  } catch (error) {
+    console.error("[ML API] Error searching:", error);
+    return { imageUrl: null };
+  }
+}
+
+/**
+ * Busca NCM de um produto similar no Mercado Livre
+ * O NCM não vem diretamente na busca, mas podemos usar a categoria do ML
+ */
+async function searchNCMFromML(
+  name: string,
+  brand?: string | null
+): Promise<string | null> {
+  try {
+    const nameWords = name.split(/\s+/).slice(0, 3).join(" ");
+    const query = brand ? `${brand} ${nameWords}` : nameWords;
+    const encodedQuery = encodeURIComponent(query);
+
+    const searchUrl = `${ML_API_BASE}/sites/MLB/search?q=${encodedQuery}&limit=3`;
+    const response = await fetch(searchUrl);
+
+    if (!response.ok) {
+      return null;
+    }
+
+    const data: MLSearchResult = await response.json();
+
+    if (!data.results || data.results.length === 0) {
+      return null;
+    }
+
+    // Pega a categoria do primeiro resultado
+    // O ML não fornece NCM diretamente, mas a categoria pode ajudar
+    // Em uma implementação futura, poderíamos mapear categorias ML para NCMs
+    const categoryId = data.results[0].attributes?.find(
+      (attr) => attr.id === "PRODUCT_TYPE"
+    )?.value_name;
+
+    return categoryId || null;
+  } catch (error) {
+    console.error("[ML API] Error fetching NCM:", error);
+    return null;
+  }
+}
+
+/**
+ * Wrapper principal: busca imagem no ML
+ */
 async function searchProductImage(name: string, brand?: string | null): Promise<string | null> {
-  // MOCK: retorna null (sem API configurada)
-  // Em produção, implementar busca real:
-  // 1. Mercado Livre API (gratuito)
-  // 2. Google Custom Search API (precisa key)
-  // 3. SerpAPI (precisa key)
+  const result = await searchProductImageFromML(name, brand);
+  return result.imageUrl;
+}
 
-  console.log(`[enrich] Image search requested for: ${brand || ""} ${name}`);
+/**
+ * Busca imagem diretamente pelo ID do Mercado Livre
+ * Útil quando o produto já tem ID do ML (como MLB...)
+ */
+async function searchImageByMLId(mlId: string): Promise<string | null> {
+  try {
+    // Verifica se é um ID válido do ML
+    if (!mlId.startsWith("MLB")) {
+      return null;
+    }
 
-  // Placeholder: retorna null indicando que não encontrou
-  return null;
+    const response = await fetch(`${ML_API_BASE}/items/${mlId}`);
+
+    if (!response.ok) {
+      console.error(`[ML API] Item fetch failed: ${response.status}`);
+      return null;
+    }
+
+    const data: MLProductDetail = await response.json();
+
+    // Pega a melhor foto disponível
+    if (data.pictures && data.pictures.length > 0) {
+      // Tenta pegar a foto em maior resolução (a última geralmente é maior)
+      const bestPicture = data.pictures[data.pictures.length - 1]?.url;
+      if (bestPicture && bestPicture.includes("http")) {
+        return bestPicture;
+      }
+    }
+
+    return null;
+  } catch (error) {
+    console.error("[ML API] Error fetching by ID:", error);
+    return null;
+  }
 }
 
 // =====================================================
@@ -150,9 +295,20 @@ export const enrichProduct = createServerFn({ method: "POST" })
 
       // Buscar imagem se solicitado
       if (data.fields.includes("images")) {
-        const imageUrl = await searchProductImage(product.name, product.brand);
+        let imageUrl: string | null = null;
+
+        // Primeiro tenta buscar pelo ID do ML (se o ID começar com MLB)
+        if (product.id.startsWith("MLB")) {
+          imageUrl = await searchImageByMLId(product.id);
+        }
+
+        // Se não encontrou pelo ID, busca por nome
+        if (!imageUrl) {
+          imageUrl = await searchProductImage(product.name, product.brand);
+        }
+
         if (imageUrl) {
-          updates.images = [...(product.images || []), imageUrl].slice(0, 5);
+          updates.images = [imageUrl]; // Substitui imagens existentes com a do ML
         }
       }
 
@@ -227,7 +383,18 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
           }
 
           if (data.fields.includes("images") && (!product.images || product.images.length === 0)) {
-            const imageUrl = await searchProductImage(product.name, product.brand);
+            let imageUrl: string | null = null;
+
+            // Primeiro tenta buscar pelo ID do ML
+            if (product.id.startsWith("MLB")) {
+              imageUrl = await searchImageByMLId(product.id);
+            }
+
+            // Se não encontrou pelo ID, busca por nome
+            if (!imageUrl) {
+              imageUrl = await searchProductImage(product.name, product.brand);
+            }
+
             if (imageUrl) {
               updates.images = [imageUrl];
             }
