@@ -52,3 +52,8 @@ desktop.ini
 # Credential dumps (existem em algum lugar na origem; nunca commitar)
 _link.txt
 _tok.txt
+
+# Claude local config e cache do Supabase CLI (por-dev / tooling)
+.claude/settings.local.json
+.claude/launch.json
+supabase/.temp/
