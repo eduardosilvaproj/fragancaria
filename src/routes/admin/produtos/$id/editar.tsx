@@ -214,7 +214,7 @@ function EditarProduto() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl">
+    <div className="p-6 md:p-8 max-w-5xl mx-auto">
       <Link
         to="/admin/produtos"
         className="inline-flex items-center gap-2 text-sm text-[#51635F] hover:text-[#0F3A3E] mb-6"
@@ -338,6 +338,7 @@ function EditarProduto() {
               value={form.images}
               onChange={(urls) => set("images", urls)}
               maxImages={5}
+              mlProductId={id.startsWith("MLB") ? id : undefined}
             />
           </div>
           <div className="md:col-span-2">

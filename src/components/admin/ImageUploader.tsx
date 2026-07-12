@@ -3,8 +3,9 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { uploadProductImage, deleteProductImage, type UploadResult } from "@/lib/storage.functions";
 import { toast } from "sonner";
-import { X, Upload, Loader2, ImagePlus } from "lucide-react";
+import { X, Upload, Loader2, ImagePlus, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ImageSelector } from "./ImageSelector";
 
 interface ImageUploaderProps {
   value?: string[];
@@ -12,6 +13,7 @@ interface ImageUploaderProps {
   maxImages?: number;
   folder?: string;
   disabled?: boolean;
+  mlProductId?: string; // ID do ML para buscar imagens
 }
 
 export function ImageUploader({
@@ -20,14 +22,18 @@ export function ImageUploader({
   maxImages = 5,
   folder = "products",
   disabled = false,
+  mlProductId,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [showMLSelector, setShowMLSelector] = useState(false);
+
+  const uploadFn = useServerFn(uploadProductImage);
+  const deleteFn = useServerFn(deleteProductImage);
 
   const deleteMutation = useMutation({
     mutationFn: async (path: string) => {
-      const fn = useServerFn(deleteProductImage);
-      return fn({ data: { path } });
+      return deleteFn({ data: { path } });
     },
     onSuccess: (result) => {
       if (result?.success && value) {
@@ -66,8 +72,7 @@ export function ImageUploader({
 
         try {
           const base64 = await fileToBase64(file);
-          const fn = useServerFn(uploadProductImage);
-          const result = await fn({
+          const result = await uploadFn({
             data: {
               base64,
               filename: file.name,
@@ -148,6 +153,19 @@ export function ImageUploader({
         </div>
       )}
 
+      {/* Botão buscar no Mercado Livre */}
+      {mlProductId && value.length < maxImages && (
+        <button
+          type="button"
+          onClick={() => setShowMLSelector(true)}
+          disabled={disabled}
+          className="flex items-center justify-center gap-2 w-full py-3 px-4 text-sm bg-[#FFF3CD] border border-[#FFE69C] hover:bg-[#FFECB5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <ExternalLink className="h-4 w-4 text-[#B07B1E]" />
+          <span className="text-[#8A6D3B]">Buscar imagens no Mercado Livre</span>
+        </button>
+      )}
+
       {/* Área de upload */}
       {value.length < maxImages && (
         <div
@@ -203,6 +221,20 @@ export function ImageUploader({
       <p className="text-xs text-[#8A938E]">
         {value.length}/{maxImages} imagens
       </p>
+
+      {/* Modal de seleção de imagens do ML */}
+      {showMLSelector && mlProductId && (
+        <ImageSelector
+          mlId={mlProductId}
+          currentImages={value}
+          maxImages={maxImages}
+          onSelect={(urls) => {
+            onChange?.([...value, ...urls]);
+            setShowMLSelector(false);
+          }}
+          onClose={() => setShowMLSelector(false)}
+        />
+      )}
     </div>
   );
 }

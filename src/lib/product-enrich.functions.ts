@@ -280,6 +280,7 @@ function estimateDimensionsByCategory(
  */
 async function fetchMLProductData(mlId: string): Promise<{
   imageUrl: string | null;
+  allImages: string[];
   weight: number | null;
   height: number | null;
   width: number | null;
@@ -300,16 +301,21 @@ async function fetchMLProductData(mlId: string): Promise<{
 
     const data: MLItem = await response.json();
 
-    // Extrair imagem de maior qualidade
+    // Extrair TODAS as imagens em alta qualidade
+    const allImages: string[] = [];
     let imageUrl: string | null = null;
+
     if (data.pictures && data.pictures.length > 0) {
-      // Pegar a última foto que geralmente é a maior
-      const bestPicture = data.pictures[data.pictures.length - 1]?.url;
-      if (bestPicture) {
-        imageUrl = bestPicture;
-      }
+      data.pictures.forEach((pic) => {
+        // ML substitui -T por -G para alta qualidade
+        const highRes = pic.url.replace(/-T\./, "-G.");
+        allImages.push(highRes);
+      });
+      // Primeira imagem como principal
+      imageUrl = allImages[0];
     } else if (data.thumbnail) {
       imageUrl = data.thumbnail.replace(/-T\./, "-G.");
+      allImages.push(imageUrl);
     }
 
     // Extrair dimensões do atributo ou diretamente
@@ -361,6 +367,7 @@ async function fetchMLProductData(mlId: string): Promise<{
 
     return {
       imageUrl,
+      allImages,
       weight,
       height,
       width,
@@ -594,25 +601,38 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
 
           // Buscar dados do ML
           if (data.fields.includes("images") || data.fields.includes("dimensions")) {
-            let imageUrl: string | null = null;
-            let mlData: { weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
+            let mlData: { imageUrl: string | null; allImages: string[]; weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
             // Primeiro tenta buscar pelo ID do ML
             if (product.id.startsWith("MLB")) {
               mlData = await fetchMLProductData(product.id);
-              if (mlData) {
-                imageUrl = mlData.imageUrl;
+            }
+
+            // Fallback: busca por nome se não tem imagens do ML
+            if (!mlData?.allImages.length && data.fields.includes("images")) {
+              const imageUrl = await searchProductByName(product.name, product.brand);
+              if (imageUrl) {
+                mlData = {
+                  imageUrl,
+                  allImages: [imageUrl],
+                  weight: null,
+                  height: null,
+                  width: null,
+                  length: null,
+                };
               }
             }
 
-            // Fallback: busca por nome
-            if (!imageUrl && data.fields.includes("images")) {
-              imageUrl = await searchProductByName(product.name, product.brand);
-            }
-
-            // Atualizar imagem
-            if (imageUrl && data.fields.includes("images") && (!product.images || product.images.length === 0)) {
-              updates.images = [imageUrl];
+            // Atualizar imagens - adicionar TODAS as imagens do ML
+            if (data.fields.includes("images") && mlData?.allImages && mlData.allImages.length > 0) {
+              const currentImages = product.images || [];
+              // Filtrar imagens duplicadas
+              const newImages = mlData.allImages.filter((img: string) => !currentImages.includes(img));
+              // Combinar: existentes + novas (máximo 5)
+              const combined = [...currentImages, ...newImages].slice(0, 5);
+              if (combined.length > currentImages.length) {
+                updates.images = combined;
+              }
             }
 
             // Atualizar dimensões do ML - sempre busca se solicitado
@@ -659,6 +679,28 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
       }
       console.error("[enrich] enrichProductsBatch error:", e);
       return { success: false, processed: 0, updated: 0, errors: [e?.message || "Erro desconhecido"] };
+    }
+  });
+
+/**
+ * Busca imagens de um produto específico no Mercado Livre
+ */
+const FetchImagesSchema = z.object({
+  mlId: z.string().min(1),
+});
+
+export const fetchProductImages = createServerFn({ method: "POST" })
+  .validator((d: unknown) => FetchImagesSchema.parse(d))
+  .handler(async ({ data }): Promise<{ success: boolean; images: string[]; error?: string }> => {
+    try {
+      const mlData = await fetchMLProductData(data.mlId);
+      if (!mlData) {
+        return { success: false, images: [], error: "Produto não encontrado no Mercado Livre" };
+      }
+      return { success: true, images: mlData.allImages };
+    } catch (e: any) {
+      console.error("[enrich] fetchProductImages error:", e);
+      return { success: false, images: [], error: e?.message || "Erro desconhecido" };
     }
   });
 
