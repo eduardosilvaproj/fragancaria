@@ -20,6 +20,7 @@ import {
   Truck,
   Tag,
   CreditCard,
+  Layers,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -40,6 +41,7 @@ const SIDEBAR_ITEMS = [
   { label: "Dashboard", href: "/admin", icon: Home, exact: true },
   { section: "E-commerce" },
   { label: "Produtos", href: "/admin/produtos", icon: Package },
+  { label: "Categorias", href: "/admin/categorias", icon: Layers },
   { label: "Pedidos", href: "/admin/pedidos", icon: ShoppingBag },
   { label: "Cupons", href: "/admin/cupons", icon: Tag },
   { label: "Logística", href: "/admin/logistica", icon: Truck },

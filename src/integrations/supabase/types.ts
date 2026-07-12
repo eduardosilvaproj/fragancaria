@@ -590,6 +590,63 @@ export type Database = {
           },
         ]
       }
+      brands: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          image: string | null
+          name: string
+          slug: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          name: string
+          slug: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+          slug?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       conversations: {
         Row: {
           channel: string
@@ -856,6 +913,81 @@ export type Database = {
           tracking_code?: string | null
           tracking_token?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          brand: string | null
+          brand_slug: string | null
+          category: string | null
+          category_slug: string | null
+          created_at: string
+          description: string | null
+          external_ids: Json
+          featured: boolean
+          id: string
+          images: string[]
+          in_stock: boolean
+          is_active: boolean
+          is_new: boolean
+          name: string
+          original_price: number | null
+          price: number
+          quantity: number
+          sku: string | null
+          slug: string | null
+          subcategory: string | null
+          tags: string[]
+          updated_at: string
+        }
+        Insert: {
+          brand?: string | null
+          brand_slug?: string | null
+          category?: string | null
+          category_slug?: string | null
+          created_at?: string
+          description?: string | null
+          external_ids?: Json
+          featured?: boolean
+          id: string
+          images?: string[]
+          in_stock?: boolean
+          is_active?: boolean
+          is_new?: boolean
+          name: string
+          original_price?: number | null
+          price?: number
+          quantity?: number
+          sku?: string | null
+          slug?: string | null
+          subcategory?: string | null
+          tags?: string[]
+          updated_at?: string
+        }
+        Update: {
+          brand?: string | null
+          brand_slug?: string | null
+          category?: string | null
+          category_slug?: string | null
+          created_at?: string
+          description?: string | null
+          external_ids?: Json
+          featured?: boolean
+          id?: string
+          images?: string[]
+          in_stock?: boolean
+          is_active?: boolean
+          is_new?: boolean
+          name?: string
+          original_price?: number | null
+          price?: number
+          quantity?: number
+          sku?: string | null
+          slug?: string | null
+          subcategory?: string | null
+          tags?: string[]
+          updated_at?: string
         }
         Relationships: []
       }

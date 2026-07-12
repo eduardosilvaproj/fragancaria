@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
+import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
 import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
@@ -46,6 +47,7 @@ import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
 import { Route as AdminCuponsRouteImport } from './routes/admin/cupons'
 import { Route as AdminCrmRouteImport } from './routes/admin/crm'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
+import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAfiliadosRouteImport } from './routes/admin/afiliados'
@@ -55,6 +57,7 @@ import { Route as MinhaContaNotificacoesIndexRouteImport } from './routes/minha-
 import { Route as MinhaContaFavoritosIndexRouteImport } from './routes/minha-conta/favoritos/index'
 import { Route as MinhaContaCancelamentosIndexRouteImport } from './routes/minha-conta/cancelamentos/index'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
+import { Route as AdminProdutosIndexRouteImport } from './routes/admin/produtos/index'
 import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
@@ -63,6 +66,8 @@ import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/d
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
 import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
 import { Route as AfiliadoDashboardConfiguracoesRouteImport } from './routes/afiliado/dashboard/configuracoes'
+import { Route as AdminProdutosNovoRouteImport } from './routes/admin/produtos/novo'
+import { Route as AdminProdutosIdEditarRouteImport } from './routes/admin/produtos/$id/editar'
 
 const TrocasRoute = TrocasRouteImport.update({
   id: '/trocas',
@@ -72,6 +77,11 @@ const TrocasRoute = TrocasRouteImport.update({
 const TermosRoute = TermosRouteImport.update({
   id: '/termos',
   path: '/termos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SimuladorRoute = SimuladorRouteImport.update({
+  id: '/simulador',
+  path: '/simulador',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
@@ -249,6 +259,11 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
+  id: '/categorias',
+  path: '/categorias',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAtendimentoIaRoute = AdminAtendimentoIaRouteImport.update({
   id: '/atendimento-ia',
   path: '/atendimento-ia',
@@ -297,6 +312,11 @@ const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AfiliadoDashboardRoute,
 } as any)
+const AdminProdutosIndexRoute = AdminProdutosIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminProdutosRoute,
+} as any)
 const MinhaContaPedidosOrderIdRoute =
   MinhaContaPedidosOrderIdRouteImport.update({
     id: '/pedidos/$orderId',
@@ -341,6 +361,16 @@ const AfiliadoDashboardConfiguracoesRoute =
     path: '/configuracoes',
     getParentRoute: () => AfiliadoDashboardRoute,
   } as any)
+const AdminProdutosNovoRoute = AdminProdutosNovoRouteImport.update({
+  id: '/novo',
+  path: '/novo',
+  getParentRoute: () => AdminProdutosRoute,
+} as any)
+const AdminProdutosIdEditarRoute = AdminProdutosIdEditarRouteImport.update({
+  id: '/$id/editar',
+  path: '/$id/editar',
+  getParentRoute: () => AdminProdutosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -358,11 +388,13 @@ export interface FileRoutesByFullPath {
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
+  '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -370,7 +402,7 @@ export interface FileRoutesByFullPath {
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
-  '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/produtos': typeof AdminProdutosRouteWithChildren
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
@@ -383,6 +415,7 @@ export interface FileRoutesByFullPath {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
+  '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
@@ -391,12 +424,14 @@ export interface FileRoutesByFullPath {
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
+  '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
+  '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -412,11 +447,13 @@ export interface FileRoutesByTo {
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
+  '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -424,7 +461,6 @@ export interface FileRoutesByTo {
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
-  '/admin/produtos': typeof AdminProdutosRoute
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
@@ -436,6 +472,7 @@ export interface FileRoutesByTo {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
   '/minha-conta': typeof MinhaContaIndexRoute
+  '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
@@ -444,12 +481,14 @@ export interface FileRoutesByTo {
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
+  '/admin/produtos': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/cancelamentos': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil': typeof MinhaContaPerfilIndexRoute
+  '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -468,11 +507,13 @@ export interface FileRoutesById {
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
+  '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -480,7 +521,7 @@ export interface FileRoutesById {
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
-  '/admin/produtos': typeof AdminProdutosRoute
+  '/admin/produtos': typeof AdminProdutosRouteWithChildren
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
@@ -493,6 +534,7 @@ export interface FileRoutesById {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
+  '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
@@ -501,12 +543,14 @@ export interface FileRoutesById {
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
+  '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
+  '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -526,11 +570,13 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/rastrear-pedido'
     | '/seja-afiliado'
+    | '/simulador'
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/categorias'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -551,6 +597,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
+    | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
@@ -559,12 +606,14 @@ export interface FileRouteTypes {
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
+    | '/admin/produtos/'
     | '/afiliado/dashboard/'
     | '/minha-conta/cancelamentos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
     | '/minha-conta/pedidos/'
     | '/minha-conta/perfil/'
+    | '/admin/produtos/$id/editar'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -580,11 +629,13 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/rastrear-pedido'
     | '/seja-afiliado'
+    | '/simulador'
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/categorias'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -592,7 +643,6 @@ export interface FileRouteTypes {
     | '/admin/loyalty'
     | '/admin/pagamentos'
     | '/admin/pedidos'
-    | '/admin/produtos'
     | '/admin/redes-sociais'
     | '/admin/reviews'
     | '/admin/sac'
@@ -604,6 +654,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin'
     | '/minha-conta'
+    | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
@@ -612,12 +663,14 @@ export interface FileRouteTypes {
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
+    | '/admin/produtos'
     | '/afiliado/dashboard'
     | '/minha-conta/cancelamentos'
     | '/minha-conta/favoritos'
     | '/minha-conta/notificacoes'
     | '/minha-conta/pedidos'
     | '/minha-conta/perfil'
+    | '/admin/produtos/$id/editar'
   id:
     | '__root__'
     | '/'
@@ -635,11 +688,13 @@ export interface FileRouteTypes {
     | '/produtos'
     | '/rastrear-pedido'
     | '/seja-afiliado'
+    | '/simulador'
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/categorias'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -660,6 +715,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
+    | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
@@ -668,12 +724,14 @@ export interface FileRouteTypes {
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
     | '/minha-conta/pedidos/$orderId'
+    | '/admin/produtos/'
     | '/afiliado/dashboard/'
     | '/minha-conta/cancelamentos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
     | '/minha-conta/pedidos/'
     | '/minha-conta/perfil/'
+    | '/admin/produtos/$id/editar'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -692,6 +750,7 @@ export interface RootRouteChildren {
   ProdutosRoute: typeof ProdutosRoute
   RastrearPedidoRoute: typeof RastrearPedidoRoute
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
+  SimuladorRoute: typeof SimuladorRoute
   TermosRoute: typeof TermosRoute
   TrocasRoute: typeof TrocasRoute
   AfiliadoCadastroRoute: typeof AfiliadoCadastroRoute
@@ -720,6 +779,13 @@ declare module '@tanstack/react-router' {
       path: '/termos'
       fullPath: '/termos'
       preLoaderRoute: typeof TermosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/simulador': {
+      id: '/simulador'
+      path: '/simulador'
+      fullPath: '/simulador'
+      preLoaderRoute: typeof SimuladorRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/seja-afiliado': {
@@ -967,6 +1033,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConfiguracoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/categorias': {
+      id: '/admin/categorias'
+      path: '/categorias'
+      fullPath: '/admin/categorias'
+      preLoaderRoute: typeof AdminCategoriasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/atendimento-ia': {
       id: '/admin/atendimento-ia'
       path: '/atendimento-ia'
@@ -1030,6 +1103,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoDashboardIndexRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
     }
+    '/admin/produtos/': {
+      id: '/admin/produtos/'
+      path: '/'
+      fullPath: '/admin/produtos/'
+      preLoaderRoute: typeof AdminProdutosIndexRouteImport
+      parentRoute: typeof AdminProdutosRoute
+    }
     '/minha-conta/pedidos/$orderId': {
       id: '/minha-conta/pedidos/$orderId'
       path: '/pedidos/$orderId'
@@ -1086,13 +1166,44 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AfiliadoDashboardConfiguracoesRouteImport
       parentRoute: typeof AfiliadoDashboardRoute
     }
+    '/admin/produtos/novo': {
+      id: '/admin/produtos/novo'
+      path: '/novo'
+      fullPath: '/admin/produtos/novo'
+      preLoaderRoute: typeof AdminProdutosNovoRouteImport
+      parentRoute: typeof AdminProdutosRoute
+    }
+    '/admin/produtos/$id/editar': {
+      id: '/admin/produtos/$id/editar'
+      path: '/$id/editar'
+      fullPath: '/admin/produtos/$id/editar'
+      preLoaderRoute: typeof AdminProdutosIdEditarRouteImport
+      parentRoute: typeof AdminProdutosRoute
+    }
   }
 }
+
+interface AdminProdutosRouteChildren {
+  AdminProdutosNovoRoute: typeof AdminProdutosNovoRoute
+  AdminProdutosIndexRoute: typeof AdminProdutosIndexRoute
+  AdminProdutosIdEditarRoute: typeof AdminProdutosIdEditarRoute
+}
+
+const AdminProdutosRouteChildren: AdminProdutosRouteChildren = {
+  AdminProdutosNovoRoute: AdminProdutosNovoRoute,
+  AdminProdutosIndexRoute: AdminProdutosIndexRoute,
+  AdminProdutosIdEditarRoute: AdminProdutosIdEditarRoute,
+}
+
+const AdminProdutosRouteWithChildren = AdminProdutosRoute._addFileChildren(
+  AdminProdutosRouteChildren,
+)
 
 interface AdminRouteChildren {
   AdminAfiliadosRoute: typeof AdminAfiliadosRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAtendimentoIaRoute: typeof AdminAtendimentoIaRoute
+  AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminCrmRoute: typeof AdminCrmRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
@@ -1100,7 +1211,7 @@ interface AdminRouteChildren {
   AdminLoyaltyRoute: typeof AdminLoyaltyRoute
   AdminPagamentosRoute: typeof AdminPagamentosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
-  AdminProdutosRoute: typeof AdminProdutosRoute
+  AdminProdutosRoute: typeof AdminProdutosRouteWithChildren
   AdminRedesSociaisRoute: typeof AdminRedesSociaisRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSacRoute: typeof AdminSacRoute
@@ -1111,6 +1222,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAfiliadosRoute: AdminAfiliadosRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAtendimentoIaRoute: AdminAtendimentoIaRoute,
+  AdminCategoriasRoute: AdminCategoriasRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminCrmRoute: AdminCrmRoute,
   AdminCuponsRoute: AdminCuponsRoute,
@@ -1118,7 +1230,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLoyaltyRoute: AdminLoyaltyRoute,
   AdminPagamentosRoute: AdminPagamentosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
-  AdminProdutosRoute: AdminProdutosRoute,
+  AdminProdutosRoute: AdminProdutosRouteWithChildren,
   AdminRedesSociaisRoute: AdminRedesSociaisRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSacRoute: AdminSacRoute,
@@ -1186,6 +1298,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutosRoute: ProdutosRoute,
   RastrearPedidoRoute: RastrearPedidoRoute,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
+  SimuladorRoute: SimuladorRoute,
   TermosRoute: TermosRoute,
   TrocasRoute: TrocasRoute,
   AfiliadoCadastroRoute: AfiliadoCadastroRoute,
