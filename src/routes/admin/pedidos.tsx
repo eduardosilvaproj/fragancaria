@@ -149,7 +149,7 @@ function PedidosPage() {
     shipped: orders.filter((o) => o.status === "shipped").length,
     delivered: orders.filter((o) => o.status === "delivered").length,
     revenue: orders
-      .filter((o) => ["approved", "processing", "shipped", "delivered"].includes(o.status))
+      .filter((o) => ["approved", "processing", "shipped", "delivered"].includes(o.status || ""))
       .reduce((sum, o) => sum + (o.total || o.amount || 0), 0),
   };
 
@@ -297,7 +297,7 @@ function PedidosPage() {
               </thead>
               <tbody className="divide-y divide-[#E9E1D2]">
                 {filteredOrders.map((order) => {
-                  const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
+                  const statusConfig = STATUS_CONFIG[order.status || "pending"] || STATUS_CONFIG.pending;
                   const StatusIcon = statusConfig.icon;
 
                   return (
@@ -322,7 +322,7 @@ function PedidosPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm text-[#0F3A3E]">
-                          {formatDate(order.created_at)}
+                          {formatDate(order.created_at || "")}
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -373,10 +373,10 @@ function PedidosPage() {
             <div className="sticky top-0 bg-white border-b border-[#E9E1D2] px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-xl text-[#0F3A3E]">
-                  Pedido #{selectedOrder.id.slice(0, 8).toUpperCase()}
+                  Pedido #{(selectedOrder.id || "").slice(0, 8).toUpperCase()}
                 </h2>
                 <p className="text-sm text-[#51635F]">
-                  {formatDate(selectedOrder.created_at)}
+                  {formatDate(selectedOrder.created_at || "")}
                 </p>
               </div>
               <button
@@ -398,15 +398,15 @@ function PedidosPage() {
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full",
-                      STATUS_CONFIG[selectedOrder.status]?.bg || "bg-gray-100",
-                      STATUS_CONFIG[selectedOrder.status]?.color || "text-gray-700"
+                      STATUS_CONFIG[selectedOrder.status || "pending"]?.bg || "bg-gray-100",
+                      STATUS_CONFIG[selectedOrder.status || "pending"]?.color || "text-gray-700"
                     )}
                   >
                     {(() => {
-                      const Icon = STATUS_CONFIG[selectedOrder.status]?.icon || Clock;
+                      const Icon = STATUS_CONFIG[selectedOrder.status || "pending"]?.icon || Clock;
                       return <Icon className="w-4 h-4" />;
                     })()}
-                    {STATUS_CONFIG[selectedOrder.status]?.label || selectedOrder.status}
+                    {STATUS_CONFIG[selectedOrder.status || "pending"]?.label || selectedOrder.status}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -437,7 +437,7 @@ function PedidosPage() {
                       Marcar Entregue
                     </button>
                   )}
-                  {!["cancelled", "refunded", "delivered"].includes(selectedOrder.status) && (
+                  {!["cancelled", "refunded", "delivered"].includes(selectedOrder.status || "") && (
                     <button
                       onClick={() => updateOrderStatus(selectedOrder.id, "cancelled")}
                       disabled={updatingStatus}
@@ -490,7 +490,7 @@ function PedidosPage() {
                       </span>
                       {selectedOrder.payment_id && (
                         <button
-                          onClick={() => copyToClipboard(selectedOrder.payment_id)}
+                          onClick={() => copyToClipboard(selectedOrder.payment_id || "")}
                           className="p-1 hover:bg-[#F8F4EA] rounded"
                         >
                           <Copy className="w-3 h-3" />

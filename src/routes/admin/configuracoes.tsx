@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Settings,
   Store,
@@ -16,9 +18,17 @@ import {
   Copy,
   Check,
   LayoutGrid,
+  Package,
+  Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 import { VitrineManager } from "@/components/admin/VitrineManager";
+import {
+  getShippingSettings,
+  updateShippingSetting,
+  type ShippingSettings,
+} from "@/lib/shipping-settings.functions";
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: AdminConfiguracoes,
@@ -30,6 +40,39 @@ function AdminConfiguracoes() {
   const [showApiKey, setShowApiKey] = useState(false);
   const [copied, setCopied] = useState(false);
 
+  const queryClient = useQueryClient();
+
+  // =====================================================
+  // SHIPPING SETTINGS
+  // =====================================================
+
+  const listFn = useServerFn(getShippingSettings);
+  const settingsQuery = useQuery({
+    queryKey: ["shipping-settings"],
+    queryFn: () => listFn({}),
+    enabled: activeSection === "frete",
+  });
+
+  const settings: ShippingSettings | null = settingsQuery.data?.success
+    ? settingsQuery.data.data
+    : null;
+
+  const updateFn = useServerFn(updateShippingSetting);
+  const updateMutation = useMutation({
+    mutationFn: async (payload: { key: string; value: unknown }) => {
+      return updateFn({ data: payload });
+    },
+    onSuccess: () => {
+      toast.success("Configuração salva!");
+      queryClient.invalidateQueries({ queryKey: ["shipping-settings"] });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao salvar");
+    },
+  });
+
   const handleSave = () => {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
@@ -39,6 +82,18 @@ function AdminConfiguracoes() {
     navigator.clipboard.writeText("sk_live_xxxxxxxxxxxxx");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleShippingSetting = (key: string, value: unknown) => {
+    updateMutation.mutate({ key, value });
+  };
+
+  const handleCarrierToggle = (carrierId: string, enabled: boolean) => {
+    if (!settings) return;
+    const updatedCarriers = settings.carriers.map((c) =>
+      c.id === carrierId ? { ...c, enabled } : c
+    );
+    handleShippingSetting("carriers", updatedCarriers);
   };
 
   const sections = [
@@ -313,64 +368,352 @@ function AdminConfiguracoes() {
           )}
 
           {activeSection === "frete" && (
-            <div className="bg-white border border-[#E9E1D2] p-6">
-              <h3 className="font-serif text-lg text-[#0F3A3E] mb-6">
-                Configurações de Frete
-              </h3>
+            <div className="space-y-6">
+              {/* Aviso sobre Correios Direto */}
+              <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-blue-900">Frete via Contrato Direto com Correios</p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Os valores de PAC, SEDEX e SEDEX 10 são configurados diretamente no código.
+                      Para alterar, edite o arquivo <code className="bg-blue-100 px-1 rounded">src/config/mercadopago.ts</code>.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Valor mínimo para frete grátis
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#8A938E]">R$</span>
+              {/* Frete Grátis */}
+              <div className="bg-white border border-[#E9E1D2] p-6">
+                <h3 className="font-serif text-lg text-[#0F3A3E] mb-6 flex items-center gap-2">
+                  <Package className="h-5 w-5" />
+                  Frete Grátis
+                </h3>
+
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 bg-[#F9F7F3] rounded-lg">
+                    <div>
+                      <p className="font-medium text-[#0F3A3E]">Ativar frete grátis</p>
+                      <p className="text-sm text-[#8A938E]">
+                        Oferecer frete grátis para pedidos acima do valor mínimo
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleShippingSetting("freeShippingThreshold", {
+                        ...settings,
+                        enabled: !settings?.freeShippingEnabled,
+                        value: settings?.freeShippingThreshold ?? 19900,
+                      })}
+                      className={cn(
+                        "w-12 h-6 rounded-full relative transition-colors",
+                        settings?.freeShippingEnabled ? "bg-emerald-500" : "bg-gray-300"
+                      )}
+                    >
+                      <div
+                        className={cn(
+                          "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                          settings?.freeShippingEnabled ? "right-1" : "left-1"
+                        )}
+                      />
+                    </button>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Valor mínimo para frete grátis (R$)
+                    </label>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[#8A938E]">R$</span>
+                      <input
+                        type="number"
+                        value={(settings?.freeShippingThreshold ?? 19900) / 100}
+                        onChange={(e) => handleShippingSetting("freeShippingThreshold", {
+                          ...settings,
+                          enabled: settings?.freeShippingEnabled ?? true,
+                          value: Math.round(parseFloat(e.target.value || "0") * 100),
+                        })}
+                        className="w-32 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                        step="1"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transportadoras */}
+              <div className="bg-white border border-[#E9E1D2] p-6">
+                <h3 className="font-serif text-lg text-[#0F3A3E] mb-6 flex items-center gap-2">
+                  <Truck className="h-5 w-5" />
+                  Transportadoras Ativas
+                </h3>
+
+                <div className="space-y-3">
+                  {settings?.carriers?.map((carrier) => (
+                    <div
+                      key={carrier.id}
+                      className={cn(
+                        "flex items-center justify-between p-4 rounded-lg border transition-colors",
+                        carrier.enabled
+                          ? "bg-[#F9F7F3] border-[#E9E1D2]"
+                          : "bg-gray-50 border-transparent"
+                      )}
+                    >
+                      <div className="flex items-center gap-4">
+                        <button
+                          onClick={() => handleCarrierToggle(carrier.id, !carrier.enabled)}
+                          className={cn(
+                            "w-12 h-6 rounded-full relative transition-colors",
+                            carrier.enabled ? "bg-emerald-500" : "bg-gray-300"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
+                              carrier.enabled ? "right-1" : "left-1"
+                            )}
+                          />
+                        </button>
+                        <div>
+                          <p className={cn(
+                            "font-medium",
+                            carrier.enabled ? "text-[#0F3A3E]" : "text-[#8A938E]"
+                          )}>
+                            {carrier.name}
+                          </p>
+                          <p className="text-xs text-[#8A938E]">
+                            {carrier.services?.join(", ")}
+                          </p>
+                        </div>
+                      </div>
+                      {carrier.enabled && (
+                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
+                          Ativo
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <p className="text-xs text-[#8A938E] mt-4">
+                  Apenas Correios está funcionando no momento.
+                </p>
+              </div>
+
+              {/* Dados do Remetente */}
+              <div className="bg-white border border-[#E9E1D2] p-6">
+                <h3 className="font-serif text-lg text-[#0F3A3E] mb-6 flex items-center gap-2">
+                  <Store className="h-5 w-5" />
+                  Dados do Remetente (para etiquetas)
+                </h3>
+
+                <p className="text-sm text-[#8A938E] mb-6">
+                  Dados utilizados na emissão de etiquetas de postagem via Correios.
+                </p>
+
+                <div className="grid md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Nome / Razão Social
+                    </label>
                     <input
-                      type="number"
-                      defaultValue="199"
-                      className="w-32 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                      type="text"
+                      value={settings?.senderInfo?.name || "Fragranciaria"}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        name: e.target.value,
+                      })}
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
                     />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Prazo de envio (dias úteis)
-                  </label>
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <span className="text-xs text-[#8A938E]">Mínimo</span>
-                      <input
-                        type="number"
-                        defaultValue="3"
-                        className="w-20 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none ml-2"
-                      />
-                    </div>
-                    <div>
-                      <span className="text-xs text-[#8A938E]">Máximo</span>
-                      <input
-                        type="number"
-                        defaultValue="10"
-                        className="w-20 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none ml-2"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      CNPJ
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.document || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        document: e.target.value,
+                      })}
+                      placeholder="00.000.000/0000-00"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Transportadoras
-                  </label>
-                  <div className="space-y-2">
-                    {["Correios", "Jadlog", "Total Express"].map((t) => (
-                      <div
-                        key={t}
-                        className="flex items-center gap-3 p-3 bg-[#F9F7F3] rounded-lg"
-                      >
-                        <input type="checkbox" defaultChecked className="rounded" />
-                        <span className="text-sm text-[#0F3A3E]">{t}</span>
-                      </div>
-                    ))}
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Telefone
+                    </label>
+                    <input
+                      type="tel"
+                      value={settings?.senderInfo?.phone || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        phone: e.target.value,
+                      })}
+                      placeholder="(11) 99999-9999"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={settings?.senderInfo?.email || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        email: e.target.value,
+                      })}
+                      placeholder="contato@fragranciaria.com"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      CEP
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.address?.postal_code || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          postal_code: e.target.value,
+                        },
+                      })}
+                      placeholder="01310100"
+                      className="w-40 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Endereço
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.address?.street || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          street: e.target.value,
+                        },
+                      })}
+                      placeholder="Rua, número"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Complemento
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.address?.complement || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          complement: e.target.value,
+                        },
+                      })}
+                      placeholder="Sala, andar, etc"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Bairro
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.address?.neighborhood || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          neighborhood: e.target.value,
+                        },
+                      })}
+                      placeholder="Bairro"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Cidade
+                    </label>
+                    <input
+                      type="text"
+                      value={settings?.senderInfo?.address?.city || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          city: e.target.value,
+                        },
+                      })}
+                      placeholder="Cidade"
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
+                      Estado
+                    </label>
+                    <select
+                      value={settings?.senderInfo?.address?.state || ""}
+                      onChange={(e) => handleShippingSetting("senderInfo", {
+                        ...settings?.senderInfo,
+                        address: {
+                          ...settings?.senderInfo?.address,
+                          state: e.target.value,
+                        },
+                      })}
+                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+                    >
+                      <option value="">Selecione</option>
+                      <option value="AC">AC - Acre</option>
+                      <option value="AL">AL - Alagoas</option>
+                      <option value="AP">AP - Amapá</option>
+                      <option value="AM">AM - Amazonas</option>
+                      <option value="BA">BA - Bahia</option>
+                      <option value="CE">CE - Ceará</option>
+                      <option value="DF">DF - Distrito Federal</option>
+                      <option value="ES">ES - Espírito Santo</option>
+                      <option value="GO">GO - Goiás</option>
+                      <option value="MA">MA - Maranhão</option>
+                      <option value="MT">MT - Mato Grosso</option>
+                      <option value="MS">MS - Mato Grosso do Sul</option>
+                      <option value="MG">MG - Minas Gerais</option>
+                      <option value="PA">PA - Pará</option>
+                      <option value="PB">PB - Paraíba</option>
+                      <option value="PR">PR - Paraná</option>
+                      <option value="PE">PE - Pernambuco</option>
+                      <option value="PI">PI - Piauí</option>
+                      <option value="RJ">RJ - Rio de Janeiro</option>
+                      <option value="RN">RN - Rio Grande do Norte</option>
+                      <option value="RS">RS - Rio Grande do Sul</option>
+                      <option value="RO">RO - Rondônia</option>
+                      <option value="RR">RR - Roraima</option>
+                      <option value="SC">SC - Santa Catarina</option>
+                      <option value="SP">SP - São Paulo</option>
+                      <option value="SE">SE - Sergipe</option>
+                      <option value="TO">TO - Tocantins</option>
+                    </select>
                   </div>
                 </div>
               </div>
