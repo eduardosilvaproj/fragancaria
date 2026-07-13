@@ -460,9 +460,9 @@ function AdminLogistica() {
         <div className="bg-white border border-[#E9E1D2] p-12 text-center">
           <Package className="h-12 w-12 text-[#E9E1D2] mx-auto mb-4" />
           <p className="text-[#51635F]">Nenhum envio encontrado</p>
-          {shipments.length === 0 && (
-            <p className="text-sm text-[#8A938E] mt-2">
-              Aplique a migration <code>20260712_shipping_quotes.sql</code> para criar a tabela.
+          {statsQuery.isError && (
+            <p className="text-sm text-red-500 mt-2">
+              Erro ao carregar envios. Verifique se as tabelas existem.
             </p>
           )}
         </div>

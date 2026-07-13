@@ -511,8 +511,20 @@ function PedidosPage() {
                     >
                       {emittingNfe && <RefreshCw className="w-3 h-3 animate-spin" />}
                       <FileText className="w-3 h-3" />
-                      Emitir NF-e
+                      {(selectedOrder as any).nfeEmittedAt ? "Reemitir NF-e" : "Emitir NF-e"}
                     </button>
+                  )}
+
+                  {(selectedOrder as any).nfeDanfeUrl && (
+                    <a
+                      href={(selectedOrder as any).nfeDanfeUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1.5"
+                    >
+                      <Printer className="w-3 h-3" />
+                      Imprimir DANFE
+                    </a>
                   )}
 
                   {selectedOrder.trackingCode ? (
