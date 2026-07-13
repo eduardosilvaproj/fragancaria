@@ -1,6 +1,7 @@
 import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
 import {
   Users,
+  UserCog,
   MessageSquare,
   Bot,
   Share2,
@@ -46,6 +47,7 @@ const SIDEBAR_ITEMS = [
   { label: "Cupons", href: "/admin/cupons", icon: Tag },
   { label: "Logística", href: "/admin/logistica", icon: Truck },
   { section: "Relacionamento" },
+  { label: "Clientes", href: "/admin/clientes", icon: UserCog },
   { label: "Afiliados", href: "/admin/afiliados", icon: Users },
   { label: "SAC", href: "/admin/sac", icon: MessageSquare },
   { label: "Atendimento IA", href: "/admin/atendimento-ia", icon: Bot },
