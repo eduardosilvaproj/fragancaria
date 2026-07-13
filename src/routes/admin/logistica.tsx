@@ -182,10 +182,11 @@ function AdminLogistica() {
   });
 
   // Salvar credenciais
+  const [isSavingCredentials, setIsSavingCredentials] = useState(false);
+  const saveSigepFn = useServerFn(saveSigepCredentials);
   const saveCredentialsMutation = useMutation({
     mutationFn: async (creds: SigepCredentials) => {
-      const fn = useServerFn(saveSigepCredentials);
-      return fn({ data: creds });
+      return saveSigepFn({ data: creds });
     },
     onSuccess: (result) => {
       if (result?.success) {
@@ -195,8 +196,18 @@ function AdminLogistica() {
       } else {
         toast.error(result?.error || "Erro ao salvar credenciais");
       }
+      setIsSavingCredentials(false);
+    },
+    onError: (error: any) => {
+      toast.error(error?.message || "Erro ao salvar credenciais");
+      setIsSavingCredentials(false);
     },
   });
+
+  const handleSaveCredentials = (creds: SigepCredentials) => {
+    setIsSavingCredentials(true);
+    saveCredentialsMutation.mutate(creds);
+  };
 
   // =====================================================
   // FILTROS
@@ -656,8 +667,8 @@ function AdminLogistica() {
       {showSigepModal && (
         <SigepConfigModal
           onClose={() => setShowSigepModal(false)}
-          onSave={(creds) => saveCredentialsMutation.mutate(creds)}
-          isSaving={saveCredentialsMutation.isPending}
+          onSave={handleSaveCredentials}
+          isSaving={isSavingCredentials}
         />
       )}
     </div>
