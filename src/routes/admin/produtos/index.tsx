@@ -85,7 +85,8 @@ function parseCsv(text: string): Record<string, unknown>[] {
   let field = "";
   let row: string[] = [];
   let inQuotes = false;
-  const src = text.replace(/^﻿/, "");
+  // remove BOM e a linha "sep=," (dica de separador que o Excel usa; não é dado)
+  const src = text.replace(/^﻿/, "").replace(/^sep=.\r?\n/i, "");
 
   for (let i = 0; i < src.length; i++) {
     const c = src[i];
@@ -385,7 +386,8 @@ function AdminProdutos() {
       ["", "", "Deixe o SKU vazio para gerar um ID automático", "", "", "0", "", "0", "true", "true", "false", "false", ""],
     ];
     const escape = (v: string) => (/[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
-    const lines = [cols.join(","), ...example.map((row) => row.map(escape).join(","))];
+    // "sep=," faz o Excel abrir com as colunas separadas mesmo no locale pt-BR
+    const lines = ["sep=,", cols.join(","), ...example.map((row) => row.map(escape).join(","))];
     const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
