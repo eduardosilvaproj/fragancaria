@@ -49,6 +49,9 @@ frag-backup/
 Thumbs.db
 desktop.ini
 
+# Certificates (NF-e, SSL, etc.)
+certs/
+
 # Credential dumps (existem em algum lugar na origem; nunca commitar)
 _link.txt
 _tok.txt

@@ -774,3 +774,242 @@ export const listSigepLabels = createServerFn({ method: "GET" })
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
+
+// =====================================================
+// GERAR ETIQUETA A PARTIR DO PEDIDO (UI wrapper)
+// =====================================================
+
+export type GenerateLabelInput = {
+  orderId: string;
+  service: "PAC" | "SEDEX" | "SEDEX10";
+  packageWeight: number;
+  packageHeight: number;
+  packageWidth: number;
+  packageLength: number;
+};
+
+export const generateOrderLabel = createServerFn({ method: "POST" })
+  .validator((d: unknown) => {
+    const z = require("zod");
+    return z.object({
+      orderId: z.string().uuid(),
+      service: z.enum(["PAC", "SEDEX", "SEDEX10"]),
+      packageWeight: z.number().positive(),
+      packageHeight: z.number().positive(),
+      packageWidth: z.number().positive(),
+      packageLength: z.number().positive(),
+    }).parse(d);
+  })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Buscar pedido com endereço
+      const { data: order, error: orderError } = await db
+        .from("orders")
+        .select("id, customer_name, customer_email, payer_phone, shipping_address, items, total")
+        .eq("id", data.orderId)
+        .single();
+
+      if (orderError || !order) {
+        return { success: false, error: "Pedido não encontrado" };
+      }
+
+      if (order.tracking_code) {
+        return { success: false, error: "Este pedido já possui código de rastreio" };
+      }
+
+      const addr = order.shipping_address as Record<string, string> | null;
+      if (!addr || !addr.zipCode) {
+        return { success: false, error: "Endereço de entrega não encontrado no pedido" };
+      }
+
+      const serviceMap: Record<string, { code: string; carrier: string; price: number; days: number }> = {
+        PAC: { code: "04510", carrier: "Correios", price: 0, days: 7 },
+        SEDEX: { code: "04014", carrier: "Correios", price: 0, days: 3 },
+        SEDEX10: { code: "40215", carrier: "Correios", price: 0, days: 1 },
+      };
+
+      const svc = serviceMap[data.service];
+
+      // Chamar EnvioFacil se API key existir, senão simular etiqueta mock
+      let trackingCode: string | null = null;
+      let labelUrl: string | null = null;
+
+      const envioFacilApiKey = process.env.VITE_ENVIOFACIL_API_KEY || process.env.ENVIOFACIL_API_KEY;
+
+      if (envioFacilApiKey) {
+        try {
+          const response = await fetch("https://api.enviofacil.com.br/v1/shipments", {
+            method: "POST",
+            headers: {
+              "Authorization": `Bearer ${envioFacilApiKey}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              service_code: svc.code,
+              carrier: svc.carrier,
+              from: {
+                name: process.env.VITE_SENDER_NAME || "Fragranciaria",
+                document: process.env.VITE_SENDER_DOCUMENT || "",
+                email: "contato@fragranciaria.com",
+                phone: "0000000000",
+                address: {
+                  street: process.env.VITE_SENDER_STREET || "Endereço",
+                  number: process.env.VITE_SENDER_NUMBER || "0",
+                  neighborhood: process.env.VITE_SENDER_NEIGHBORHOOD || "Centro",
+                  city: process.env.VITE_SENDER_CITY || "São Paulo",
+                  state: process.env.VITE_SENDER_STATE || "SP",
+                  postal_code: process.env.VITE_SENDER_POSTAL_CODE || "01310100",
+                },
+              },
+              to: {
+                name: order.customer_name || "Cliente",
+                document: "",
+                email: order.customer_email || "",
+                phone: order.payer_phone || "",
+                address: {
+                  street: addr.street || "",
+                  number: addr.number || "",
+                  complement: addr.complement || "",
+                  neighborhood: addr.neighborhood || "",
+                  city: addr.city || "",
+                  state: addr.state || "",
+                  postal_code: addr.zipCode || addr.cep || "",
+                },
+              },
+              package: {
+                weight_grams: data.packageWeight,
+                height_cm: data.packageHeight,
+                width_cm: data.packageWidth,
+                length_cm: data.packageLength,
+              },
+              declared_value: order.total || 0,
+              order_id: order.id,
+            }),
+          });
+
+          if (response.ok) {
+            const result = await response.json();
+            if (result.data) {
+              trackingCode = result.data.tracking_code || null;
+              labelUrl = result.data.label_url || null;
+            }
+          }
+        } catch (apiError) {
+          console.error("[generateOrderLabel] EnvioFacil API error:", apiError);
+        }
+      } else {
+        // Modo mock: gerar código fake para desenvolvimento
+        trackingCode = `PI${Math.random().toString().slice(2, 13)}BR`;
+      }
+
+      // Salvar shipping_quote
+      const { data: shipment, insertError } = await db
+        .from("shipping_quotes")
+        .insert({
+          order_id: order.id,
+          carrier: svc.carrier,
+          service: data.service,
+          service_code: svc.code,
+          price: svc.price,
+          final_price: svc.price,
+          estimated_days: svc.days,
+          weight_grams: data.packageWeight,
+          height_cm: data.packageHeight,
+          width_cm: data.packageWidth,
+          length_cm: data.packageLength,
+          recipient_name: order.customer_name || "Cliente",
+          recipient_email: order.customer_email || "",
+          recipient_phone: order.payer_phone || null,
+          recipient_postal_code: addr.zipCode || addr.cep || "",
+          recipient_address: addr,
+          status: trackingCode ? "paid" : "pending",
+          tracking_code: trackingCode,
+          label_url: labelUrl,
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        return { success: false, error: "Erro ao salvar etiqueta: " + insertError.message };
+      }
+
+      // Atualizar pedido com tracking
+      if (trackingCode) {
+        await db
+          .from("orders")
+          .update({
+            tracking_code: trackingCode,
+            shipping_carrier: svc.carrier,
+            shipping_method: `${svc.carrier} ${data.service}`,
+          })
+          .eq("id", order.id);
+      }
+
+      return {
+        success: true,
+        data: {
+          id: shipment.id,
+          tracking_code: trackingCode,
+          label_url: labelUrl,
+          status: trackingCode ? "paid" : "pending",
+          service: data.service,
+          carrier: svc.carrier,
+        },
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false, error: "Não autorizado" };
+      return { success: false, error: e?.message || "Erro desconhecido" };
+    }
+  });
+// =====================================================
+// BUSCAR ETIQUETA DO PEDIDO
+// =====================================================
+
+export const getOrderShipment = createServerFn({ method: "GET" })
+  .validator((d: unknown) => {
+    const z = require("zod");
+    return z.object({ orderId: z.string().uuid() }).parse(d);
+  })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const { data: shipment, error } = await db
+        .from("shipping_quotes")
+        .select("id, carrier, service, tracking_code, label_url, status, created_at")
+        .eq("order_id", data.orderId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (error) return { success: false, error: error.message };
+
+      return {
+        success: true,
+        data: shipment
+          ? {
+              id: shipment.id,
+              carrier: shipment.carrier,
+              service: shipment.service,
+              trackingCode: shipment.tracking_code,
+              labelUrl: shipment.label_url,
+              status: shipment.status,
+              createdAt: shipment.created_at,
+            }
+          : null,
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false, error: "Nao autorizado" };
+      return { success: false, error: e?.message || "Erro desconhecido" };
+    }
+  });

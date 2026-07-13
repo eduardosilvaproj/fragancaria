@@ -20,6 +20,10 @@ import {
   LayoutGrid,
   Package,
   Info,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -29,6 +33,12 @@ import {
   updateShippingSetting,
   type ShippingSettings,
 } from "@/lib/shipping-settings.functions";
+import {
+  getNfeSettings,
+  saveNfeSettings,
+  type NfeSettings,
+  type NfeEndereco,
+} from "@/lib/nfe.functions";
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: AdminConfiguracoes,
@@ -106,6 +116,7 @@ function AdminConfiguracoes() {
     { id: "seguranca", label: "Segurança", icon: Shield },
     { id: "integracoes", label: "Integrações", icon: Globe },
     { id: "vitrine", label: "Vitrine da Home", icon: LayoutGrid },
+    { id: "nfe", label: "Nota Fiscal", icon: FileText },
   ];
 
   return (
@@ -918,6 +929,8 @@ function AdminConfiguracoes() {
           )}
 
           {activeSection === "vitrine" && <VitrineManager />}
+
+          {activeSection === "nfe" && <NfeSection />}
         </div>
       </div>
     </div>
@@ -925,3 +938,498 @@ function AdminConfiguracoes() {
 }
 
 export default AdminConfiguracoes;
+
+// =====================================================
+// NF-E SECTION
+// =====================================================
+
+const BRAZILIAN_STATES = [
+  { value: "AC", label: "Acre" },
+  { value: "AL", label: "Alagoas" },
+  { value: "AP", label: "Amapá" },
+  { value: "AM", label: "Amazonas" },
+  { value: "BA", label: "Bahia" },
+  { value: "CE", label: "Ceará" },
+  { value: "DF", label: "Distrito Federal" },
+  { value: "ES", label: "Espírito Santo" },
+  { value: "GO", label: "Goiás" },
+  { value: "MA", label: "Maranhão" },
+  { value: "MT", label: "Mato Grosso" },
+  { value: "MS", label: "Mato Grosso do Sul" },
+  { value: "MG", label: "Minas Gerais" },
+  { value: "PA", label: "Pará" },
+  { value: "PB", label: "Paraíba" },
+  { value: "PR", label: "Paraná" },
+  { value: "PE", label: "Pernambuco" },
+  { value: "PI", label: "Piauí" },
+  { value: "RJ", label: "Rio de Janeiro" },
+  { value: "RN", label: "Rio Grande do Norte" },
+  { value: "RS", label: "Rio Grande do Sul" },
+  { value: "RO", label: "Rondônia" },
+  { value: "RR", label: "Roraima" },
+  { value: "SC", label: "Santa Catarina" },
+  { value: "SP", label: "São Paulo" },
+  { value: "SE", label: "Sergipe" },
+  { value: "TO", label: "Tocantins" },
+];
+
+function NfeSection() {
+  const queryClient = useQueryClient();
+
+  const getFn = useServerFn(getNfeSettings);
+  const saveFn = useServerFn(saveNfeSettings);
+
+  const { data: nfeData, isLoading } = useQuery({
+    queryKey: ["nfe-settings"],
+    queryFn: () => getFn({}),
+  });
+
+  const settings: NfeSettings | null = nfeData?.success ? nfeData.data : null;
+
+  const [form, setForm] = useState({
+    cnpj: "",
+    inscricao_estadual: "",
+    inscricao_municipal: "",
+    razao_social: "",
+    nome_fantasia: "",
+    logradouro: "",
+    numero: "",
+    complemento: "",
+    bairro: "",
+    cidade: "",
+    estado_uf: "",
+    cep: "",
+    telefone: "",
+    nfe_serie: 15,
+    ambiente_sefaz: "homologacao" as "homologacao" | "producao",
+    webservice_url: "",
+    certificado_path: "",
+  });
+
+  useState(() => {
+    if (settings) {
+      setForm({
+        cnpj: settings.cnpj || "",
+        inscricao_estadual: settings.inscricao_estadual || "",
+        inscricao_municipal: settings.inscricao_municipal || "",
+        razao_social: settings.razao_social || "",
+        nome_fantasia: settings.nome_fantasia || "",
+        logradouro: settings.endereco?.logradouro || "",
+        numero: settings.endereco?.numero || "",
+        complemento: settings.endereco?.complemento || "",
+        bairro: settings.endereco?.bairro || "",
+        cidade: settings.endereco?.cidade || "",
+        estado_uf: settings.endereco?.uf || "",
+        cep: settings.endereco?.cep || "",
+        telefone: settings.endereco?.telefone || "",
+        nfe_serie: settings.nfe_serie || 15,
+        ambiente_sefaz: settings.ambiente_sefaz || "homologacao",
+        webservice_url: settings.webservice_url || "",
+        certificado_path: settings.certificado_path || "",
+      });
+    }
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (payload: Parameters<typeof saveFn>[0]["data"]) => {
+      return saveFn({ data: payload });
+    },
+    onSuccess: (result) => {
+      if (result.success) {
+        toast.success("Configurações da NF-e salvas!");
+        queryClient.invalidateQueries({ queryKey: ["nfe-settings"] });
+      } else {
+        toast.error(result.error || "Erro ao salvar");
+      }
+    },
+    onError: (e: any) => {
+      toast.error(e?.message || "Erro ao salvar");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateMutation.mutate({
+      cnpj: form.cnpj,
+      inscricao_estadual: form.inscricao_estadual,
+      inscricao_municipal: form.inscricao_municipal || undefined,
+      razao_social: form.razao_social,
+      nome_fantasia: form.nome_fantasia || undefined,
+      endereco: {
+        logradouro: form.logradouro,
+        numero: form.numero,
+        complemento: form.complemento || undefined,
+        bairro: form.bairro,
+        cidade: form.cidade,
+        uf: form.estado_uf,
+        cep: form.cep,
+        telefone: form.telefone || undefined,
+      },
+      ambiente_sefaz: form.ambiente_sefaz,
+      estado_uf: form.estado_uf,
+      nfe_serie: form.nfe_serie,
+      webservice_url: form.webservice_url || undefined,
+      certificado_path: form.certificado_path || undefined,
+    });
+  };
+
+  const setField = (field: string, value: string) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const isComplete = !!(
+    form.cnpj &&
+    form.inscricao_estadual &&
+    form.razao_social &&
+    form.logradouro &&
+    form.bairro &&
+    form.cidade &&
+    form.estado_uf &&
+    form.cep
+  );
+
+  const setEnderecoField = (field: string, value: string) =>
+    setForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="w-6 h-6 border-2 border-[#B07B1E] border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="bg-white border border-[#E9E1D2] p-6">
+        <div className="flex items-center gap-3 mb-2">
+          <FileText className="h-5 w-5 text-[#B07B1E]" />
+          <h3 className="font-serif text-lg text-[#0F3A3E]">
+            Nota Fiscal Eletrônica (NF-e)
+          </h3>
+        </div>
+        <p className="text-sm text-[#51635F]">
+          Configure os dados do emitente para emissão de NF-e via SEFAZ.
+          A NF-e é obrigatória para vendas B2B e recomendada para B2C.
+        </p>
+      </div>
+
+      {/* Status Card */}
+      <div className={cn(
+        "border rounded-lg p-4 flex items-start gap-3",
+        isComplete ? "border-green-200 bg-green-50" : "border-amber-200 bg-amber-50"
+      )}>
+        {isComplete ? (
+          <CheckCircle className="h-5 w-5 text-green-600 mt-0.5 shrink-0" />
+        ) : (
+          <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+        )}
+        <div>
+          <p className={cn("text-sm font-medium", isComplete ? "text-green-800" : "text-amber-800")}>
+            {isComplete ? "Configuração completa" : "Configuração incompleta"}
+          </p>
+          <p className="text-xs text-[#51635F] mt-0.5">
+            {isComplete
+              ? "Pronto para emitir notas fiscais. Lembre-se de fazer upload do certificado digital."
+              : "Preencha todos os campos obrigatórios para habilitar a emissão de NF-e."}
+          </p>
+        </div>
+      </div>
+
+      {/* Form */}
+      <form onSubmit={handleSubmit} className="bg-white border border-[#E9E1D2] p-6 space-y-6">
+        {/* Dados do Emitente */}
+        <div>
+          <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-4">
+            Dados do Emitente
+          </h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                CNPJ *
+              </label>
+              <input
+                type="text"
+                value={form.cnpj}
+                onChange={(e) => setField("cnpj", e.target.value)}
+                placeholder="00.000.000/0001-00"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Inscrição Estadual *
+              </label>
+              <input
+                type="text"
+                value={form.inscricao_estadual}
+                onChange={(e) => setField("inscricao_estadual", e.target.value)}
+                placeholder="000.000.000.000"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Inscrição Municipal
+              </label>
+              <input
+                type="text"
+                value={form.inscricao_municipal}
+                onChange={(e) => setField("inscricao_municipal", e.target.value)}
+                placeholder="Opcional (para prestação de serviços)"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Razão Social *
+              </label>
+              <input
+                type="text"
+                value={form.razao_social}
+                onChange={(e) => setField("razao_social", e.target.value)}
+                placeholder="Nome jurídico da empresa"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Nome Fantasia
+              </label>
+              <input
+                type="text"
+                value={form.nome_fantasia}
+                onChange={(e) => setField("nome_fantasia", e.target.value)}
+                placeholder="Nome de exibição da empresa"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Endereço */}
+        <div className="border-t border-[#E9E1D2] pt-6">
+          <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-4">
+            Endereço do Emitente
+          </h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Logradouro *
+              </label>
+              <input
+                type="text"
+                value={form.logradouro}
+                onChange={(e) => setEnderecoField("logradouro", e.target.value)}
+                placeholder="Rua, avenida, etc."
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Número *
+              </label>
+              <input
+                type="text"
+                value={form.numero}
+                onChange={(e) => setEnderecoField("numero", e.target.value)}
+                placeholder="S/N se sem número"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Complemento
+              </label>
+              <input
+                type="text"
+                value={form.complemento}
+                onChange={(e) => setEnderecoField("complemento", e.target.value)}
+                placeholder="Andar, sala, etc."
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Bairro *
+              </label>
+              <input
+                type="text"
+                value={form.bairro}
+                onChange={(e) => setEnderecoField("bairro", e.target.value)}
+                placeholder="Bairro"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                CEP *
+              </label>
+              <input
+                type="text"
+                value={form.cep}
+                onChange={(e) => setEnderecoField("cep", e.target.value)}
+                placeholder="00000-000"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Cidade *
+              </label>
+              <input
+                type="text"
+                value={form.cidade}
+                onChange={(e) => setEnderecoField("cidade", e.target.value)}
+                placeholder="Cidade"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Estado (UF) *
+              </label>
+              <select
+                value={form.estado_uf}
+                onChange={(e) => setEnderecoField("estado_uf", e.target.value)}
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                required
+              >
+                <option value="">Selecione</option>
+                {BRAZILIAN_STATES.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Telefone
+              </label>
+              <input
+                type="text"
+                value={form.telefone}
+                onChange={(e) => setEnderecoField("telefone", e.target.value)}
+                placeholder="(00) 00000-0000"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* SEFAZ */}
+        <div className="border-t border-[#E9E1D2] pt-6">
+          <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-4">
+            Configuração SEFAZ
+          </h4>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Ambiente
+              </label>
+              <div className="flex gap-2">
+                {(["homologacao", "producao"] as const).map((amb) => (
+                  <button
+                    key={amb}
+                    type="button"
+                    onClick={() => setField("ambiente_sefaz", amb)}
+                    className={cn(
+                      "flex-1 px-3 py-2 text-xs rounded border transition-colors",
+                      form.ambiente_sefaz === amb
+                        ? "bg-[#0F3A3E] text-white border-[#0F3A3E]"
+                        : "border-[#E9E1D2] text-[#51635F] hover:bg-[#F8F4EA]"
+                    )}
+                  >
+                    {amb === "homologacao" ? "Homologação (testes)" : "Produção (real)"}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Série NF-e
+              </label>
+              <input
+                type="number"
+                value={form.nfe_serie}
+                onChange={(e) => setField("nfe_serie", Number(e.target.value))}
+                min={1}
+                max={999}
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                Webservice URL
+              </label>
+              <input
+                type="text"
+                value={form.webservice_url}
+                onChange={(e) => setField("webservice_url", e.target.value)}
+                placeholder="Deixe vazio para usar padrão do estado"
+                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+              />
+            </div>
+          </div>
+          </div>
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+            <strong>Ambiente de Homologação:</strong> use para testar a emissão sem custo. As notas não são válidas fiscalmente.
+            Após validar, mude para Produção.
+          </div>
+        </div>
+
+        {/* Certificado */}
+        <div className="border-t border-[#E9E1D2] pt-6">
+          <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-4">
+            Certificado Digital
+          </h4>
+          <div>
+            <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+              Caminho do Arquivo (.pfx)
+            </label>
+            <input
+              type="text"
+              value={form.certificado_path}
+              onChange={(e) => setField("certificado_path", e.target.value)}
+              placeholder="certs/certificado A1 2025.pfx"
+              className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+            />
+          </div>
+          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+            <strong>Como obter:</strong> Solicite um certificado digital A1 (arquivo .pfx) junto a uma Autoridade Certificadora credenciada pela ICP-Brasil (Serpro, Certisign, Safeweb, etc.).
+            O arquivo deve ser armazenado no servidor e o caminho configurado acima. A senha do certificado deve ser configurada na variável de ambiente <code className="bg-blue-100 px-1 rounded">NFE_CERT_PASSWORD</code>.
+          </div>
+        </div>
+
+        {/* Submit */}
+        <div className="border-t border-[#E9E1D2] pt-6 flex justify-end">
+          <button
+            type="submit"
+            disabled={updateMutation.isPending}
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#0F3A3E] text-white text-sm rounded-lg hover:bg-[#16504F] disabled:opacity-50"
+          >
+            {updateMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Salvar Configurações
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}

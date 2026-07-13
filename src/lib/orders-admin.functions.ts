@@ -41,12 +41,18 @@ export type AdminOrderRow = {
   discount: number;
   customerEmail: string;
   customerName: string;
+  payerEmail: string | null;
   createdAt: string;
   paymentId: string | null;
   trackingCode: string | null;
   refundStatus: string | null;
   items: Array<Record<string, unknown>>;
   authUserId: string | null;
+  shippingAddress: Record<string, unknown> | null;
+  shippingMethod: string | null;
+  nfeKey: string | null;
+  nfeNumber: number | null;
+  nfeStatus: string | null;
 };
 
 export type AdminOrderList = {
@@ -68,12 +74,18 @@ const LIST_COLUMNS = [
   "discount",
   "customer_email",
   "customer_name",
+  "payer_email",
   "created_at",
   "payment_id",
   "tracking_code",
   "refund_status",
   "items",
   "auth_user_id",
+  "shipping_address",
+  "shipping_method",
+  "nfe_key",
+  "nfe_number",
+  "nfe_status",
 ].join(", ");
 
 export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
@@ -152,6 +164,7 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
           discount: Number(r.discount ?? 0),
           customerEmail: String(r.customer_email ?? ""),
           customerName: String(r.customer_name ?? ""),
+          payerEmail: (r.payer_email as string | null) ?? null,
           createdAt: String(r.created_at ?? ""),
           paymentId: (r.payment_id as string | null) ?? null,
           trackingCode: (r.tracking_code as string | null) ?? null,
@@ -160,6 +173,11 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
             ? (r.items as Array<Record<string, unknown>>)
             : [],
           authUserId: (r.auth_user_id as string | null) ?? null,
+          shippingAddress: (r.shipping_address as Record<string, unknown> | null) ?? null,
+          shippingMethod: (r.shipping_method as string | null) ?? null,
+          nfeKey: (r.nfe_key as string | null) ?? null,
+          nfeNumber: (r.nfe_number as number | null) ?? null,
+          nfeStatus: (r.nfe_status as string | null) ?? null,
         }));
 
         return {

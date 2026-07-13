@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import {
   Search,
-  Filter,
   Download,
   Eye,
   Package,
@@ -15,21 +14,24 @@ import {
   X,
   Copy,
   ShoppingBag,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import { getAllOrdersForAdmin, updateOrderForAdmin } from "@/lib/orders-admin.functions";
+import type { AdminOrderRow } from "@/lib/orders-admin.functions";
+import { generateOrderLabel } from "@/lib/logistics.functions";
+import { emitNFe } from "@/lib/nfe.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/pedidos")({
   component: PedidosPage,
 });
 
-type Order = Tables<"orders">;
+type Order = AdminOrderRow;
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: any }> = {
   pending: { label: "Pendente", color: "text-yellow-700", bg: "bg-yellow-50", icon: Clock },
-  approved: { label: "Aprovado", color: "text-green-700", bg: "bg-green-50", icon: CheckCircle },
+  paid: { label: "Aprovado", color: "text-green-700", bg: "bg-green-50", icon: CheckCircle },
   processing: { label: "Processando", color: "text-blue-700", bg: "bg-blue-50", icon: Package },
   shipped: { label: "Enviado", color: "text-purple-700", bg: "bg-purple-50", icon: Truck },
   delivered: { label: "Entregue", color: "text-emerald-700", bg: "bg-emerald-50", icon: CheckCircle },
@@ -50,71 +52,55 @@ function PedidosPage() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [labelModalOpen, setLabelModalOpen] = useState(false);
+  const [labelOrder, setLabelOrder] = useState<Order | null>(null);
+  const [labelService, setLabelService] = useState<"PAC" | "SEDEX" | "SEDEX10">("PAC");
+  const [labelWeight, setLabelWeight] = useState(500);
+  const [labelHeight, setLabelHeight] = useState(10);
+  const [labelWidth, setLabelWidth] = useState(20);
+  const [labelLength, setLabelLength] = useState(20);
+  const [generatingLabel, setGeneratingLabel] = useState(false);
+  const [emittingNfe, setEmittingNfe] = useState(false);
 
-  // Buscar pedidos do Supabase
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("orders")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setOrders(data || []);
+      const result = await getAllOrdersForAdmin({ data: {} });
+      if (result.success) {
+        setOrders(result.data.orders);
+      } else {
+        toast.error("Erro ao carregar pedidos: " + result.error);
+        setOrders([]);
+      }
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
       toast.error("Erro ao carregar pedidos");
+      setOrders([]);
     } finally {
       setLoading(false);
     }
   };
 
+  // Load on mount
   useEffect(() => {
     fetchOrders();
-
-    // Inscrever para atualizações em tempo real
-    const channel = supabase
-      .channel("orders-changes")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        (payload) => {
-          if (payload.eventType === "INSERT") {
-            setOrders((prev) => [payload.new as Order, ...prev]);
-            toast.success("Novo pedido recebido!");
-          } else if (payload.eventType === "UPDATE") {
-            setOrders((prev) =>
-              prev.map((o) => (o.id === payload.new.id ? (payload.new as Order) : o))
-            );
-          } else if (payload.eventType === "DELETE") {
-            setOrders((prev) => prev.filter((o) => o.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, []);
 
   // Atualizar status do pedido
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     setUpdatingStatus(true);
     try {
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", orderId);
-
-      if (error) throw error;
+      const result = await updateOrderForAdmin({
+        data: { orderId, patch: { status: newStatus } },
+      });
+      if (!result.success) {
+        toast.error("Erro ao atualizar status: " + result.error);
+        return;
+      }
       toast.success(`Status atualizado para ${STATUS_CONFIG[newStatus]?.label || newStatus}`);
-
-      // Atualizar o pedido selecionado se estiver aberto
+      setOrders((prev) =>
+        prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+      );
       if (selectedOrder?.id === orderId) {
         setSelectedOrder((prev) => prev ? { ...prev, status: newStatus } : null);
       }
@@ -131,9 +117,9 @@ function PedidosPage() {
     const matchesSearch =
       !searchQuery ||
       order.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.payment_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_email?.toLowerCase().includes(searchQuery.toLowerCase());
+      order.paymentId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customerEmail.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus = statusFilter === "all" || order.status === statusFilter;
 
@@ -141,19 +127,20 @@ function PedidosPage() {
   });
 
   // Estatísticas
+  const revenueStatuses = ["approved", "paid", "processing", "shipped", "delivered"];
   const stats = {
     total: orders.length,
     pending: orders.filter((o) => o.status === "pending").length,
-    approved: orders.filter((o) => o.status === "approved").length,
+    approved: orders.filter((o) => o.status === "approved" || o.status === "paid").length,
     processing: orders.filter((o) => o.status === "processing").length,
     shipped: orders.filter((o) => o.status === "shipped").length,
     delivered: orders.filter((o) => o.status === "delivered").length,
     revenue: orders
-      .filter((o) => ["approved", "processing", "shipped", "delivered"].includes(o.status || ""))
-      .reduce((sum, o) => sum + (o.total || o.amount || 0), 0),
+      .filter((o) => revenueStatuses.includes(o.status || ""))
+      .reduce((sum, o) => sum + Number(o.total ?? 0), 0),
   };
 
-  const formatPrice = (value: number | null) => {
+  const formatPrice = (value: number | null | undefined) => {
     if (!value) return "R$ 0,00";
     return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
   };
@@ -172,6 +159,70 @@ function PedidosPage() {
     navigator.clipboard.writeText(text);
     toast.success("Copiado!");
   };
+
+  const openLabelModal = (order: Order) => {
+    setLabelOrder(order);
+    setLabelService("PAC");
+    setLabelWeight(500);
+    setLabelHeight(10);
+    setLabelWidth(20);
+    setLabelLength(20);
+    setLabelModalOpen(true);
+  };
+
+  const handleGenerateLabel = async () => {
+    if (!labelOrder) return;
+    setGeneratingLabel(true);
+    try {
+      const result = await generateOrderLabel({
+        data: {
+          orderId: labelOrder.id,
+          service: labelService,
+          packageWeight: labelWeight,
+          packageHeight: labelHeight,
+          packageWidth: labelWidth,
+          packageLength: labelLength,
+        },
+      });
+      if (result.success && result.data) {
+        toast.success(`Etiqueta gerada! Código: ${result.data.tracking_code}`);
+        setLabelModalOpen(false);
+        setSelectedOrder(null);
+        fetchOrders();
+      } else {
+        toast.error(result.error || "Erro ao gerar etiqueta");
+      }
+    } catch (e) {
+      toast.error("Erro ao gerar etiqueta");
+    } finally {
+      setGeneratingLabel(false);
+    }
+  };
+
+  const handleEmitNfe = async () => {
+    if (!selectedOrder) return;
+    setEmittingNfe(true);
+    try {
+      const result = await emitNFe({ data: { orderId: selectedOrder.id } });
+      if (result.success && result.data) {
+        toast.success(
+          `NF-e emitida! Chave: ${result.data.nfeKey.slice(0, 20)}...`,
+          { duration: 8000 }
+        );
+        setSelectedOrder(null);
+        fetchOrders();
+      } else {
+        toast.error(result.error || "Erro ao emitir NF-e");
+      }
+    } catch (e) {
+      toast.error("Erro ao emitir NF-e");
+    } finally {
+      setEmittingNfe(false);
+    }
+  };
+
+  const resolveStatusConfig = (status?: string) =>
+    STATUS_CONFIG[status || "pending"] || STATUS_CONFIG.pending;
 
   return (
     <div className="p-6 md:p-8 space-y-6">
@@ -297,7 +348,7 @@ function PedidosPage() {
               </thead>
               <tbody className="divide-y divide-[#E9E1D2]">
                 {filteredOrders.map((order) => {
-                  const statusConfig = STATUS_CONFIG[order.status || "pending"] || STATUS_CONFIG.pending;
+                  const statusConfig = resolveStatusConfig(order.status);
                   const StatusIcon = statusConfig.icon;
 
                   return (
@@ -306,23 +357,23 @@ function PedidosPage() {
                         <div className="font-mono text-sm text-[#0F3A3E]">
                           #{order.id.slice(0, 8).toUpperCase()}
                         </div>
-                        {order.payment_id && (
+                        {order.paymentId && (
                           <div className="text-[10px] text-[#51635F] mt-0.5">
-                            MP: {order.payment_id.slice(0, 12)}...
+                            MP: {order.paymentId.slice(0, 12)}...
                           </div>
                         )}
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm text-[#0F3A3E]">
-                          {order.customer_name || "Cliente"}
+                          {order.customerName || "Cliente"}
                         </div>
                         <div className="text-xs text-[#51635F]">
-                          {order.customer_email || order.payer_email || "-"}
+                          {order.customerEmail || order.payerEmail || "-"}
                         </div>
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm text-[#0F3A3E]">
-                          {formatDate(order.created_at || "")}
+                          {formatDate(order.createdAt)}
                         </div>
                       </td>
                       <td className="px-4 py-4">
@@ -339,12 +390,12 @@ function PedidosPage() {
                       </td>
                       <td className="px-4 py-4">
                         <div className="text-sm text-[#0F3A3E]">
-                          {PAYMENT_LABELS[order.payment_method || ""] || order.payment_method || "-"}
+                          {PAYMENT_LABELS[order.paymentMethod || ""] || order.paymentMethod || "-"}
                         </div>
                       </td>
                       <td className="px-4 py-4 text-right">
                         <div className="font-serif text-[#0F3A3E]">
-                          {formatPrice(order.total || order.amount)}
+                          {formatPrice(order.total)}
                         </div>
                       </td>
                       <td className="px-4 py-4 text-center">
@@ -373,10 +424,10 @@ function PedidosPage() {
             <div className="sticky top-0 bg-white border-b border-[#E9E1D2] px-6 py-4 flex items-center justify-between">
               <div>
                 <h2 className="font-serif text-xl text-[#0F3A3E]">
-                  Pedido #{(selectedOrder.id || "").slice(0, 8).toUpperCase()}
+                  Pedido #{selectedOrder.id.slice(0, 8).toUpperCase()}
                 </h2>
                 <p className="text-sm text-[#51635F]">
-                  {formatDate(selectedOrder.created_at || "")}
+                  {formatDate(selectedOrder.createdAt)}
                 </p>
               </div>
               <button
@@ -398,19 +449,19 @@ function PedidosPage() {
                   <span
                     className={cn(
                       "inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full",
-                      STATUS_CONFIG[selectedOrder.status || "pending"]?.bg || "bg-gray-100",
-                      STATUS_CONFIG[selectedOrder.status || "pending"]?.color || "text-gray-700"
+                      resolveStatusConfig(selectedOrder.status).bg,
+                      resolveStatusConfig(selectedOrder.status).color
                     )}
                   >
                     {(() => {
-                      const Icon = STATUS_CONFIG[selectedOrder.status || "pending"]?.icon || Clock;
+                      const Icon = resolveStatusConfig(selectedOrder.status).icon;
                       return <Icon className="w-4 h-4" />;
                     })()}
-                    {STATUS_CONFIG[selectedOrder.status || "pending"]?.label || selectedOrder.status}
+                    {resolveStatusConfig(selectedOrder.status).label}
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {selectedOrder.status === "approved" && (
+                  {(selectedOrder.status === "approved" || selectedOrder.status === "paid") && (
                     <button
                       onClick={() => updateOrderStatus(selectedOrder.id, "processing")}
                       disabled={updatingStatus}
@@ -446,6 +497,45 @@ function PedidosPage() {
                       Cancelar
                     </button>
                   )}
+                  {/* NF-e Badge & Button */}
+                  {selectedOrder.nfeKey ? (
+                    <span className="px-3 py-1.5 text-xs bg-blue-100 text-blue-800 rounded border border-blue-200 flex items-center gap-1.5">
+                      <FileText className="w-3 h-3" />
+                      NF-e {selectedOrder.nfeNumber ? `#${selectedOrder.nfeNumber}` : ""} — {selectedOrder.nfeStatus}
+                    </span>
+                  ) : (selectedOrder.status === "approved" || selectedOrder.status === "paid") && (
+                    <button
+                      onClick={handleEmitNfe}
+                      disabled={emittingNfe}
+                      className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
+                    >
+                      {emittingNfe && <RefreshCw className="w-3 h-3 animate-spin" />}
+                      <FileText className="w-3 h-3" />
+                      Emitir NF-e
+                    </button>
+                  )}
+
+                  {selectedOrder.trackingCode ? (
+                    <a
+                      href={`https://www.linkcorreto.com.br/sistemas/rastreamento/?objeto=${selectedOrder.trackingCode}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="px-3 py-1.5 text-xs bg-[#0F3A3E] text-white rounded hover:bg-[#1a5054] flex items-center gap-1.5"
+                    >
+                      <Truck className="w-3 h-3" />
+                      Rastrear
+                    </a>
+                  ) : (
+                    (selectedOrder.status === "approved" || selectedOrder.status === "paid") && (
+                      <button
+                        onClick={() => openLabelModal(selectedOrder)}
+                        className="px-3 py-1.5 text-xs bg-[#B07B1E] text-white rounded hover:bg-[#8a5e10] flex items-center gap-1.5"
+                      >
+                        <Package className="w-3 h-3" />
+                        Gerar Etiqueta
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
 
@@ -458,13 +548,13 @@ function PedidosPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">Nome</span>
                     <span className="text-sm text-[#0F3A3E]">
-                      {selectedOrder.customer_name || "-"}
+                      {selectedOrder.customerName || "-"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">Email</span>
                     <span className="text-sm text-[#0F3A3E]">
-                      {selectedOrder.customer_email || selectedOrder.payer_email || "-"}
+                      {selectedOrder.customerEmail || selectedOrder.payerEmail || "-"}
                     </span>
                   </div>
                 </div>
@@ -479,18 +569,18 @@ function PedidosPage() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">Método</span>
                     <span className="text-sm text-[#0F3A3E]">
-                      {PAYMENT_LABELS[selectedOrder.payment_method || ""] || selectedOrder.payment_method || "-"}
+                      {PAYMENT_LABELS[selectedOrder.paymentMethod || ""] || selectedOrder.paymentMethod || "-"}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">ID do Pagamento</span>
                     <div className="flex items-center gap-2">
                       <span className="text-sm text-[#0F3A3E] font-mono">
-                        {selectedOrder.payment_id || "-"}
+                        {selectedOrder.paymentId || "-"}
                       </span>
-                      {selectedOrder.payment_id && (
+                      {selectedOrder.paymentId && (
                         <button
-                          onClick={() => copyToClipboard(selectedOrder.payment_id || "")}
+                          onClick={() => copyToClipboard(selectedOrder.paymentId!)}
                           className="p-1 hover:bg-[#F8F4EA] rounded"
                         >
                           <Copy className="w-3 h-3" />
@@ -502,27 +592,29 @@ function PedidosPage() {
               </div>
 
               {/* Shipping Info */}
-              {selectedOrder.shipping_address && (
+              {selectedOrder.shippingAddress && (
                 <div>
                   <h3 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-3">
                     Entrega
                   </h3>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-[#51635F]">Método</span>
-                      <span className="text-sm text-[#0F3A3E]">
-                        {selectedOrder.shipping_method || "-"}
-                      </span>
-                    </div>
-                    {selectedOrder.tracking_code && (
+                    {selectedOrder.shippingMethod && (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-[#51635F]">Método</span>
+                        <span className="text-sm text-[#0F3A3E]">
+                          {selectedOrder.shippingMethod}
+                        </span>
+                      </div>
+                    )}
+                    {selectedOrder.trackingCode && (
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-[#51635F]">Rastreio</span>
                         <div className="flex items-center gap-2">
                           <span className="text-sm text-[#0F3A3E] font-mono">
-                            {selectedOrder.tracking_code}
+                            {selectedOrder.trackingCode}
                           </span>
                           <button
-                            onClick={() => copyToClipboard(selectedOrder.tracking_code!)}
+                            onClick={() => copyToClipboard(selectedOrder.trackingCode!)}
                             className="p-1 hover:bg-[#F8F4EA] rounded"
                           >
                             <Copy className="w-3 h-3" />
@@ -532,7 +624,7 @@ function PedidosPage() {
                     )}
                     <div className="text-sm text-[#0F3A3E] p-3 bg-[#F8F4EA] rounded">
                       {(() => {
-                        const addr = selectedOrder.shipping_address as any;
+                        const addr = selectedOrder.shippingAddress as Record<string, string>;
                         if (!addr) return "-";
                         return `${addr.street || ""}, ${addr.number || ""} ${addr.complement || ""} - ${addr.neighborhood || ""}, ${addr.city || ""}/${addr.state || ""} - CEP: ${addr.zipCode || addr.cep || ""}`;
                       })()}
@@ -542,13 +634,13 @@ function PedidosPage() {
               )}
 
               {/* Items */}
-              {selectedOrder.items && (
+              {selectedOrder.items && selectedOrder.items.length > 0 && (
                 <div>
                   <h3 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-3">
                     Itens do Pedido
                   </h3>
                   <div className="space-y-3">
-                    {(selectedOrder.items as any[]).map((item: any, index: number) => (
+                    {selectedOrder.items.map((item: any, index: number) => (
                       <div
                         key={index}
                         className="flex items-center gap-4 p-3 bg-[#F8F4EA] rounded"
@@ -564,6 +656,11 @@ function PedidosPage() {
                           <div className="text-sm text-[#0F3A3E] truncate">
                             {item.title || item.name}
                           </div>
+                          {item.variationName && (
+                            <div className="text-xs text-[#B07B1E]">
+                              Variação: {item.variationName}
+                            </div>
+                          )}
                           <div className="text-xs text-[#51635F]">
                             Qtd: {item.quantity} × {formatPrice(item.price)}
                           </div>
@@ -587,7 +684,7 @@ function PedidosPage() {
                     </span>
                   </div>
                 )}
-                {selectedOrder.discount && selectedOrder.discount > 0 && (
+                {selectedOrder.discount > 0 && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">Desconto</span>
                     <span className="text-sm text-green-600">
@@ -595,20 +692,20 @@ function PedidosPage() {
                     </span>
                   </div>
                 )}
-                {selectedOrder.shipping_price !== null && selectedOrder.shipping_price !== undefined && (
+                {selectedOrder.shippingPrice !== null && selectedOrder.shippingPrice !== undefined && (
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-[#51635F]">Frete</span>
                     <span className="text-sm text-[#0F3A3E]">
-                      {selectedOrder.shipping_price === 0
+                      {selectedOrder.shippingPrice === 0
                         ? "Grátis"
-                        : formatPrice(selectedOrder.shipping_price)}
+                        : formatPrice(selectedOrder.shippingPrice)}
                     </span>
                   </div>
                 )}
                 <div className="flex items-center justify-between pt-2 border-t border-[#E9E1D2]">
                   <span className="font-semibold text-[#0F3A3E]">Total</span>
                   <span className="font-serif text-xl text-[#0F3A3E]">
-                    {formatPrice(selectedOrder.total || selectedOrder.amount)}
+                    {formatPrice(selectedOrder.total)}
                   </span>
                 </div>
               </div>
@@ -621,6 +718,116 @@ function PedidosPage() {
                 className="px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F8F4EA] transition-colors"
               >
                 Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    {/* Etiqueta Modal */}
+      {labelModalOpen && labelOrder && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-lg">
+            <div className="px-6 py-4 border-b border-[#E9E1D2] flex items-center justify-between">
+              <h3 className="font-serif text-lg text-[#0F3A3E]">Gerar Etiqueta</h3>
+              <button onClick={() => setLabelModalOpen(false)} className="p-1 hover:bg-[#F8F4EA] rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-[#51635F]">
+                Pedido <strong>#{labelOrder.id.slice(0, 8).toUpperCase()}</strong> —{" "}
+                {labelOrder.customerName || "Cliente"}
+              </p>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                  Serviço
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["PAC", "SEDEX", "SEDEX10"] as const).map((svc) => (
+                    <button
+                      key={svc}
+                      onClick={() => setLabelService(svc)}
+                      className={cn(
+                        "px-3 py-2 text-xs rounded border transition-colors",
+                        labelService === svc
+                          ? "bg-[#0F3A3E] text-white border-[#0F3A3E]"
+                          : "border-[#E9E1D2] text-[#51635F] hover:bg-[#F8F4EA]"
+                      )}
+                    >
+                      {svc}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                    Peso (g)
+                  </label>
+                  <input
+                    type="number"
+                    value={labelWeight}
+                    onChange={(e) => setLabelWeight(Number(e.target.value))}
+                    min={50}
+                    max={30000}
+                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                    Altura (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={labelHeight}
+                    onChange={(e) => setLabelHeight(Number(e.target.value))}
+                    min={1}
+                    max={100}
+                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                    Largura (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={labelWidth}
+                    onChange={(e) => setLabelWidth(Number(e.target.value))}
+                    min={1}
+                    max={100}
+                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                    Comprimento (cm)
+                  </label>
+                  <input
+                    type="number"
+                    value={labelLength}
+                    onChange={(e) => setLabelLength(Number(e.target.value))}
+                    min={1}
+                    max={100}
+                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-[#E9E1D2] flex justify-end gap-3">
+              <button
+                onClick={() => setLabelModalOpen(false)}
+                className="px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F8F4EA] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGenerateLabel}
+                disabled={generatingLabel}
+                className="px-4 py-2 text-sm bg-[#0F3A3E] text-white hover:bg-[#1a5054] disabled:opacity-50 flex items-center gap-2"
+              >
+                {generatingLabel && <RefreshCw className="w-4 h-4 animate-spin" />}
+                Gerar Etiqueta
               </button>
             </div>
           </div>
