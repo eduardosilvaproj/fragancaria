@@ -105,11 +105,17 @@ function AdminLogistica() {
   // MUTATIONS
   // =====================================================
 
+  // Server functions
+  const refreshFn = useServerFn(refreshTracking);
+  const updateStatusFn = useServerFn(updateShipmentStatus);
+  const getLabelFn = useServerFn(getShipmentLabel);
+  const requestLabelsFn = useServerFn(requestSigepLabels);
+  const createShipmentFn = useServerFn(createShipment);
+
   // Atualizar rastreios
   const refreshMutation = useMutation({
     mutationFn: async (ids?: string[]) => {
-      const fn = useServerFn(refreshTracking);
-      return fn({ data: ids ? { ids } : {} });
+      return refreshFn({ data: ids ? { ids } : {} });
     },
     onSuccess: (result) => {
       if (result?.success) {
@@ -128,8 +134,7 @@ function AdminLogistica() {
   // Atualizar status manual
   const updateStatusMutation = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const fn = useServerFn(updateShipmentStatus);
-      return fn({ data: { id, status } });
+      return updateStatusFn({ data: { id, status } });
     },
     onSuccess: (result) => {
       if (result?.success) {
@@ -145,8 +150,7 @@ function AdminLogistica() {
   // Baixar etiqueta
   const getLabelMutation = useMutation({
     mutationFn: async (id: string) => {
-      const fn = useServerFn(getShipmentLabel);
-      return fn({ data: { id } });
+      return getLabelFn({ data: { id } });
     },
     onSuccess: (result, id) => {
       if (result?.success && result.data?.url) {
@@ -165,8 +169,7 @@ function AdminLogistica() {
   // Solicitar etiquetas
   const requestLabelsMutation = useMutation({
     mutationFn: async ({ quantidade, servico }: { quantidade: number; servico: string }) => {
-      const fn = useServerFn(requestSigepLabels);
-      return fn({ data: { quantidade, servico: servico as "PAC" | "SEDEX" } });
+      return requestLabelsFn({ data: { quantidade, servico: servico as "PAC" | "SEDEX" } });
     },
     onSuccess: (result) => {
       if (result?.success) {
@@ -697,8 +700,7 @@ function CreateShipmentModal({
 
   const createMutation = useMutation({
     mutationFn: async () => {
-      const fn = useServerFn(createShipment);
-      return fn({
+      return createShipmentFn({
         data: {
           orderId: shipment.order_id,
           carrier,
