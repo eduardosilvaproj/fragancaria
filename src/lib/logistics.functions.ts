@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 // =====================================================
 // TIPOS
@@ -184,7 +185,7 @@ export const createShipment = createServerFn({ method: "POST" })
       // Buscar dados do pedido
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, order_number, customer_name, customer_email, payer_phone")
+        .select("id, order_number, customer_name, customer_email, customer_phone")
         .eq("id", data.orderId)
         .single();
 
@@ -790,7 +791,6 @@ export type GenerateLabelInput = {
 
 export const generateOrderLabel = createServerFn({ method: "POST" })
   .validator((d: unknown) => {
-    const z = require("zod");
     return z.object({
       orderId: z.string().uuid(),
       service: z.enum(["PAC", "SEDEX", "SEDEX10"]),
@@ -811,7 +811,7 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
       // Buscar pedido com endereço
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, customer_name, customer_email, payer_phone, shipping_address, items, total")
+        .select("id, customer_name, customer_email, customer_phone, shipping_address, items, total")
         .eq("id", data.orderId)
         .single();
 
@@ -871,7 +871,7 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
                 name: order.customer_name || "Cliente",
                 document: "",
                 email: order.customer_email || "",
-                phone: order.payer_phone || "",
+                phone: order.customer_phone || "",
                 address: {
                   street: addr.street || "",
                   number: addr.number || "",
@@ -925,7 +925,7 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
           length_cm: data.packageLength,
           recipient_name: order.customer_name || "Cliente",
           recipient_email: order.customer_email || "",
-          recipient_phone: order.payer_phone || null,
+          recipient_phone: order.customer_phone || null,
           recipient_postal_code: addr.zipCode || addr.cep || "",
           recipient_address: addr,
           status: trackingCode ? "paid" : "pending",
@@ -973,7 +973,6 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
 
 export const getOrderShipment = createServerFn({ method: "GET" })
   .validator((d: unknown) => {
-    const z = require("zod");
     return z.object({ orderId: z.string().uuid() }).parse(d);
   })
   .handler(async ({ data }) => {
