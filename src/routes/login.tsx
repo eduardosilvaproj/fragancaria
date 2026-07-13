@@ -155,7 +155,25 @@ function LoginPage() {
           </button>
         </form>
 
-        {/* Google OAuth temporariamente desabilitado — reabilitar apos configurar servico no Supabase */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-[#E9E1D2]" />
+          <span className="text-xs text-[#8A938E]">ou</span>
+          <div className="flex-1 h-px bg-[#E9E1D2]" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={loading || googleLoading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#E9E1D2] bg-white py-2.5 text-sm font-medium text-[#0F3A3E] transition-colors hover:bg-[#F5F3EE] disabled:opacity-60"
+        >
+          {googleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <GoogleIcon className="h-4 w-4" />
+          )}
+          {googleLoading ? "Conectando..." : "Continuar com Google"}
+        </button>
 
         <p className="text-center text-sm text-[#51635F] mt-6">
           Nao tem conta?{" "}

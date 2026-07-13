@@ -129,18 +129,18 @@ function CadastroPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <div>
-  <label className="block text-sm font-medium text-[#0F3A3E] mb-1">Nome completo</label>
-  <input
-    type="text"
-    required
-    value={fullName}
-    onChange={(e) => setFullName(e.target.value)}
-    className="w-full rounded-lg border border-[#E9E1D2] px-4 py-2.5 text-sm outline-none focus:border-[#0F3A3E]"
-    placeholder="Seu nome"
-  />
-</div>
-<label className="block text-sm font-medium text-[#0F3A3E] mb-1">E-mail</label>
+            <label className="block text-sm font-medium text-[#0F3A3E] mb-1">Nome completo</label>
+            <input
+              type="text"
+              required
+              value={fullName}
+              onChange={(e) => setFullName(e.target.value)}
+              className="w-full rounded-lg border border-[#E9E1D2] px-4 py-2.5 text-sm outline-none focus:border-[#0F3A3E]"
+              placeholder="Seu nome"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-[#0F3A3E] mb-1">E-mail</label>
             <input
               type="email"
               required
@@ -171,7 +171,25 @@ function CadastroPage() {
           </button>
         </form>
 
-        {/* Google OAuth temporariamente desabilitado — reabilitar apos configurar servico no Supabase */}
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-[#E9E1D2]" />
+          <span className="text-xs text-[#8A938E]">ou</span>
+          <div className="flex-1 h-px bg-[#E9E1D2]" />
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGoogle}
+          disabled={loading || googleLoading}
+          className="w-full flex items-center justify-center gap-3 rounded-lg border border-[#E9E1D2] bg-white py-2.5 text-sm font-medium text-[#0F3A3E] transition-colors hover:bg-[#F5F3EE] disabled:opacity-60"
+        >
+          {googleLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <GoogleIcon className="h-4 w-4" />
+          )}
+          {googleLoading ? "Conectando..." : "Continuar com Google"}
+        </button>
 
         <p className="text-center text-sm text-[#51635F] mt-6">
           Primeira vez aqui?{" "}
