@@ -12,7 +12,7 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
 import { useAffiliateTracking } from "../hooks/useAffiliateTracking";
 import { initGA, initMetaPixel } from "../lib/analytics";
@@ -182,7 +182,9 @@ function RootComponent() {
       <Outlet />
       <ScrollToTop />
       <WhatsAppButton />
-      <Toaster position="top-center" />
+      <div data-testid="sonner-container">
+        <Toaster />
+      </div>
       <QuickViewModal
         productId={productId}
         isOpen={isOpen}

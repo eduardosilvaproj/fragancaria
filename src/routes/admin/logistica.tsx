@@ -123,6 +123,7 @@ function AdminLogistica() {
         queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
         queryClient.invalidateQueries({ queryKey: ["admin-shipment-stats"] });
       } else {
+        console.log("Calling toast.error with:", result?.error || "Erro ao atualizar rastreios");
         toast.error(result?.error || "Erro ao atualizar rastreios");
       }
     },
