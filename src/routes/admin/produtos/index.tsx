@@ -19,6 +19,7 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
+  Power,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -313,6 +314,17 @@ function AdminProdutos() {
     }
     toast.success("Produto excluído");
     setSelectedProducts((prev) => prev.filter((id) => id !== product.id));
+    refetch();
+  };
+
+  const handleToggleActive = async (product: AdminProduct) => {
+    const next = !product.is_active;
+    const res = await setActiveFn({ data: { ids: [product.id], isActive: next } });
+    if (!res.success) {
+      toast.error("Erro ao alterar status", { description: res.error });
+      return;
+    }
+    toast.success(next ? "Produto ativado" : "Produto desativado");
     refetch();
   };
 
@@ -727,13 +739,22 @@ function AdminProdutos() {
             {selectedProducts.length} produto(s) selecionado(s)
           </span>
           <div className="flex gap-2">
-            <button className="px-3 py-1 text-sm bg-white/10 hover:bg-white/20 transition-colors">
+            <button
+              onClick={() => handleBulkActive(true)}
+              className="px-3 py-1 text-sm bg-white/10 hover:bg-white/20 transition-colors"
+            >
               Ativar
             </button>
-            <button className="px-3 py-1 text-sm bg-white/10 hover:bg-white/20 transition-colors">
+            <button
+              onClick={() => handleBulkActive(false)}
+              className="px-3 py-1 text-sm bg-white/10 hover:bg-white/20 transition-colors"
+            >
               Desativar
             </button>
-            <button className="px-3 py-1 text-sm bg-red-500/80 hover:bg-red-500 transition-colors">
+            <button
+              onClick={handleBulkDelete}
+              className="px-3 py-1 text-sm bg-red-500/80 hover:bg-red-500 transition-colors"
+            >
               Excluir
             </button>
           </div>
@@ -864,6 +885,18 @@ function AdminProdutos() {
                         className="p-2 hover:bg-[#F3EEE3] rounded transition-colors"
                       >
                         <Edit className="h-4 w-4 text-[#51635F]" />
+                      </button>
+                      <button
+                        onClick={() => handleToggleActive(product)}
+                        title={product.is_active ? "Desativar produto" : "Ativar produto"}
+                        className="p-2 hover:bg-[#F3EEE3] rounded transition-colors"
+                      >
+                        <Power
+                          className={cn(
+                            "h-4 w-4",
+                            product.is_active ? "text-emerald-600" : "text-[#8A938E]"
+                          )}
+                        />
                       </button>
                       <button
                         onClick={() => handleDelete(product)}
