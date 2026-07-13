@@ -338,7 +338,7 @@ function EditarProduto() {
               value={form.images}
               onChange={(urls) => set("images", urls)}
               maxImages={5}
-              mlProductId={id.startsWith("MLB") ? id : undefined}
+              searchQuery={[form.brand, form.name].filter(Boolean).join(" ").trim()}
             />
           </div>
           <div className="md:col-span-2">

@@ -1,12 +1,12 @@
 import { useState, useEffect } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { X, Loader2, Check, ExternalLink } from "lucide-react";
-import { fetchProductImages } from "@/lib/product-enrich.functions";
+import { X, Loader2, Check, ImageIcon } from "lucide-react";
+import { searchProductImages } from "@/lib/product-enrich.functions";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 interface ImageSelectorProps {
-  mlId: string;
+  query: string;
   onSelect: (urls: string[]) => void;
   onClose: () => void;
   currentImages: string[];
@@ -14,7 +14,7 @@ interface ImageSelectorProps {
 }
 
 export function ImageSelector({
-  mlId,
+  query,
   onSelect,
   onClose,
   currentImages,
@@ -27,14 +27,14 @@ export function ImageSelector({
 
   const availableSlots = maxImages - currentImages.length;
 
-  const fetchImages = useServerFn(fetchProductImages);
+  const searchImages = useServerFn(searchProductImages);
 
   useEffect(() => {
     let cancelled = false;
     setIsLoading(true);
     setError(null);
 
-    fetchImages({ data: { mlId } })
+    searchImages({ data: { query } })
       .then((result) => {
         if (cancelled) return;
         setIsLoading(false);
@@ -57,7 +57,7 @@ export function ImageSelector({
     return () => {
       cancelled = true;
     };
-  }, [mlId]);
+  }, [query]);
 
   const toggleImage = (url: string) => {
     const newSelected = new Set(selected);
@@ -92,12 +92,13 @@ export function ImageSelector({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-[#E9E1D2]">
           <div className="flex items-center gap-2">
-            <ExternalLink className="h-5 w-5 text-[#B07B1E]" />
+            <ImageIcon className="h-5 w-5 text-[#B07B1E]" />
             <h2 className="font-serif text-lg text-[#0F3A3E]">
-              Imagens do Mercado Livre
+              Buscar imagens
             </h2>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="p-2 hover:bg-[#F3EEE3] rounded"
           >
@@ -116,14 +117,14 @@ export function ImageSelector({
             <div className="text-center py-12">
               <p className="text-red-600 mb-2">{error}</p>
               <p className="text-xs text-[#8A938E]">
-                ID: {mlId}
+                Busca: {query}
               </p>
             </div>
           ) : images.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-[#51635F]">Nenhuma imagem encontrada</p>
               <p className="text-xs text-[#8A938E] mt-2">
-                ID: {mlId}
+                Busca: {query}
               </p>
             </div>
           ) : (
@@ -135,6 +136,7 @@ export function ImageSelector({
                 </p>
                 <div className="flex gap-2">
                   <button
+                    type="button"
                     onClick={selectAll}
                     className="text-xs text-[#B07B1E] hover:underline"
                   >
@@ -142,6 +144,7 @@ export function ImageSelector({
                   </button>
                   <span className="text-[#E9E1D2]">|</span>
                   <button
+                    type="button"
                     onClick={deselectAll}
                     className="text-xs text-[#8A938E] hover:underline"
                   >
@@ -157,6 +160,7 @@ export function ImageSelector({
                   return (
                     <button
                       key={url}
+                      type="button"
                       onClick={() => !isAlreadyAdded && toggleImage(url)}
                       disabled={isAlreadyAdded}
                       className={cn(
@@ -202,12 +206,14 @@ export function ImageSelector({
           </p>
           <div className="flex gap-3">
             <button
+              type="button"
               onClick={onClose}
               className="px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
             >
               Cancelar
             </button>
             <button
+              type="button"
               onClick={handleConfirm}
               disabled={selected.size === 0}
               className="px-4 py-2 text-sm bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"

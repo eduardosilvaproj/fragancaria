@@ -39,6 +39,9 @@ puro nesta conversa e estao marcadas para rotacao.
 | `CHATWOOT_API_TOKEN` | **nao** | sim (`SECRETA`) | so se integrarmos Chatwoot |
 | `CHATWOOT_WEBHOOK_HMAC` | **nao** | sim (`SECRETA`) | so se integrarmos Chatwoot |
 | `RESEND_API_KEY` | sim (`SECRETA`) | **nao** | envio de e-mails transacionais (checkout, rastreio) |
+| `SERPER_API_KEY` | sim (`SECRETA`) | **nao** | busca de imagens de produto (Serper.dev). Server-only |
+| `ML_CLIENT_ID` | sim | nao | app do Mercado Livre (so le anuncios da propria conta) |
+| `ML_CLIENT_SECRET` | sim (`SECRETA`) | nao | secret do app ML (client_credentials grant) |
 
 ### Regras
 

@@ -3,7 +3,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { uploadProductImage, deleteProductImage, type UploadResult } from "@/lib/storage.functions";
 import { toast } from "sonner";
-import { X, Upload, Loader2, ImagePlus, ExternalLink } from "lucide-react";
+import { X, Upload, Loader2, ImagePlus, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ImageSelector } from "./ImageSelector";
 
@@ -13,7 +13,7 @@ interface ImageUploaderProps {
   maxImages?: number;
   folder?: string;
   disabled?: boolean;
-  mlProductId?: string; // ID do ML para buscar imagens
+  searchQuery?: string; // texto (nome + marca) para buscar imagens
 }
 
 export function ImageUploader({
@@ -22,7 +22,7 @@ export function ImageUploader({
   maxImages = 5,
   folder = "products",
   disabled = false,
-  mlProductId,
+  searchQuery,
 }: ImageUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -153,16 +153,16 @@ export function ImageUploader({
         </div>
       )}
 
-      {/* Botão buscar no Mercado Livre */}
-      {mlProductId && value.length < maxImages && (
+      {/* Botão buscar imagens */}
+      {searchQuery && searchQuery.trim().length >= 2 && value.length < maxImages && (
         <button
           type="button"
           onClick={() => setShowMLSelector(true)}
           disabled={disabled}
           className="flex items-center justify-center gap-2 w-full py-3 px-4 text-sm bg-[#FFF3CD] border border-[#FFE69C] hover:bg-[#FFECB5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <ExternalLink className="h-4 w-4 text-[#B07B1E]" />
-          <span className="text-[#8A6D3B]">Buscar imagens no Mercado Livre</span>
+          <Search className="h-4 w-4 text-[#B07B1E]" />
+          <span className="text-[#8A6D3B]">Buscar imagens na web</span>
         </button>
       )}
 
@@ -222,10 +222,10 @@ export function ImageUploader({
         {value.length}/{maxImages} imagens
       </p>
 
-      {/* Modal de seleção de imagens do ML */}
-      {showMLSelector && mlProductId && (
+      {/* Modal de busca de imagens */}
+      {showMLSelector && searchQuery && (
         <ImageSelector
-          mlId={mlProductId}
+          query={searchQuery}
           currentImages={value}
           maxImages={maxImages}
           onSelect={(urls) => {

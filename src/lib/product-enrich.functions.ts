@@ -191,7 +191,7 @@ function generateTags(product: Pick<ProductRow, "name" | "brand" | "category" | 
 // BUSCAR DADOS NO MERCADO LIVRE
 // =====================================================
 
-const ML_API_BASE = "https://api.mercadolivre.com.br"; // Brasil
+const ML_API_BASE = "https://api.mercadolibre.com"; // API oficial ML (todos os países, site MLB = Brasil)
 
 interface MLItem {
   id: string;
@@ -700,6 +700,54 @@ export const fetchProductImages = createServerFn({ method: "POST" })
       return { success: true, images: mlData.allImages };
     } catch (e: any) {
       console.error("[enrich] fetchProductImages error:", e);
+      return { success: false, images: [], error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+/**
+ * Busca imagens de um produto por texto (nome + marca) via Serper.dev.
+ * Retorna URLs de imagens em alta resolução de varejistas/fabricantes.
+ */
+const SearchImagesSchema = z.object({
+  query: z.string().min(2),
+});
+
+export const searchProductImages = createServerFn({ method: "POST" })
+  .validator((d: unknown) => SearchImagesSchema.parse(d))
+  .handler(async ({ data }): Promise<{ success: boolean; images: string[]; error?: string }> => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+
+      const apiKey = process.env.SERPER_API_KEY;
+      if (!apiKey) {
+        return { success: false, images: [], error: "SERPER_API_KEY não configurada" };
+      }
+
+      const resp = await fetch("https://google.serper.dev/images", {
+        method: "POST",
+        headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+        body: JSON.stringify({ q: data.query, gl: "br", hl: "pt", num: 20 }),
+      });
+
+      if (!resp.ok) {
+        console.error(`[enrich] Serper fetch failed: ${resp.status}`);
+        return { success: false, images: [], error: `Erro na busca (${resp.status})` };
+      }
+
+      const json = await resp.json();
+      const images: string[] = Array.isArray(json?.images)
+        ? json.images
+            .map((im: { imageUrl?: string }) => im?.imageUrl)
+            .filter((url: unknown): url is string => typeof url === "string" && url.length > 0)
+        : [];
+
+      return { success: true, images };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403 || e?.message === "NAO_AUTORIZADO") {
+        return { success: false, images: [], error: "Não autorizado" };
+      }
+      console.error("[enrich] searchProductImages error:", e);
       return { success: false, images: [], error: e?.message || "Erro desconhecido" };
     }
   });
