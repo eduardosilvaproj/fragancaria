@@ -643,10 +643,10 @@ export const saveSigepCredentials = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { error } = await supabaseAdmin
-        .from("payment_settings")
+        .from("shipping_settings")
         .upsert({
           key: "sigep_credentials",
-          settings: {
+          value: {
             usuario: data.usuario,
             senha: data.senha,
             codAdministrativo: data.codAdministrativo,
