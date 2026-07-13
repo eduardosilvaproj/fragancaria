@@ -47,6 +47,7 @@ import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
 import { Route as AdminCuponsRouteImport } from './routes/admin/cupons'
 import { Route as AdminCrmRouteImport } from './routes/admin/crm'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
+import { Route as AdminClientesRouteImport } from './routes/admin/clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
@@ -56,6 +57,7 @@ import { Route as MinhaContaPedidosIndexRouteImport } from './routes/minha-conta
 import { Route as MinhaContaNotificacoesIndexRouteImport } from './routes/minha-conta/notificacoes/index'
 import { Route as MinhaContaFavoritosIndexRouteImport } from './routes/minha-conta/favoritos/index'
 import { Route as MinhaContaCancelamentosIndexRouteImport } from './routes/minha-conta/cancelamentos/index'
+import { Route as MinhaContaAvaliacoesIndexRouteImport } from './routes/minha-conta/avaliacoes/index'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
 import { Route as AdminProdutosIndexRouteImport } from './routes/admin/produtos/index'
 import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
@@ -259,6 +261,11 @@ const AdminConfiguracoesRoute = AdminConfiguracoesRouteImport.update({
   path: '/configuracoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminClientesRoute = AdminClientesRouteImport.update({
+  id: '/clientes',
+  path: '/clientes',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   id: '/categorias',
   path: '/categorias',
@@ -305,6 +312,12 @@ const MinhaContaCancelamentosIndexRoute =
   MinhaContaCancelamentosIndexRouteImport.update({
     id: '/cancelamentos/',
     path: '/cancelamentos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaAvaliacoesIndexRoute =
+  MinhaContaAvaliacoesIndexRouteImport.update({
+    id: '/avaliacoes/',
+    path: '/avaliacoes/',
     getParentRoute: () => MinhaContaRoute,
   } as any)
 const AfiliadoDashboardIndexRoute = AfiliadoDashboardIndexRouteImport.update({
@@ -395,6 +408,7 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -426,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/avaliacoes/': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
@@ -454,6 +469,7 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -483,6 +499,7 @@ export interface FileRoutesByTo {
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/avaliacoes': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes': typeof MinhaContaNotificacoesIndexRoute
@@ -514,6 +531,7 @@ export interface FileRoutesById {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
+  '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
@@ -545,6 +563,7 @@ export interface FileRoutesById {
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
+  '/minha-conta/avaliacoes/': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
@@ -577,6 +596,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
+    | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -608,6 +628,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
     | '/afiliado/dashboard/'
+    | '/minha-conta/avaliacoes/'
     | '/minha-conta/cancelamentos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
@@ -636,6 +657,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
+    | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -665,6 +687,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos'
     | '/afiliado/dashboard'
+    | '/minha-conta/avaliacoes'
     | '/minha-conta/cancelamentos'
     | '/minha-conta/favoritos'
     | '/minha-conta/notificacoes'
@@ -695,6 +718,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
+    | '/admin/clientes'
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
@@ -726,6 +750,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
     | '/afiliado/dashboard/'
+    | '/minha-conta/avaliacoes/'
     | '/minha-conta/cancelamentos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
@@ -1033,6 +1058,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminConfiguracoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/clientes': {
+      id: '/admin/clientes'
+      path: '/clientes'
+      fullPath: '/admin/clientes'
+      preLoaderRoute: typeof AdminClientesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/categorias': {
       id: '/admin/categorias'
       path: '/categorias'
@@ -1094,6 +1126,13 @@ declare module '@tanstack/react-router' {
       path: '/cancelamentos'
       fullPath: '/minha-conta/cancelamentos/'
       preLoaderRoute: typeof MinhaContaCancelamentosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/avaliacoes/': {
+      id: '/minha-conta/avaliacoes/'
+      path: '/avaliacoes'
+      fullPath: '/minha-conta/avaliacoes/'
+      preLoaderRoute: typeof MinhaContaAvaliacoesIndexRouteImport
       parentRoute: typeof MinhaContaRoute
     }
     '/afiliado/dashboard/': {
@@ -1204,6 +1243,7 @@ interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAtendimentoIaRoute: typeof AdminAtendimentoIaRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
+  AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminCrmRoute: typeof AdminCrmRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
@@ -1223,6 +1263,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAtendimentoIaRoute: AdminAtendimentoIaRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
+  AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminCrmRoute: AdminCrmRoute,
   AdminCuponsRoute: AdminCuponsRoute,
@@ -1242,6 +1283,7 @@ const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 interface MinhaContaRouteChildren {
   MinhaContaIndexRoute: typeof MinhaContaIndexRoute
   MinhaContaPedidosOrderIdRoute: typeof MinhaContaPedidosOrderIdRoute
+  MinhaContaAvaliacoesIndexRoute: typeof MinhaContaAvaliacoesIndexRoute
   MinhaContaCancelamentosIndexRoute: typeof MinhaContaCancelamentosIndexRoute
   MinhaContaFavoritosIndexRoute: typeof MinhaContaFavoritosIndexRoute
   MinhaContaNotificacoesIndexRoute: typeof MinhaContaNotificacoesIndexRoute
@@ -1252,6 +1294,7 @@ interface MinhaContaRouteChildren {
 const MinhaContaRouteChildren: MinhaContaRouteChildren = {
   MinhaContaIndexRoute: MinhaContaIndexRoute,
   MinhaContaPedidosOrderIdRoute: MinhaContaPedidosOrderIdRoute,
+  MinhaContaAvaliacoesIndexRoute: MinhaContaAvaliacoesIndexRoute,
   MinhaContaCancelamentosIndexRoute: MinhaContaCancelamentosIndexRoute,
   MinhaContaFavoritosIndexRoute: MinhaContaFavoritosIndexRoute,
   MinhaContaNotificacoesIndexRoute: MinhaContaNotificacoesIndexRoute,

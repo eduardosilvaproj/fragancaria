@@ -6,6 +6,7 @@ import {
   Bell,
   RotateCcw,
   User,
+  Star,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -50,6 +51,12 @@ const SECTIONS: SectionItem[] = [
     label: "Favoritos",
     href: "/minha-conta/favoritos",
     icon: Heart,
+  },
+  {
+    kind: "link",
+    label: "Avaliacoes",
+    href: "/minha-conta/avaliacoes",
+    icon: Star,
   },
   {
     kind: "link",
