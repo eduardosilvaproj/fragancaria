@@ -2,7 +2,7 @@ import { Button } from "../ui/button";
 import { Heart, Eye, ShoppingBag } from "lucide-react";
 import { Product } from "@/data/products";
 import { toast } from "sonner";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useCartStore } from "@/stores/cartStore";
@@ -17,11 +17,15 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const [isAdding, setIsAdding] = useState(false);
+  const navigate = useNavigate();
 
   const handleAddToCart = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-
+    if (product.variations && product.variations.length > 0) {
+      navigate({ to: `/produto/${product.id}` });
+      return;
+    }
     setIsAdding(true);
     addItem({
       id: product.id,

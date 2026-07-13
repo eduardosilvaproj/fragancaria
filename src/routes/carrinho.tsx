@@ -129,6 +129,11 @@ function CarrinhoPage() {
                         <h3 className="font-serif text-[16px] text-[#0F3A3E] leading-tight mb-2 line-clamp-2">
                           {item.title}
                         </h3>
+                        {item.variationName && (
+                          <p className="text-[12px] text-[#75827E] mb-1">
+                            Variação: {item.variationName}
+                          </p>
+                        )}
                         <p className="text-[14px] text-[#51635F]">
                           {formatPrice(item.price)}
                         </p>

@@ -25,6 +25,9 @@ export function rowToProduct(r: ProductRow): Product {
     sku: r.sku ?? undefined,
     featured: r.featured,
     isNew: r.is_new,
+    variations: Array.isArray((r as unknown as { variations?: unknown }).variations)
+      ? ((r as unknown as { variations: Product["variations"] }).variations ?? [])
+      : [],
   };
 }
 

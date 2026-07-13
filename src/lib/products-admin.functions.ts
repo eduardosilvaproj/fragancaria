@@ -15,6 +15,13 @@ function slugify(s: string): string {
     .replace(/^-+|-+$/g, "");
 }
 
+const variationSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200),
+  color: z.string().max(30).nullable().optional(),
+  image: z.string().max(2000).nullable().optional(),
+});
+
 const productInput = z.object({
   name: z.string().min(1).max(300),
   brand: z.string().max(120).nullable().optional(),
@@ -39,6 +46,8 @@ const productInput = z.object({
   // Dados fiscais
   ncm: z.string().max(10).nullable().optional(),
   eanBarcode: z.string().max(20).nullable().optional(),
+  // Variações (ex.: tons de coloração)
+  variations: z.array(variationSchema).max(50).optional(),
 });
 
 type ProductInput = z.infer<typeof productInput>;
@@ -72,6 +81,8 @@ function inputToRow(data: ProductInput) {
     // Dados fiscais
     ncm: data.ncm ?? null,
     ean_barcode: data.eanBarcode ?? null,
+    // Variações
+    variations: data.variations ?? [],
   };
 }
 
@@ -159,7 +170,7 @@ export const createProduct = createServerFn({ method: "POST" })
       };
       const { data: created, error } = await supabaseAdmin
         .from("products")
-        .insert(row)
+        .insert(row as any)
         .select("id")
         .single();
       if (error) return { success: false as const, error: error.message };
@@ -200,6 +211,7 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.featured !== undefined) patch.featured = p.featured;
       if (p.isNew !== undefined) patch.is_new = p.isNew;
       if (p.isActive !== undefined) patch.is_active = p.isActive;
+      if (p.variations !== undefined) patch.variations = p.variations;
 
       if (Object.keys(patch).length === 0) {
         return { success: false as const, error: "nenhum campo para atualizar" };
@@ -272,7 +284,7 @@ export const importProducts = createServerFn({ method: "POST" })
           external_ids: {},
         };
       });
-      const { error } = await supabaseAdmin.from("products").upsert(rows, { onConflict: "id" });
+      const { error } = await supabaseAdmin.from("products").upsert(rows as any, { onConflict: "id" });
       if (error) return { success: false as const, error: error.message };
       return { success: true as const, imported: rows.length };
     } catch (e: any) {

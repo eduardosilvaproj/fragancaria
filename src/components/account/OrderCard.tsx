@@ -42,7 +42,7 @@ export function OrderCard({
     refundStatus: string | null;
     total: number;
     trackingUrl: string | null;
-    items: Array<{ name: string; quantity: number; price: number }>;
+    items: Array<{ title: string; quantity: number; price: number; variationName?: string }>;
   };
   showActions?: boolean;
 }) {
@@ -72,7 +72,10 @@ export function OrderCard({
           {order.items.slice(0, 3).map((it, i) => (
             <li key={i} className="flex justify-between">
               <span>
-                {it.quantity}x {it.name}
+                {it.quantity}x {it.title}
+                {it.variationName && (
+                  <span className="text-[#75827E]"> — {it.variationName}</span>
+                )}
               </span>
               <span>{formatBRL(it.price)}</span>
             </li>

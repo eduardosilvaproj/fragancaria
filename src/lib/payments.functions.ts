@@ -30,7 +30,7 @@ const payerSchema = z.object({
   identification: z.object({ type: z.literal("CPF"), number: cpfSchema }),
   address: z.object({ zipCode: z.string().min(8).max(9), streetName: z.string().min(1), streetNumber: z.string().min(1), neighborhood: z.string().min(1), city: z.string().min(1), state: z.string().length(2), complement: z.string().optional() }).optional(),
 });
-const cartItemSchema = z.object({ id: z.string(), title: z.string(), quantity: z.number().int().positive(), price: z.number().positive(), image: z.string().optional() });
+const cartItemSchema = z.object({ id: z.string(), title: z.string(), quantity: z.number().int().positive(), price: z.number().positive(), image: z.string().optional(), variationName: z.string().optional() });
 const inputSchema = z.object({
   method: z.enum(["pix", "boleto", "credit_card"]),
   amount: z.number().positive().max(1_000_000),

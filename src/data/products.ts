@@ -2,6 +2,13 @@
 // Importados do Mercado Livre - 434 produtos
 // Gerado em 2026-06-23
 
+export interface ProductVariation {
+  id: string;
+  name: string;
+  color?: string | null;
+  image?: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -18,6 +25,7 @@ export interface Product {
   sku?: string;
   featured?: boolean;
   isNew?: boolean;
+  variations?: ProductVariation[];
 }
 
 export interface Category {

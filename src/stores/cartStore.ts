@@ -2,12 +2,15 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface SimpleCartItem {
-  id: string;
+  id: string; // chave única da linha: productId, ou `${productId}::${variationId}` quando há variação
   title: string;
   price: number;
   quantity: number;
   image: string;
   vendor: string;
+  productId?: string; // id do produto (para link de volta); ausente em itens antigos do localStorage
+  variationId?: string;
+  variationName?: string;
 }
 
 interface SimpleCartStore {

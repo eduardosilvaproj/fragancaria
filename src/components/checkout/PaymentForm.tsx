@@ -142,6 +142,7 @@ export function PaymentForm() {
     quantity: item.quantity,
     price: item.price,
     image: item.image,
+    variationName: item.variationName,
   }));
 
   const select = (id: PaymentMethodId) => setPaymentMethod(id);

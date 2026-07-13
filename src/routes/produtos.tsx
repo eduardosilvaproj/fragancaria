@@ -657,6 +657,7 @@ function ProdutosPage() {
                     badge={product.isNew ? "Novo" : undefined}
                     rating={4.5}
                     reviewCount={Math.floor(Math.random() * 100) + 10}
+                    variations={product.variations}
                   />
                 ))}
               </div>

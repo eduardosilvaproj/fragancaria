@@ -1,6 +1,6 @@
 import { X, Heart, Minus, Plus, ShoppingBag, ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
@@ -24,6 +24,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
   const addToCart = useCartStore((state) => state.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const { products } = useProducts();
+  const navigate = useNavigate();
 
   const product = productId ? products.find((p) => p.id === productId) : null;
   const isWishlisted = product ? isInWishlist(product.id) : false;
@@ -42,6 +43,11 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
   };
 
   const handleAddToCart = () => {
+    if (product.variations && product.variations.length > 0) {
+      onClose();
+      navigate({ to: `/produto/${product.id}` });
+      return;
+    }
     setIsAdding(true);
     addToCart({
       id: product.id,

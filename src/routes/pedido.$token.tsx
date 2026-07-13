@@ -142,7 +142,7 @@ function OrderContent({
     paymentStatus: string;
     trackingCode: string | null;
     createdAt: string;
-    items: Array<{ title: string; quantity: number; price: number }>;
+    items: Array<{ title: string; quantity: number; price: number; variationName?: string }>;
     statusHistory: Array<{ status: string; date: string }>;
   };
 }) {
@@ -271,6 +271,9 @@ function OrderContent({
                 <div key={i} className="flex justify-between text-[#0F3A3E]">
                   <span>
                     {it.quantity}x {it.title}
+                    {(it as any).variationName && (
+                      <span className="text-[#75827E]"> — {(it as any).variationName}</span>
+                    )}
                   </span>
                   <span>{BRL(it.price * it.quantity)}</span>
                 </div>

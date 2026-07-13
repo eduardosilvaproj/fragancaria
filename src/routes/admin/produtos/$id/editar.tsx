@@ -6,6 +6,7 @@ import { ArrowLeft, Loader2, Package } from "lucide-react";
 import { getProductForAdmin, updateProduct } from "@/lib/products-admin.functions";
 import { listCategories } from "@/lib/categories-admin.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { VariationsEditor, type VariationForm } from "@/components/admin/VariationsEditor";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/produtos/$id/editar")({
@@ -36,6 +37,9 @@ interface FormState {
   // Dados fiscais
   ncm: string;
   eanBarcode: string;
+  // Variações
+  hasVariations: boolean;
+  variations: VariationForm[];
 }
 
 const EMPTY_FORM: FormState = {
@@ -62,6 +66,9 @@ const EMPTY_FORM: FormState = {
   // Dados fiscais
   ncm: "",
   eanBarcode: "",
+  // Variações
+  hasVariations: false,
+  variations: [],
 };
 
 function EditarProduto() {
@@ -120,6 +127,16 @@ function EditarProduto() {
         // Dados fiscais
         ncm: p.ncm ?? "",
         eanBarcode: p.ean_barcode ?? "",
+        // Variações
+        hasVariations: Array.isArray(p.variations) && p.variations.length > 0,
+        variations: Array.isArray(p.variations)
+          ? p.variations.map((v: any) => ({
+              id: v.id ?? crypto.randomUUID().slice(0, 8),
+              name: v.name ?? "",
+              color: v.color ?? "",
+              image: v.image ?? "",
+            }))
+          : [],
       });
       setLoading(false);
     })();
@@ -174,6 +191,17 @@ function EditarProduto() {
             // Dados fiscais
             ncm: form.ncm.trim() || null,
             eanBarcode: form.eanBarcode.trim() || null,
+            // Variações
+            variations: form.hasVariations
+              ? form.variations
+                  .filter((v) => v.name.trim())
+                  .map((v) => ({
+                    id: v.id,
+                    name: v.name.trim(),
+                    color: v.color || null,
+                    image: v.image || null,
+                  }))
+              : [],
           },
         },
       });
@@ -353,6 +381,26 @@ function EditarProduto() {
               className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
             />
           </div>
+        </div>
+
+        {/* Variações */}
+        <div className="border-t border-[#E9E1D2] pt-6 mt-6">
+          <label className="flex items-center gap-2 text-sm text-[#51635F] mb-4">
+            <input
+              type="checkbox"
+              checked={form.hasVariations}
+              onChange={(e) => set("hasVariations", e.target.checked)}
+            />
+            <span className="text-xs uppercase tracking-wider text-[#B07B1E] font-medium">
+              Este produto tem variações (ex.: tons de coloração)
+            </span>
+          </label>
+          {form.hasVariations && (
+            <VariationsEditor
+              value={form.variations}
+              onChange={(variations) => set("variations", variations)}
+            />
+          )}
         </div>
 
         {/* Dimensões para Frete */}

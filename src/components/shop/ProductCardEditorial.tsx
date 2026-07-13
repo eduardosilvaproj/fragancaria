@@ -1,4 +1,4 @@
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { Heart, Eye, GitCompare } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCartStore } from "@/stores/cartStore";
@@ -8,6 +8,7 @@ import { useCompareStore } from "@/stores/compareStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackAddToCart } from "@/lib/analytics";
+import type { ProductVariation } from "@/data/products";
 
 export interface ProductCardEditorialProps {
   id: string;
@@ -21,6 +22,7 @@ export interface ProductCardEditorialProps {
   rating?: number;
   reviewCount?: number;
   className?: string;
+  variations?: ProductVariation[];
 }
 
 export function ProductCardEditorial({
@@ -34,10 +36,12 @@ export function ProductCardEditorial({
   rating,
   reviewCount,
   className,
+  variations,
 }: ProductCardEditorialProps) {
   const addToCart = useCartStore((state) => state.addItem);
   const { toggleItem, isInWishlist } = useWishlistStore();
   const openQuickView = useQuickViewStore((state) => state.openQuickView);
+  const navigate = useNavigate();
   const { toggleItem: toggleCompare, isInCompare, items: compareItems } = useCompareStore();
   const [isAdding, setIsAdding] = useState(false);
   const isWishlisted = isInWishlist(id);
@@ -48,6 +52,10 @@ export function ProductCardEditorial({
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (variations && variations.length > 0) {
+      navigate({ to: `/produto/${id}` });
+      return;
+    }
     setIsAdding(true);
 
     addToCart({

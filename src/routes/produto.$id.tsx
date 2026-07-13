@@ -40,6 +40,7 @@ function ProductPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string | null>("descricao");
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [selectedVariationId, setSelectedVariationId] = useState<string | null>(null);
   const addToCart = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setIsOpen);
   const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
@@ -137,16 +138,30 @@ function ProductPage() {
     });
   };
 
-  const handleAddToCart = () => {
-    setIsAdding(true);
-    addToCart({
-      id: p.id,
+  const buildCartItem = () => {
+    const variation = selectedVariationId
+      ? p.variations?.find((v) => v.id === selectedVariationId)
+      : undefined;
+    return {
+      id: variation ? `${p.id}::${variation.id}` : p.id,
       title: p.name,
       price: p.price,
       quantity,
-      image: p.images[0],
+      image: variation?.image || p.images[0],
       vendor: p.brand || "",
-    });
+      productId: p.id,
+      variationId: variation?.id,
+      variationName: variation?.name,
+    };
+  };
+
+  const handleAddToCart = () => {
+    if (p.variations?.length && !selectedVariationId) {
+      toast.error("Escolha uma variação antes de adicionar ao carrinho");
+      return;
+    }
+    setIsAdding(true);
+    addToCart(buildCartItem());
     toast.success("Adicionado ao carrinho!", {
       description: `${quantity}x ${p.name}`,
     });
@@ -154,14 +169,11 @@ function ProductPage() {
   };
 
   const handleBuyNow = () => {
-    addToCart({
-      id: p.id,
-      title: p.name,
-      price: p.price,
-      quantity,
-      image: p.images[0],
-      vendor: p.brand || "",
-    });
+    if (p.variations?.length && !selectedVariationId) {
+      toast.error("Escolha uma variação antes de continuar");
+      return;
+    }
+    addToCart(buildCartItem());
     setCartOpen(false);
     navigate({ to: "/checkout" });
   };
@@ -341,6 +353,45 @@ function ProductPage() {
                   ✦ {formatPrice(p.price * 0.95)} no PIX (5% off)
                 </p>
               </div>
+
+              {/* Variações */}
+              {p.variations && p.variations.length > 0 && (
+                <div className="mb-8">
+                  <p className="text-[13px] text-[#51635F] mb-3">
+                    Escolha uma opção:
+                    {selectedVariationId && (
+                      <span className="text-[#0F3A3E] font-medium ml-1">
+                        {p.variations.find((v) => v.id === selectedVariationId)?.name}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.variations.map((v) => {
+                      const isSelected = v.id === selectedVariationId;
+                      return (
+                        <button
+                          key={v.id}
+                          type="button"
+                          onClick={() => setSelectedVariationId(v.id)}
+                          className={`flex items-center gap-2 px-3 py-2 border text-[13px] transition-colors ${
+                            isSelected
+                              ? "border-[#0F3A3E] bg-[#0F3A3E] text-white"
+                              : "border-[#E0D8C7] text-[#51635F] hover:border-[#B07B1E]"
+                          }`}
+                        >
+                          {v.color && (
+                            <span
+                              className="w-4 h-4 rounded-full border border-black/10 flex-shrink-0"
+                              style={{ backgroundColor: v.color }}
+                            />
+                          )}
+                          {v.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Separator */}
               <div className="border-t border-[#E0D8C7] my-7" />

@@ -54,6 +54,11 @@ export function CheckoutSummary() {
               <p className="font-serif text-sm text-[#0F3A3E] leading-tight line-clamp-2">
                 {item.title}
               </p>
+              {item.variationName && (
+                <p className="text-[11px] text-[#75827E] mt-0.5">
+                  {item.variationName}
+                </p>
+              )}
               <div className="flex justify-between items-center mt-1 text-xs text-[#51635F]">
                 <span>Qtd: {item.quantity}</span>
                 <span className="font-semibold text-[#0F3A3E]">

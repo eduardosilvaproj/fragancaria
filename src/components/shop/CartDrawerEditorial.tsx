@@ -222,6 +222,12 @@ export const CartDrawerEditorial = () => {
                       {item.title}
                     </h4>
 
+                    {item.variationName && (
+                      <p className="text-[11px] text-[#75827E] mb-1">
+                        Variação: {item.variationName}
+                      </p>
+                    )}
+
                     {/* Price */}
                     <p className="text-[15px] font-medium text-[#0F3A3E] mb-3">
                       {formatPrice(item.price)}

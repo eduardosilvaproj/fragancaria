@@ -130,10 +130,13 @@ function OrderDetailPage() {
       <div className="bg-white rounded-2xl border border-[#E9E1D2] p-5">
         <h3 className="text-sm font-semibold text-[#0F3A3E] mb-3">Itens</h3>
         <ul className="divide-y divide-[#E9E1D2]">
-          {o.items.map((it: { name: string; quantity: number; price: number }, i: number) => (
+          {o.items.map((it: { title: string; quantity: number; price: number; variationName?: string }, i: number) => (
             <li key={i} className="flex justify-between py-3 text-sm">
               <span className="text-[#0F3A3E]">
-                {it.quantity}x {it.name}
+                {it.quantity}x {it.title}
+                {it.variationName && (
+                  <span className="text-[#75827E]"> — {it.variationName}</span>
+                )}
               </span>
               <span className="text-[#51635F]">{formatBRL(it.price)}</span>
             </li>
