@@ -49,8 +49,7 @@ frag-backup/
 Thumbs.db
 desktop.ini
 
-# Certificates (NF-e, SSL, etc.)
-certs/
+# Certificates — commitar o .pfx é opcional mas necessário para NF-e em produção
 
 # Credential dumps (existem em algum lugar na origem; nunca commitar)
 _link.txt
