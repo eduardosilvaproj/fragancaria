@@ -80,6 +80,47 @@ export const createPayment = createServerFn({ method: 'POST' })
     );
     let orderId: string | undefined;
     try {
+      // P0-Segurança: recalcula o valor autoritativo NO SERVIDOR. O browser
+      // não decide quanto cobra — preço de cada item vem do Supabase, frete da
+      // tabela fixa, e o desconto é limitado por um teto para bloquear o ataque
+      // "pagar R$0,01". Se o total recalculado divergir do enviado, rejeita e
+      // pede refresh (carrinho velho ou tentativa de manipulação).
+      if (!data.items || data.items.length === 0) {
+        return { success: false, error: 'Carrinho vazio.' };
+      }
+      const SHIPPING_TABLE: Record<string, number> = { pac: 18.9, sedex: 32.5, sedex10: 45 };
+      const MAX_SHIPPING = 45;
+      const MAX_DISCOUNT_PCT = 0.3;
+      const productIds = [...new Set(data.items.map((i) => i.id.split('::')[0]))];
+      const { data: prodRows, error: prodErr } = await admin
+        .from('products')
+        .select('id, price, is_active')
+        .in('id', productIds);
+      if (prodErr) return { success: false, error: 'Falha ao validar preços dos produtos.' };
+      const priceById = new Map(
+        (prodRows ?? []).map((p: any) => [p.id, { price: Number(p.price), active: p.is_active }]),
+      );
+      let serverSubtotal = 0;
+      for (const item of data.items) {
+        const pid = item.id.split('::')[0];
+        const p = priceById.get(pid);
+        if (!p || !p.active) {
+          return { success: false, error: 'Um produto do carrinho não está mais disponível. Atualize a página.' };
+        }
+        serverSubtotal += p.price * item.quantity;
+      }
+      const serverShipping =
+        data.shippingMethod && SHIPPING_TABLE[data.shippingMethod] != null
+          ? SHIPPING_TABLE[data.shippingMethod]
+          : Math.max(0, Math.min(data.shippingPrice ?? 0, MAX_SHIPPING));
+      const clientDiscount = Math.max(0, data.discount ?? 0);
+      const effectiveDiscount = Math.min(clientDiscount, serverSubtotal * MAX_DISCOUNT_PCT);
+      const serverAmount = Number((serverSubtotal - effectiveDiscount + serverShipping).toFixed(2));
+      if (Math.abs(serverAmount - data.amount) > 0.01) {
+        console.warn('[createPayment] divergência de valor', { serverAmount, clientAmount: data.amount });
+        return { success: false, error: 'O valor do pedido mudou. Atualize a página e tente novamente.' };
+      }
+
       // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
       //    se o cliente reenviar, o id do pedido continua igual (idempotente).
       orderId = data.externalReference;

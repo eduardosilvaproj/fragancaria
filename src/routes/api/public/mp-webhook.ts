@@ -9,7 +9,12 @@ const WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
 // Valida X-Signature (header: 'v1,<hmac>'). Se MP_WEBHOOK_SECRET nao estiver
 // setado, pula (modo dev). Docs: https://www.mercadopago.com.br/developers/pt/reference/notifications/webhooks
 function verifySignature(request: Request, rawBody: string): boolean {
-  if (!WEBHOOK_SECRET) return true;
+  if (!WEBHOOK_SECRET) {
+    // Fail closed: só ignora a verificação em modo dev explícito.
+    if (process.env.NODE_ENV === 'development') return true;
+    console.error('[mp-webhook] MP_WEBHOOK_SECRET ausente — rejeitando em produção');
+    return false;
+  }
   const header = request.headers.get('x-signature') || '';
   const ts = request.headers.get('x-timestamp') || '';
   const m = header.match(/v1=([a-f0-9]+)/i);
@@ -59,7 +64,7 @@ export const Route = createFileRoute('/api/public/mp-webhook')({
           // 1) dedupe: se o ultimo pagamento registrado for igual ao atual e ja foi processado, ignora.
           let existing: any = null;
           if (externalRef) {
-            const res = await supabaseAdmin.from('orders').select('payment_id, payment_status, status_history').eq('id', externalRef).single();
+            const res = await supabaseAdmin.from('orders').select('status, payment_id, payment_status, status_history').eq('id', externalRef).single();
             existing = res.data;
             if (existing && existing.payment_id === paymentId && existing.payment_status === payment?.status) {
               console.log('[mp-webhook] reentrega ignorada para', paymentId, 'status', payment?.status);
@@ -71,10 +76,21 @@ export const Route = createFileRoute('/api/public/mp-webhook')({
           const history = Array.isArray(existing?.status_history) ? existing.status_history : [];
           history.push({ status: payment?.status || 'unknown', detail: payment?.status_detail || null, at: new Date().toISOString() });
           const trimmedHistory = history.slice(-20);
+          // 2b) guard de transição: uma notificação atrasada do MP não pode
+          // regredir um pedido que já avançou (ex.: delivered/shipped voltar
+          // para paid). Se a transição for inválida, preserva o status atual e
+          // ainda assim atualiza payment_status/history/raw. Só valida quando
+          // conhecemos o status atual (caminho por external_reference).
+          const { canTransition } = await import('@/lib/order-state');
+          const currentStatus = existing?.status ? String(existing.status) : null;
+          const nextStatus =
+            currentStatus && !canTransition(currentStatus, mapped.orderStatus)
+              ? currentStatus
+              : mapped.orderStatus;
           // 3) update por external_reference (preferencial) OU por payment_id (fallback).
           const updatePayload: any = {
             payment_id: paymentId,
-            status: mapped.orderStatus,
+            status: nextStatus,
             payment_status: mapped.paymentStatus,
             payment_method_id: payment?.payment_method_id || null,
             payer_email: payment?.payer?.email || null,

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import crypto from "node:crypto";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -6,6 +7,28 @@ const corsHeaders = {
     "Content-Type, x-hub-signature-256, x-request-id",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
+
+const APP_SECRET = process.env.WHATSAPP_APP_SECRET;
+
+// Valida a assinatura da Meta (header x-hub-signature-256: 'sha256=<hex>',
+// HMAC-SHA256 do corpo cru com o WHATSAPP_APP_SECRET). Se o segredo não
+// estiver setado, recusa em produção (fail-closed) e ignora só em dev.
+function verifyMetaSignature(request: Request, rawBody: string): boolean {
+  if (!APP_SECRET) {
+    if (process.env.NODE_ENV === "development") return true;
+    console.error("[whatsapp-webhook] WHATSAPP_APP_SECRET ausente — rejeitando em produção");
+    return false;
+  }
+  const header = request.headers.get("x-hub-signature-256") || "";
+  const m = header.match(/^sha256=([a-f0-9]+)$/i);
+  if (!m) return false;
+  const expected = crypto.createHmac("sha256", APP_SECRET).update(rawBody).digest("hex");
+  try {
+    return crypto.timingSafeEqual(Buffer.from(m[1], "hex"), Buffer.from(expected, "hex"));
+  } catch {
+    return false;
+  }
+}
 
 type IncomingMessage = {
   wa_message_id: string;
@@ -136,8 +159,15 @@ export const Route = createFileRoute("/api/public/whatsapp-webhook")({
         return new Response("Forbidden", { status: 403, headers: corsHeaders });
       },
       POST: async ({ request }) => {
+        const raw = await request.text();
+        if (!verifyMetaSignature(request, raw)) {
+          return new Response(JSON.stringify({ error: "invalid signature" }), {
+            status: 401,
+            headers: { ...corsHeaders, "content-type": "application/json" },
+          });
+        }
         try {
-          const body = await request.json();
+          const body = JSON.parse(raw);
           const msgs = extractMessages(body);
           await persistMessages(msgs);
         } catch (err: any) {

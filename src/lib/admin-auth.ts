@@ -6,7 +6,7 @@
 // `admins` table, then stores {access_token, refresh_token} in an httpOnly
 // cookie. requireAdmin() validates that cookie on every protected server
 // function (and the /admin beforeLoad), refreshing the token when expired.
-import { getCookie, setCookie, deleteCookie } from "@tanstack/react-start/server";
+import { getCookie, setCookie, deleteCookie, getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import ws from "ws";
 
@@ -154,6 +154,22 @@ export async function loginAdmin(
   email: string,
   password: string,
 ): Promise<AdminUser> {
+  // Rate limit por e-mail + IP: no máximo 5 tentativas a cada 15 min. Trava
+  // brute-force. O bucket é zerado num login bem-sucedido. Em memória (uma
+  // instância no Railway); migrar p/ Redis se escalar horizontalmente.
+  const { rateLimit, rateLimitReset } = await import("@/lib/rate-limit");
+  const ip =
+    getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
+    getRequestHeader("x-real-ip") ||
+    "unknown";
+  const rlKey = `admin-login:${email.toLowerCase()}:${ip}`;
+  const rl = rateLimit(rlKey, 5, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    throw new Error(
+      `MUITAS_TENTATIVAS: tente novamente em ${Math.ceil(rl.retryAfterSeconds / 60)} min`,
+    );
+  }
+
   const auth = getAuthClient();
   const { data, error } = await auth.auth.signInWithPassword({ email, password });
   if (error || !data?.user || !data?.session) {
@@ -170,5 +186,6 @@ export async function loginAdmin(
     refresh_token: data.session.refresh_token,
   });
 
+  rateLimitReset(rlKey);
   return { userId, email: data.user.email ?? "" };
 }
