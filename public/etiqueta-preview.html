@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Etiqueta Fragranciaria — 100×150mm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     ETIQUETA FRAGRANCIARIA — 100 × 150 mm
+     Impressão térmica monocromática: SOMENTE preto e branco.
+     Sem cinza-claro, sem dourado, sem sombra, sem gradiente.
+     Estrutura em CSS Grid. Espaçamento em grid de 8px / múltiplos de mm.
+     ============================================================ */
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    background: #d8d8d8;
+    font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .screen-wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+    padding: 32px 16px;
+  }
+
+  .toolbar { display: flex; gap: 12px; }
+  .toolbar button {
+    font: 600 13px/1 "Inter", sans-serif;
+    letter-spacing: 0.02em;
+    padding: 10px 18px;
+    border: 1.5px solid #000;
+    background: #000;
+    color: #fff;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .toolbar button.secondary { background: #fff; color: #000; }
+
+  /* ---------- A ETIQUETA ---------- */
+  .label {
+    width: 100mm;
+    height: 150mm;
+    background: #fff;
+    color: #000;
+    padding: 5mm;
+    display: grid;
+    grid-template-rows: auto auto 1fr auto auto auto;
+    row-gap: 3mm;
+    overflow: hidden;
+  }
+
+  /* HEADER — logo dominante · transportadora · badge */
+  .hdr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    column-gap: 3mm;
+    padding-bottom: 3mm;
+    border-bottom: 1.5px solid #000;
+  }
+  .hdr__logo-img {
+    width: 50mm;
+    max-height: 24mm;
+    object-fit: contain;
+    object-position: left center;
+    display: block;
+    filter: grayscale(1) contrast(1.6);
+  }
+  .hdr__logo-text {
+    font-family: "Fraunces", Georgia, serif;
+    font-size: 21px; font-weight: 600; letter-spacing: 0.03em; line-height: 1;
+  }
+  .hdr__tag { font-size: 6.5px; font-weight: 500; letter-spacing: 0.14em; margin-top: 1.5mm; }
+  .hdr__right { display: flex; flex-direction: column; align-items: flex-end; gap: 1.5mm; }
+  .hdr__carrier { text-align: right; font-size: 8px; line-height: 1.4; }
+  .hdr__carrier strong { font-size: 9px; font-weight: 700; }
+  .badge {
+    background: #000; color: #fff;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.08em;
+    padding: 1.5mm 3mm;
+  }
+
+  /* REMETENTE — completo */
+  .from { padding-bottom: 3mm; border-bottom: 1px solid #000; }
+  .from__label,
+  .to__label { font-weight: 700; letter-spacing: 0.3em; }
+  .from__label { font-size: 6px; margin-bottom: 1.5mm; }
+  .from__name { font-size: 9px; font-weight: 600; line-height: 1.4; }
+  .from__addr { font-size: 8.5px; font-weight: 400; line-height: 1.45; }
+
+  /* DESTINATÁRIO — maior destaque */
+  .to {
+    display: flex; flex-direction: column; justify-content: center; min-height: 0;
+  }
+  .to__label { font-size: 7px; letter-spacing: 0.36em; margin-bottom: 2mm; }
+  .to__name  { font-size: 25px; font-weight: 700; line-height: 1.05; margin-bottom: 2.5mm; }
+  .to__addr  { font-size: 11px; font-weight: 400; line-height: 1.5; }
+  .to__cep   { font-size: 18px; font-weight: 700; letter-spacing: 0.04em; margin-top: 2.5mm; }
+
+  /* FAIXA DE DADOS — 5 colunas iguais, divisórias verticais 1px */
+  .strip { display: grid; grid-template-columns: repeat(5, 1fr); border: 1px solid #000; }
+  .strip__cell { padding: 1.5mm 1mm; text-align: center; border-left: 1px solid #000; }
+  .strip__cell:first-child { border-left: none; }
+  .strip__k { font-size: 5.5px; font-weight: 700; letter-spacing: 0.12em; margin-bottom: 0.8mm; }
+  .strip__v { font-size: 8.5px; font-weight: 600; }
+
+  /* CÓDIGO DE BARRAS — dominante */
+  .barcode { display: flex; flex-direction: column; align-items: center; }
+  .barcode__bars { display: flex; align-items: stretch; justify-content: center; width: 90%; height: 18mm; }
+  .barcode__bars span { flex-basis: 0; }
+  .barcode__code {
+    font-family: "Courier New", ui-monospace, monospace;
+    font-size: 13px; font-weight: 700; letter-spacing: 0.28em; margin-top: 2mm;
+  }
+
+  /* RODAPÉ */
+  .ftr {
+    border-top: 1px solid #000; padding-top: 2mm;
+    display: flex; justify-content: space-between;
+    font-size: 7px; font-weight: 500; letter-spacing: 0.08em;
+  }
+
+  /* ---------- IMPRESSÃO ---------- */
+  @page { size: 100mm 150mm; margin: 0; }
+  @media print {
+    html, body { background: #fff; }
+    .screen-wrap { padding: 0; gap: 0; }
+    .toolbar { display: none; }
+    .label { box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="screen-wrap">
+    <div class="toolbar">
+      <button onclick="window.print()">Imprimir etiqueta</button>
+      <button class="secondary" onclick="cycle()">Alternar exemplo</button>
+    </div>
+    <div class="label" id="label"><!-- render via JS --></div>
+  </div>
+
+<script>
+  // logoUrl: quando existe logo cadastrada, usa a imagem; senão, texto "FRAGRANCIARIA".
+  // tagline: só aparece se cadastrada. Nunca inventar texto.
+  const samples = [
+    {
+      carrier: "Correios", service: "SEDEX", service_code: "9992157880",
+      date: "2026-07-14", tracking_code: "OD123456789BR", order_number: 45897, weight: 500,
+      logoUrl: "/images/logo-dark.png",
+      tagline: "Hair Cosmetics • Beauty • Fragrances",
+      sender: {
+        name: "Fragranciaria", address: "Av. Paulista, 1578", number: "",
+        neighborhood: "Bela Vista", city: "São Paulo", state: "SP",
+        postal_code: "01310200", phone: "(11) 91234-5678",
+      },
+      recipient: {
+        name: "Mariana Albuquerque", address: "Rua das Laranjeiras, 402", number: "",
+        complement: "Apto 71", neighborhood: "Laranjeiras",
+        city: "Rio de Janeiro", state: "RJ", postal_code: "22240006",
+      },
+    },
+    {
+      carrier: "Correios", service: "PAC", service_code: "9912388231",
+      date: "2026-07-14", tracking_code: "PA987654321BR", order_number: 46012, weight: 1250,
+      logoUrl: null, // sem logo cadastrada -> fallback texto
+      tagline: null,  // sem tagline -> não mostra
+      sender: {
+        name: "Fragranciaria", address: "Av. Paulista, 1578", number: "",
+        neighborhood: "Bela Vista", city: "São Paulo", state: "SP",
+        postal_code: "01310200", phone: "",
+      },
+      recipient: {
+        name: "João Pedro Nascimento", address: "Rua Coronel Aureliano de Camargo", number: "1200",
+        complement: "", neighborhood: "Centro",
+        city: "Tatuí", state: "SP", postal_code: "18270170",
+      },
+    },
+  ];
+  let idx = 0;
+  let data = samples[0];
+
+  const formatCep = (cep) => (cep || "").replace(/^(\d{5})(\d{3})$/, "$1-$2");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]
+  ));
+
+  function buildBars(code) {
+    code = code || "FRAGRANCIARIA";
+    const seed = [...code].reduce((a, ch, i) => a + ch.charCodeAt(0) * (i + 1), 0);
+    let html = "";
+    for (let i = 0; i < 100; i++) {
+      const c = code.charCodeAt(i % code.length) + seed + i * 11;
+      const grow = (c % 3) + 1;
+      const bg = i % 2 === 0 ? "#000" : "#fff";
+      html += `<span style="flex-grow:${grow};background:${bg}"></span>`;
+    }
+    return html;
+  }
+
+  function render() {
+    const d = data, r = d.recipient, s = d.sender;
+    const logo = d.logoUrl
+      ? `<img class="hdr__logo-img" src="${esc(d.logoUrl)}" alt="Fragranciaria" onerror="this.outerHTML='<div class=\\'hdr__logo-text\\'>FRAGRANCIARIA</div>'" />`
+      : `<div class="hdr__logo-text">FRAGRANCIARIA</div>`;
+
+    const recipientLine1 = [
+      r.address + (r.number ? ", " + r.number : ""),
+      r.complement ? "— " + r.complement : "",
+    ].filter(Boolean).join(" ");
+
+    document.getElementById("label").innerHTML = `
+      <header class="hdr">
+        <div>
+          ${logo}
+        </div>
+        <div class="hdr__right">
+          <div class="hdr__carrier">
+            <strong>${esc(d.carrier || "Correios")}</strong>
+            ${d.service_code ? `<div>Contrato ${esc(d.service_code)}</div>` : ""}
+            <div>${new Date(d.date).toLocaleDateString("pt-BR")}</div>
+          </div>
+          <div class="badge">${esc(d.service)}</div>
+        </div>
+      </header>
+
+      <section class="from">
+        <div class="from__label">REMETENTE</div>
+        <div class="from__name">${esc(s.name)}</div>
+        <div class="from__addr">
+          ${s.address ? esc(s.address) + (s.number ? ", " + esc(s.number) : "") + "<br>" : ""}
+          ${s.neighborhood ? esc(s.neighborhood) + "<br>" : ""}
+          ${s.city ? esc(s.city) + "/" + esc(s.state) + "<br>" : ""}
+          CEP ${formatCep(s.postal_code)}
+          ${s.phone ? "<br>Tel " + esc(s.phone) : ""}
+        </div>
+      </section>
+
+      <section class="to">
+        <div class="to__label">ENTREGAR PARA</div>
+        <div class="to__name">${esc(r.name)}</div>
+        <div class="to__addr">
+          ${esc(recipientLine1)}<br>
+          ${r.neighborhood ? esc(r.neighborhood) + "<br>" : ""}
+          ${esc(r.city)}/${esc(r.state)}
+        </div>
+        <div class="to__cep">CEP ${formatCep(r.postal_code)}</div>
+      </section>
+
+      <div class="strip">
+        ${[
+          ["CEP", formatCep(r.postal_code)],
+          ["PESO", d.weight + " g"],
+          ["VOLUME", "1/1"],
+          ["SERVIÇO", d.service],
+          ["PEDIDO", d.order_number ? "#" + d.order_number : "—"],
+        ].map(([k, v]) => `
+          <div class="strip__cell">
+            <div class="strip__k">${esc(k)}</div>
+            <div class="strip__v">${esc(v)}</div>
+          </div>`).join("")}
+      </div>
+
+      <section class="barcode">
+        <div class="barcode__bars" aria-hidden="true">${buildBars(d.tracking_code)}</div>
+        <div class="barcode__code">${esc(d.tracking_code)}</div>
+      </section>
+
+      <footer class="ftr">
+        <span>fragranciaria.com</span>
+        <span>@fragranciaria</span>
+      </footer>
+    `;
+  }
+
+  function cycle() { idx = (idx + 1) % samples.length; data = samples[idx]; render(); }
+  render();
+</script>
+</body>
+</html>

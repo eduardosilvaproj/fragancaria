@@ -69,6 +69,7 @@ function AdminLogistica() {
   });
   const shipments: Shipment[] = shipmentsQuery.data?.success ? shipmentsQuery.data.data : [];
   const isLoading = shipmentsQuery.isLoading;
+  const listError = shipmentsQuery.data?.success === false ? shipmentsQuery.data.error : null;
 
   // Estatísticas
   const statsFn = useServerFn(getShipmentStats);
@@ -153,15 +154,27 @@ function AdminLogistica() {
     mutationFn: async (id: string) => {
       return getLabelFn({ data: { id } });
     },
-    onSuccess: (result, id) => {
-      if (result?.success && result.data?.url) {
-        window.open(result.data.url, "_blank");
-        toast.success("Etiqueta aberta");
+    onSuccess: (result) => {
+      if (result?.success) {
+        if (result.data?.type === "external" && result.data?.url) {
+          window.open(result.data.url, "_blank");
+          toast.success("Etiqueta aberta");
+        } else if (result.data?.type === "local") {
+          // Abrir modal de impressao local
+          setLocalLabelData(result.data);
+          setShowLocalLabelModal(true);
+        } else {
+          toast.success("Etiqueta disponível");
+        }
       } else {
         toast.error(result?.error || "Erro ao buscar etiqueta");
       }
     },
   });
+
+  // Estado para etiqueta local
+  const [showLocalLabelModal, setShowLocalLabelModal] = useState(false);
+  const [localLabelData, setLocalLabelData] = useState<any>(null);
 
   // =====================================================
   // SIGEP MUTATIONS
@@ -471,13 +484,25 @@ function AdminLogistica() {
         <div className="flex items-center justify-center py-16">
           <Loader2 className="h-8 w-8 animate-spin text-[#B07B1E]" />
         </div>
+      ) : listError ? (
+        <div className="bg-white border border-[#E9E1D2] p-12 text-center">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-600 font-medium">Erro ao carregar envios</p>
+          <p className="text-sm text-[#51635F] mt-2">{listError}</p>
+          <button
+            onClick={() => shipmentsQuery.refetch()}
+            className="mt-4 px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3]"
+          >
+            Tentar novamente
+          </button>
+        </div>
       ) : filteredShipments.length === 0 ? (
         <div className="bg-white border border-[#E9E1D2] p-12 text-center">
           <Package className="h-12 w-12 text-[#E9E1D2] mx-auto mb-4" />
           <p className="text-[#51635F]">Nenhum envio encontrado</p>
-          {statsQuery.isError && (
-            <p className="text-sm text-red-500 mt-2">
-              Erro ao carregar envios. Verifique se as tabelas existem.
+          {stats && (stats.pending + stats.paid) > 0 && (
+            <p className="text-sm text-amber-600 mt-2">
+              {stats.pending + stats.paid} pedido(s) aguardando envio
             </p>
           )}
         </div>
@@ -662,6 +687,7 @@ function AdminLogistica() {
             queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
             queryClient.invalidateQueries({ queryKey: ["admin-shipment-stats"] });
           }}
+          onGetLabel={(id) => getLabelMutation.mutate(id)}
         />
       )}
         </>
@@ -673,6 +699,17 @@ function AdminLogistica() {
           onClose={() => setShowSigepModal(false)}
           onSave={handleSaveCredentials}
           isSaving={isSavingCredentials}
+        />
+      )}
+
+      {/* Modal de etiqueta local para impressao */}
+      {showLocalLabelModal && localLabelData && (
+        <LocalLabelModal
+          data={localLabelData}
+          onClose={() => {
+            setShowLocalLabelModal(false);
+            setLocalLabelData(null);
+          }}
         />
       )}
     </div>
@@ -687,10 +724,12 @@ function CreateShipmentModal({
   shipment,
   onClose,
   onSuccess,
+  onGetLabel,
 }: {
   shipment: Shipment;
   onClose: () => void;
   onSuccess: () => void;
+  onGetLabel: (id: string) => void;
 }) {
   const [carrier, setCarrier] = useState("Correios");
   const [service, setService] = useState("PAC");
@@ -711,13 +750,14 @@ function CreateShipmentModal({
           estimatedDays: parseInt(estimatedDays),
           recipientName: shipment.recipient_name || shipment.customer_name || "",
           recipientEmail: shipment.recipient_email || shipment.customer_email || "",
-          recipientPostalCode: "01310100", // TODO: buscar do pedido
+          recipientPostalCode: shipment.recipient_postal_code || "",
           recipientAddress: {
-            street: "Endereço",
-            number: "0",
-            neighborhood: "Bairro",
-            city: "Cidade",
-            state: "SP",
+            street: shipment.recipient_address?.street || "",
+            number: shipment.recipient_address?.number || "",
+            complement: shipment.recipient_address?.complement || "",
+            neighborhood: shipment.recipient_address?.neighborhood || "",
+            city: shipment.recipient_address?.city || "",
+            state: shipment.recipient_address?.state || "",
           },
           packageWeight: 500,
           packageHeight: 10,
@@ -732,6 +772,10 @@ function CreateShipmentModal({
         toast.success("Envio criado com sucesso!");
         if (result.data?.tracking_code) {
           toast.info(`Código de rastreio: ${result.data.tracking_code}`);
+        }
+        // Se gerou ID, chamar callback para abrir etiqueta
+        if (result.data?.id) {
+          onGetLabel(result.data.id);
         }
         onSuccess();
       } else {
@@ -753,9 +797,9 @@ function CreateShipmentModal({
 
   const serviceOptions = carrier === "Correios"
     ? [
-        { label: "PAC", code: "04510", days: 8 },
-        { label: "SEDEX", code: "04014", days: 3 },
-        { label: "SEDEX 10", code: "04065", days: 1 },
+        { label: "PAC", code: "03298", days: 8 },
+        { label: "SEDEX", code: "03220", days: 3 },
+        { label: "SEDEX 10", code: "04162", days: 1 },
       ]
     : [
         { label: "Expresso", code: "EXPRESS", days: 5 },
@@ -1064,6 +1108,303 @@ function EtiquetasSIGEP({
 }
 
 // =====================================================
+// MODAL: Etiqueta local para impressao
+// =====================================================
+
+function LocalLabelModal({
+  data,
+  onClose,
+}: {
+  data: {
+    tracking_code: string;
+    carrier: string;
+    service: string;
+    service_code: string;
+    recipient: {
+      name: string;
+      address: string;
+      number: string;
+      complement: string;
+      neighborhood: string;
+      city: string;
+      state: string;
+      postal_code: string;
+    };
+    sender: {
+      name: string;
+      address?: string;
+      number?: string;
+      complement?: string;
+      neighborhood?: string;
+      city?: string;
+      state?: string;
+      postal_code: string;
+      phone?: string;
+    };
+    weight: number;
+    order_number?: number | null;
+    logoUrl?: string | null;
+    tagline?: string | null;
+    date: string;
+  };
+  onClose: () => void;
+}) {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const formatCep = (cep: string) => {
+    return (cep || "").replace(/^(\d{5})(\d{3})$/, "$1-$2");
+  };
+
+  // Barras determinísticas derivadas do código de rastreio (visual, não escaneável)
+  const barcodeBars: number[] = [];
+  {
+    const code = data.tracking_code || "FRAGRANCIARIA";
+    const seed = code.split("").reduce((a, ch, i) => a + ch.charCodeAt(0) * (i + 1), 0);
+    for (let i = 0; i < 100; i++) {
+      const c = code.charCodeAt(i % code.length) + seed + i * 11;
+      barcodeBars.push((c % 3) + 1);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:bg-transparent print:p-0 print:static">
+      <style>{`
+        @media print {
+          @page { size: 100mm 150mm; margin: 0; }
+          body * { visibility: hidden; }
+          #shipping-label, #shipping-label * { visibility: visible; }
+          #shipping-label {
+            position: absolute;
+            top: 0;
+            left: 0;
+            margin: 0;
+          }
+        }
+        #shipping-label { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      `}</style>
+      <div className="bg-white rounded-lg max-w-md w-full max-h-[92vh] overflow-y-auto print:rounded-none print:max-w-none print:w-auto print:overflow-visible">
+        {/* Header do modal (nao imprime) */}
+        <div className="flex items-center justify-between p-4 border-b border-[#E9E1D2] print:hidden">
+          <h2 className="text-lg font-serif text-[#0F3A3E] flex items-center gap-2">
+            <Printer className="h-5 w-5" />
+            Etiqueta de Envio (100 × 150 mm)
+          </h2>
+          <button onClick={onClose} className="text-[#8A938E] hover:text-[#0F3A3E]">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* ETIQUETA 100 × 100 mm — monocromática (impressão térmica) */}
+        <div className="flex justify-center p-6 print:p-0">
+          <div
+            id="shipping-label"
+            style={{
+              width: "100mm",
+              height: "150mm",
+              background: "#fff",
+              color: "#000",
+              fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
+              boxSizing: "border-box",
+              padding: "5mm",
+              display: "grid",
+              gridTemplateRows: "auto auto 1fr auto auto auto",
+              rowGap: "3mm",
+              overflow: "hidden",
+            }}
+          >
+            {/* HEADER — logo dominante · transportadora · badge serviço */}
+            <header
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr auto",
+                alignItems: "center",
+                columnGap: "3mm",
+                paddingBottom: "3mm",
+                borderBottom: "1.5px solid #000",
+              }}
+            >
+              <div>
+                {data.logoUrl ? (
+                  <img
+                    src={data.logoUrl}
+                    alt="Fragranciaria"
+                    style={{
+                      width: "50mm",
+                      maxHeight: "24mm",
+                      objectFit: "contain",
+                      objectPosition: "left center",
+                      display: "block",
+                      filter: "grayscale(1) contrast(1.6)",
+                    }}
+                  />
+                ) : (
+                  <div
+                    style={{
+                      fontFamily: "'Fraunces', Georgia, serif",
+                      fontSize: "21px",
+                      fontWeight: 600,
+                      letterSpacing: "0.03em",
+                      lineHeight: 1,
+                    }}
+                  >
+                    FRAGRANCIARIA
+                  </div>
+                )}
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1.5mm" }}>
+                <div style={{ textAlign: "right", fontSize: "8px", lineHeight: 1.4 }}>
+                  <div style={{ fontWeight: 700, fontSize: "9px" }}>{data.carrier || "Correios"}</div>
+                  {data.service_code ? <div>Contrato {data.service_code}</div> : null}
+                  <div>{new Date(data.date).toLocaleDateString("pt-BR")}</div>
+                </div>
+                <div
+                  style={{
+                    background: "#000",
+                    color: "#fff",
+                    fontSize: "13px",
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    padding: "1.5mm 3mm",
+                  }}
+                >
+                  {data.service}
+                </div>
+              </div>
+            </header>
+
+            {/* REMETENTE — informação completa */}
+            <section style={{ paddingBottom: "3mm", borderBottom: "1px solid #000" }}>
+              <div style={{ fontSize: "6px", fontWeight: 700, letterSpacing: "0.3em", marginBottom: "1.5mm" }}>
+                REMETENTE
+              </div>
+              <div style={{ fontSize: "9px", fontWeight: 600, lineHeight: 1.4 }}>{data.sender.name}</div>
+              <div style={{ fontSize: "8.5px", fontWeight: 400, lineHeight: 1.45 }}>
+                {data.sender.address ? (
+                  <>
+                    {data.sender.address}
+                    {data.sender.number ? `, ${data.sender.number}` : ""}
+                    {data.sender.complement ? ` — ${data.sender.complement}` : ""}
+                    <br />
+                  </>
+                ) : null}
+                {data.sender.neighborhood ? <>{data.sender.neighborhood}<br /></> : null}
+                {data.sender.city ? <>{data.sender.city}/{data.sender.state}<br /></> : null}
+                CEP {formatCep(data.sender.postal_code)}
+                {data.sender.phone ? <><br />Tel {data.sender.phone}</> : null}
+              </div>
+            </section>
+
+            {/* DESTINATÁRIO — maior destaque da etiqueta */}
+            <section style={{ display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
+              <div style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.36em", marginBottom: "2mm" }}>
+                ENTREGAR PARA
+              </div>
+              <div style={{ fontSize: "25px", fontWeight: 700, lineHeight: 1.05, marginBottom: "2.5mm" }}>
+                {data.recipient.name}
+              </div>
+              <div style={{ fontSize: "11px", fontWeight: 400, lineHeight: 1.5 }}>
+                {data.recipient.address}
+                {data.recipient.number ? `, ${data.recipient.number}` : ""}
+                {data.recipient.complement ? ` — ${data.recipient.complement}` : ""}
+                <br />
+                {data.recipient.neighborhood ? <>{data.recipient.neighborhood}<br /></> : null}
+                {data.recipient.city}/{data.recipient.state}
+              </div>
+              <div style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "0.04em", marginTop: "2.5mm" }}>
+                CEP {formatCep(data.recipient.postal_code)}
+              </div>
+            </section>
+
+            {/* FAIXA DE DADOS — 5 colunas iguais, divisórias verticais 1px */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", border: "1px solid #000" }}>
+              {[
+                { label: "CEP", value: formatCep(data.recipient.postal_code) },
+                { label: "PESO", value: `${data.weight} g` },
+                { label: "VOLUME", value: "1/1" },
+                { label: "SERVIÇO", value: data.service },
+                { label: "PEDIDO", value: data.order_number ? `#${data.order_number}` : "—" },
+              ].map((c, i) => (
+                <div
+                  key={c.label}
+                  style={{
+                    borderLeft: i === 0 ? "none" : "1px solid #000",
+                    padding: "1.5mm 1mm",
+                    textAlign: "center",
+                  }}
+                >
+                  <div style={{ fontSize: "5.5px", fontWeight: 700, letterSpacing: "0.12em", marginBottom: "0.8mm" }}>
+                    {c.label}
+                  </div>
+                  <div style={{ fontSize: "8.5px", fontWeight: 600 }}>{c.value}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* CÓDIGO DE BARRAS — elemento dominante da metade inferior */}
+            <section style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <div
+                style={{ display: "flex", alignItems: "stretch", justifyContent: "center", width: "90%", height: "18mm" }}
+                aria-hidden="true"
+              >
+                {barcodeBars.map((w, i) => (
+                  <div key={i} style={{ flexGrow: w, flexBasis: 0, background: i % 2 === 0 ? "#000" : "#fff" }} />
+                ))}
+              </div>
+              <div
+                style={{
+                  fontFamily: "'Courier New', ui-monospace, monospace",
+                  fontSize: "13px",
+                  fontWeight: 700,
+                  letterSpacing: "0.28em",
+                  marginTop: "2mm",
+                }}
+              >
+                {data.tracking_code}
+              </div>
+            </section>
+
+            {/* RODAPÉ */}
+            <footer
+              style={{
+                borderTop: "1px solid #000",
+                paddingTop: "2mm",
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: "7px",
+                fontWeight: 500,
+                letterSpacing: "0.08em",
+              }}
+            >
+              <span>fragranciaria.com</span>
+              <span>@fragranciaria</span>
+            </footer>
+          </div>
+        </div>
+
+        {/* Actions (nao aparece na impressao) */}
+        <div className="flex gap-3 p-4 border-t border-[#E9E1D2] print:hidden">
+          <button
+            onClick={onClose}
+            className="flex-1 px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3]"
+          >
+            Fechar
+          </button>
+          <button
+            onClick={handlePrint}
+            className="flex-1 px-4 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] flex items-center justify-center gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimir Etiqueta
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// =====================================================
 // MODAL: Configurar SIGEP
 // =====================================================
 
@@ -1077,18 +1418,16 @@ function SigepConfigModal({
   isSaving: boolean;
 }) {
   const [usuario, setUsuario] = useState("");
-  const [senha, setSenha] = useState("");
-  const [codAdministrativo, setCodAdministrativo] = useState("");
-  const [numeroCartao, setNumeroCartao] = useState("");
+  const [codigoAcesso, setCodigoAcesso] = useState("");
+  const [cartaoPostagem, setCartaoPostagem] = useState("");
   const [cepOrigem, setCepOrigem] = useState("");
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSave({
       usuario,
-      senha,
-      codAdministrativo,
-      numeroCartao,
+      codigoAcesso,
+      cartaoPostagem,
       cepOrigem,
     });
   };
@@ -1107,17 +1446,17 @@ function SigepConfigModal({
         </div>
 
         <div className="bg-amber-50 border border-amber-200 p-4 mb-6 text-sm">
-          <p className="font-medium text-amber-900 mb-1">O que é o SIGEP Web?</p>
+          <p className="font-medium text-amber-900 mb-1">Credenciais da API dos Correios</p>
           <p className="text-amber-700">
-            O SIGEP Web é o sistema dos Correios para emissão de etiquetas e rastreamento.
-            Suas credenciais são fornecidas quando você contrata um serviço de postagem.
+            Gere o código de acesso em cws.correios.com.br (Meu Correios → Meus Serviços → API).
+            Não é a senha do site. O cartão de postagem é o número do seu contrato de postagem.
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Usuário SIGEP
+              Usuário (CNPJ/contrato)
             </label>
             <input
               type="text"
@@ -1130,12 +1469,13 @@ function SigepConfigModal({
 
           <div>
             <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Senha
+              Código de Acesso à API
             </label>
             <input
               type="password"
-              value={senha}
-              onChange={(e) => setSenha(e.target.value)}
+              value={codigoAcesso}
+              onChange={(e) => setCodigoAcesso(e.target.value)}
+              placeholder="Gerado em cws.correios.com.br"
               className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
               required
             />
@@ -1143,26 +1483,12 @@ function SigepConfigModal({
 
           <div>
             <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Código Administrativo
+              Cartão de Postagem
             </label>
             <input
               type="text"
-              value={codAdministrativo}
-              onChange={(e) => setCodAdministrativo(e.target.value)}
-              placeholder="Ex: PB12345678"
-              className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Número do Cartão de Postagem
-            </label>
-            <input
-              type="text"
-              value={numeroCartao}
-              onChange={(e) => setNumeroCartao(e.target.value)}
+              value={cartaoPostagem}
+              onChange={(e) => setCartaoPostagem(e.target.value)}
               placeholder="Ex: 0067599451"
               className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
               required

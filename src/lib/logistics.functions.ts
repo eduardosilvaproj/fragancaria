@@ -100,7 +100,6 @@ export const listShipments = createServerFn({ method: "GET" })
       let query: any = db.from("shipping_quotes").select(`
         *,
         order:orders(
-          order_number,
           customer_name,
           customer_email
         )
@@ -115,9 +114,9 @@ export const listShipments = createServerFn({ method: "GET" })
 
       const shipments: Shipment[] = (rows || []).map((r: any) => ({
         ...r,
-        order_number: r.order?.order_number ?? null,
-        customer_name: r.order?.customer_name ?? null,
-        customer_email: r.order?.customer_email ?? null,
+        order_number: r.order_number ?? null,
+        customer_name: r.order?.customer_name ?? r.recipient_name ?? null,
+        customer_email: r.order?.customer_email ?? r.recipient_email ?? null,
       }));
 
       return { success: true as const, data: shipments };
@@ -444,7 +443,7 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
 
       const { data: shipment, error } = await db
         .from("shipping_quotes")
-        .select("id, tracking_code, label_url, shipment_id_external, carrier, service")
+        .select("*")
         .eq("id", data.id)
         .single();
 
@@ -452,42 +451,95 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
         return { success: false as const, error: "Envio não encontrado" };
       }
 
-      // Se ja tem URL da etiqueta, retorna
-      if (shipment.label_url) {
-        return { success: true as const, data: { url: shipment.label_url } };
+      if (!shipment.tracking_code) {
+        return { success: false as const, error: "Código de rastreio não gerado ainda" };
       }
 
-      // Senao, tenta gerar via API
+      // Se ja tem URL da etiqueta (Envio Facil), retorna
+      if (shipment.label_url) {
+        return { success: true as const, data: { url: shipment.label_url, type: "external" } };
+      }
+
+      // Verificar se tem ENVIOFACIL_API_KEY para tentar gerar via API
       const envioFacilApiKey = process.env.VITE_ENVIOFACIL_API_KEY || process.env.ENVIOFACIL_API_KEY;
 
-      if (!envioFacilApiKey || !shipment.shipment_id_external) {
-        return { success: false as const, error: "Etiqueta não disponível. Cadastre a chave da API Envio Fácil." };
-      }
+      if (envioFacilApiKey && shipment.shipment_id_external) {
+        try {
+          const response = await fetch(
+            `https://api.enviofacil.com.br/v1/shipments/${shipment.shipment_id_external}/label?format=pdf`,
+            {
+              headers: { "Authorization": `Bearer ${envioFacilApiKey}` },
+            }
+          );
 
-      const response = await fetch(
-        `https://api.enviofacil.com.br/v1/shipments/${shipment.shipment_id_external}/label?format=pdf`,
-        {
-          headers: { "Authorization": `Bearer ${envioFacilApiKey}` },
+          if (response.ok) {
+            const result = await response.json();
+
+            if (result.data?.url) {
+              // Atualizar URL no banco
+              await db
+                .from("shipping_quotes")
+                .update({ label_url: result.data.url })
+                .eq("id", data.id);
+
+              return { success: true as const, data: { url: result.data.url, type: "external" } };
+            }
+          }
+        } catch {
+          // Fallthrough para geracao local
         }
-      );
-
-      if (!response.ok) {
-        return { success: false as const, error: "Erro ao gerar etiqueta" };
       }
 
-      const result = await response.json();
+      // GERACAO LOCAL: retorna dados para impressao manual
+      // O frontend monta a pagina de impressao
+      const addr = shipment.recipient_address || {};
+      const senderCep = process.env.VITE_SENDER_POSTAL_CODE || "01310100";
 
-      if (result.data?.url) {
-        // Atualizar URL no banco
-        await db
-          .from("shipping_quotes")
-          .update({ label_url: result.data.url })
-          .eq("id", data.id);
+      const { data: senderRow } = await db
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", "sender_info")
+        .single();
+      const senderInfo = (senderRow?.value || {}) as Record<string, any>;
+      const senderAddr = senderInfo.address || {};
 
-        return { success: true as const, data: { url: result.data.url } };
-      }
-
-      return { success: false as const, error: "Etiqueta não disponível" };
+      return {
+        success: true as const,
+        data: {
+          type: "local",
+          id: shipment.id,
+          tracking_code: shipment.tracking_code,
+          carrier: shipment.carrier || "Correios",
+          service: shipment.service || "PAC",
+          service_code: shipment.service_code || "04510",
+          recipient: {
+            name: shipment.recipient_name || "",
+            address: addr.street || "",
+            number: addr.number || "",
+            complement: addr.complement || "",
+            neighborhood: addr.neighborhood || "",
+            city: addr.city || "",
+            state: addr.state || "",
+            postal_code: shipment.recipient_postal_code || "",
+          },
+          sender: {
+            name: senderInfo.name || process.env.VITE_SENDER_NAME || "Fragranciaria",
+            address: senderAddr.street || "",
+            number: senderAddr.number || "",
+            complement: senderAddr.complement || "",
+            neighborhood: senderAddr.neighborhood || "",
+            city: senderAddr.city || "",
+            state: senderAddr.state || "",
+            postal_code: senderInfo.postal_code || senderCep,
+            phone: senderInfo.phone || "",
+          },
+          weight: shipment.weight_grams || 500,
+          order_number: shipment.order_number ?? null,
+          logoUrl: senderInfo.logoUrl || "/images/logo-dark.png",
+          tagline: senderInfo.tagline || null,
+          date: new Date().toISOString(),
+        },
+      };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
       return { success: false as const, error: e?.message || "Erro desconhecido" };
@@ -581,9 +633,8 @@ export function buildTrackingUrl(carrier: string, trackingCode: string): string 
 
 export type SigepCredentials = {
   usuario: string;
-  senha: string;
-  codAdministrativo: string;
-  numeroCartao: string;
+  codigoAcesso: string;
+  cartaoPostagem: string;
   cepOrigem: string;
 };
 
@@ -607,8 +658,8 @@ export const getSigepInfo = createServerFn({ method: "GET" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { data, error } = await supabaseAdmin
-        .from("payment_settings")
-        .select("settings")
+        .from("shipping_settings")
+        .select("value, updated_at")
         .eq("key", "sigep_credentials")
         .single();
 
@@ -616,7 +667,8 @@ export const getSigepInfo = createServerFn({ method: "GET" })
         return { success: false, error: error.message };
       }
 
-      const configured = !!(data?.settings?.usuario && data?.settings?.senha);
+      const value = data?.value as SigepCredentials | undefined;
+      const configured = !!(value?.usuario && value?.codigoAcesso && value?.cartaoPostagem);
 
       return {
         success: true as const,
@@ -649,9 +701,8 @@ export const saveSigepCredentials = createServerFn({ method: "POST" })
           key: "sigep_credentials",
           value: {
             usuario: data.usuario,
-            senha: data.senha,
-            codAdministrativo: data.codAdministrativo,
-            numeroCartao: data.numeroCartao,
+            codigoAcesso: data.codigoAcesso,
+            cartaoPostagem: data.cartaoPostagem,
             cepOrigem: data.cepOrigem,
           },
         }, {
@@ -682,38 +733,93 @@ export const requestSigepLabels = createServerFn({ method: "POST" })
       await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-      // Buscar credenciais
       const { data: creds, error: credsError } = await supabaseAdmin
-        .from("payment_settings")
-        .select("settings")
+        .from("shipping_settings")
+        .select("value")
         .eq("key", "sigep_credentials")
         .single();
 
-      if (credsError || !creds?.settings?.usuario || !creds?.settings?.senha) {
-        return { success: false as const, error: "Credenciais SIGEP não configuradas" };
+      const credentials = creds?.value as SigepCredentials | undefined;
+
+      if (credsError || !credentials?.usuario || !credentials?.codigoAcesso || !credentials?.cartaoPostagem) {
+        return { success: false as const, error: "Credenciais da API Correios não configuradas" };
       }
 
-      const credentials = creds.settings;
+      const { data: senderRow } = await supabaseAdmin
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", "sender_info")
+        .single();
+      const sender = (senderRow?.value || {}) as Record<string, any>;
 
-      // Simular geração de etiquetas (na prática, chamaria API dos Correios)
-      // Por enquanto, geramos etiquetas mock locally
-      const serviceCode = data.servico === "SEDEX" ? "04014" : "04510";
+      const { criarPrepostagem } = await import("@/lib/correios-client.server");
+
+      const quantidade = Math.min(data.quantidade, 100);
       const labels: SigepLabel[] = [];
+      const errors: string[] = [];
 
-      for (let i = 0; i < Math.min(data.quantidade, 100); i++) {
-        const randomNum = Math.floor(Math.random() * 9000000000) + 1000000000;
-        const codigo = `${serviceCode}${randomNum}`;
+      for (let i = 0; i < quantidade; i++) {
+        try {
+          const result = await criarPrepostagem(
+            {
+              usuario: credentials.usuario,
+              codigoAcesso: credentials.codigoAcesso,
+              cartaoPostagem: credentials.cartaoPostagem,
+              cepOrigem: credentials.cepOrigem,
+            },
+            {
+              servico: data.servico as "PAC" | "SEDEX" | "SEDEX10",
+              remetente: {
+                nome: sender.name || "Fragranciaria",
+                telefone: sender.phone || "",
+                email: sender.email || "",
+                endereco: {
+                  logradouro: sender.address?.street || "",
+                  numero: sender.address?.number || "",
+                  complemento: sender.address?.complement || "",
+                  bairro: sender.address?.neighborhood || "",
+                  cidade: sender.address?.city || "",
+                  uf: sender.address?.state || "",
+                  cep: credentials.cepOrigem,
+                },
+              },
+              destinatario: {
+                nome: "A definir na postagem",
+                endereco: {
+                  logradouro: "",
+                  numero: "",
+                  bairro: "",
+                  cidade: "",
+                  uf: "",
+                  cep: "",
+                },
+              },
+              pesoGramas: 0,
+              alturaCm: 0,
+              larguraCm: 0,
+              comprimentoCm: 0,
+            },
+          );
 
-        labels.push({
-          id: crypto.randomUUID(),
-          codigo,
-          service: data.servico,
-          status: "available",
-          created_at: new Date().toISOString(),
-        });
+          labels.push({
+            id: crypto.randomUUID(),
+            codigo: result.codigoObjeto,
+            service: data.servico,
+            status: "available",
+            created_at: new Date().toISOString(),
+          });
+        } catch (apiError: any) {
+          errors.push(apiError?.message || "Erro desconhecido na API Correios");
+        }
       }
 
-      // Salvar etiquetas no banco
+      if (labels.length === 0) {
+        return {
+          success: false as const,
+          error: `Nenhuma etiqueta gerada. Erro da API Correios: ${errors[0] || "desconhecido"}`,
+        };
+      }
+
       const { error: insertError } = await supabaseAdmin
         .from("shipping_tags")
         .insert(labels.map(l => ({
@@ -732,6 +838,7 @@ export const requestSigepLabels = createServerFn({ method: "POST" })
           requested: data.quantidade,
           generated: labels.length,
           labels,
+          errors: errors.length > 0 ? errors : undefined,
         },
       };
     } catch (e: any) {
@@ -829,83 +936,86 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
       }
 
       const serviceMap: Record<string, { code: string; carrier: string; price: number; days: number }> = {
-        PAC: { code: "04510", carrier: "Correios", price: 0, days: 7 },
-        SEDEX: { code: "04014", carrier: "Correios", price: 0, days: 3 },
-        SEDEX10: { code: "40215", carrier: "Correios", price: 0, days: 1 },
+        PAC: { code: "03298", carrier: "Correios", price: 0, days: 7 },
+        SEDEX: { code: "03220", carrier: "Correios", price: 0, days: 3 },
+        SEDEX10: { code: "04162", carrier: "Correios", price: 0, days: 1 },
       };
 
       const svc = serviceMap[data.service];
 
-      // Chamar EnvioFacil se API key existir, senão simular etiqueta mock
       let trackingCode: string | null = null;
       let labelUrl: string | null = null;
 
-      const envioFacilApiKey = process.env.VITE_ENVIOFACIL_API_KEY || process.env.ENVIOFACIL_API_KEY;
+      const { data: credsRow } = await supabaseAdmin
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", "sigep_credentials")
+        .single();
+      const credentials = credsRow?.value as SigepCredentials | undefined;
 
-      if (envioFacilApiKey) {
+      const { data: senderRow } = await supabaseAdmin
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", "sender_info")
+        .single();
+      const sender = (senderRow?.value || {}) as Record<string, any>;
+
+      if (credentials?.usuario && credentials?.codigoAcesso && credentials?.cartaoPostagem) {
+        const { criarPrepostagem } = await import("@/lib/correios-client.server");
         try {
-          const response = await fetch("https://api.enviofacil.com.br/v1/shipments", {
-            method: "POST",
-            headers: {
-              "Authorization": `Bearer ${envioFacilApiKey}`,
-              "Content-Type": "application/json",
+          const result = await criarPrepostagem(
+            {
+              usuario: credentials.usuario,
+              codigoAcesso: credentials.codigoAcesso,
+              cartaoPostagem: credentials.cartaoPostagem,
+              cepOrigem: credentials.cepOrigem,
             },
-            body: JSON.stringify({
-              service_code: svc.code,
-              carrier: svc.carrier,
-              from: {
-                name: process.env.VITE_SENDER_NAME || "Fragranciaria",
-                document: process.env.VITE_SENDER_DOCUMENT || "",
+            {
+              servico: data.service,
+              remetente: {
+                nome: sender.name || "Fragranciaria",
+                telefone: sender.phone || "",
                 email: "contato@fragranciaria.com",
-                phone: "0000000000",
-                address: {
-                  street: process.env.VITE_SENDER_STREET || "Endereço",
-                  number: process.env.VITE_SENDER_NUMBER || "0",
-                  neighborhood: process.env.VITE_SENDER_NEIGHBORHOOD || "Centro",
-                  city: process.env.VITE_SENDER_CITY || "São Paulo",
-                  state: process.env.VITE_SENDER_STATE || "SP",
-                  postal_code: process.env.VITE_SENDER_POSTAL_CODE || "01310100",
+                endereco: {
+                  logradouro: sender.address?.street || "",
+                  numero: sender.address?.number || "",
+                  complemento: sender.address?.complement || "",
+                  bairro: sender.address?.neighborhood || "",
+                  cidade: sender.address?.city || "",
+                  uf: sender.address?.state || "",
+                  cep: credentials.cepOrigem,
                 },
               },
-              to: {
-                name: order.customer_name || "Cliente",
-                document: "",
+              destinatario: {
+                nome: order.customer_name || "Cliente",
+                telefone: order.customer_phone || "",
                 email: order.customer_email || "",
-                phone: order.customer_phone || "",
-                address: {
-                  street: addr.street || "",
-                  number: addr.number || "",
-                  complement: addr.complement || "",
-                  neighborhood: addr.neighborhood || "",
-                  city: addr.city || "",
-                  state: addr.state || "",
-                  postal_code: addr.zipCode || addr.cep || "",
+                endereco: {
+                  logradouro: addr.street || "",
+                  numero: addr.number || "",
+                  complemento: addr.complement || "",
+                  bairro: addr.neighborhood || "",
+                  cidade: addr.city || "",
+                  uf: addr.state || "",
+                  cep: addr.zipCode || addr.cep || "",
                 },
               },
-              package: {
-                weight_grams: data.packageWeight,
-                height_cm: data.packageHeight,
-                width_cm: data.packageWidth,
-                length_cm: data.packageLength,
-              },
-              declared_value: order.total || 0,
-              order_id: order.id,
-            }),
-          });
+              pesoGramas: data.packageWeight,
+              alturaCm: data.packageHeight,
+              larguraCm: data.packageWidth,
+              comprimentoCm: data.packageLength,
+              valorDeclarado: order.total || 0,
+            },
+          );
 
-          if (response.ok) {
-            const result = await response.json();
-            if (result.data) {
-              trackingCode = result.data.tracking_code || null;
-              labelUrl = result.data.label_url || null;
-            }
-          }
-        } catch (apiError) {
-          console.error("[generateOrderLabel] EnvioFacil API error:", apiError);
+          trackingCode = result.codigoObjeto;
+          labelUrl = result.urlEtiqueta || null;
+        } catch (apiError: any) {
+          console.error("[generateOrderLabel] Correios API error:", apiError);
+          return { success: false, error: "Erro na API dos Correios: " + (apiError?.message || "desconhecido") };
         }
       } else {
-        // Modo mock: gerar código fake para desenvolvimento
-        trackingCode = `PI${Math.random().toString().slice(2, 13)}BR`;
+        return { success: false, error: "Credenciais da API Correios não configuradas. Acesse Configurações > SIGEP." };
       }
 
       // Salvar shipping_quote
