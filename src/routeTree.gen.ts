@@ -13,6 +13,8 @@ import { Route as TrocasRouteImport } from './routes/trocas'
 import { Route as TermosRouteImport } from './routes/termos'
 import { Route as SimuladorRouteImport } from './routes/simulador'
 import { Route as SejaAfiliadoRouteImport } from './routes/seja-afiliado'
+import { Route as RedefinirSenhaRouteImport } from './routes/redefinir-senha'
+import { Route as RecuperarSenhaRouteImport } from './routes/recuperar-senha'
 import { Route as RastrearPedidoRouteImport } from './routes/rastrear-pedido'
 import { Route as ProdutosRouteImport } from './routes/produtos'
 import { Route as PrivacidadeRouteImport } from './routes/privacidade'
@@ -38,6 +40,7 @@ import { Route as AfiliadoCadastroSucessoRouteImport } from './routes/afiliado/c
 import { Route as AfiliadoCadastroRouteImport } from './routes/afiliado/cadastro'
 import { Route as AdminSacRouteImport } from './routes/admin/sac'
 import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
+import { Route as AdminReembolsosRouteImport } from './routes/admin/reembolsos'
 import { Route as AdminRedesSociaisRouteImport } from './routes/admin/redes-sociais'
 import { Route as AdminProdutosRouteImport } from './routes/admin/produtos'
 import { Route as AdminPedidosRouteImport } from './routes/admin/pedidos'
@@ -56,6 +59,8 @@ import { Route as MinhaContaPerfilIndexRouteImport } from './routes/minha-conta/
 import { Route as MinhaContaPedidosIndexRouteImport } from './routes/minha-conta/pedidos/index'
 import { Route as MinhaContaNotificacoesIndexRouteImport } from './routes/minha-conta/notificacoes/index'
 import { Route as MinhaContaFavoritosIndexRouteImport } from './routes/minha-conta/favoritos/index'
+import { Route as MinhaContaEnderecosIndexRouteImport } from './routes/minha-conta/enderecos/index'
+import { Route as MinhaContaDevolucoesIndexRouteImport } from './routes/minha-conta/devolucoes/index'
 import { Route as MinhaContaCancelamentosIndexRouteImport } from './routes/minha-conta/cancelamentos/index'
 import { Route as MinhaContaAvaliacoesIndexRouteImport } from './routes/minha-conta/avaliacoes/index'
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
@@ -89,6 +94,16 @@ const SimuladorRoute = SimuladorRouteImport.update({
 const SejaAfiliadoRoute = SejaAfiliadoRouteImport.update({
   id: '/seja-afiliado',
   path: '/seja-afiliado',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RedefinirSenhaRoute = RedefinirSenhaRouteImport.update({
+  id: '/redefinir-senha',
+  path: '/redefinir-senha',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RecuperarSenhaRoute = RecuperarSenhaRouteImport.update({
+  id: '/recuperar-senha',
+  path: '/recuperar-senha',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RastrearPedidoRoute = RastrearPedidoRouteImport.update({
@@ -216,6 +231,11 @@ const AdminReviewsRoute = AdminReviewsRouteImport.update({
   path: '/reviews',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReembolsosRoute = AdminReembolsosRouteImport.update({
+  id: '/reembolsos',
+  path: '/reembolsos',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminRedesSociaisRoute = AdminRedesSociaisRouteImport.update({
   id: '/redes-sociais',
   path: '/redes-sociais',
@@ -306,6 +326,18 @@ const MinhaContaFavoritosIndexRoute =
   MinhaContaFavoritosIndexRouteImport.update({
     id: '/favoritos/',
     path: '/favoritos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaEnderecosIndexRoute =
+  MinhaContaEnderecosIndexRouteImport.update({
+    id: '/enderecos/',
+    path: '/enderecos/',
+    getParentRoute: () => MinhaContaRoute,
+  } as any)
+const MinhaContaDevolucoesIndexRoute =
+  MinhaContaDevolucoesIndexRouteImport.update({
+    id: '/devolucoes/',
+    path: '/devolucoes/',
     getParentRoute: () => MinhaContaRoute,
   } as any)
 const MinhaContaCancelamentosIndexRoute =
@@ -400,6 +432,8 @@ export interface FileRoutesByFullPath {
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
@@ -418,6 +452,7 @@ export interface FileRoutesByFullPath {
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
+  '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
@@ -442,6 +477,8 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/avaliacoes/': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/devolucoes/': typeof MinhaContaDevolucoesIndexRoute
+  '/minha-conta/enderecos/': typeof MinhaContaEnderecosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
@@ -461,6 +498,8 @@ export interface FileRoutesByTo {
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
@@ -478,6 +517,7 @@ export interface FileRoutesByTo {
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
+  '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
@@ -501,6 +541,8 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/avaliacoes': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/devolucoes': typeof MinhaContaDevolucoesIndexRoute
+  '/minha-conta/enderecos': typeof MinhaContaEnderecosIndexRoute
   '/minha-conta/favoritos': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos': typeof MinhaContaPedidosIndexRoute
@@ -523,6 +565,8 @@ export interface FileRoutesById {
   '/privacidade': typeof PrivacidadeRoute
   '/produtos': typeof ProdutosRoute
   '/rastrear-pedido': typeof RastrearPedidoRoute
+  '/recuperar-senha': typeof RecuperarSenhaRoute
+  '/redefinir-senha': typeof RedefinirSenhaRoute
   '/seja-afiliado': typeof SejaAfiliadoRoute
   '/simulador': typeof SimuladorRoute
   '/termos': typeof TermosRoute
@@ -541,6 +585,7 @@ export interface FileRoutesById {
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
+  '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
@@ -565,6 +610,8 @@ export interface FileRoutesById {
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
   '/minha-conta/avaliacoes/': typeof MinhaContaAvaliacoesIndexRoute
   '/minha-conta/cancelamentos/': typeof MinhaContaCancelamentosIndexRoute
+  '/minha-conta/devolucoes/': typeof MinhaContaDevolucoesIndexRoute
+  '/minha-conta/enderecos/': typeof MinhaContaEnderecosIndexRoute
   '/minha-conta/favoritos/': typeof MinhaContaFavoritosIndexRoute
   '/minha-conta/notificacoes/': typeof MinhaContaNotificacoesIndexRoute
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
@@ -588,6 +635,8 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/seja-afiliado'
     | '/simulador'
     | '/termos'
@@ -606,6 +655,7 @@ export interface FileRouteTypes {
     | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/redes-sociais'
+    | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
     | '/afiliado/cadastro'
@@ -630,6 +680,8 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/'
     | '/minha-conta/avaliacoes/'
     | '/minha-conta/cancelamentos/'
+    | '/minha-conta/devolucoes/'
+    | '/minha-conta/enderecos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
     | '/minha-conta/pedidos/'
@@ -649,6 +701,8 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/seja-afiliado'
     | '/simulador'
     | '/termos'
@@ -666,6 +720,7 @@ export interface FileRouteTypes {
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/redes-sociais'
+    | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
     | '/afiliado/cadastro'
@@ -689,6 +744,8 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard'
     | '/minha-conta/avaliacoes'
     | '/minha-conta/cancelamentos'
+    | '/minha-conta/devolucoes'
+    | '/minha-conta/enderecos'
     | '/minha-conta/favoritos'
     | '/minha-conta/notificacoes'
     | '/minha-conta/pedidos'
@@ -710,6 +767,8 @@ export interface FileRouteTypes {
     | '/privacidade'
     | '/produtos'
     | '/rastrear-pedido'
+    | '/recuperar-senha'
+    | '/redefinir-senha'
     | '/seja-afiliado'
     | '/simulador'
     | '/termos'
@@ -728,6 +787,7 @@ export interface FileRouteTypes {
     | '/admin/pedidos'
     | '/admin/produtos'
     | '/admin/redes-sociais'
+    | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
     | '/afiliado/cadastro'
@@ -752,6 +812,8 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/'
     | '/minha-conta/avaliacoes/'
     | '/minha-conta/cancelamentos/'
+    | '/minha-conta/devolucoes/'
+    | '/minha-conta/enderecos/'
     | '/minha-conta/favoritos/'
     | '/minha-conta/notificacoes/'
     | '/minha-conta/pedidos/'
@@ -774,6 +836,8 @@ export interface RootRouteChildren {
   PrivacidadeRoute: typeof PrivacidadeRoute
   ProdutosRoute: typeof ProdutosRoute
   RastrearPedidoRoute: typeof RastrearPedidoRoute
+  RecuperarSenhaRoute: typeof RecuperarSenhaRoute
+  RedefinirSenhaRoute: typeof RedefinirSenhaRoute
   SejaAfiliadoRoute: typeof SejaAfiliadoRoute
   SimuladorRoute: typeof SimuladorRoute
   TermosRoute: typeof TermosRoute
@@ -818,6 +882,20 @@ declare module '@tanstack/react-router' {
       path: '/seja-afiliado'
       fullPath: '/seja-afiliado'
       preLoaderRoute: typeof SejaAfiliadoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/redefinir-senha': {
+      id: '/redefinir-senha'
+      path: '/redefinir-senha'
+      fullPath: '/redefinir-senha'
+      preLoaderRoute: typeof RedefinirSenhaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/recuperar-senha': {
+      id: '/recuperar-senha'
+      path: '/recuperar-senha'
+      fullPath: '/recuperar-senha'
+      preLoaderRoute: typeof RecuperarSenhaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/rastrear-pedido': {
@@ -995,6 +1073,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminReviewsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reembolsos': {
+      id: '/admin/reembolsos'
+      path: '/reembolsos'
+      fullPath: '/admin/reembolsos'
+      preLoaderRoute: typeof AdminReembolsosRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/redes-sociais': {
       id: '/admin/redes-sociais'
       path: '/redes-sociais'
@@ -1119,6 +1204,20 @@ declare module '@tanstack/react-router' {
       path: '/favoritos'
       fullPath: '/minha-conta/favoritos/'
       preLoaderRoute: typeof MinhaContaFavoritosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/enderecos/': {
+      id: '/minha-conta/enderecos/'
+      path: '/enderecos'
+      fullPath: '/minha-conta/enderecos/'
+      preLoaderRoute: typeof MinhaContaEnderecosIndexRouteImport
+      parentRoute: typeof MinhaContaRoute
+    }
+    '/minha-conta/devolucoes/': {
+      id: '/minha-conta/devolucoes/'
+      path: '/devolucoes'
+      fullPath: '/minha-conta/devolucoes/'
+      preLoaderRoute: typeof MinhaContaDevolucoesIndexRouteImport
       parentRoute: typeof MinhaContaRoute
     }
     '/minha-conta/cancelamentos/': {
@@ -1253,6 +1352,7 @@ interface AdminRouteChildren {
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminProdutosRoute: typeof AdminProdutosRouteWithChildren
   AdminRedesSociaisRoute: typeof AdminRedesSociaisRoute
+  AdminReembolsosRoute: typeof AdminReembolsosRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSacRoute: typeof AdminSacRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1273,6 +1373,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPedidosRoute: AdminPedidosRoute,
   AdminProdutosRoute: AdminProdutosRouteWithChildren,
   AdminRedesSociaisRoute: AdminRedesSociaisRoute,
+  AdminReembolsosRoute: AdminReembolsosRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSacRoute: AdminSacRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -1285,6 +1386,8 @@ interface MinhaContaRouteChildren {
   MinhaContaPedidosOrderIdRoute: typeof MinhaContaPedidosOrderIdRoute
   MinhaContaAvaliacoesIndexRoute: typeof MinhaContaAvaliacoesIndexRoute
   MinhaContaCancelamentosIndexRoute: typeof MinhaContaCancelamentosIndexRoute
+  MinhaContaDevolucoesIndexRoute: typeof MinhaContaDevolucoesIndexRoute
+  MinhaContaEnderecosIndexRoute: typeof MinhaContaEnderecosIndexRoute
   MinhaContaFavoritosIndexRoute: typeof MinhaContaFavoritosIndexRoute
   MinhaContaNotificacoesIndexRoute: typeof MinhaContaNotificacoesIndexRoute
   MinhaContaPedidosIndexRoute: typeof MinhaContaPedidosIndexRoute
@@ -1296,6 +1399,8 @@ const MinhaContaRouteChildren: MinhaContaRouteChildren = {
   MinhaContaPedidosOrderIdRoute: MinhaContaPedidosOrderIdRoute,
   MinhaContaAvaliacoesIndexRoute: MinhaContaAvaliacoesIndexRoute,
   MinhaContaCancelamentosIndexRoute: MinhaContaCancelamentosIndexRoute,
+  MinhaContaDevolucoesIndexRoute: MinhaContaDevolucoesIndexRoute,
+  MinhaContaEnderecosIndexRoute: MinhaContaEnderecosIndexRoute,
   MinhaContaFavoritosIndexRoute: MinhaContaFavoritosIndexRoute,
   MinhaContaNotificacoesIndexRoute: MinhaContaNotificacoesIndexRoute,
   MinhaContaPedidosIndexRoute: MinhaContaPedidosIndexRoute,
@@ -1340,6 +1445,8 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacidadeRoute: PrivacidadeRoute,
   ProdutosRoute: ProdutosRoute,
   RastrearPedidoRoute: RastrearPedidoRoute,
+  RecuperarSenhaRoute: RecuperarSenhaRoute,
+  RedefinirSenhaRoute: RedefinirSenhaRoute,
   SejaAfiliadoRoute: SejaAfiliadoRoute,
   SimuladorRoute: SimuladorRoute,
   TermosRoute: TermosRoute,

@@ -5,8 +5,10 @@ import {
   Heart,
   Bell,
   RotateCcw,
+  RefreshCcw,
   User,
   Star,
+  MapPin,
   ChevronRight,
   type LucideIcon,
 } from "lucide-react";
@@ -32,6 +34,7 @@ const SECTIONS: SectionItem[] = [
     exact: true,
   },
   { kind: "link", label: "Meus dados", href: "/minha-conta/perfil", icon: User },
+  { kind: "link", label: "Endereços", href: "/minha-conta/enderecos", icon: MapPin },
   { kind: "section", title: "Compras" },
   {
     kind: "link",
@@ -44,6 +47,12 @@ const SECTIONS: SectionItem[] = [
     label: "Cancelamentos",
     href: "/minha-conta/cancelamentos",
     icon: RotateCcw,
+  },
+  {
+    kind: "link",
+    label: "Devoluções",
+    href: "/minha-conta/devolucoes",
+    icon: RefreshCcw,
   },
   { kind: "section", title: "Engajamento" },
   {

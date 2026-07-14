@@ -163,18 +163,13 @@ export const getMyOrder = createServerFn({ method: "GET" })
           .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
           .maybeSingle();
         if (error || !order) return { success: false, error: "Pedido nao encontrado" };
-        const [{ data: items }, { data: history }] = await Promise.all([
-          supabase
-            .from("order_items")
-            .select("name, quantity, price")
-            .eq("order_id", data.orderId),
-          supabase
-            .from("order_status_history")
-            .select("status, created_at, notes")
-            .eq("order_id", data.orderId)
-            .order("created_at", { ascending: true }),
-        ]);
         const o: any = order;
+        // Itens e histórico vêm das colunas JSON de orders (schema canônico de
+        // prod). Não existem tabelas order_items / order_status_history.
+        // items: { id, title, quantity, price, image } (gravado por createPayment).
+        // status_history: { status, detail, at } (gravado por mp-webhook/admin).
+        const items = Array.isArray(o.items) ? o.items : [];
+        const history = Array.isArray(o.status_history) ? o.status_history : [];
         return {
           success: true,
           data: {
@@ -185,16 +180,16 @@ export const getMyOrder = createServerFn({ method: "GET" })
             refundStatus: o.refund_status ?? null,
             total: Number(o.total ?? 0),
             trackingCode: o.tracking_code ?? null,
-            trackingUrl: o.tracking_url ?? null,
-            items: (items ?? []).map((it: any) => ({
-              name: it.name ?? "",
+            trackingUrl: null,
+            items: items.map((it: any) => ({
+              name: it.title ?? it.name ?? "",
               quantity: Number(it.quantity ?? 0),
               price: Number(it.price ?? 0),
             })),
-            history: (history ?? []).map((h: any) => ({
+            history: history.map((h: any) => ({
               status: h.status ?? "",
-              createdAt: h.created_at ?? "",
-              notes: h.notes ?? null,
+              createdAt: h.at ?? h.created_at ?? "",
+              notes: h.detail ?? h.notes ?? null,
             })),
             shippingAddress: o.shipping_address ?? null,
             customer: {
@@ -209,6 +204,159 @@ export const getMyOrder = createServerFn({ method: "GET" })
       }
     }
   );
+
+// ----- Endereços -----------------------------------------------------------
+
+export type CustomerAddress = {
+  id: string;
+  label: string | null;
+  recipientName: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  isDefault: boolean;
+};
+
+const addressInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  label: z.string().max(60).optional(),
+  recipientName: z.string().min(1).max(120),
+  cep: z.string().min(8).max(9),
+  street: z.string().min(1).max(200),
+  number: z.string().min(1).max(20),
+  complement: z.string().max(120).optional(),
+  neighborhood: z.string().min(1).max(120),
+  city: z.string().min(1).max(120),
+  state: z.string().length(2),
+  isDefault: z.boolean().optional(),
+});
+
+function rowToAddress(r: any): CustomerAddress {
+  return {
+    id: r.id,
+    label: r.label ?? null,
+    recipientName: r.recipient_name ?? "",
+    cep: r.cep ?? "",
+    street: r.street ?? "",
+    number: r.number ?? "",
+    complement: r.complement ?? null,
+    neighborhood: r.neighborhood ?? "",
+    city: r.city ?? "",
+    state: r.state ?? "",
+    isDefault: Boolean(r.is_default),
+  };
+}
+
+export const listMyAddresses = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ success: boolean; data: CustomerAddress[]; error?: string }> => {
+    try {
+      const { user, supabase } = await getUserClient();
+      const { data, error } = await supabase
+        .from("customer_addresses")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("is_default", { ascending: false })
+        .order("created_at", { ascending: false });
+      if (error) return { success: false, data: [], error: error.message };
+      return { success: true, data: (data ?? []).map(rowToAddress) };
+    } catch (err: any) {
+      return { success: false, data: [], error: err?.message || "erro" };
+    }
+  }
+);
+
+export const saveAddress = createServerFn({ method: "POST" })
+  .validator((d: unknown) => addressInputSchema.parse(d))
+  .handler(async ({ data }): Promise<{ success: boolean; id?: string; error?: string }> => {
+    try {
+      const { user, supabase } = await getUserClient();
+      const row: Record<string, unknown> = {
+        user_id: user.id,
+        label: data.label ?? null,
+        recipient_name: data.recipientName,
+        cep: data.cep.replace(/\D/g, ""),
+        street: data.street,
+        number: data.number,
+        complement: data.complement ?? null,
+        neighborhood: data.neighborhood,
+        city: data.city,
+        state: data.state.toUpperCase(),
+        is_default: data.isDefault ?? false,
+      };
+
+      // O índice único parcial garante um só default por usuário. Se este vai
+      // ser o default, limpa o default anterior antes de gravar.
+      if (data.isDefault) {
+        await supabase
+          .from("customer_addresses")
+          .update({ is_default: false })
+          .eq("user_id", user.id)
+          .eq("is_default", true);
+      }
+
+      if (data.id) {
+        const { error } = await supabase
+          .from("customer_addresses")
+          .update(row)
+          .eq("id", data.id)
+          .eq("user_id", user.id);
+        if (error) return { success: false, error: error.message };
+        return { success: true, id: data.id };
+      }
+      const { data: inserted, error } = await supabase
+        .from("customer_addresses")
+        .insert(row)
+        .select("id")
+        .single();
+      if (error || !inserted) return { success: false, error: error?.message || "erro" };
+      return { success: true, id: (inserted as { id: string }).id };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "erro" };
+    }
+  });
+
+export const deleteAddress = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, supabase } = await getUserClient();
+      const { error } = await supabase
+        .from("customer_addresses")
+        .delete()
+        .eq("id", data.id)
+        .eq("user_id", user.id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "erro" };
+    }
+  });
+
+export const setDefaultAddress = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, supabase } = await getUserClient();
+      await supabase
+        .from("customer_addresses")
+        .update({ is_default: false })
+        .eq("user_id", user.id)
+        .eq("is_default", true);
+      const { error } = await supabase
+        .from("customer_addresses")
+        .update({ is_default: true })
+        .eq("id", data.id)
+        .eq("user_id", user.id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "erro" };
+    }
+  });
 
 // ----- Wishlist ------------------------------------------------------------
 

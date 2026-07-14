@@ -135,7 +135,15 @@ function LoginPage() {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-[#0F3A3E] mb-1">Senha</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-sm font-medium text-[#0F3A3E]">Senha</label>
+              <Link
+                to="/recuperar-senha"
+                className="text-xs text-[#B07B1E] hover:underline underline-offset-2"
+              >
+                Esqueceu a senha?
+              </Link>
+            </div>
             <input
               type="password"
               required
