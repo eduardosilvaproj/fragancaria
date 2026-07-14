@@ -220,6 +220,52 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
           "@/integrations/supabase/client.server"
         );
 
+        // Se o admin está mudando o status, valida a transição contra a
+        // máquina de estados. Bloqueia saltos impossíveis (ex.: pending ->
+        // delivered sem pagar) e regressões (ex.: delivered -> paid).
+        let notify: {
+          status: "shipped" | "delivered";
+          email: string;
+          name: string;
+          trackingCode: string | null;
+        } | null = null;
+        if (data.patch.status !== undefined) {
+          const { canTransition } = await import("@/lib/order-state");
+          const { data: current, error: readErr } = await supabaseAdmin
+            .from("orders")
+            .select("status, customer_email, customer_name, tracking_code")
+            .eq("id", data.orderId)
+            .maybeSingle();
+          if (readErr || !current) {
+            return { success: false, error: "Pedido não encontrado" };
+          }
+          const c = current as {
+            status: string;
+            customer_email: string | null;
+            customer_name: string | null;
+            tracking_code: string | null;
+          };
+          const from = String(c.status);
+          if (!canTransition(from, data.patch.status)) {
+            return {
+              success: false,
+              error: `Transição inválida: ${from} → ${data.patch.status}`,
+            };
+          }
+          if (
+            (data.patch.status === "shipped" || data.patch.status === "delivered") &&
+            c.customer_email
+          ) {
+            notify = {
+              status: data.patch.status,
+              email: c.customer_email,
+              name: c.customer_name ?? "",
+              // trackingCode do patch tem prioridade (admin pode setar junto).
+              trackingCode: data.patch.trackingCode ?? c.tracking_code,
+            };
+          }
+        }
+
         const updatePayload: Record<string, unknown> = {};
         if (data.patch.status !== undefined)
           updatePayload.status = data.patch.status;
@@ -239,6 +285,21 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
           .update(updatePayload as unknown as Record<string, never>)
           .eq("id", data.orderId);
         if (error) return { success: false, error: error.message };
+
+        // Notifica o cliente por e-mail quando o pedido foi enviado/entregue.
+        // Não bloqueia a resposta se o envio falhar.
+        if (notify) {
+          const { sendOrderStatusEmail } = await import("@/lib/email.functions");
+          await sendOrderStatusEmail({
+            orderId: data.orderId,
+            customerName: notify.name,
+            customerEmail: notify.email,
+            status: notify.status,
+            trackingCode: notify.trackingCode,
+          }).catch((err) =>
+            console.warn("[updateOrderForAdmin] e-mail de status falhou (não bloqueia)", err),
+          );
+        }
         return { success: true };
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "erro";

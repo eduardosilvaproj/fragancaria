@@ -3,6 +3,9 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 import { z } from "zod";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { canTransition } from "@/lib/order-state";
+
+const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // Per-request Supabase client. Reads the JWT the attachSupabaseAuth
 // middleware attached to the request, creates a one-shot client that
@@ -204,19 +207,18 @@ export const requestRefund = createServerFn({ method: "POST" })
       };
     }
 
-    // (6a) INSERT refund request. auth_user_id and customer_email come
-    // from the SERVER-VERIFIED session, not from the browser payload.
-    // Cast 'as never' silences tsc on the stale Database; field list
-    // mirrors the refund_requests schema in the baseline.
+    // (6a) INSERT refund request. user_id comes from the SERVER-VERIFIED
+    // session, not from the browser payload. Column names mirror the real
+    // prod schema (refund_requests: order_id, user_id NOT NULL, reason
+    // NOT NULL, requested_amount, admin_notes, status).
     const { data: inserted, error: insErr } = await supabaseAdmin
-      .from("refund_requests" as never)
+      .from("refund_requests")
       .insert({
         order_id: data.orderId,
-        auth_user_id: userId,
-        customer_email: userEmail || null,
-        reason: data.reason ?? null,
+        user_id: userId,
+        reason: data.reason?.trim() || "Solicitação de reembolso",
         status: "pending",
-      } as never)
+      })
       .select("id")
       .maybeSingle();
 
@@ -251,4 +253,230 @@ export const requestRefund = createServerFn({ method: "POST" })
       refundRequestId: (inserted as RefundRequestRow).id,
       refundStatus: "requested",
     };
+  });
+
+// ADMIN: aprova uma solicitação de reembolso e EXECUTA o estorno no Mercado
+// Pago. Pagamento ainda pendente -> cancela (PUT status=cancelled). Pagamento
+// aprovado -> estorna (POST /refunds). Só depois de o MP confirmar é que o
+// pedido muda para cancelled/refunded, a solicitação vira "approved" e o
+// cliente é avisado por e-mail. Se o MP recusar, nada muda no banco.
+
+const approveSchema = z.object({ refundRequestId: uuid }).strict();
+
+export type ApproveRefundResult =
+  | { success: true; orderStatus: "cancelled" | "refunded" }
+  | { success: false; error: string };
+
+export const approveRefund = createServerFn({ method: "POST" })
+  .validator((d: unknown) => approveSchema.parse(d))
+  .handler(async ({ data }): Promise<ApproveRefundResult> => {
+    const { requireAdmin } = await import("@/lib/admin-auth");
+    await requireAdmin();
+
+    const token = process.env.MP_ACCESS_TOKEN;
+    if (!token) return { success: false, error: "MP_ACCESS_TOKEN não configurado" };
+
+    const { data: rrRow, error: rrErr } = await supabaseAdmin
+      .from("refund_requests")
+      .select("id, order_id, status")
+      .eq("id", data.refundRequestId)
+      .maybeSingle();
+    if (rrErr || !rrRow) return { success: false, error: "Solicitação não encontrada" };
+    const rr = rrRow as { id: string; order_id: string; status: string };
+    if (rr.status !== "pending") {
+      return { success: false, error: "Solicitação já foi processada" };
+    }
+
+    const { data: orderRow, error: orderErr } = await supabaseAdmin
+      .from("orders")
+      .select("id, status, payment_id, payment_status, customer_email, customer_name, status_history")
+      .eq("id", rr.order_id)
+      .maybeSingle();
+    if (orderErr || !orderRow) return { success: false, error: "Pedido não encontrado" };
+    const o = orderRow as unknown as {
+      id: string;
+      status: string;
+      payment_id: string | null;
+      payment_status: string;
+      customer_email: string | null;
+      customer_name: string | null;
+      status_history: unknown;
+    };
+    if (!o.payment_id) {
+      return { success: false, error: "Pedido não tem pagamento vinculado no Mercado Pago" };
+    }
+
+    const isApproved =
+      o.payment_status === "approved" ||
+      o.status === "paid" ||
+      o.status === "shipped" ||
+      o.status === "delivered";
+
+    let resp: Response;
+    let newOrderStatus: "cancelled" | "refunded";
+    let emailKind: "cancelled" | "refunded";
+    if (isApproved) {
+      resp = await fetch(`${MP_API}/${o.payment_id}/refunds`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": rr.id,
+        },
+        body: "{}",
+      });
+      newOrderStatus = "refunded";
+      emailKind = "refunded";
+    } else {
+      resp = await fetch(`${MP_API}/${o.payment_id}`, {
+        method: "PUT",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      newOrderStatus = "cancelled";
+      emailKind = "cancelled";
+    }
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => "");
+      return {
+        success: false,
+        error: `Falha ao processar no Mercado Pago (${resp.status}). ${errText.slice(0, 180)}`,
+      };
+    }
+
+    // MP confirmou. A transição é válida por construção (pending->cancelled,
+    // paid/shipped/delivered->refunded), mas checamos por segurança; o dinheiro
+    // já se moveu, então o estado do MP é a verdade.
+    if (!canTransition(o.status, newOrderStatus)) {
+      console.warn("[approveRefund] transição inesperada", { from: o.status, to: newOrderStatus });
+    }
+    const history = Array.isArray(o.status_history) ? o.status_history : [];
+    history.push({ status: newOrderStatus, detail: `admin_${emailKind}`, at: new Date().toISOString() });
+    const trimmed = history.slice(-20);
+
+    const { error: updOrderErr } = await supabaseAdmin
+      .from("orders")
+      .update({
+        status: newOrderStatus,
+        refund_status: "completed",
+        status_history: trimmed,
+        updated_at: new Date().toISOString(),
+      } as never)
+      .eq("id", o.id);
+    if (updOrderErr) {
+      return {
+        success: false,
+        error: "Estorno feito no MP, mas falhou ao atualizar o pedido. Reconcilie manualmente.",
+      };
+    }
+
+    await supabaseAdmin
+      .from("refund_requests")
+      .update({ status: "approved", updated_at: new Date().toISOString() } as never)
+      .eq("id", rr.id);
+
+    if (o.customer_email) {
+      const { sendRefundEmail } = await import("@/lib/email.functions");
+      await sendRefundEmail({
+        orderId: o.id,
+        customerName: o.customer_name ?? "",
+        customerEmail: o.customer_email,
+        kind: emailKind,
+      }).catch((err) => console.warn("[approveRefund] e-mail falhou (não bloqueia)", err));
+    }
+
+    return { success: true, orderStatus: newOrderStatus };
+  });
+
+// ADMIN: lista as solicitações de reembolso, juntando dados do pedido para a
+// tela de gestão. requireAdmin + service role.
+export type AdminRefundRow = {
+  id: string;
+  orderId: string;
+  status: string;
+  reason: string;
+  adminNotes: string | null;
+  createdAt: string;
+  orderTotal: number;
+  orderStatus: string;
+  paymentStatus: string;
+  customerName: string;
+  customerEmail: string;
+};
+
+export const listRefundRequests = createServerFn({ method: "GET" })
+  .validator((d: unknown) => (d ?? {}) as { status?: string })
+  .handler(
+    async ({ data }): Promise<{ success: true; data: AdminRefundRow[] } | { success: false; error: string }> => {
+      try {
+        const { requireAdmin } = await import("@/lib/admin-auth");
+        await requireAdmin();
+
+        let q = supabaseAdmin
+          .from("refund_requests")
+          .select("id, order_id, status, reason, admin_notes, created_at")
+          .order("created_at", { ascending: false });
+        if (data.status) q = q.eq("status", data.status);
+        const { data: rows, error } = await q;
+        if (error) return { success: false, error: error.message };
+
+        const orderIds = [...new Set((rows ?? []).map((r: any) => r.order_id))];
+        const { data: orders } = await supabaseAdmin
+          .from("orders")
+          .select("id, total, status, payment_status, customer_name, customer_email")
+          .in("id", orderIds.length ? orderIds : ["00000000-0000-0000-0000-000000000000"]);
+        const byId = new Map((orders ?? []).map((o: any) => [o.id, o]));
+
+        const mapped: AdminRefundRow[] = (rows ?? []).map((r: any) => {
+          const o: any = byId.get(r.order_id) ?? {};
+          return {
+            id: r.id,
+            orderId: r.order_id,
+            status: r.status,
+            reason: r.reason ?? "",
+            adminNotes: r.admin_notes ?? null,
+            createdAt: r.created_at ?? "",
+            orderTotal: Number(o.total ?? 0),
+            orderStatus: o.status ?? "",
+            paymentStatus: o.payment_status ?? "",
+            customerName: o.customer_name ?? "",
+            customerEmail: o.customer_email ?? "",
+          };
+        });
+        return { success: true, data: mapped };
+      } catch (e: any) {
+        if (e?.status === 401 || e?.status === 403) return { success: false, error: "Não autorizado" };
+        return { success: false, error: e?.message || "erro" };
+      }
+    },
+  );
+
+// ADMIN: rejeita uma solicitação de reembolso (não mexe no MP nem no pedido).
+export const rejectRefund = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z.object({ refundRequestId: uuid, adminNotes: z.string().trim().max(500).optional() }).strict().parse(d),
+  )
+  .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
+    const { requireAdmin } = await import("@/lib/admin-auth");
+    await requireAdmin();
+
+    const { data: rr, error: rrErr } = await supabaseAdmin
+      .from("refund_requests")
+      .select("id, order_id, status")
+      .eq("id", data.refundRequestId)
+      .maybeSingle();
+    if (rrErr || !rr) return { success: false, error: "Solicitação não encontrada" };
+    if ((rr as any).status !== "pending") return { success: false, error: "Solicitação já processada" };
+
+    const { error } = await supabaseAdmin
+      .from("refund_requests")
+      .update({ status: "rejected", admin_notes: data.adminNotes ?? null, updated_at: new Date().toISOString() } as never)
+      .eq("id", data.refundRequestId);
+    if (error) return { success: false, error: error.message };
+
+    await supabaseAdmin
+      .from("orders")
+      .update({ refund_status: "rejected" } as never)
+      .eq("id", (rr as any).order_id);
+    return { success: true };
   });

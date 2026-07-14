@@ -22,6 +22,7 @@ import {
   Tag,
   CreditCard,
   Layers,
+  RotateCcw,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -44,6 +45,7 @@ const SIDEBAR_ITEMS = [
   { label: "Produtos", href: "/admin/produtos", icon: Package },
   { label: "Categorias", href: "/admin/categorias", icon: Layers },
   { label: "Pedidos", href: "/admin/pedidos", icon: ShoppingBag },
+  { label: "Reembolsos", href: "/admin/reembolsos", icon: RotateCcw },
   { label: "Cupons", href: "/admin/cupons", icon: Tag },
   { label: "Logística", href: "/admin/logistica", icon: Truck },
   { section: "Relacionamento" },
