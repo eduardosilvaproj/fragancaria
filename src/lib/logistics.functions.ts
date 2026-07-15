@@ -1333,7 +1333,7 @@ export const startPicking = createServerFn({ method: "POST" })
       // Buscar pedido
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, status, items, total, customer_name, customer_email, shipping_address, tracking_code, order_number, processing_started_at, processing_finished_at")
+        .select("id, status, items, total, customer_name, customer_email, shipping_address, tracking_code")
         .eq("id", data.orderId)
         .single();
 
@@ -1358,10 +1358,7 @@ export const startPicking = createServerFn({ method: "POST" })
       const now = new Date().toISOString();
       const { error: updateError } = await db
         .from("orders")
-        .update({
-          status: "processing",
-          processing_started_at: now,
-        })
+        .update({ status: "processing" })
         .eq("id", data.orderId);
 
       if (updateError) {
@@ -1373,7 +1370,6 @@ export const startPicking = createServerFn({ method: "POST" })
         data: {
           order: {
             id: order.id,
-            order_number: order.order_number,
             status: "processing",
             customer_name: order.customer_name,
             customer_email: order.customer_email,
@@ -1381,7 +1377,6 @@ export const startPicking = createServerFn({ method: "POST" })
             total: order.total,
             shipping_address: order.shipping_address,
             tracking_code: order.tracking_code,
-            processing_started_at: now,
           },
           shipment: shipment
             ? {
@@ -1420,7 +1415,7 @@ export const finishPicking = createServerFn({ method: "POST" })
       // Buscar pedido
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, status, order_number")
+        .select("id, status")
         .eq("id", data.orderId)
         .single();
 
@@ -1437,10 +1432,7 @@ export const finishPicking = createServerFn({ method: "POST" })
       // Atualizar pedido para shipped
       const { error: orderUpdateError } = await db
         .from("orders")
-        .update({
-          status: "shipped",
-          processing_finished_at: now,
-        })
+        .update({ status: "shipped" })
         .eq("id", data.orderId);
 
       if (orderUpdateError) {
@@ -1460,7 +1452,6 @@ export const finishPicking = createServerFn({ method: "POST" })
         success: true as const,
         data: {
           orderId: data.orderId,
-          order_number: order.order_number,
           status: "shipped",
           shipped_at: now,
         },
