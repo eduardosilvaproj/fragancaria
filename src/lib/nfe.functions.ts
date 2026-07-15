@@ -76,13 +76,22 @@ function formatCEP(cep: string): string {
   return cep.replace(/\D/g, "").padStart(8, "0");
 }
 
-// Código IBGE da cidade do emitente (SP = 3550308). Idealmente viria de uma
-// tabela de cidades ou do nfe_settings; por enquanto hardcoded por UF.
-function getCityCode(uf: string): number {
-  const codes: Record<string, number> = {
-    SP: 3550308, RJ: 3304557, MG: 3106200,
-  };
-  return codes[uf?.toUpperCase()] || 3550308;
+// Código IBGE de cidade — usado tanto para emitente quanto destinatário.
+// Idealmente viria de uma tabela de cidades; por enquanto lookup por cidade.
+const CITY_CODES: Record<string, number> = {
+  "São Paulo": 3550308, "São Paulo, SP": 3550308,
+  "Rio de Janeiro": 3304557, "Rio de Janeiro, RJ": 3304557,
+  "Belo Horizonte": 3106200, "Belo Horizonte, MG": 3106200,
+  "Campinas": 3509502,
+  "Guarulhos": 3518800,
+  "São Bernardo do Campo": 3548702,
+  "Santo André": 3547803,
+  "Osasco": 3534401,
+  "Ribeirão Preto": 3541402,
+};
+
+function getCityCode(city: string): number {
+  return CITY_CODES[city] || 3550308; // default SP
 }
 
 // Código de pagamento para a notaas (tabela 4.4.7 do Manual NF-e).
@@ -269,7 +278,7 @@ export const emitNFe = createServerFn({ method: "POST" })
       }
 
       // 3. Monta payload para a notaas
-      const addr = settings.endereco;
+      const emitAddr = settings.endereco;
       const shippingAddr = order.shipping_address as Record<string, string> | null;
       const destDoc = order.customer_cpf || order.customer_document || "";
       const destDocClean = destDoc.replace(/\D/g, "");
@@ -282,14 +291,14 @@ export const emitNFe = createServerFn({ method: "POST" })
         const vTotal = qtd * vUn;
         return {
           descricao: String(item.title || item.name || "Produto"),
-          ncm: "33030000", // cosméticos — default; ideal: coluna ncm em products
-          cfop: "5102",    // venda de mercadoria adquirida (operação interna)
+          ncm: "33049990",
+          cfop: "5102",
           quantidade: qtd,
-          valorUnitario: vTotal,
+          valorUnitario: vUn,
           valorTotal: vTotal,
           unidade: "UN",
           codigo: String(item.id || item.product_id || `PRD${idx + 1}`).slice(0, 9),
-          cst: "00",       // tributada integralmente (Regime Normal)
+          cst: "00",
           aliquotaIcms: 18,
           aliquotaPis: 1.65,
           aliquotaCofins: 7.6,
@@ -299,17 +308,36 @@ export const emitNFe = createServerFn({ method: "POST" })
       const totalProd = notaasItems.reduce((s, i) => s + i.valorTotal, 0);
       const shippingPrice = Number(order.shipping_price) || 0;
       const discount = Number(order.discount) || 0;
-      const totalNf = totalProd + shippingPrice - discount;
+      const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
 
       const payload: Record<string, unknown> = {
         modelo: 55,
         naturezaOperacao: "Venda de mercadoria",
-        destinoOperacao: 1, // 1=interna (mesmo estado)
-        tipoOperacao: 1,    // 1=saída
-        finalidade: 1,      // 1=normal
+        destinoOperacao: 1,
+        tipoOperacao: 1,
+        finalidade: 1,
         consumidorFinal: 1,
         presencaComprador: 1,
-        tipoEmissao: 1,     // 1=normal
+        tipoEmissao: 1,
+        emit: {
+          cnpj: formatCNPJ(settings.cnpj),
+          inscricaoEstadual: settings.inscricao_estadual,
+          inscricaoMunicipal: settings.inscricao_municipal || undefined,
+          razaoSocial: settings.razao_social,
+          nomeFantasia: settings.nome_fantasia || undefined,
+          endereco: {
+            logradouro: emitAddr.logradouro,
+            numero: emitAddr.numero,
+            complemento: emitAddr.complemento || undefined,
+            bairro: emitAddr.bairro,
+            codigoMunicipio: getCityCode(emitAddr.cidade),
+            cidade: emitAddr.cidade,
+            uf: emitAddr.uf,
+            cep: formatCEP(emitAddr.cep),
+            pais: emitAddr.pais || "BR",
+            telefone: emitAddr.telefone || undefined,
+          },
+        },
         dest: {
           ...(isCPF
             ? { cpf: destDocClean.padStart(11, "0") }
@@ -320,7 +348,7 @@ export const emitNFe = createServerFn({ method: "POST" })
             logradouro: shippingAddr?.street || "",
             numero: shippingAddr?.number || "SN",
             bairro: shippingAddr?.neighborhood || "",
-            codigoMunicipio: getCityCode(shippingAddr?.state || settings.estado_uf),
+            codigoMunicipio: getCityCode(shippingAddr?.city || ""),
             cidade: shippingAddr?.city || "",
             uf: shippingAddr?.state || settings.estado_uf,
             cep: formatCEP(shippingAddr?.zipCode || shippingAddr?.cep || ""),

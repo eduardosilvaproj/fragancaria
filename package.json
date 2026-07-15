@@ -55,6 +55,7 @@
     "embla-carousel-react": "^8.6.0",
     "framer-motion": "11.1.7",
     "input-otp": "^1.4.2",
+    "jsbarcode": "^3.11.6",
     "lucide-react": "^1.17.0",
     "mercadopago": "^3.1.0",
     "node-forge": "^1.4.0",
@@ -78,6 +79,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "2.5.3",
+    "@types/jsbarcode": "^3.11.4",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

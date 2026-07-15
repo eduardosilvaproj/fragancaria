@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import JsBarcode from "jsbarcode";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -1157,16 +1158,21 @@ function LocalLabelModal({
     return (cep || "").replace(/^(\d{5})(\d{3})$/, "$1-$2");
   };
 
-  // Barras determinísticas derivadas do código de rastreio (visual, não escaneável)
-  const barcodeBars: number[] = [];
-  {
-    const code = data.tracking_code || "FRAGRANCIARIA";
-    const seed = code.split("").reduce((a, ch, i) => a + ch.charCodeAt(0) * (i + 1), 0);
-    for (let i = 0; i < 100; i++) {
-      const c = code.charCodeAt(i % code.length) + seed + i * 11;
-      barcodeBars.push((c % 3) + 1);
+  const barcodeRef = useRef<SVGSVGElement>(null);
+  useEffect(() => {
+    if (!barcodeRef.current) return;
+    try {
+      JsBarcode(barcodeRef.current, data.tracking_code || "FRAGRANCIARIA", {
+        format: "CODE128",
+        width: 2.4,
+        height: 72,
+        margin: 0,
+        displayValue: false,
+      });
+    } catch {
+      // código inválido para CODE128 — deixa o SVG vazio
     }
-  }
+  }, [data.tracking_code]);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 print:bg-transparent print:p-0 print:static">
@@ -1208,31 +1214,31 @@ function LocalLabelModal({
               fontFamily: "'Inter', 'Helvetica Neue', Arial, sans-serif",
               boxSizing: "border-box",
               padding: "5mm",
-              display: "grid",
-              gridTemplateRows: "auto auto 1fr auto auto auto",
-              rowGap: "3mm",
+              display: "flex",
+              flexDirection: "column",
               overflow: "hidden",
             }}
           >
-            {/* HEADER — logo dominante · transportadora · badge serviço */}
+            {/* HEADER — marca · transportadora/contrato · badge serviço */}
             <header
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr auto",
+                gridTemplateColumns: "1.6fr 1fr auto",
                 alignItems: "center",
                 columnGap: "3mm",
-                paddingBottom: "3mm",
+                paddingBottom: "2.5mm",
                 borderBottom: "1.5px solid #000",
+                flexShrink: 0,
               }}
             >
-              <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "2.5mm" }}>
                 {data.logoUrl ? (
                   <img
                     src={data.logoUrl}
                     alt="Fragranciaria"
                     style={{
-                      width: "50mm",
-                      maxHeight: "24mm",
+                      width: "26mm",
+                      maxHeight: "16mm",
                       objectFit: "contain",
                       objectPosition: "left center",
                       display: "block",
@@ -1240,85 +1246,151 @@ function LocalLabelModal({
                     }}
                   />
                 ) : (
-                  <div
-                    style={{
-                      fontFamily: "'Fraunces', Georgia, serif",
-                      fontSize: "21px",
-                      fontWeight: 600,
-                      letterSpacing: "0.03em",
-                      lineHeight: 1,
-                    }}
-                  >
-                    FRAGRANCIARIA
+                  <div>
+                    <div
+                      style={{
+                        fontFamily: "'Fraunces', Georgia, serif",
+                        fontSize: "17px",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        lineHeight: 1,
+                      }}
+                    >
+                      FRAGRANCIARIA
+                    </div>
+                    {data.tagline ? (
+                      <div style={{ fontSize: "6.5px", marginTop: "1mm", letterSpacing: "0.06em" }}>
+                        {data.tagline}
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "1.5mm" }}>
-                <div style={{ textAlign: "right", fontSize: "8px", lineHeight: 1.4 }}>
-                  <div style={{ fontWeight: 700, fontSize: "9px" }}>{data.carrier || "Correios"}</div>
-                  {data.service_code ? <div>Contrato {data.service_code}</div> : null}
-                  <div>{new Date(data.date).toLocaleDateString("pt-BR")}</div>
+              <div style={{ fontSize: "8px", lineHeight: 1.5 }}>
+                <div style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.04em", marginBottom: "1mm" }}>
+                  {(data.carrier || "Correios").toUpperCase()}
                 </div>
-                <div
-                  style={{
-                    background: "#000",
-                    color: "#fff",
-                    fontSize: "13px",
-                    fontWeight: 700,
-                    letterSpacing: "0.08em",
-                    padding: "1.5mm 3mm",
-                  }}
-                >
-                  {data.service}
+                {data.service_code ? (
+                  <div style={{ display: "flex", justifyContent: "space-between" }}>
+                    <span style={{ fontWeight: 600 }}>Contrato</span>
+                    <span>{data.service_code}</span>
+                  </div>
+                ) : null}
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <span style={{ fontWeight: 600 }}>Postagem</span>
+                  <span>{new Date(data.date).toLocaleDateString("pt-BR")}</span>
                 </div>
+              </div>
+              <div
+                style={{
+                  background: "#000",
+                  color: "#fff",
+                  fontSize: "12px",
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  padding: "2mm 3.5mm",
+                  textAlign: "center",
+                }}
+              >
+                {data.service}
               </div>
             </header>
 
-            {/* REMETENTE — informação completa */}
-            <section style={{ paddingBottom: "3mm", borderBottom: "1px solid #000" }}>
-              <div style={{ fontSize: "6px", fontWeight: 700, letterSpacing: "0.3em", marginBottom: "1.5mm" }}>
-                REMETENTE
+            {/* REMETENTE — 2 colunas: dados + card de serviço */}
+            <section
+              style={{
+                display: "grid",
+                gridTemplateColumns: "2.4fr 1fr",
+                gap: "3mm",
+                padding: "2.5mm 0",
+                borderBottom: "1px solid #000",
+                flexShrink: 0,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: "8px", fontWeight: 700, letterSpacing: "0.2em", marginBottom: "1.5mm" }}>
+                  REMETENTE
+                </div>
+                <div style={{ fontSize: "10px", fontWeight: 700, lineHeight: 1.35 }}>{data.sender.name}</div>
+                <div style={{ fontSize: "9.5px", fontWeight: 400, lineHeight: 1.4 }}>
+                  {data.sender.address ? (
+                    <>
+                      {data.sender.address}
+                      {data.sender.number ? `, ${data.sender.number}` : ""}
+                      {data.sender.complement ? ` — ${data.sender.complement}` : ""}
+                      <br />
+                    </>
+                  ) : null}
+                  {data.sender.neighborhood ? <>{data.sender.neighborhood}<br /></> : null}
+                  {data.sender.city ? <>{data.sender.city}{data.sender.state ? `/${data.sender.state}` : ""}<br /></> : null}
+                  CEP {formatCep(data.sender.postal_code)}
+                  {data.sender.phone ? <><br />Tel {data.sender.phone}</> : null}
+                </div>
               </div>
-              <div style={{ fontSize: "9px", fontWeight: 600, lineHeight: 1.4 }}>{data.sender.name}</div>
-              <div style={{ fontSize: "8.5px", fontWeight: 400, lineHeight: 1.45 }}>
-                {data.sender.address ? (
-                  <>
-                    {data.sender.address}
-                    {data.sender.number ? `, ${data.sender.number}` : ""}
-                    {data.sender.complement ? ` — ${data.sender.complement}` : ""}
-                    <br />
-                  </>
-                ) : null}
-                {data.sender.neighborhood ? <>{data.sender.neighborhood}<br /></> : null}
-                {data.sender.city ? <>{data.sender.city}/{data.sender.state}<br /></> : null}
-                CEP {formatCep(data.sender.postal_code)}
-                {data.sender.phone ? <><br />Tel {data.sender.phone}</> : null}
+              <div
+                style={{
+                  borderLeft: "1px solid #000",
+                  display: "flex",
+                  flexDirection: "column",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  paddingLeft: "2mm",
+                }}
+              >
+                <div style={{ fontSize: "8px", fontWeight: 600, letterSpacing: "0.1em" }}>SERVIÇO</div>
+                <div style={{ fontSize: "17px", fontWeight: 800, marginTop: "1.5mm" }}>{data.service}</div>
               </div>
             </section>
 
-            {/* DESTINATÁRIO — maior destaque da etiqueta */}
-            <section style={{ display: "flex", flexDirection: "column", justifyContent: "center", minHeight: 0 }}>
-              <div style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.36em", marginBottom: "2mm" }}>
+            {/* DESTINATÁRIO — maior destaque, absorve o espaço livre */}
+            <section
+              style={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                padding: "2.5mm 0",
+                borderBottom: "1px solid #000",
+                minHeight: 0,
+              }}
+            >
+              <div style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.3em", marginBottom: "2mm" }}>
                 ENTREGAR PARA
               </div>
-              <div style={{ fontSize: "25px", fontWeight: 700, lineHeight: 1.05, marginBottom: "2.5mm" }}>
+              <div
+                style={{
+                  fontSize: "22px",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
+                  lineHeight: 1.1,
+                  marginBottom: "2mm",
+                  wordBreak: "break-word",
+                }}
+              >
                 {data.recipient.name}
               </div>
-              <div style={{ fontSize: "11px", fontWeight: 400, lineHeight: 1.5 }}>
+              <div style={{ fontSize: "11px", fontWeight: 400, lineHeight: 1.4 }}>
                 {data.recipient.address}
                 {data.recipient.number ? `, ${data.recipient.number}` : ""}
                 {data.recipient.complement ? ` — ${data.recipient.complement}` : ""}
                 <br />
                 {data.recipient.neighborhood ? <>{data.recipient.neighborhood}<br /></> : null}
-                {data.recipient.city}/{data.recipient.state}
+                {data.recipient.city}{data.recipient.state ? `/${data.recipient.state}` : ""}
               </div>
-              <div style={{ fontSize: "18px", fontWeight: 700, letterSpacing: "0.04em", marginTop: "2.5mm" }}>
+              <div style={{ fontSize: "19px", fontWeight: 800, letterSpacing: "0.04em", marginTop: "2.5mm" }}>
                 CEP {formatCep(data.recipient.postal_code)}
               </div>
             </section>
 
             {/* FAIXA DE DADOS — 5 colunas iguais, divisórias verticais 1px */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", border: "1px solid #000" }}>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(5, 1fr)",
+                borderBottom: "1px solid #000",
+                flexShrink: 0,
+              }}
+            >
               {[
                 { label: "CEP", value: formatCep(data.recipient.postal_code) },
                 { label: "PESO", value: `${data.weight} g` },
@@ -1330,35 +1402,38 @@ function LocalLabelModal({
                   key={c.label}
                   style={{
                     borderLeft: i === 0 ? "none" : "1px solid #000",
-                    padding: "1.5mm 1mm",
+                    padding: "2mm 1mm",
                     textAlign: "center",
                   }}
                 >
-                  <div style={{ fontSize: "5.5px", fontWeight: 700, letterSpacing: "0.12em", marginBottom: "0.8mm" }}>
+                  <div style={{ fontSize: "7px", fontWeight: 700, letterSpacing: "0.1em", marginBottom: "1mm" }}>
                     {c.label}
                   </div>
-                  <div style={{ fontSize: "8.5px", fontWeight: 600 }}>{c.value}</div>
+                  <div style={{ fontSize: "10px", fontWeight: 800 }}>{c.value}</div>
                 </div>
               ))}
             </div>
 
-            {/* CÓDIGO DE BARRAS — elemento dominante da metade inferior */}
-            <section style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-              <div
-                style={{ display: "flex", alignItems: "stretch", justifyContent: "center", width: "90%", height: "18mm" }}
-                aria-hidden="true"
-              >
-                {barcodeBars.map((w, i) => (
-                  <div key={i} style={{ flexGrow: w, flexBasis: 0, background: i % 2 === 0 ? "#000" : "#fff" }} />
-                ))}
-              </div>
+            {/* CÓDIGO DE BARRAS — CODE128 real, escaneável */}
+            <section
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "2.5mm 0",
+                borderBottom: "1px solid #000",
+                flexShrink: 0,
+              }}
+            >
+              <svg ref={barcodeRef} style={{ width: "88%", height: "16mm" }} aria-hidden="true" />
               <div
                 style={{
                   fontFamily: "'Courier New', ui-monospace, monospace",
                   fontSize: "13px",
                   fontWeight: 700,
-                  letterSpacing: "0.28em",
-                  marginTop: "2mm",
+                  letterSpacing: "0.25em",
+                  marginTop: "1.5mm",
                 }}
               >
                 {data.tracking_code}
@@ -1368,13 +1443,13 @@ function LocalLabelModal({
             {/* RODAPÉ */}
             <footer
               style={{
-                borderTop: "1px solid #000",
                 paddingTop: "2mm",
                 display: "flex",
                 justifyContent: "space-between",
-                fontSize: "7px",
-                fontWeight: 500,
-                letterSpacing: "0.08em",
+                fontSize: "9px",
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                flexShrink: 0,
               }}
             >
               <span>fragranciaria.com</span>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -1006,7 +1006,7 @@ function NfeSection() {
     certificado_path: "",
   });
 
-  useState(() => {
+  useEffect(() => {
     if (settings) {
       setForm({
         cnpj: settings.cnpj || "",
@@ -1028,7 +1028,7 @@ function NfeSection() {
         certificado_path: settings.certificado_path || "",
       });
     }
-  });
+  }, [settings]);
 
   const updateMutation = useMutation({
     mutationFn: async (payload: Parameters<typeof saveFn>[0]["data"]) => {
