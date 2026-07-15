@@ -770,12 +770,13 @@ function CreateShipmentModal({
     },
     onSuccess: (result) => {
       if (result?.success) {
-        toast.success("Envio criado com sucesso!");
         if (result.data?.tracking_code) {
-          toast.info(`Código de rastreio: ${result.data.tracking_code}`);
+          toast.success("Envio criado! Código: " + result.data.tracking_code);
+        } else {
+          toast.success("Envio criado! Código de rastreio pendente.");
         }
-        // Se gerou ID, chamar callback para abrir etiqueta
-        if (result.data?.id) {
+        // Só abre etiqueta se tiver código de rastreio
+        if (result.data?.id && result.data?.tracking_code) {
           onGetLabel(result.data.id);
         }
         onSuccess();
