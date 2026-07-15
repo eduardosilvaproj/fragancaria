@@ -207,6 +207,7 @@ function AdminLogistica() {
   const [pickingOrderId, setPickingOrderId] = useState<string | null>(null);
   const [pickingOrder, setPickingOrder] = useState<any>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, Set<number>>>({});
+  const [separatedOrders, setSeparatedOrders] = useState<Set<string>>(new Set());
 
   const startPickingMutation = useMutation({
     mutationFn: async (orderId: string) => startPickingFn({ data: { orderId } }),
@@ -688,15 +689,15 @@ function AdminLogistica() {
                 {/* Actions */}
                 <div className="flex flex-col gap-2">
                   {/* Status: processing = separação concluída */}
-                  {shipment.status === "processing" && (
+                  {shipment.status === "processing" && separatedOrders.has(shipment.order_id) && (
                     <span className="px-4 py-2 text-xs bg-emerald-100 text-emerald-700 rounded flex items-center gap-1">
                       <CheckCircle className="h-3 w-3" />
                       Separado ✓
                     </span>
                   )}
 
-                  {/* Separar: pedidos pagos */}
-                  {shipment.status === "processing" && (
+                  {/* Separar: pedidos em separação (só aparece antes de separar) */}
+                  {shipment.status === "processing" && !separatedOrders.has(shipment.order_id) && (
                     <button
                       onClick={() => {
                         setPickingOrderId(shipment.order_id);
@@ -715,7 +716,7 @@ function AdminLogistica() {
                   )}
 
                   {/* Visualizar Itens: após separação, consultar itens conferidos */}
-                  {shipment.status === "processing" && (
+                  {shipment.status === "processing" && separatedOrders.has(shipment.order_id) && (
                     <button
                       onClick={() => {
                         setPickingOrderId(shipment.order_id);
@@ -892,6 +893,9 @@ function AdminLogistica() {
           onToggleItem={(itemIndex: number) => toggleItem(pickingOrder.order?.id, itemIndex)}
           allChecked={allChecked(pickingOrder.order)}
           onClose={() => {
+            if (pickingOrder?.order?.id) {
+              setSeparatedOrders((prev) => new Set(prev).add(pickingOrder.order.id));
+            }
             setPickingOrder(null);
             queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
           }}
