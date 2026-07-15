@@ -714,8 +714,22 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Gerar Etiqueta: sempre visível quando não há envio OU para reimprimir */}
-                  {!shipment.shipment_id && (shipment.status === "paid" || shipment.status === "processing") && (
+                  {/* Visualizar Itens: após separação, consultar itens conferidos */}
+                  {shipment.status === "processing" && (
+                    <button
+                      onClick={() => {
+                        setPickingOrderId(shipment.order_id);
+                        startPickingMutation.mutate(shipment.order_id);
+                      }}
+                      className="px-4 py-2 text-xs border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
+                    >
+                      <Package className="h-3 w-3" />
+                      Visualizar Itens
+                    </button>
+                  )}
+
+                  {/* Gerar Etiqueta: sem envio OU envio sem rastreio */}
+                  {(!shipment.shipment_id || (shipment.shipment_id && !shipment.tracking_code)) && (shipment.status === "paid" || shipment.status === "processing") && (
                     <button
                       onClick={() => {
                         setSelectedShipment(shipment);
@@ -727,8 +741,8 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Imprimir Etiqueta: envio existe */}
-                  {shipment.shipment_id && (
+                  {/* Imprimir Etiqueta: envio existe e tem rastreio */}
+                  {shipment.shipment_id && shipment.tracking_code && (
                     <button
                       onClick={() => getLabelMutation.mutate(shipment.shipment_id!)}
                       disabled={getLabelMutation.isPending}
@@ -994,16 +1008,19 @@ function PickingModal({
             Fechar
           </button>
           <button
-            onClick={onFinish}
+            onClick={() => {
+              onFinish();
+              onClose();
+            }}
             disabled={isFinishing || !allChecked}
             className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1 ml-auto"
           >
             {isFinishing ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Truck className="h-4 w-4" />
+              <CheckCircle className="h-4 w-4" />
             )}
-            Confirmar Despacho
+            Salvar
           </button>
         </div>
       </div>
