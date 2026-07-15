@@ -38,7 +38,6 @@ import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
 import { Route as AfiliadoCadastroSucessoRouteImport } from './routes/afiliado/cadastro-sucesso'
 import { Route as AfiliadoCadastroRouteImport } from './routes/afiliado/cadastro'
-import { Route as AdminSeparacaoRouteImport } from './routes/admin/separacao'
 import { Route as AdminSacRouteImport } from './routes/admin/sac'
 import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
 import { Route as AdminReembolsosRouteImport } from './routes/admin/reembolsos'
@@ -221,11 +220,6 @@ const AfiliadoCadastroRoute = AfiliadoCadastroRouteImport.update({
   id: '/afiliado/cadastro',
   path: '/afiliado/cadastro',
   getParentRoute: () => rootRouteImport,
-} as any)
-const AdminSeparacaoRoute = AdminSeparacaoRouteImport.update({
-  id: '/separacao',
-  path: '/separacao',
-  getParentRoute: () => AdminRoute,
 } as any)
 const AdminSacRoute = AdminSacRouteImport.update({
   id: '/sac',
@@ -461,7 +455,6 @@ export interface FileRoutesByFullPath {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
-  '/admin/separacao': typeof AdminSeparacaoRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
@@ -527,7 +520,6 @@ export interface FileRoutesByTo {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
-  '/admin/separacao': typeof AdminSeparacaoRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/login': typeof AfiliadoLoginRoute
@@ -596,7 +588,6 @@ export interface FileRoutesById {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
-  '/admin/separacao': typeof AdminSeparacaoRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
@@ -667,7 +658,6 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
-    | '/admin/separacao'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/dashboard'
@@ -733,7 +723,6 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
-    | '/admin/separacao'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/login'
@@ -801,7 +790,6 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
-    | '/admin/separacao'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/dashboard'
@@ -1070,13 +1058,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/afiliado/cadastro'
       preLoaderRoute: typeof AfiliadoCadastroRouteImport
       parentRoute: typeof rootRouteImport
-    }
-    '/admin/separacao': {
-      id: '/admin/separacao'
-      path: '/separacao'
-      fullPath: '/admin/separacao'
-      preLoaderRoute: typeof AdminSeparacaoRouteImport
-      parentRoute: typeof AdminRoute
     }
     '/admin/sac': {
       id: '/admin/sac'
@@ -1374,7 +1355,6 @@ interface AdminRouteChildren {
   AdminReembolsosRoute: typeof AdminReembolsosRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSacRoute: typeof AdminSacRoute
-  AdminSeparacaoRoute: typeof AdminSeparacaoRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1396,7 +1376,6 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReembolsosRoute: AdminReembolsosRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSacRoute: AdminSacRoute,
-  AdminSeparacaoRoute: AdminSeparacaoRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 
