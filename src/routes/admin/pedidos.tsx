@@ -595,6 +595,26 @@ function PedidosPage() {
                     )
                   )}
                 </div>
+                {/* Dropdown de status do pedido */}
+                <div className="mt-3 pt-3 border-t border-[#E9E1D2] flex items-center gap-2">
+                  <span className="text-[10px] uppercase tracking-wider text-[#8A938E] font-semibold">
+                    Status:
+                  </span>
+                  <select
+                    value={selectedOrder.status}
+                    onChange={(e) => updateOrderStatus(selectedOrder.id, e.target.value)}
+                    disabled={updatingStatus}
+                    className="px-3 py-1.5 text-xs border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E] disabled:opacity-50 rounded"
+                  >
+                    <option value="pending">Pendente</option>
+                    <option value="paid">Pago</option>
+                    <option value="processing">Em Separação</option>
+                    <option value="shipped">Enviado</option>
+                    <option value="delivered">Entregue</option>
+                    <option value="cancelled">Cancelado</option>
+                    <option value="refunded">Reembolsado</option>
+                  </select>
+                </div>
               </div>
 
               {/* Customer Info */}

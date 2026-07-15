@@ -21,6 +21,7 @@ import {
   Settings,
   FileText,
   Save,
+  ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -32,6 +33,8 @@ import {
   updateShipmentStatus,
   getShipmentLabel,
   getShipmentDeclaration,
+  startPicking,
+  finishPicking,
   buildTrackingUrl,
   type Shipment,
   type ShipmentStats,
@@ -113,6 +116,8 @@ function AdminLogistica() {
   const updateStatusFn = useServerFn(updateShipmentStatus);
   const getLabelFn = useServerFn(getShipmentLabel);
   const getDeclarationFn = useServerFn(getShipmentDeclaration);
+  const startPickingFn = useServerFn(startPicking);
+  const finishPickingFn = useServerFn(finishPicking);
   const requestLabelsFn = useServerFn(requestSigepLabels);
 
   // Atualizar rastreios
@@ -195,6 +200,60 @@ function AdminLogistica() {
       }
     },
   });
+
+  // Separação / Picking
+  const [pickingOrder, setPickingOrder] = useState<any>(null);
+  const [checkedItems, setCheckedItems] = useState<Record<string, Set<number>>>({});
+
+  const startPickingMutation = useMutation({
+    mutationFn: async (orderId: string) => startPickingFn({ data: { orderId } }),
+    onSuccess: (result) => {
+      if (result?.success) {
+        toast.success("Separação iniciada!");
+        setPickingOrder(result.data);
+        queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+      } else {
+        toast.error(result?.error || "Erro ao iniciar separação");
+      }
+    },
+  });
+
+  const finishPickingMutation = useMutation({
+    mutationFn: async (orderId: string) => finishPickingFn({ data: { orderId } }),
+    onSuccess: (result) => {
+      if (result?.success) {
+        toast.success("Pedido despachado!");
+        setPickingOrder(null);
+        setCheckedItems((prev) => {
+          const next = { ...prev };
+          delete next[result.data.orderId];
+          return next;
+        });
+        queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-shipment-stats"] });
+      } else {
+        toast.error(result?.error || "Erro ao finalizar separação");
+      }
+    },
+  });
+
+  const toggleItem = (orderId: string, itemIndex: number) => {
+    setCheckedItems((prev) => {
+      const next = { ...prev };
+      const set = new Set(next[orderId] || []);
+      if (set.has(itemIndex)) set.delete(itemIndex);
+      else set.add(itemIndex);
+      next[orderId] = set;
+      return next;
+    });
+  };
+
+  const allChecked = (order: any) => {
+    const items = order.items || [];
+    if (items.length === 0) return true;
+    const checked = checkedItems[order.id] || new Set();
+    return items.every((_: any, i: number) => checked.has(i));
+  };
 
   // Estado para etiqueta local
   const [showLocalLabelModal, setShowLocalLabelModal] = useState(false);
@@ -655,21 +714,20 @@ function AdminLogistica() {
                     )}
                     Declaração
                   </button>
-                  <select
-                    value={shipment.status}
-                    onChange={(e) => handleStatusChange(shipment.id, e.target.value)}
-                    disabled={updateStatusMutation.isPending}
-                    className="px-3 py-2 text-xs border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E] disabled:opacity-50"
-                  >
-                    <option value="pending">Aguardando</option>
-                    <option value="paid">Pago</option>
-                    <option value="shipped">Enviado</option>
-                    <option value="in_transit">Em trânsito</option>
-                    <option value="out_for_delivery">Saiu p/ entrega</option>
-                    <option value="delivered">Entregue</option>
-                    <option value="exception">Ocorrência</option>
-                    <option value="cancelled">Cancelado</option>
-                  </select>
+                  {(shipment.status === "pending" || shipment.status === "paid") && (
+                    <button
+                      onClick={() => shipment.order_id && startPickingMutation.mutate(shipment.order_id)}
+                      disabled={startPickingMutation.isPending}
+                      className="px-4 py-2 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    >
+                      {startPickingMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <ClipboardList className="h-3 w-3" />
+                      )}
+                      Separar
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -749,6 +807,173 @@ function AdminLogistica() {
           }}
         />
       )}
+
+      {/* Modal de separação */}
+      {pickingOrder && (
+        <PickingModal
+          order={pickingOrder}
+          checkedItems={checkedItems[pickingOrder.order?.id] || new Set()}
+          onToggleItem={(itemIndex: number) => toggleItem(pickingOrder.order?.id, itemIndex)}
+          allChecked={allChecked(pickingOrder.order)}
+          onFinish={() => finishPickingMutation.mutate(pickingOrder.order?.id)}
+          isFinishing={finishPickingMutation.isPending}
+          onClose={() => setPickingOrder(null)}
+          onPrintLabel={() => {
+            if (pickingOrder.shipment?.id) getLabelMutation.mutate(pickingOrder.shipment.id);
+          }}
+          onPrintDeclaration={() => {
+            if (pickingOrder.shipment?.id) declarationMutation.mutate(pickingOrder.shipment.id);
+          }}
+        />
+      )}
+    </div>
+  );
+}
+
+// =====================================================
+// MODAL: Separação / Picking
+// =====================================================
+
+function PickingModal({
+  order,
+  checkedItems,
+  onToggleItem,
+  allChecked,
+  onFinish,
+  isFinishing,
+  onClose,
+  onPrintLabel,
+  onPrintDeclaration,
+}: {
+  order: any;
+  checkedItems: Set<number>;
+  onToggleItem: (i: number) => void;
+  allChecked: boolean;
+  onFinish: () => void;
+  isFinishing: boolean;
+  onClose: () => void;
+  onPrintLabel: () => void;
+  onPrintDeclaration: () => void;
+}) {
+  const items = order?.order?.items || [];
+  const shipment = order?.shipment;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-serif text-[#0F3A3E] flex items-center gap-2">
+            <ClipboardList className="h-5 w-5" />
+            Separação — Pedido #{(order?.order?.order_number ?? order?.order?.id?.slice(0, 8)?.toUpperCase()) || ""}
+          </h2>
+          <button onClick={onClose} className="text-[#8A938E] hover:text-[#0F3A3E]">
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        {/* Cliente */}
+        <div className="bg-[#F8F4EA] p-4 rounded mb-6">
+          <p className="text-sm font-medium text-[#0F3A3E]">{order?.order?.customer_name || "—"}</p>
+          <p className="text-xs text-[#51635F]">{order?.order?.customer_email || "—"}</p>
+          <p className="text-xs text-[#8A938E] mt-1">
+            Total: R$ {Number(order?.order?.total || 0).toFixed(2)}
+          </p>
+        </div>
+
+        {/* Itens para conferência */}
+        <h3 className="text-sm font-semibold text-[#0F3A3E] mb-3 flex items-center gap-2">
+          <Package className="h-4 w-4" />
+          Conferência de Itens
+        </h3>
+        <div className="space-y-2 mb-6">
+          {items.map((item: any, i: number) => (
+            <label
+              key={i}
+              className={cn(
+                "flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors",
+                checkedItems.has(i)
+                  ? "bg-emerald-50 border-emerald-300"
+                  : "bg-white border-[#E9E1D2] hover:border-[#B07B1E]"
+              )}
+            >
+              <input
+                type="checkbox"
+                checked={checkedItems.has(i)}
+                onChange={() => onToggleItem(i)}
+                className="h-4 w-4 accent-emerald-600"
+              />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-[#0F3A3E] truncate">
+                  {item.title || item.name || "Produto"}
+                </p>
+                <p className="text-xs text-[#8A938E]">
+                  Qtd: {item.quantity || 1} × R$ {Number(item.price || 0).toFixed(2)}
+                </p>
+              </div>
+              {checkedItems.has(i) && (
+                <CheckCircle className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+              )}
+            </label>
+          ))}
+          {items.length === 0 && (
+            <p className="text-sm text-[#8A938E] italic">Nenhum item encontrado.</p>
+          )}
+        </div>
+
+        {/* Progresso */}
+        <div className="flex items-center justify-between mb-6 pt-4 border-t border-[#E9E1D2]">
+          <span className="text-sm text-[#51635F]">
+            {checkedItems.size} de {items.length} itens conferidos
+          </span>
+          {allChecked && items.length > 0 && (
+            <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Todos conferidos
+            </span>
+          )}
+        </div>
+
+        {/* Ações */}
+        <div className="flex flex-wrap gap-3 pt-4 border-t border-[#E9E1D2]">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
+          >
+            Fechar
+          </button>
+          {shipment?.id && (
+            <>
+              <button
+                onClick={onPrintLabel}
+                className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
+              >
+                <Printer className="h-4 w-4" />
+                Imprimir
+              </button>
+              <button
+                onClick={onPrintDeclaration}
+                className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
+              >
+                <FileText className="h-4 w-4" />
+                Declaração
+              </button>
+            </>
+          )}
+          <button
+            onClick={onFinish}
+            disabled={isFinishing || !allChecked}
+            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1 ml-auto"
+          >
+            {isFinishing ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Truck className="h-4 w-4" />
+            )}
+            Confirmar Despacho
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
