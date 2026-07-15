@@ -503,13 +503,14 @@ function PedidosPage() {
                   </span>
                 </div>
                 <div className="flex flex-wrap gap-2">
-                  {(selectedOrder.status === "approved" || selectedOrder.status === "paid") && (
+                  {(selectedOrder.status === "approved" || selectedOrder.status === "paid" || selectedOrder.status === "pending") && (
                     <button
-                      onClick={() => updateOrderStatus(selectedOrder.id, "processing")}
+                      onClick={() => updateOrderStatus(selectedOrder.id, "paid")}
                       disabled={updatingStatus}
-                      className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+                      className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      Processar
+                      <Package className="w-3 h-3" />
+                      Enviar para Logística
                     </button>
                   )}
                   {selectedOrder.status === "processing" && (
