@@ -65,14 +65,14 @@ function AdminLogistica() {
   // QUERIES
   // =====================================================
 
-  // Lista de remessas
+  // Lista de remessas unificada (baseada em pedidos)
   const listFn = useServerFn(listShipments);
   const shipmentsQuery = useQuery({
     queryKey: ["admin-shipments"],
     queryFn: () => listFn({}),
     refetchOnWindowFocus: false,
   });
-  const shipments: Shipment[] = shipmentsQuery.data?.success ? shipmentsQuery.data.data : [];
+  const shipments: any[] = shipmentsQuery.data?.success ? shipmentsQuery.data.data : [];
   const isLoading = shipmentsQuery.isLoading;
   const listError = shipmentsQuery.data?.success === false ? shipmentsQuery.data.error : null;
 
@@ -173,6 +173,7 @@ function AdminLogistica() {
         } else {
           toast.success("Etiqueta disponível");
         }
+        queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
       } else {
         toast.error(result?.error || "Erro ao buscar etiqueta");
       }
@@ -195,6 +196,7 @@ function AdminLogistica() {
         } else {
           toast.error("Bloqueador de popup ativado. Permita popups para este site.");
         }
+        queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
       } else {
         toast.error(result?.error || "Erro ao gerar declaração");
       }
@@ -685,46 +687,12 @@ function AdminLogistica() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2">
-                  {(shipment.status === "pending" || shipment.status === "paid") && (
-                    <button
-                      onClick={() => handleGetLabel(shipment)}
-                      className="px-4 py-2 text-xs bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
-                    >
-                      Gerar Etiqueta
-                    </button>
-                  )}
-                  {shipment.tracking_code && (
-                    <button
-                      onClick={() => getLabelMutation.mutate(shipment.id)}
-                      disabled={getLabelMutation.isPending}
-                      className="px-4 py-2 text-xs border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
-                    >
-                      {getLabelMutation.isPending ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Printer className="h-3 w-3" />
-                      )}
-                      Imprimir
-                    </button>
-                  )}
-                  <button
-                    onClick={() => declarationMutation.mutate(shipment.id)}
-                    disabled={declarationMutation.isPending}
-                    className="px-4 py-2 text-xs border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
-                    title="Declaração de Conteúdo"
-                  >
-                    {declarationMutation.isPending ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <FileText className="h-3 w-3" />
-                    )}
-                    Declaração
-                  </button>
-                  {(shipment.status === "pending" || shipment.status === "paid") && shipment.order_id && (
+                  {/* Separar: pedidos pagos ou em separação */}
+                  {(shipment.status === "paid" || shipment.status === "processing") && (
                     <button
                       onClick={() => {
-                        setPickingOrderId(shipment.order_id!);
-                        startPickingMutation.mutate(shipment.order_id!);
+                        setPickingOrderId(shipment.order_id);
+                        startPickingMutation.mutate(shipment.order_id);
                       }}
                       disabled={pickingOrderId === shipment.order_id}
                       className="px-4 py-2 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1"
@@ -735,6 +703,62 @@ function AdminLogistica() {
                         <ClipboardList className="h-3 w-3" />
                       )}
                       Separar
+                    </button>
+                  )}
+
+                  {/* Gerar Etiqueta: ainda não há envio criado */}
+                  {!shipment.shipment_id && (shipment.status === "paid" || shipment.status === "processing") && (
+                    <button
+                      onClick={() => {
+                        setSelectedShipment(shipment);
+                        setShowCreateModal(true);
+                      }}
+                      className="px-4 py-2 text-xs bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
+                    >
+                      Gerar Etiqueta
+                    </button>
+                  )}
+
+                  {/* Imprimir Etiqueta: envio existe e tem rastreio */}
+                  {shipment.shipment_id && shipment.tracking_code && (
+                    <button
+                      onClick={() => getLabelMutation.mutate(shipment.shipment_id!)}
+                      disabled={getLabelMutation.isPending}
+                      className={cn(
+                        "px-4 py-2 text-xs border transition-colors flex items-center gap-1",
+                        shipment.label_printed_at
+                          ? "border-[#E9E1D2] text-[#51635F] hover:bg-[#F3EEE3]"
+                          : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      )}
+                    >
+                      {getLabelMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Printer className="h-3 w-3" />
+                      )}
+                      {shipment.label_printed_at ? "Etiqueta (2ª via)" : "Imprimir Etiqueta"}
+                    </button>
+                  )}
+
+                  {/* Declaração de conteúdo: envio existe */}
+                  {shipment.shipment_id && (
+                    <button
+                      onClick={() => declarationMutation.mutate(shipment.shipment_id!)}
+                      disabled={declarationMutation.isPending}
+                      className={cn(
+                        "px-4 py-2 text-xs border transition-colors flex items-center gap-1",
+                        shipment.declaration_printed_at
+                          ? "border-[#E9E1D2] text-[#51635F] hover:bg-[#F3EEE3]"
+                          : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                      )}
+                      title="Declaração de Conteúdo"
+                    >
+                      {declarationMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <FileText className="h-3 w-3" />
+                      )}
+                      {shipment.declaration_printed_at ? "Declaração (2ª via)" : "Declaração"}
                     </button>
                   )}
                 </div>
@@ -827,12 +851,6 @@ function AdminLogistica() {
           onFinish={() => finishPickingMutation.mutate(pickingOrder.order?.id)}
           isFinishing={finishPickingMutation.isPending}
           onClose={() => setPickingOrder(null)}
-          onPrintLabel={() => {
-            if (pickingOrder.shipment?.id) getLabelMutation.mutate(pickingOrder.shipment.id);
-          }}
-          onPrintDeclaration={() => {
-            if (pickingOrder.shipment?.id) declarationMutation.mutate(pickingOrder.shipment.id);
-          }}
         />
       )}
     </div>
@@ -851,8 +869,6 @@ function PickingModal({
   onFinish,
   isFinishing,
   onClose,
-  onPrintLabel,
-  onPrintDeclaration,
 }: {
   order: any;
   checkedItems: Set<number>;
@@ -861,11 +877,8 @@ function PickingModal({
   onFinish: () => void;
   isFinishing: boolean;
   onClose: () => void;
-  onPrintLabel: () => void;
-  onPrintDeclaration: () => void;
 }) {
   const items = order?.order?.items || [];
-  const shipment = order?.shipment;
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -951,24 +964,6 @@ function PickingModal({
           >
             Fechar
           </button>
-          {shipment?.id && (
-            <>
-              <button
-                onClick={onPrintLabel}
-                className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
-              >
-                <Printer className="h-4 w-4" />
-                Imprimir
-              </button>
-              <button
-                onClick={onPrintDeclaration}
-                className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
-              >
-                <FileText className="h-4 w-4" />
-                Declaração
-              </button>
-            </>
-          )}
           <button
             onClick={onFinish}
             disabled={isFinishing || !allChecked}

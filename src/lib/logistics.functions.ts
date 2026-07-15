@@ -6,8 +6,11 @@ import { z } from "zod";
 // =====================================================
 
 export type Shipment = {
+  /** ID da cotação; null enquanto o pedido ainda não recebeu etiqueta. */
+  shipment_id: string | null;
+  /** ID do pedido, usado como chave da linha da Logística. */
   id: string;
-  order_id: string | null;
+  order_id: string;
   order_number: number | null;
   customer_name: string | null;
   customer_email: string | null;
@@ -31,10 +34,13 @@ export type Shipment = {
   estimated_days: number | null;
   tracking_code: string | null;
   tracking_url: string | null;
+  /** Status do pedido: paid, processing, shipped ou delivered. */
   status: string;
   shipped_at: string | null;
   delivered_at: string | null;
   label_url: string | null;
+  label_printed_at: string | null;
+  declaration_printed_at: string | null;
   created_at: string;
 };
 
@@ -105,33 +111,76 @@ export const listShipments = createServerFn({ method: "GET" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
-      const limit = data.limit ?? 50;
-      const offset = data.offset ?? 0;
+      const limit = data.limit ?? 100;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = db.from("shipping_quotes").select(`
-        *,
-        order:orders(
-          customer_name,
-          customer_email
-        )
-      `).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+      // Fonte da Logística: PEDIDOS (não cotações). Assim um pedido pago
+      // aparece mesmo antes de gerar etiqueta. SELECT minimalista para não
+      // depender de colunas opcionais (order_number etc.) que podem não
+      // existir no banco.
+      const { data: orders, error: ordersError } = await db
+        .from("orders")
+        .select("id, status, customer_name, customer_email, customer_phone, shipping_address, tracking_code, created_at")
+        .in("status", ["paid", "processing", "shipped", "delivered"])
+        .order("created_at", { ascending: false })
+        .limit(limit);
 
-      if (data.status) query = query.eq("status", data.status);
-      if (data.trackingCode) query = query.ilike("tracking_code", `%${data.trackingCode}%`);
+      if (ordersError) return { success: false as const, error: ordersError.message };
 
-      const { data: rows, error } = await query;
+      // LEFT JOIN manual de shipping_quotes (select * = resiliente a colunas ausentes)
+      const orderIds = (orders || []).map((o: any) => o.id);
+      const quoteByOrder: Record<string, any> = {};
 
-      if (error) return { success: false as const, error: error.message };
+      if (orderIds.length > 0) {
+        const { data: quotes } = await db
+          .from("shipping_quotes")
+          .select("*")
+          .in("order_id", orderIds)
+          .order("created_at", { ascending: false });
 
-      const shipments: Shipment[] = (rows || []).map((r: any) => ({
-        ...r,
-        order_number: r.order_number ?? null,
-        customer_name: r.order?.customer_name ?? r.recipient_name ?? null,
-        customer_email: r.order?.customer_email ?? r.recipient_email ?? null,
-      }));
+        for (const q of quotes || []) {
+          if (!quoteByOrder[q.order_id]) quoteByOrder[q.order_id] = q;
+        }
+      }
 
-      return { success: true as const, data: shipments };
+      const shipments: Shipment[] = (orders || []).map((o: any) => {
+        const q = quoteByOrder[o.id] || null;
+        const address = o.shipping_address || {};
+        return {
+          shipment_id: q?.id ?? null,
+          id: o.id,
+          order_id: o.id,
+          order_number: q?.order_number ?? null,
+          customer_name: o.customer_name ?? q?.recipient_name ?? null,
+          customer_email: o.customer_email ?? q?.recipient_email ?? null,
+          recipient_name: q?.recipient_name ?? o.customer_name ?? null,
+          recipient_email: q?.recipient_email ?? o.customer_email ?? null,
+          recipient_phone: q?.recipient_phone ?? o.customer_phone ?? null,
+          recipient_postal_code: q?.recipient_postal_code ?? address.zipCode ?? address.cep ?? null,
+          recipient_address: q?.recipient_address ?? address,
+          carrier: q?.carrier ?? null,
+          service: q?.service ?? null,
+          service_code: q?.service_code ?? null,
+          price: q?.price ?? 0,
+          final_price: q?.final_price ?? 0,
+          estimated_days: q?.estimated_days ?? null,
+          tracking_code: q?.tracking_code ?? o.tracking_code ?? null,
+          tracking_url: q?.tracking_url ?? null,
+          status: o.status,
+          shipped_at: q?.shipped_at ?? null,
+          delivered_at: q?.delivered_at ?? null,
+          label_url: q?.label_url ?? null,
+          label_printed_at: q?.label_printed_at ?? null,
+          declaration_printed_at: q?.declaration_printed_at ?? null,
+          created_at: o.created_at,
+        };
+      });
+
+      const filtered = data.trackingCode
+        ? shipments.filter((s) =>
+            (s.tracking_code || "").toLowerCase().includes(data.trackingCode!.toLowerCase()))
+        : shipments;
+
+      return { success: true as const, data: filtered };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
       return { success: false as const, error: e?.message || "Erro desconhecido" };
@@ -469,6 +518,15 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
         return { success: false as const, error: "Código de rastreio não gerado ainda" };
       }
 
+      // Marca a primeira impressão (best-effort: ignora erro se a coluna
+      // ainda não existir no banco).
+      if (!shipment.label_printed_at) {
+        await db
+          .from("shipping_quotes")
+          .update({ label_printed_at: new Date().toISOString() })
+          .eq("id", data.id);
+      }
+
       // Se ja tem URL da etiqueta (Envio Facil), retorna
       if (shipment.label_url) {
         return { success: true as const, data: { url: shipment.label_url, type: "external" } };
@@ -582,6 +640,14 @@ export const getShipmentDeclaration = createServerFn({ method: "GET" })
 
       if (error || !shipment) {
         return { success: false as const, error: "Envio não encontrado" };
+      }
+
+      // Marca a primeira impressão da declaração (best-effort)
+      if (!shipment.declaration_printed_at) {
+        await db
+          .from("shipping_quotes")
+          .update({ declaration_printed_at: new Date().toISOString() })
+          .eq("id", data.id);
       }
 
       // Buscar dados do pedido para itens

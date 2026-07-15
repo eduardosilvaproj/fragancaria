@@ -217,7 +217,6 @@ function PedidosPage() {
           `NF-e emitida! Chave: ${result.data.nfeKey.slice(0, 20)}...`,
           { duration: 8000 }
         );
-        setSelectedOrder(null);
         fetchOrders();
       } else {
         toast.error(result.error || "Erro ao emitir NF-e");
@@ -546,7 +545,7 @@ function PedidosPage() {
                       <FileText className="w-3 h-3" />
                       NF-e {selectedOrder.nfeNumber ? `#${selectedOrder.nfeNumber}` : ""} — {selectedOrder.nfeStatus}
                     </span>
-                  ) : (selectedOrder.status === "approved" || selectedOrder.status === "paid") && (
+                  ) : !["cancelled", "refunded"].includes(selectedOrder.status || "") && (
                     <button
                       onClick={handleEmitNfe}
                       disabled={emittingNfe}
@@ -554,11 +553,11 @@ function PedidosPage() {
                     >
                       {emittingNfe && <RefreshCw className="w-3 h-3 animate-spin" />}
                       <FileText className="w-3 h-3" />
-                      {(selectedOrder as any).nfeEmittedAt ? "Reemitir NF-e" : "Emitir NF-e"}
+                      Emitir NF-e
                     </button>
                   )}
 
-                  {(selectedOrder as any).nfeDanfeUrl && (
+                  {selectedOrder.nfeKey && selectedOrder.nfeDanfeUrl && (
                     <button
                       onClick={() => handlePrintDanfe(selectedOrder.id)}
                       disabled={printingDanfe}
@@ -569,7 +568,7 @@ function PedidosPage() {
                       ) : (
                         <Printer className="w-3 h-3" />
                       )}
-                      Imprimir DANFE
+                      Imprimir 2ª via DANFE
                     </button>
                   )}
 
