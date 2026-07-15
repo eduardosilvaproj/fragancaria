@@ -120,7 +120,7 @@ export const listShipments = createServerFn({ method: "GET" })
       const { data: orders, error: ordersError } = await db
         .from("orders")
         .select("id, status, customer_name, customer_email, customer_phone, shipping_address, tracking_code, created_at")
-        .in("status", ["paid", "processing", "shipped", "delivered"])
+        .in("status", ["processing", "shipped", "delivered"])
         .order("created_at", { ascending: false })
         .limit(limit);
 
@@ -1407,7 +1407,7 @@ export const startPicking = createServerFn({ method: "POST" })
         return { success: false as const, error: "Pedido não encontrado." };
       }
 
-      if (order.status !== "paid" && order.status !== "processing") {
+      if (order.status !== "processing") {
         return { success: false as const, error: `Pedido não está em estado de separação (status: ${order.status}).` };
       }
 

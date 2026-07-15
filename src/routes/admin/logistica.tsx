@@ -696,7 +696,7 @@ function AdminLogistica() {
                   )}
 
                   {/* Separar: pedidos pagos */}
-                  {shipment.status === "paid" && (
+                  {shipment.status === "processing" && (
                     <button
                       onClick={() => {
                         setPickingOrderId(shipment.order_id);
@@ -891,9 +891,10 @@ function AdminLogistica() {
           checkedItems={checkedItems[pickingOrder.order?.id] || new Set()}
           onToggleItem={(itemIndex: number) => toggleItem(pickingOrder.order?.id, itemIndex)}
           allChecked={allChecked(pickingOrder.order)}
-          onFinish={() => finishPickingMutation.mutate(pickingOrder.order?.id)}
-          isFinishing={finishPickingMutation.isPending}
-          onClose={() => setPickingOrder(null)}
+          onClose={() => {
+            setPickingOrder(null);
+            queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+          }}
         />
       )}
     </div>
@@ -909,16 +910,12 @@ function PickingModal({
   checkedItems,
   onToggleItem,
   allChecked,
-  onFinish,
-  isFinishing,
   onClose,
 }: {
   order: any;
   checkedItems: Set<number>;
   onToggleItem: (i: number) => void;
   allChecked: boolean;
-  onFinish: () => void;
-  isFinishing: boolean;
   onClose: () => void;
 }) {
   const items = order?.order?.items || [];
@@ -1008,19 +1005,11 @@ function PickingModal({
             Fechar
           </button>
           <button
-            onClick={() => {
-              onFinish();
-              onClose();
-            }}
-            disabled={isFinishing || !allChecked}
-            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1 ml-auto"
+            onClick={onClose}
+            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1 ml-auto"
           >
-            {isFinishing ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <CheckCircle className="h-4 w-4" />
-            )}
-            Salvar
+            <CheckCircle className="h-4 w-4" />
+            Ok
           </button>
         </div>
       </div>
