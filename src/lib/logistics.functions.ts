@@ -11,6 +11,18 @@ export type Shipment = {
   order_number: number | null;
   customer_name: string | null;
   customer_email: string | null;
+  recipient_name: string | null;
+  recipient_email: string | null;
+  recipient_phone: string | null;
+  recipient_postal_code: string | null;
+  recipient_address: {
+    street?: string | null;
+    number?: string | null;
+    complement?: string | null;
+    neighborhood?: string | null;
+    city?: string | null;
+    state?: string | null;
+  } | null;
   carrier: string | null;
   service: string | null;
   service_code: string | null;

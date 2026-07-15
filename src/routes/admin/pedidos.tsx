@@ -15,6 +15,7 @@ import {
   Copy,
   ShoppingBag,
   FileText,
+  Printer,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllOrdersForAdmin, updateOrderForAdmin } from "@/lib/orders-admin.functions";

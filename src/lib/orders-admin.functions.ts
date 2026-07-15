@@ -53,6 +53,7 @@ export type AdminOrderRow = {
   nfeKey: string | null;
   nfeNumber: number | null;
   nfeStatus: string | null;
+  nfeDanfeUrl: string | null;
 };
 
 export type AdminOrderList = {
@@ -86,6 +87,7 @@ const LIST_COLUMNS = [
   "nfe_key",
   "nfe_number",
   "nfe_status",
+  "nfe_danfe_url",
 ].join(", ");
 
 export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
@@ -178,6 +180,7 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
           nfeKey: (r.nfe_key as string | null) ?? null,
           nfeNumber: (r.nfe_number as number | null) ?? null,
           nfeStatus: (r.nfe_status as string | null) ?? null,
+          nfeDanfeUrl: (r.nfe_danfe_url as string | null) ?? null,
         }));
 
         return {
