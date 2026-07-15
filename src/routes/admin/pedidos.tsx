@@ -189,7 +189,11 @@ function PedidosPage() {
         },
       });
       if (result.success && result.data) {
-        toast.success(`Etiqueta gerada! Código: ${result.data.tracking_code}`);
+        if (result.data.tracking_code) {
+          toast.success(`Etiqueta gerada! Código: ${result.data.tracking_code}`);
+        } else {
+          toast.success("Envio criado! Código de rastreio pendente. Imprima a etiqueta local.");
+        }
         setLabelModalOpen(false);
         setSelectedOrder(null);
         fetchOrders();

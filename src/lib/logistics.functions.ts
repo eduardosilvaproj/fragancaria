@@ -1024,14 +1024,14 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
           labelUrl = result.urlEtiqueta || null;
         } catch (apiError: any) {
           console.error("[generateOrderLabel] Correios API error:", apiError);
-          return { success: false, error: "Erro na API dos Correios: " + (apiError?.message || "desconhecido") };
+          // Não aborta: segue para etiqueta local sem código de rastreio, igual createShipment.
         }
-      } else {
-        return { success: false, error: "Credenciais da API Correios não configuradas. Acesse Configurações > SIGEP." };
       }
+      // Sem credenciais SIGEP (ou falha na API), trackingCode/labelUrl ficam null
+      // e o insert abaixo cria a etiqueta local (status "pending").
 
       // Salvar shipping_quote
-      const { data: shipment, insertError } = await db
+      const { data: shipment, error: insertError } = await db
         .from("shipping_quotes")
         .insert({
           order_id: order.id,
