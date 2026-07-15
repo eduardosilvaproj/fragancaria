@@ -1315,3 +1315,227 @@ export const getOrderShipment = createServerFn({ method: "GET" })
       return { success: false, error: e?.message || "Erro desconhecido" };
     }
   });
+
+// =====================================================
+// SEPARAÇÃO / PICKING
+// =====================================================
+
+export const startPicking = createServerFn({ method: "POST" })
+  .validator((d: unknown) => ({ orderId: (d as any)?.orderId }) as { orderId: string })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Buscar pedido
+      const { data: order, error: orderError } = await db
+        .from("orders")
+        .select("id, status, items, total, customer_name, customer_email, shipping_address, tracking_code, order_number, processing_started_at, processing_finished_at")
+        .eq("id", data.orderId)
+        .single();
+
+      if (orderError || !order) {
+        return { success: false as const, error: "Pedido não encontrado." };
+      }
+
+      if (order.status !== "paid" && order.status !== "processing") {
+        return { success: false as const, error: `Pedido não está em estado de separação (status: ${order.status}).` };
+      }
+
+      // Buscar shipping_quote
+      const { data: shipment } = await db
+        .from("shipping_quotes")
+        .select("id, status, tracking_code, carrier, service, service_code, weight_grams, recipient_name, recipient_address, recipient_postal_code, recipient_phone, label_url")
+        .eq("order_id", data.orderId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      // Atualizar pedido para processing
+      const now = new Date().toISOString();
+      const { error: updateError } = await db
+        .from("orders")
+        .update({
+          status: "processing",
+          processing_started_at: now,
+        })
+        .eq("id", data.orderId);
+
+      if (updateError) {
+        return { success: false as const, error: updateError.message };
+      }
+
+      return {
+        success: true as const,
+        data: {
+          order: {
+            id: order.id,
+            order_number: order.order_number,
+            status: "processing",
+            customer_name: order.customer_name,
+            customer_email: order.customer_email,
+            items: order.items,
+            total: order.total,
+            shipping_address: order.shipping_address,
+            tracking_code: order.tracking_code,
+            processing_started_at: now,
+          },
+          shipment: shipment
+            ? {
+                id: shipment.id,
+                status: shipment.status,
+                tracking_code: shipment.tracking_code,
+                carrier: shipment.carrier,
+                service: shipment.service,
+                service_code: shipment.service_code,
+                weight_grams: shipment.weight_grams,
+                recipient_name: shipment.recipient_name,
+                recipient_address: shipment.recipient_address,
+                recipient_postal_code: shipment.recipient_postal_code,
+                recipient_phone: shipment.recipient_phone,
+                label_url: shipment.label_url,
+              }
+            : null,
+        },
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+export const finishPicking = createServerFn({ method: "POST" })
+  .validator((d: unknown) => ({ orderId: (d as any)?.orderId }) as { orderId: string })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Buscar pedido
+      const { data: order, error: orderError } = await db
+        .from("orders")
+        .select("id, status, order_number")
+        .eq("id", data.orderId)
+        .single();
+
+      if (orderError || !order) {
+        return { success: false as const, error: "Pedido não encontrado." };
+      }
+
+      if (order.status !== "processing") {
+        return { success: false as const, error: `Pedido não está em separação (status: ${order.status}).` };
+      }
+
+      const now = new Date().toISOString();
+
+      // Atualizar pedido para shipped
+      const { error: orderUpdateError } = await db
+        .from("orders")
+        .update({
+          status: "shipped",
+          processing_finished_at: now,
+        })
+        .eq("id", data.orderId);
+
+      if (orderUpdateError) {
+        return { success: false as const, error: orderUpdateError.message };
+      }
+
+      // Atualizar shipping_quote para shipped
+      await db
+        .from("shipping_quotes")
+        .update({
+          status: "shipped",
+          shipped_at: now,
+        })
+        .eq("order_id", data.orderId);
+
+      return {
+        success: true as const,
+        data: {
+          orderId: data.orderId,
+          order_number: order.order_number,
+          status: "shipped",
+          shipped_at: now,
+        },
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+// =====================================================
+// LISTAR PEDIDOS PARA SEPARAÇÃO
+// =====================================================
+
+export const listPickingOrders = createServerFn({ method: "GET" })
+  .handler(async () => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      // Buscar pedidos paid ou processing com shipping_quote
+      const { data: orders, error } = await db
+        .from("orders")
+        .select(`
+          id, order_number, status, customer_name, customer_email,
+          items, total, shipping_address, tracking_code,
+          processing_started_at, processing_finished_at,
+          created_at
+        `)
+        .in("status", ["paid", "processing"])
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) return { success: false as const, error: error.message };
+
+      // Buscar shipping_quotes para cada pedido
+      const orderIds = (orders || []).map((o: any) => o.id);
+      const quotesMap: Record<string, any> = {};
+
+      if (orderIds.length > 0) {
+        const { data: quotes } = await db
+          .from("shipping_quotes")
+          .select("id, order_id, status, tracking_code, carrier, service, service_code, weight_grams, recipient_name, recipient_address, recipient_postal_code, recipient_phone, label_url, created_at")
+          .in("order_id", orderIds)
+          .order("created_at", { ascending: false });
+
+        for (const q of quotes || []) {
+          if (!quotesMap[q.order_id]) {
+            quotesMap[q.order_id] = q;
+          }
+        }
+      }
+
+      const data = (orders || []).map((o: any) => ({
+        id: o.id,
+        order_number: o.order_number,
+        status: o.status,
+        customer_name: o.customer_name,
+        customer_email: o.customer_email,
+        items: o.items,
+        total: o.total,
+        shipping_address: o.shipping_address,
+        tracking_code: o.tracking_code,
+        processing_started_at: o.processing_started_at,
+        processing_finished_at: o.processing_finished_at,
+        created_at: o.created_at,
+        shipment: quotesMap[o.id] || null,
+      }));
+
+      return { success: true as const, data };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
