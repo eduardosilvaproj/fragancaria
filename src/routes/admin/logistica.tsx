@@ -31,6 +31,7 @@ import {
   refreshTracking,
   updateShipmentStatus,
   getShipmentLabel,
+  getShipmentDeclaration,
   buildTrackingUrl,
   type Shipment,
   type ShipmentStats,
@@ -111,6 +112,7 @@ function AdminLogistica() {
   const refreshFn = useServerFn(refreshTracking);
   const updateStatusFn = useServerFn(updateShipmentStatus);
   const getLabelFn = useServerFn(getShipmentLabel);
+  const getDeclarationFn = useServerFn(getShipmentDeclaration);
   const requestLabelsFn = useServerFn(requestSigepLabels);
 
   // Atualizar rastreios
@@ -168,6 +170,28 @@ function AdminLogistica() {
         }
       } else {
         toast.error(result?.error || "Erro ao buscar etiqueta");
+      }
+    },
+  });
+
+  // Declaração de conteúdo
+  const declarationMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return getDeclarationFn({ data: { id } });
+    },
+    onSuccess: (result) => {
+      if (result?.success && result.data?.html) {
+        const win = window.open("", "_blank");
+        if (win) {
+          win.document.write(result.data.html);
+          win.document.close();
+          win.focus();
+          setTimeout(() => win.print(), 300);
+        } else {
+          toast.error("Bloqueador de popup ativado. Permita popups para este site.");
+        }
+      } else {
+        toast.error(result?.error || "Erro ao gerar declaração");
       }
     },
   });
@@ -618,6 +642,19 @@ function AdminLogistica() {
                       Imprimir
                     </button>
                   )}
+                  <button
+                    onClick={() => declarationMutation.mutate(shipment.id)}
+                    disabled={declarationMutation.isPending}
+                    className="px-4 py-2 text-xs border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors flex items-center gap-1"
+                    title="Declaração de Conteúdo"
+                  >
+                    {declarationMutation.isPending ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <FileText className="h-3 w-3" />
+                    )}
+                    Declaração
+                  </button>
                   <select
                     value={shipment.status}
                     onChange={(e) => handleStatusChange(shipment.id, e.target.value)}

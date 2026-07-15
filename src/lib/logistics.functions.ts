@@ -561,6 +561,185 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
   });
 
 // =====================================================
+// DECLARAÇÃO DE CONTEÚDO (para Correios — sem NF-e)
+// =====================================================
+
+export const getShipmentDeclaration = createServerFn({ method: "GET" })
+  .validator((d: unknown) => ({ id: (d as any)?.id }) as { id: string })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const { data: shipment, error } = await db
+        .from("shipping_quotes")
+        .select("*")
+        .eq("id", data.id)
+        .single();
+
+      if (error || !shipment) {
+        return { success: false as const, error: "Envio não encontrado" };
+      }
+
+      // Buscar dados do pedido para itens
+      const { data: order } = await db
+        .from("orders")
+        .select("items, total")
+        .eq("id", shipment.order_id)
+        .maybeSingle();
+
+      // Dados do remetente
+      const { data: senderRow } = await db
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", "sender_info")
+        .single();
+      const senderInfo = (senderRow?.value || {}) as Record<string, any>;
+      const senderAddr = senderInfo.address || {};
+
+      // Dados do destinatário
+      const addr = shipment.recipient_address || {};
+      const destName = shipment.recipient_name || "";
+      const destAddr = [
+        addr.street || "",
+        addr.number ? `, ${addr.number}` : "",
+        addr.complement ? ` — ${addr.complement}` : "",
+      ].join("");
+      const destCity = `${addr.city || ""}${addr.state ? `/${addr.state}` : ""}`;
+      const destZip = shipment.recipient_postal_code
+        ? shipment.recipient_postal_code.replace(/^(\d{5})(\d{3})$/, "$1-$2")
+        : "";
+
+      // Itens do pedido
+      const items: Array<{ title: string; quantity: number; price: number }> =
+        (order?.items as Array<{ title?: string; name?: string; quantity?: number; price?: number }> || [])
+          .map((item) => ({
+            title: item.title || item.name || "Produto",
+            quantity: item.quantity || 1,
+            price: item.price || 0,
+          }));
+
+      const declaredValue = Number(order?.total || 0).toFixed(2);
+      const today = new Date().toLocaleDateString("pt-BR");
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Declaração de Conteúdo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #000; padding: 20px; }
+  .page { max-width: 700px; margin: 0 auto; }
+  .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 12px; margin-bottom: 16px; }
+  .header h1 { font-size: 18px; font-weight: bold; letter-spacing: 0.1em; }
+  .header p { font-size: 11px; margin-top: 4px; }
+  .section { margin-bottom: 14px; border: 1px solid #000; padding: 10px; }
+  .section-title { font-weight: bold; font-size: 11px; letter-spacing: 0.15em; border-bottom: 1px solid #000; padding-bottom: 4px; margin-bottom: 8px; }
+  .row { display: flex; gap: 16px; margin-bottom: 6px; }
+  .row .label { font-weight: bold; min-width: 120px; }
+  .row .value { flex: 1; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th { background: #f0f0f0; border: 1px solid #000; padding: 5px 8px; text-align: left; }
+  td { border: 1px solid #000; padding: 5px 8px; }
+  .text-center { text-align: center; }
+  .mt { margin-top: 16px; }
+  .signature-line { border-top: 1px solid #000; margin-top: 40px; padding-top: 4px; font-size: 11px; text-align: center; }
+  .footer { margin-top: 12px; font-size: 10px; color: #555; text-align: center; }
+  @media print {
+    body { padding: 0; }
+    @page { size: A4; margin: 15mm; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <h1>DECLARAÇÃO DE CONTEÚDO</h1>
+    <p>Correios — Encomenda sem Garantia de Valor</p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">REMETENTE</div>
+    <div class="row"><span class="label">Nome:</span><span class="value">${senderInfo.name || "Fragranciaria"}</span></div>
+    <div class="row"><span class="label">Endereço:</span><span class="value">${senderAddr.street || ""}${senderAddr.number ? `, ${senderAddr.number}` : ""}${senderAddr.complement ? ` — ${senderAddr.complement}` : ""}</span></div>
+    <div class="row"><span class="label">Bairro:</span><span class="value">${senderAddr.neighborhood || ""}</span></div>
+    <div class="row"><span class="label">Cidade / UF:</span><span class="value">${senderAddr.city || ""} / ${senderAddr.state || ""}</span></div>
+    <div class="row"><span class="label">CEP:</span><span class="value">${(senderInfo.postal_code || senderAddr.postal_code || "").replace(/^(\d{5})(\d{3})$/, "$1-$2")}</span></div>
+    <div class="row"><span class="label">Telefone:</span><span class="value">${senderInfo.phone || ""}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">DESTINATÁRIO</div>
+    <div class="row"><span class="label">Nome:</span><span class="value">${destName}</span></div>
+    <div class="row"><span class="label">Endereço:</span><span class="value">${destAddr}</span></div>
+    <div class="row"><span class="label">Bairro:</span><span class="value">${addr.neighborhood || ""}</span></div>
+    <div class="row"><span class="label">Cidade / UF:</span><span class="value">${destCity}</span></div>
+    <div class="row"><span class="label">CEP:</span><span class="value">${destZip}</span></div>
+    <div class="row"><span class="label">Telefone:</span><span class="value">${shipment.recipient_phone || ""}</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">CONTEÚDO DA ENCOMENDA</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Descrição do Produto</th>
+          <th class="text-center" style="width:60px">Qtd</th>
+          <th class="text-center" style="width:90px">Valor (R$)</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${items.length > 0
+          ? items.map(item => `
+        <tr>
+          <td>${item.title}</td>
+          <td class="text-center">${item.quantity}</td>
+          <td class="text-center">${Number(item.price).toFixed(2).replace(".", ",")}</td>
+        </tr>`).join("")
+          : `<tr><td colspan="3" class="text-center">Cosméticos / Perfumes</td></tr>`
+        }
+        <tr>
+          <td style="font-weight:bold">TOTAL DECLARADO</td>
+          <td></td>
+          <td class="text-center" style="font-weight:bold">R$ ${declaredValue.replace(".", ",")}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section">
+    <div class="section-title">INFORMAÇÕES DO ENVIO</div>
+    <div class="row"><span class="label">Serviço:</span><span class="value">${shipment.service || "PAC"} ${shipment.service_code ? `(${shipment.service_code})` : ""}</span></div>
+    <div class="row"><span class="label">Peso:</span><span class="value">${shipment.weight_grams ? `${shipment.weight_grams}g` : "Não informado"}</span></div>
+    ${shipment.tracking_code ? `<div class="row"><span class="label">Rastreio:</span><span class="value">${shipment.tracking_code}</span></div>` : ""}
+    <div class="row"><span class="label">Data:</span><span class="value">${today}</span></div>
+  </div>
+
+  <p class="mt">Declaro, sob as penas da Lei, que o conteúdo da encomenda acima está correto e corresponde à descrição dos produtos informados, não contendo nenhum item de valor acima do declarado.</p>
+
+  <div class="signature-line">
+    Assinatura do Remetente: ___________________________________________________________
+  </div>
+
+  <div class="footer">
+    Gerado por Fragranciaria · ${today}
+  </div>
+</div>
+</body>
+</html>`;
+
+      return { success: true as const, data: { html } };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+// =====================================================
 // ATUALIZAR STATUS DO ENVIO (manual)
 // =====================================================
 
