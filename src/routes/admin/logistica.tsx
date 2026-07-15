@@ -202,12 +202,14 @@ function AdminLogistica() {
   });
 
   // Separação / Picking
+  const [pickingOrderId, setPickingOrderId] = useState<string | null>(null);
   const [pickingOrder, setPickingOrder] = useState<any>(null);
   const [checkedItems, setCheckedItems] = useState<Record<string, Set<number>>>({});
 
   const startPickingMutation = useMutation({
     mutationFn: async (orderId: string) => startPickingFn({ data: { orderId } }),
     onSuccess: (result) => {
+      setPickingOrderId(null);
       if (result?.success) {
         toast.success("Separação iniciada!");
         setPickingOrder(result.data);
@@ -215,6 +217,10 @@ function AdminLogistica() {
       } else {
         toast.error(result?.error || "Erro ao iniciar separação");
       }
+    },
+    onError: () => {
+      setPickingOrderId(null);
+      toast.error("Erro ao iniciar separação");
     },
   });
 
@@ -714,13 +720,16 @@ function AdminLogistica() {
                     )}
                     Declaração
                   </button>
-                  {(shipment.status === "pending" || shipment.status === "paid") && (
+                  {(shipment.status === "pending" || shipment.status === "paid") && shipment.order_id && (
                     <button
-                      onClick={() => shipment.order_id && startPickingMutation.mutate(shipment.order_id)}
-                      disabled={startPickingMutation.isPending}
+                      onClick={() => {
+                        setPickingOrderId(shipment.order_id!);
+                        startPickingMutation.mutate(shipment.order_id!);
+                      }}
+                      disabled={pickingOrderId === shipment.order_id}
                       className="px-4 py-2 text-xs bg-blue-600 text-white hover:bg-blue-700 transition-colors flex items-center gap-1"
                     >
-                      {startPickingMutation.isPending ? (
+                      {pickingOrderId === shipment.order_id ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <ClipboardList className="h-3 w-3" />
