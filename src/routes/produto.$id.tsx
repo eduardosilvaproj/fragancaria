@@ -75,7 +75,21 @@ function ProductPage() {
     ).slice(0, 4);
   }, [products, product]);
 
-  if (!product && !isPending) {
+  if (!product && isPending) {
+    return (
+      <div className="min-h-screen bg-[#F3EEE3]">
+        <NavbarEditorial />
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-40 text-center">
+          <p className="text-[#8A938E] text-sm uppercase tracking-[0.14em]">
+            Carregando produto…
+          </p>
+        </div>
+        <FooterEditorial />
+      </div>
+    );
+  }
+
+  if (!product) {
     return (
       <div className="min-h-screen bg-[#F3EEE3]">
         <NavbarEditorial />
