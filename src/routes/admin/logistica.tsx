@@ -687,8 +687,16 @@ function AdminLogistica() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2">
-                  {/* Separar: pedidos pagos ou em separação */}
-                  {(shipment.status === "paid" || shipment.status === "processing") && (
+                  {/* Status: processing = separação concluída */}
+                  {shipment.status === "processing" && (
+                    <span className="px-4 py-2 text-xs bg-emerald-100 text-emerald-700 rounded flex items-center gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Separado ✓
+                    </span>
+                  )}
+
+                  {/* Separar: pedidos pagos */}
+                  {shipment.status === "paid" && (
                     <button
                       onClick={() => {
                         setPickingOrderId(shipment.order_id);
@@ -706,7 +714,7 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Gerar Etiqueta: ainda não há envio criado */}
+                  {/* Gerar Etiqueta: sempre visível quando não há envio OU para reimprimir */}
                   {!shipment.shipment_id && (shipment.status === "paid" || shipment.status === "processing") && (
                     <button
                       onClick={() => {
@@ -719,15 +727,15 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Imprimir Etiqueta: envio existe e tem rastreio */}
-                  {shipment.shipment_id && shipment.tracking_code && (
+                  {/* Imprimir Etiqueta: envio existe */}
+                  {shipment.shipment_id && (
                     <button
                       onClick={() => getLabelMutation.mutate(shipment.shipment_id!)}
                       disabled={getLabelMutation.isPending}
                       className={cn(
                         "px-4 py-2 text-xs border transition-colors flex items-center gap-1",
                         shipment.label_printed_at
-                          ? "border-[#E9E1D2] text-[#51635F] hover:bg-[#F3EEE3]"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                           : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
                       )}
                     >
@@ -736,7 +744,7 @@ function AdminLogistica() {
                       ) : (
                         <Printer className="h-3 w-3" />
                       )}
-                      {shipment.label_printed_at ? "Etiqueta (2ª via)" : "Imprimir Etiqueta"}
+                      {shipment.label_printed_at ? "Etiqueta ✓" : "Imprimir Etiqueta"}
                     </button>
                   )}
 
@@ -748,7 +756,7 @@ function AdminLogistica() {
                       className={cn(
                         "px-4 py-2 text-xs border transition-colors flex items-center gap-1",
                         shipment.declaration_printed_at
-                          ? "border-[#E9E1D2] text-[#51635F] hover:bg-[#F3EEE3]"
+                          ? "border-emerald-300 bg-emerald-50 text-emerald-700 hover:bg-emerald-100"
                           : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
                       )}
                       title="Declaração de Conteúdo"
@@ -758,7 +766,28 @@ function AdminLogistica() {
                       ) : (
                         <FileText className="h-3 w-3" />
                       )}
-                      {shipment.declaration_printed_at ? "Declaração (2ª via)" : "Declaração"}
+                      {shipment.declaration_printed_at ? "Declaração ✓" : "Declaração"}
+                    </button>
+                  )}
+
+                  {/* Confirmar Despacho: só habilita se separação + etiqueta + declaração ok */}
+                  {shipment.status === "processing" && (
+                    <button
+                      onClick={() => finishPickingMutation.mutate(shipment.order_id)}
+                      disabled={
+                        finishPickingMutation.isPending ||
+                        !shipment.shipment_id ||
+                        !shipment.label_printed_at ||
+                        !shipment.declaration_printed_at
+                      }
+                      className="px-4 py-2 text-xs bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {finishPickingMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Truck className="h-3 w-3" />
+                      )}
+                      Confirmar Despacho
                     </button>
                   )}
                 </div>
