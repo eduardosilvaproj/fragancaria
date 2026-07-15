@@ -596,7 +596,7 @@ function AdminLogistica() {
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2">
-                  {shipment.status === "pending" && (
+                  {(shipment.status === "pending" || shipment.status === "paid") && (
                     <button
                       onClick={() => handleGetLabel(shipment)}
                       className="px-4 py-2 text-xs bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
@@ -604,7 +604,7 @@ function AdminLogistica() {
                       Gerar Etiqueta
                     </button>
                   )}
-                  {shipment.tracking_code && shipment.status !== "delivered" && (
+                  {shipment.tracking_code && (
                     <button
                       onClick={() => getLabelMutation.mutate(shipment.id)}
                       disabled={getLabelMutation.isPending}

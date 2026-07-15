@@ -196,7 +196,7 @@ export const createShipment = createServerFn({ method: "POST" })
       // Buscar dados do pedido
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, order_number, customer_name, customer_email, customer_phone")
+        .select("id, order_number, customer_name, customer_email, customer_phone, shipping_address")
         .eq("id", data.orderId)
         .single();
 
