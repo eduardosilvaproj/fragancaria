@@ -450,3 +450,58 @@ export const emitNFe = createServerFn({ method: "POST" })
       return { success: false, error: msg };
     }
   });
+
+export const getDanfePdf = createServerFn({ method: "GET" })
+  .validator((d: unknown) => ({ orderId: (d as any)?.orderId }) as { orderId: string })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const { data: order } = await db.from("orders")
+        .select("nfe_danfe_url, nfe_number")
+        .eq("id", data.orderId)
+        .single();
+
+      if (!order?.nfe_danfe_url) {
+        return { success: false as const, error: "Link da DANFE não encontrado." };
+      }
+
+      const danfeUrl = new URL(order.nfe_danfe_url);
+      if (danfeUrl.origin !== "https://platform.notaas.com.br") {
+        return { success: false as const, error: "Link da DANFE inválido." };
+      }
+
+      const apiKey = process.env.NOTAAS_API_KEY;
+      if (!apiKey) {
+        return { success: false as const, error: "NOTAAS_API_KEY não configurada no servidor." };
+      }
+
+      const res = await fetch(order.nfe_danfe_url, {
+        headers: { "x-api-key": apiKey },
+      });
+
+      if (!res.ok) {
+        const err = await res.text().catch(() => "");
+        return { success: false as const, error: `Notaas (${res.status}): ${err.slice(0, 100)}` };
+      }
+
+      const arrayBuffer = await res.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const base64 = buffer.toString("base64");
+
+      return {
+        success: true as const,
+        data: {
+          base64,
+          filename: `danfe-${order.nfe_number || data.orderId}.pdf`,
+        },
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });

@@ -19,9 +19,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getAllOrdersForAdmin, updateOrderForAdmin } from "@/lib/orders-admin.functions";
-import type { AdminOrderRow } from "@/lib/orders-admin.functions";
+import type { AdminOrderList, AdminOrderRow } from "@/lib/orders-admin.functions";
 import { generateOrderLabel } from "@/lib/logistics.functions";
-import { emitNFe } from "@/lib/nfe.functions";
+import { emitNFe, getDanfePdf } from "@/lib/nfe.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/pedidos")({
@@ -62,11 +62,14 @@ function PedidosPage() {
   const [labelLength, setLabelLength] = useState(20);
   const [generatingLabel, setGeneratingLabel] = useState(false);
   const [emittingNfe, setEmittingNfe] = useState(false);
+  const [printingDanfe, setPrintingDanfe] = useState(false);
 
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const result = await getAllOrdersForAdmin({ data: {} });
+      const result = await getAllOrdersForAdmin({ data: {} }) as
+        | { success: true; data: AdminOrderList }
+        | { success: false; error: string };
       if (result.success) {
         setOrders(result.data.orders);
       } else {
@@ -219,6 +222,41 @@ function PedidosPage() {
       toast.error("Erro ao emitir NF-e");
     } finally {
       setEmittingNfe(false);
+    }
+  };
+
+  const handlePrintDanfe = async (orderId: string) => {
+    setPrintingDanfe(true);
+    // Abre a aba antes do await para contornar bloqueador de popup
+    const popup = window.open("about:blank", "_blank");
+    if (popup) popup.document.write("Carregando PDF da DANFE...");
+    try {
+      const result = await getDanfePdf({ data: { orderId } });
+      if (result.success && result.data?.base64) {
+        // Converte base64 para Uint8Array para criar o Blob binário correto
+        const byteCharacters = atob(result.data.base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: "application/pdf" });
+        const url = URL.createObjectURL(blob);
+        if (popup) {
+          popup.location.href = url;
+        } else {
+          // Fallback se bloqueado
+          window.open(url, "_blank");
+        }
+      } else {
+        if (popup) popup.close();
+        toast.error(result.error || "Erro ao buscar DANFE");
+      }
+    } catch (error) {
+      if (popup) popup.close();
+      toast.error("Erro ao processar PDF");
+    } finally {
+      setPrintingDanfe(false);
     }
   };
 
@@ -517,15 +555,18 @@ function PedidosPage() {
                   )}
 
                   {(selectedOrder as any).nfeDanfeUrl && (
-                    <a
-                      href={(selectedOrder as any).nfeDanfeUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 flex items-center gap-1.5"
+                    <button
+                      onClick={() => handlePrintDanfe(selectedOrder.id)}
+                      disabled={printingDanfe}
+                      className="px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50 flex items-center gap-1.5"
                     >
-                      <Printer className="w-3 h-3" />
+                      {printingDanfe ? (
+                        <RefreshCw className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <Printer className="w-3 h-3" />
+                      )}
                       Imprimir DANFE
-                    </a>
+                    </button>
                   )}
 
                   {selectedOrder.trackingCode ? (
