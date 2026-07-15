@@ -893,6 +893,9 @@ function AdminLogistica() {
           onToggleItem={(itemIndex: number) => toggleItem(pickingOrder.order?.id, itemIndex)}
           allChecked={allChecked(pickingOrder.order)}
           onClose={() => {
+            setPickingOrder(null);
+          }}
+          onConfirm={() => {
             if (pickingOrder?.order?.id) {
               setSeparatedOrders((prev) => new Set(prev).add(pickingOrder.order.id));
             }
@@ -915,12 +918,14 @@ function PickingModal({
   onToggleItem,
   allChecked,
   onClose,
+  onConfirm,
 }: {
   order: any;
   checkedItems: Set<number>;
   onToggleItem: (i: number) => void;
   allChecked: boolean;
   onClose: () => void;
+  onConfirm: () => void;
 }) {
   const items = order?.order?.items || [];
 
@@ -1009,8 +1014,9 @@ function PickingModal({
             Fechar
           </button>
           <button
-            onClick={onClose}
-            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors flex items-center gap-1 ml-auto"
+            onClick={onConfirm}
+            disabled={!allChecked}
+            className="px-4 py-2 bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50 flex items-center gap-1 ml-auto"
           >
             <CheckCircle className="h-4 w-4" />
             Ok
