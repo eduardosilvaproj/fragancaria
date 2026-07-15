@@ -43,12 +43,19 @@ export function isOrderStatus(v: unknown): v is OrderStatus {
   return typeof v === "string" && (ALL as string[]).includes(v);
 }
 
-// Transição válida? Idempotência (from === to) é permitida — o webhook do MP
-// reentrega a mesma notificação e não deve falhar por isso.
+// "approved" e "processing" existem em pedidos antigos criados por scripts de
+// seed/teste. Tratamos como sinônimos de "paid" para permitir atualização.
+const STATUS_ALIAS: Record<string, string> = {
+  approved: "paid",
+  processing: "paid",
+};
+
 export function canTransition(from: string, to: string): boolean {
-  if (!isOrderStatus(from) || !isOrderStatus(to)) return false;
-  if (from === to) return true;
-  return TRANSITIONS[from].includes(to);
+  const fromNorm = STATUS_ALIAS[from] ?? from;
+  const toNorm = STATUS_ALIAS[to] ?? to;
+  if (!isOrderStatus(fromNorm) || !isOrderStatus(toNorm)) return false;
+  if (fromNorm === toNorm) return true;
+  return TRANSITIONS[fromNorm].includes(toNorm);
 }
 
 export function allowedNextStatuses(from: string): OrderStatus[] {

@@ -193,15 +193,17 @@ export const createShipment = createServerFn({ method: "POST" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
-      // Buscar dados do pedido
+      // Buscar dados do pedido — SELECT minimalista para evitar erro
+      // se alguma coluna opcional não existir no banco.
       const { data: order, error: orderError } = await db
         .from("orders")
-        .select("id, order_number, customer_name, customer_email, customer_phone, shipping_address")
+        .select("id, customer_name, customer_email, customer_phone")
         .eq("id", data.orderId)
         .single();
 
       if (orderError || !order) {
-        return { success: false as const, error: "Pedido não encontrado" };
+        console.error("[createShipment] Pedido não encontrado:", data.orderId, orderError);
+        return { success: false as const, error: "Pedido não encontrado." };
       }
 
       // Verificar se ja existe envio para este pedido
