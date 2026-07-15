@@ -62,8 +62,8 @@ const main = async () => {
   const { data: order, error } = await supabase
     .from('orders')
     .insert({
-      status: 'paid',
-      payment_status: 'paid',
+      status: 'pending',
+      payment_status: 'pending',
       payment_method: 'pix',
       payment_id: `TEST-${Date.now()}`,
       subtotal,
