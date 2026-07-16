@@ -514,10 +514,6 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
         return { success: false as const, error: "Envio não encontrado" };
       }
 
-      if (!shipment.tracking_code) {
-        return { success: false as const, error: "Código de rastreio não gerado ainda" };
-      }
-
       // Marca a primeira impressão (best-effort: ignora erro se a coluna
       // ainda não existir no banco).
       if (!shipment.label_printed_at) {
@@ -564,7 +560,24 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
 
       // GERACAO LOCAL: retorna dados para impressao manual
       // O frontend monta a pagina de impressao
-      const addr = shipment.recipient_address || {};
+      const { data: order } = await db
+        .from("orders")
+        .select("shipping_address")
+        .eq("id", shipment.order_id)
+        .maybeSingle();
+      const persistedAddress = shipment.recipient_address || {};
+      const orderAddress = order?.shipping_address || {};
+      const addr = {
+        street: persistedAddress.street || orderAddress.street || "",
+        number: persistedAddress.number || orderAddress.number || "",
+        complement: persistedAddress.complement || orderAddress.complement || "",
+        neighborhood: persistedAddress.neighborhood || orderAddress.neighborhood || "",
+        city: persistedAddress.city || orderAddress.city || "",
+        state: persistedAddress.state || orderAddress.state || "",
+        zipCode: persistedAddress.zipCode || orderAddress.zipCode || "",
+        cep: persistedAddress.cep || orderAddress.cep || "",
+      };
+      const recipientPostalCode = shipment.recipient_postal_code || addr.zipCode || addr.cep || "";
       const senderCep = process.env.VITE_SENDER_POSTAL_CODE || "01310100";
 
       const { data: senderRow } = await db
@@ -592,7 +605,7 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
             neighborhood: addr.neighborhood || "",
             city: addr.city || "",
             state: addr.state || "",
-            postal_code: shipment.recipient_postal_code || "",
+            postal_code: recipientPostalCode,
           },
           sender: {
             name: senderInfo.name || process.env.VITE_SENDER_NAME || "Fragranciaria",
@@ -602,7 +615,7 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
             neighborhood: senderAddr.neighborhood || "",
             city: senderAddr.city || "",
             state: senderAddr.state || "",
-            postal_code: senderInfo.postal_code || senderCep,
+            postal_code: senderAddr.postal_code || senderInfo.postal_code || senderCep,
             phone: senderInfo.phone || "",
           },
           weight: shipment.weight_grams || 500,
@@ -650,10 +663,10 @@ export const getShipmentDeclaration = createServerFn({ method: "GET" })
           .eq("id", data.id);
       }
 
-      // Buscar dados do pedido para itens
+      // Buscar dados do pedido para itens e endereço de entrega
       const { data: order } = await db
         .from("orders")
-        .select("items, total")
+        .select("items, total, shipping_address")
         .eq("id", shipment.order_id)
         .maybeSingle();
 
@@ -667,7 +680,18 @@ export const getShipmentDeclaration = createServerFn({ method: "GET" })
       const senderAddr = senderInfo.address || {};
 
       // Dados do destinatário
-      const addr = shipment.recipient_address || {};
+      const persistedAddress = shipment.recipient_address || {};
+      const orderAddress = order?.shipping_address || {};
+      const addr = {
+        street: persistedAddress.street || orderAddress.street || "",
+        number: persistedAddress.number || orderAddress.number || "",
+        complement: persistedAddress.complement || orderAddress.complement || "",
+        neighborhood: persistedAddress.neighborhood || orderAddress.neighborhood || "",
+        city: persistedAddress.city || orderAddress.city || "",
+        state: persistedAddress.state || orderAddress.state || "",
+        zipCode: persistedAddress.zipCode || orderAddress.zipCode || "",
+        cep: persistedAddress.cep || orderAddress.cep || "",
+      };
       const destName = shipment.recipient_name || "";
       const destAddr = [
         addr.street || "",
@@ -675,8 +699,10 @@ export const getShipmentDeclaration = createServerFn({ method: "GET" })
         addr.complement ? ` — ${addr.complement}` : "",
       ].join("");
       const destCity = `${addr.city || ""}${addr.state ? `/${addr.state}` : ""}`;
-      const destZip = shipment.recipient_postal_code
-        ? shipment.recipient_postal_code.replace(/^(\d{5})(\d{3})$/, "$1-$2")
+      const fallbackZip = addr.zipCode || addr.cep || "";
+      const rawZip = shipment.recipient_postal_code || fallbackZip;
+      const destZip = rawZip
+        ? rawZip.replace(/^(\d{5})(\d{3})$/, "$1-$2")
         : "";
 
       // Itens do pedido

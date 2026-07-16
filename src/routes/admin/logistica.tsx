@@ -729,8 +729,8 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Gerar Etiqueta: sem envio OU envio sem rastreio */}
-                  {(!shipment.shipment_id || (shipment.shipment_id && !shipment.tracking_code)) && (shipment.status === "paid" || shipment.status === "processing") && (
+                  {/* Gerar Etiqueta: sem envio ainda */}
+                  {!shipment.shipment_id && (shipment.status === "paid" || shipment.status === "processing") && (
                     <button
                       onClick={() => {
                         setSelectedShipment(shipment);
@@ -742,8 +742,8 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Imprimir Etiqueta: envio existe e tem rastreio */}
-                  {shipment.shipment_id && shipment.tracking_code && (
+                  {/* Imprimir Etiqueta: envio existe (com ou sem rastreio — getShipmentLabel tem fallback local) */}
+                  {shipment.shipment_id && (
                     <button
                       onClick={() => getLabelMutation.mutate(shipment.shipment_id!)}
                       disabled={getLabelMutation.isPending}
@@ -1084,10 +1084,9 @@ function CreateShipmentModal({
         if (result.data?.tracking_code) {
           toast.success("Envio criado! Código: " + result.data.tracking_code);
         } else {
-          toast.success("Envio criado! Código de rastreio pendente.");
+          toast.success("Envio criado! Etiqueta local disponível para impressão.");
         }
-        // Só abre etiqueta se tiver código de rastreio
-        if (result.data?.id && result.data?.tracking_code) {
+        if (result.data?.id) {
           onGetLabel(result.data.id);
         }
         onSuccess();

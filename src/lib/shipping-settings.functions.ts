@@ -149,7 +149,9 @@ export const updateShippingSetting = createServerFn({ method: "PATCH" })
         "free_shipping_threshold",
         "default_handling_days",
         "sender_info",
+        "senderInfo",
         "api_config",
+        "apiConfig",
         "carriers",
       ];
 

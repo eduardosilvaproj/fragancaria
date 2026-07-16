@@ -140,6 +140,18 @@ export const createPayment = createServerFn({ method: 'POST' })
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+            shipping_address: data.payer.address
+              ? {
+                  street: data.payer.address.streetName,
+                  number: data.payer.address.streetNumber,
+                  complement: data.payer.address.complement ?? '',
+                  neighborhood: data.payer.address.neighborhood,
+                  city: data.payer.address.city,
+                  state: data.payer.address.state,
+                  cep: data.payer.address.zipCode,
+                  zipCode: data.payer.address.zipCode,
+                }
+              : null,
             tracking_token: generateTrackingToken(),
           })
           .select('id')
