@@ -6,21 +6,40 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 };
 const WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET;
-// Valida X-Signature (header: 'v1,<hmac>'). Se MP_WEBHOOK_SECRET nao estiver
-// setado, pula (modo dev). Docs: https://www.mercadopago.com.br/developers/pt/reference/notifications/webhooks
-function verifySignature(request: Request, rawBody: string): boolean {
+// Valida a assinatura do Mercado Pago conforme o esquema oficial.
+// O header x-signature vem no formato "ts=<n>,v1=<hmac>". O texto assinado
+// (manifest) é "id:<data.id>;request-id:<x-request-id>;ts:<ts>;" — usando o
+// data.id da query string, o header x-request-id e o ts extraído do próprio
+// x-signature. Docs: https://www.mercadopago.com.br/developers/pt/docs/your-integrations/notifications/webhooks
+function verifySignature(request: Request, dataId: string): boolean {
   if (!WEBHOOK_SECRET) {
     // Fail closed: só ignora a verificação em modo dev explícito.
     if (process.env.NODE_ENV === 'development') return true;
     console.error('[mp-webhook] MP_WEBHOOK_SECRET ausente — rejeitando em produção');
     return false;
   }
-  const header = request.headers.get('x-signature') || '';
-  const ts = request.headers.get('x-timestamp') || '';
-  const m = header.match(/v1=([a-f0-9]+)/i);
-  if (!m) return false;
-  const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(`${ts}.${rawBody}`).digest('hex');
-  try { return crypto.timingSafeEqual(Buffer.from(m[1], 'hex'), Buffer.from(expected, 'hex')); } catch { return false; }
+  const sigHeader = request.headers.get('x-signature') || '';
+  const requestId = request.headers.get('x-request-id') || '';
+  // Parseia "ts=...,v1=..." em pares chave/valor.
+  const parts: Record<string, string> = {};
+  for (const seg of sigHeader.split(',')) {
+    const [k, v] = seg.split('=');
+    if (k && v) parts[k.trim()] = v.trim();
+  }
+  const ts = parts['ts'];
+  const v1 = parts['v1'];
+  if (!ts || !v1) {
+    console.error('[mp-webhook] x-signature sem ts/v1');
+    return false;
+  }
+  // MP recomenda lowercase quando o id tiver letras (pagamentos são numéricos).
+  const id = dataId ? dataId.toLowerCase() : '';
+  let manifest = '';
+  if (id) manifest += `id:${id};`;
+  if (requestId) manifest += `request-id:${requestId};`;
+  manifest += `ts:${ts};`;
+  const expected = crypto.createHmac('sha256', WEBHOOK_SECRET).update(manifest).digest('hex');
+  try { return crypto.timingSafeEqual(Buffer.from(v1, 'hex'), Buffer.from(expected, 'hex')); } catch { return false; }
 }
 function mapMpStatus(p: any): { orderStatus: string; paymentStatus: string } {
   const s = String(p?.status || '').toLowerCase();
@@ -42,15 +61,15 @@ export const Route = createFileRoute('/api/public/mp-webhook')({
       OPTIONS: async () => new Response(null, { status: 204, headers: corsHeaders }),
       POST: async ({ request }) => {
         const raw = await request.text();
-        if (!verifySignature(request, raw)) {
-          return Response.json({ error: 'invalid signature' }, { status: 401, headers: corsHeaders });
-        }
         let body: any = {};
         try { body = JSON.parse(raw); } catch { return Response.json({ error: 'invalid json' }, { status: 400, headers: corsHeaders }); }
         if (body?.type !== 'payment' || !body?.data?.id) {
           return Response.json({ received: true, ignored: true }, { headers: corsHeaders });
         }
         const paymentId = String(body.data.id);
+        if (!verifySignature(request, paymentId)) {
+          return Response.json({ error: 'invalid signature' }, { status: 401, headers: corsHeaders });
+        }
         const accessToken = process.env.MP_ACCESS_TOKEN;
         if (!accessToken) {
           return Response.json({ error: 'MP_ACCESS_TOKEN nao configurado' }, { status: 500, headers: corsHeaders });
