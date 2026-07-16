@@ -3,8 +3,8 @@ import { z } from "zod";
 
 // Funções server do atendimento (SAC). Leem/escrevem as tabelas conversations
 // e messages via service role (bypassa RLS) — ver migration
-// 20260628_whatsapp_conversations.sql. O envio de resposta usa a WhatsApp
-// Cloud API da Meta. Sem auth no /admin ainda; quando existir, proteger aqui.
+// 20260628_whatsapp_conversations.sql. O envio de resposta usa a Z-API
+// (send-text). Sem auth no /admin ainda; quando existir, proteger aqui.
 
 export type Channel = "whatsapp" | "instagram" | "email";
 
@@ -169,41 +169,42 @@ export const sendMessage = createServerFn({ method: "POST" })
         const phone = (conv.data as any).customer_phone as string | null;
         if (!phone) return { success: false, error: "Conversa sem telefone" };
 
-        // Envia via WhatsApp Cloud API.
-        const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-        const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
-        if (!phoneNumberId || !accessToken) {
+        // Envia via Z-API.
+        const instanceId = process.env.ZAPI_INSTANCE_ID;
+        const instanceToken = process.env.ZAPI_INSTANCE_TOKEN;
+        const clientToken = process.env.ZAPI_CLIENT_TOKEN;
+        if (!instanceId || !instanceToken) {
           return {
             success: false,
-            error: "WhatsApp não configurado (faltam variáveis de ambiente)",
+            error: "Z-API não configurada (faltam variáveis de ambiente)",
           };
         }
 
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (clientToken) headers["Client-Token"] = clientToken;
+
         const resp = await fetch(
-          `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+          `https://api.z-api.io/instances/${instanceId}/token/${instanceToken}/send-text`,
           {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-              "Content-Type": "application/json",
-            },
+            headers,
             body: JSON.stringify({
-              messaging_product: "whatsapp",
-              to: phone,
-              type: "text",
-              text: { body: data.content },
+              phone,
+              message: data.content,
             }),
           }
         );
 
         if (!resp.ok) {
           const errText = await resp.text();
-          console.error("WhatsApp send error:", resp.status, errText);
+          console.error("Z-API send error:", resp.status, errText);
           return { success: false, error: `Falha no envio (${resp.status})` };
         }
 
         const sent = (await resp.json()) as any;
-        const waMessageId = sent?.messages?.[0]?.id ?? null;
+        const waMessageId = sent?.messageId ?? sent?.id ?? null;
 
         // Grava a mensagem enviada (sender = agent).
         await supabaseAdmin.from("messages").insert({

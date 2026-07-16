@@ -22,10 +22,10 @@ puro nesta conversa e estao marcadas para rotacao.
 | `MP_ACCESS_TOKEN` | sim (`SECRETA`) | nao | Mercado Pago. Rotacionar ASAP |
 | `VITE_MERCADOPAGO_PUBLIC_KEY` | sim | nao | publica (browser) |
 | `VITE_MP_PUBLIC_KEY` | sim | nao | alias da acima |
-| `WHATSAPP_VERIFY_TOKEN` | sim | nao | webhook verify |
-| `WHATSAPP_PHONE_NUMBER_ID` | sim | sim | ID do numero business |
-| `WHATSAPP_ACCESS_TOKEN` | sim | sim | Meta Cloud API |
-| `WHATSAPP_APP_SECRET` | sim | sim | valida assinatura webhook |
+| `ZAPI_WEBHOOK_SECRET` | sim | nao | webhook verify |
+| `ZAPI_INSTANCE_ID` | sim | sim | ID da instancia (Z-API) |
+| `ZAPI_INSTANCE_TOKEN` | sim | sim | Token da instancia (Z-API) |
+| `ZAPI_CLIENT_TOKEN` | sim | sim | (Opcional) Segurança adicional |
 | `VITE_ENVIOFACIL_API_KEY` | sim | nao | publica (browser) |
 | `VITE_GA_MEASUREMENT_ID` | sim | nao | Google Analytics |
 | `VITE_META_PIXEL_ID` | sim | nao | Meta Pixel |
@@ -52,9 +52,8 @@ puro nesta conversa e estao marcadas para rotacao.
    storefront/admin, nao do agente).
 4. **CHATWOOT_** so adiciona se decidirmos usar. Hoje nao ha codigo
    no repo que referencie Chatwoot.
-5. **WHATSAPP_ACCESS_TOKEN** e compartilhado porque o agente envia
-   mensagens via mesma Meta app. Ideal: tokens separados por canal
-   no futuro (Meta permite).
+5. Os disparos de mensagem utilizam a **Z-API**, compartilhada entre SAC
+   e agente. O webhook verifica `ZAPI_WEBHOOK_SECRET` na query string.
 
 ## Onde ficam os env
 

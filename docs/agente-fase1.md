@@ -4,6 +4,18 @@
 > Toda decisao abaixo de "DECISOES FECHADAS" esta travada e NAO deve ser
 > reaberta sem nova rodada explicita.
 
+> **PROVEDOR WHATSAPP (2026-07-16, decisao do Edu)**: o canal deixou de
+> usar a WhatsApp Cloud API oficial da Meta e passou a usar a **Z-API**
+> (SaaS sobre protocolo WhatsApp Web). Motivo: cadastro na Meta travado
+> no Business Manager; teste com WAHA cru baniu o numero. A Z-API tem
+> sessao gerenciada e reduz (nao elimina) o risco de ban. Impacto no
+> codigo: `whatsapp-webhook.ts` (parser do payload Z-API + segredo na
+> query string, pois a Z-API nao assina webhook) e `whatsapp.functions.ts`
+> (envio via endpoint send-text). Schema, SAC e tabelas `agent_*`
+> inalterados. Secrets: `ZAPI_INSTANCE_ID`, `ZAPI_INSTANCE_TOKEN`,
+> `ZAPI_CLIENT_TOKEN` (opcional), `ZAPI_WEBHOOK_SECRET`. As vars
+> `WHATSAPP_*` da Meta viraram legado.
+
 ## Visao geral
 
 Bot de autoatendimento WhatsApp que recebe mensagens, classifica intencao,
@@ -72,9 +84,10 @@ agent_events: INSERT (mensagem enviada)
 WhatsApp send
 ```
 
-> Idempotencia de webhook duplicado: chave `messages.id` do Meta em
-> `agent_events` com UNIQUE + ON CONFLICT DO NOTHING. Debounce usa
-> `FOR UPDATE SKIP LOCKED` na sessao para evitar processar 2x.
+> Idempotencia de webhook duplicado: `messages.wa_message_id` recebe o
+> `messageId` da Z-API e tem UNIQUE. O agent-service deve usar essa mensagem
+> persistida como chave de deduplicacao. Debounce usa `FOR UPDATE SKIP LOCKED`
+> na sessao para evitar processar 2x.
 
 ## Handoff humano
 
@@ -102,9 +115,9 @@ Por 1000 conversas (~5 mensagens cada):
 
 - Claude Sonnet 4.6 (com cache): ~R$ 6 (cache reduz 80% input)
 - Embeddings RAG sob demanda: ~R$ 9
-- WhatsApp Cloud API (utilities): ~R$ 0 (tier gratis ate 1000/ms)
+- Z-API: custo recorrente por instancia (fora do calculo acima; depende do plano contratado)
 
-**Total: ~R$ 15 / 1000 conversas**
+**Total: ~R$ 15 / 1000 conversas + custo fixo da Z-API**
 
 ## Roadmap (ordem travada)
 
@@ -114,7 +127,7 @@ Por 1000 conversas (~5 mensagens cada):
 | B | agent-service (Node + Fastify, deploy Railway service separado) | 2 dias | proximo |
 | D | UI /admin/atendimento-ia (painel de auditoria via Supabase Realtime) | 1 dia | apos B |
 | C | Tools + RAG (busca, embeddings, estoque) | 1 dia | apos D |
-| E | Testes E2E + homologacao Meta + go-live | 1 dia | ultimo |
+| E | Testes E2E + homologacao Z-API + go-live | 1 dia | ultimo |
 
 **Total: ~6 dias uteis.**
 
@@ -235,9 +248,9 @@ instagram, site_chat), as tools tem politica:
 
 - **[11] Debounce**: cliente manda 4 msgs picadas em 6s → agente
   gera **1 resposta** (nao 4).
-- **[12] Idempotencia de webhook duplicado**: Meta reenvia mesma
-  mensagem por retry → 1 mensagem processada (chave
-  `messages.id` do Meta em `agent_events` UNIQUE).
+- **[12] Idempotencia de webhook duplicado**: Z-API reenvia mesma
+  mensagem por retry → 1 mensagem processada (coluna `messages.wa_message_id`
+  tem constraint UNIQUE; o agent-service confia no id persistido).
 - **[13] Kill switch por conversa**: admin pausa
   `conversations.ai_enabled=false` → proxima msg do cliente vai
   direto para fila humana, agente nao responde.
