@@ -153,8 +153,13 @@ function OrderContent({
   const currentIndex = FLOW.indexOf(currentStatus);
   const cancelled = currentStatus === "cancelled";
 
+  const paymentConfirmedAwaitingSnapshot =
+    order.status === "pending" && order.paymentStatus === "approved";
   const cfg = STATUS_CONFIG[currentStatus] ?? STATUS_CONFIG.pending;
   const StatusIcon = cfg.icon;
+  const statusLabel = paymentConfirmedAwaitingSnapshot
+    ? "Pagamento confirmado — processando seu pedido"
+    : cfg.label;
 
   return (
     <>
@@ -165,7 +170,7 @@ function OrderContent({
             className="px-3 py-1 text-[11px] uppercase tracking-[0.18em] font-semibold"
             style={{ backgroundColor: `${cfg.color}15`, color: cfg.color }}
           >
-            {cfg.label}
+            {statusLabel}
           </span>
         </div>
         <h1 className="font-serif text-2xl text-[#0F3A3E]">
@@ -221,7 +226,9 @@ function OrderContent({
                       className="text-sm font-semibold"
                       style={{ color: completed || current ? "#0F3A3E" : "#9AA39F" }}
                     >
-                      {c.label}
+                      {paymentConfirmedAwaitingSnapshot && status === "pending"
+                        ? "Pagamento confirmado — processando seu pedido"
+                        : c.label}
                     </div>
                     <div className="text-xs text-[#51635F] mt-0.5">
                       {date

@@ -54,6 +54,9 @@ export type AdminOrderRow = {
   nfeNumber: number | null;
   nfeStatus: string | null;
   nfeDanfeUrl: string | null;
+  customerPhone: string | null;
+  customerCpf: string | null;
+  snapshotMissingFields: string[];
 };
 
 export type AdminOrderList = {
@@ -75,6 +78,8 @@ const LIST_COLUMNS = [
   "discount",
   "customer_email",
   "customer_name",
+  "customer_phone",
+  "customer_cpf",
   "payer_email",
   "created_at",
   "payment_id",
@@ -89,6 +94,47 @@ const LIST_COLUMNS = [
   "nfe_status",
   "nfe_danfe_url",
 ].join(", ");
+
+function toAdminOrderRow(
+  row: Record<string, unknown>,
+  getMissingPaymentSnapshotFields: (order: Record<string, unknown>) => string[],
+): AdminOrderRow {
+  const status = String(row.status ?? "pending");
+  const paymentStatus = String(row.payment_status ?? "pending");
+  const snapshotMissingFields =
+    status === "pending" && paymentStatus === "approved"
+      ? getMissingPaymentSnapshotFields(row)
+      : [];
+
+  return {
+    id: String(row.id),
+    status,
+    paymentStatus,
+    paymentMethod: (row.payment_method as string | null) ?? null,
+    total: Number(row.total ?? 0),
+    subtotal: Number(row.subtotal ?? 0),
+    shippingPrice: Number(row.shipping_price ?? 0),
+    discount: Number(row.discount ?? 0),
+    customerEmail: String(row.customer_email ?? ""),
+    customerName: String(row.customer_name ?? ""),
+    customerPhone: (row.customer_phone as string | null) ?? null,
+    customerCpf: (row.customer_cpf as string | null) ?? null,
+    payerEmail: (row.payer_email as string | null) ?? null,
+    createdAt: String(row.created_at ?? ""),
+    paymentId: (row.payment_id as string | null) ?? null,
+    trackingCode: (row.tracking_code as string | null) ?? null,
+    refundStatus: (row.refund_status as string | null) ?? null,
+    items: Array.isArray(row.items) ? (row.items as Array<Record<string, unknown>>) : [],
+    authUserId: (row.auth_user_id as string | null) ?? null,
+    shippingAddress: (row.shipping_address as Record<string, unknown> | null) ?? null,
+    shippingMethod: (row.shipping_method as string | null) ?? null,
+    nfeKey: (row.nfe_key as string | null) ?? null,
+    nfeNumber: (row.nfe_number as number | null) ?? null,
+    nfeStatus: (row.nfe_status as string | null) ?? null,
+    nfeDanfeUrl: (row.nfe_danfe_url as string | null) ?? null,
+    snapshotMissingFields,
+  };
+}
 
 export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
   .validator(
@@ -153,35 +199,12 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
         const { data: rows, error, count } = await query;
         if (error) return { success: false, error: error.message };
 
+        const { getMissingPaymentSnapshotFields } = await import(
+          "@/lib/order-payment-snapshot"
+        );
         const orders: AdminOrderRow[] = (
           (rows ?? []) as unknown as Array<Record<string, unknown>>
-        ).map((r) => ({
-          id: String(r.id),
-          status: String(r.status ?? "pending"),
-          paymentStatus: String(r.payment_status ?? "pending"),
-          paymentMethod: (r.payment_method as string | null) ?? null,
-          total: Number(r.total ?? 0),
-          subtotal: Number(r.subtotal ?? 0),
-          shippingPrice: Number(r.shipping_price ?? 0),
-          discount: Number(r.discount ?? 0),
-          customerEmail: String(r.customer_email ?? ""),
-          customerName: String(r.customer_name ?? ""),
-          payerEmail: (r.payer_email as string | null) ?? null,
-          createdAt: String(r.created_at ?? ""),
-          paymentId: (r.payment_id as string | null) ?? null,
-          trackingCode: (r.tracking_code as string | null) ?? null,
-          refundStatus: (r.refund_status as string | null) ?? null,
-          items: Array.isArray(r.items)
-            ? (r.items as Array<Record<string, unknown>>)
-            : [],
-          authUserId: (r.auth_user_id as string | null) ?? null,
-          shippingAddress: (r.shipping_address as Record<string, unknown> | null) ?? null,
-          shippingMethod: (r.shipping_method as string | null) ?? null,
-          nfeKey: (r.nfe_key as string | null) ?? null,
-          nfeNumber: (r.nfe_number as number | null) ?? null,
-          nfeStatus: (r.nfe_status as string | null) ?? null,
-          nfeDanfeUrl: (r.nfe_danfe_url as string | null) ?? null,
-        }));
+        ).map((r) => toAdminOrderRow(r, getMissingPaymentSnapshotFields));
 
         return {
           success: true,
@@ -193,6 +216,46 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
       }
     },
   );
+
+// Pagamentos aprovados pelo MP cujo pedido não avançou para "paid" por
+// faltar um dado obrigatório (endereço, telefone, CPF, payment_id). Sem
+// esta consulta dedicada, um pedido velho (fora dos 50 mais recentes da
+// lista principal) fica invisível — dinheiro recebido e ninguém sabe.
+export const getStuckApprovedOrders = createServerFn({ method: "GET" }).handler(
+  async (): Promise<
+    { success: true; data: AdminOrderRow[] } | { success: false; error: string }
+  > => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+
+      const { supabaseAdmin } = await import(
+        "@/integrations/supabase/client.server"
+      );
+      const { getMissingPaymentSnapshotFields } = await import(
+        "@/lib/order-payment-snapshot"
+      );
+
+      const { data: rows, error } = await supabaseAdmin
+        .from("orders")
+        .select(LIST_COLUMNS)
+        .eq("status", "pending")
+        .eq("payment_status", "approved")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) return { success: false, error: error.message };
+
+      const orders = ((rows ?? []) as unknown as Array<Record<string, unknown>>)
+        .map((r) => toAdminOrderRow(r, getMissingPaymentSnapshotFields))
+        .filter((order) => order.snapshotMissingFields.length > 0);
+
+      return { success: true, data: orders };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return { success: false, error: msg };
+    }
+  },
+);
 
 export const updateOrderForAdmin = createServerFn({ method: "POST" })
   .validator(
@@ -236,7 +299,7 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
           const { canTransition } = await import("@/lib/order-state");
           const { data: current, error: readErr } = await supabaseAdmin
             .from("orders")
-            .select("status, customer_email, customer_name, tracking_code")
+            .select("status, customer_email, customer_name, tracking_code, shipping_address, customer_phone, customer_cpf, payment_id")
             .eq("id", data.orderId)
             .maybeSingle();
           if (readErr || !current) {
@@ -247,6 +310,10 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
             customer_email: string | null;
             customer_name: string | null;
             tracking_code: string | null;
+            shipping_address: unknown;
+            customer_phone: string | null;
+            customer_cpf: string | null;
+            payment_id: string | null;
           };
           const from = String(c.status);
           if (!canTransition(from, data.patch.status)) {
@@ -254,6 +321,18 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
               success: false,
               error: `Transição inválida: ${from} → ${data.patch.status}`,
             };
+          }
+          if (data.patch.status === "paid") {
+            const { getMissingPaymentSnapshotFields } = await import(
+              "@/lib/order-payment-snapshot"
+            );
+            const missingFields = getMissingPaymentSnapshotFields(c);
+            if (missingFields.length > 0) {
+              return {
+                success: false,
+                error: `Pedido sem dados completos (faltando: ${missingFields.join(", ")}). Complete o cadastro antes de marcar como pago.`,
+              };
+            }
           }
           if (
             (data.patch.status === "shipped" || data.patch.status === "delivered") &&

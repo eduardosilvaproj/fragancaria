@@ -82,6 +82,12 @@ function OrderDetailPage() {
         </div>
       </header>
 
+      {o.status === "pending" && o.paymentStatus === "approved" && (
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-800">
+          Pagamento confirmado — processando seu pedido.
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-[#E9E1D2] p-5">
         <h3 className="text-sm font-semibold text-[#0F3A3E] mb-4">
           Andamento do pedido

@@ -16,9 +16,10 @@ import {
   ShoppingBag,
   FileText,
   Printer,
+  AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAllOrdersForAdmin, updateOrderForAdmin } from "@/lib/orders-admin.functions";
+import { getAllOrdersForAdmin, getStuckApprovedOrders, updateOrderForAdmin } from "@/lib/orders-admin.functions";
 import type { AdminOrderList, AdminOrderRow } from "@/lib/orders-admin.functions";
 import { generateOrderLabel } from "@/lib/logistics.functions";
 import { emitNFe, getDanfePdf } from "@/lib/nfe.functions";
@@ -46,8 +47,16 @@ const PAYMENT_LABELS: Record<string, string> = {
   boleto: "Boleto",
 };
 
+const SNAPSHOT_FIELD_LABELS: Record<string, string> = {
+  shipping_address: "endereço de entrega",
+  customer_phone: "telefone",
+  customer_cpf: "CPF",
+  payment_id: "ID do pagamento",
+};
+
 function PedidosPage() {
   const [orders, setOrders] = useState<Order[]>([]);
+  const [stuckOrders, setStuckOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -67,19 +76,28 @@ function PedidosPage() {
   const fetchOrders = async () => {
     setLoading(true);
     try {
-      const result = await getAllOrdersForAdmin({ data: {} }) as
-        | { success: true; data: AdminOrderList }
-        | { success: false; error: string };
+      const [result, stuckResult] = await Promise.all([
+        getAllOrdersForAdmin({ data: {} }) as Promise<
+          | { success: true; data: AdminOrderList }
+          | { success: false; error: string }
+        >,
+        getStuckApprovedOrders() as Promise<
+          | { success: true; data: AdminOrderRow[] }
+          | { success: false; error: string }
+        >,
+      ]);
       if (result.success) {
         setOrders(result.data.orders);
       } else {
         toast.error("Erro ao carregar pedidos: " + result.error);
         setOrders([]);
       }
+      setStuckOrders(stuckResult.success ? stuckResult.data : []);
     } catch (error) {
       console.error("Erro ao buscar pedidos:", error);
       toast.error("Erro ao carregar pedidos");
       setOrders([]);
+      setStuckOrders([]);
     } finally {
       setLoading(false);
     }
@@ -314,6 +332,36 @@ function PedidosPage() {
           </div>
         ))}
       </div>
+
+      {stuckOrders.length > 0 && (
+        <section className="border border-amber-300 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-amber-700 mt-0.5" />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-sm font-semibold text-amber-900">
+                {stuckOrders.length} pagamento{stuckOrders.length === 1 ? "" : "s"} confirmado{stuckOrders.length === 1 ? "" : "s"} aguardando dados
+              </h2>
+              <p className="mt-1 text-xs text-amber-800">
+                Não envie para logística até completar os dados faltantes.
+              </p>
+              <ul className="mt-3 space-y-2">
+                {stuckOrders.map((order) => (
+                  <li key={order.id} className="flex flex-wrap items-center gap-2 text-xs text-amber-900">
+                    <button
+                      onClick={() => setSelectedOrder(order)}
+                      className="font-mono font-semibold underline hover:no-underline"
+                    >
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </button>
+                    <span>{order.customerName || order.customerEmail || "Cliente"}</span>
+                    <span className="text-amber-700">Faltando: {order.snapshotMissingFields.map((field) => SNAPSHOT_FIELD_LABELS[field] || field).join(", ")}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
