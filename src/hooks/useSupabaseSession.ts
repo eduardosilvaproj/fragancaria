@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import type { Session, User } from "@supabase/supabase-js";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { linkCurrentAccount } from "@/lib/account.functions";
 
 // Hook reativo de sessão Supabase. Lê a sessão atual + escuta mudanças
 // (login, logout, token refresh). Não persiste em store global — o
@@ -12,39 +14,24 @@ export type SupabaseSessionState = {
   loading: boolean;
 };
 
-// Garante que exista um registro em `customers` para o usuário autenticado.
-// Necessário porque o login via Google OAuth cria o auth.users mas não passa
-// pelo formulário de perfil — sem isso, o cliente ficaria invisível no admin.
-// Idempotente (onConflict: auth_user_id) e disparado só uma vez por user.id.
-async function ensureCustomerRecord(user: User) {
-  const meta = user.user_metadata ?? {};
-  const name =
-    (meta.full_name as string) || (meta.name as string) || null;
-  await supabase
-    .from("customers")
-    .upsert(
-      {
-        auth_user_id: user.id,
-        email: user.email ?? null,
-        name,
-      },
-      { onConflict: "auth_user_id", ignoreDuplicates: true },
-    );
-}
-
 export function useSupabaseSession(): SupabaseSessionState {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const ensuredFor = useRef<string | null>(null);
+  const linkedFor = useRef<string | null>(null);
+  const linkCurrentAccountFn = useServerFn(linkCurrentAccount);
 
   useEffect(() => {
     let mounted = true;
 
-    const maybeEnsure = (next: Session | null) => {
+    const maybeLink = (next: Session | null) => {
       const uid = next?.user?.id;
-      if (uid && ensuredFor.current !== uid) {
-        ensuredFor.current = uid;
-        void ensureCustomerRecord(next!.user);
+      if (uid && linkedFor.current !== uid) {
+        linkedFor.current = uid;
+        void linkCurrentAccountFn().then((result) => {
+          if (!result.success) {
+            console.warn("Não foi possível vincular conta e pedidos", result.error);
+          }
+        });
       }
     };
 
@@ -54,7 +41,7 @@ export function useSupabaseSession(): SupabaseSessionState {
       .then(({ data }) => {
         if (!mounted) return;
         setSession(data.session ?? null);
-        maybeEnsure(data.session ?? null);
+        maybeLink(data.session ?? null);
         setLoading(false);
       })
       .catch(() => {
@@ -66,7 +53,7 @@ export function useSupabaseSession(): SupabaseSessionState {
     const { data: sub } = supabase.auth.onAuthStateChange((_event, next) => {
       if (!mounted) return;
       setSession(next ?? null);
-      maybeEnsure(next ?? null);
+      maybeLink(next ?? null);
     });
 
     return () => {

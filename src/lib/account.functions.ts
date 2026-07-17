@@ -31,6 +31,10 @@ async function getUserClient() {
   } as const;
 }
 
+function emailScope(email: string | undefined) {
+  return (email ?? "").trim().toLowerCase().replace(/[%_]/g, (c) => `\\${c}`);
+}
+
 export type DashboardSummary = {
   user: { id: string; email: string; fullName?: string };
   points: number;
@@ -41,10 +45,72 @@ export type DashboardSummary = {
   unreadNotifications: number;
 };
 
+export const linkCurrentAccount = createServerFn({ method: "POST" }).handler(
+  async (): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { user, supabase } = await getUserClient();
+      const email = user.email?.trim().toLowerCase();
+      if (!email) return { success: false, error: "Conta sem e-mail" };
+
+      const { data, error } = await supabase
+        .from("customers")
+        .select("id, auth_user_id, created_at")
+        .ilike("email", email.replace(/[\\%_]/g, "\\$&"))
+        .order("created_at", { ascending: true });
+      if (error) return { success: false, error: error.message };
+
+      const customers = (data ?? []) as Array<{
+        id: string;
+        auth_user_id: string | null;
+        created_at: string;
+      }>;
+      const ownCustomer = customers.find((customer) => customer.auth_user_id === user.id);
+      const guestCustomer = customers.find((customer) => customer.auth_user_id === null);
+      const foreignCustomer = customers.find(
+        (customer) => customer.auth_user_id !== null && customer.auth_user_id !== user.id,
+      );
+
+      if (!ownCustomer && foreignCustomer) {
+        return { success: false, error: "Este e-mail já está vinculado a outra conta" };
+      }
+
+      if (guestCustomer && !ownCustomer) {
+        const { error: updateError } = await supabase
+          .from("customers")
+          .update({ auth_user_id: user.id } as any)
+          .eq("id", guestCustomer.id);
+        if (updateError) return { success: false, error: updateError.message };
+      } else if (!ownCustomer) {
+        const meta = user.user_metadata as Record<string, unknown>;
+        const name = (meta.full_name as string) || (meta.name as string) || null;
+        const { error: insertError } = await supabase.from("customers").insert({
+          auth_user_id: user.id,
+          email,
+          name,
+        } as any);
+        if (insertError) return { success: false, error: insertError.message };
+      }
+
+      const { error: ordersError } = await supabase
+        .from("orders")
+        .update({ auth_user_id: user.id } as any)
+        .is("auth_user_id", null)
+        .ilike("customer_email", email.replace(/[\\%_]/g, "\\$&"));
+      if (ordersError) return { success: false, error: ordersError.message };
+
+      return { success: true };
+    } catch (err: any) {
+      return { success: false, error: err?.message || "erro" };
+    }
+  },
+);
+
 export const getMyDashboard = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ success: boolean; data?: DashboardSummary; error?: string }> => {
     try {
       const { user, supabase } = await getUserClient();
+      const email = emailScope(user.email);
+      const orderScope = `auth_user_id.eq.${user.id},customer_email.ilike.${email}`;
       const [customer, orders, activeOrders, wishlist, unread] = await Promise.all([
         supabase
           .from("customers")
@@ -54,11 +120,11 @@ export const getMyDashboard = createServerFn({ method: "GET" }).handler(
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
-          .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`),
+          .or(orderScope),
         supabase
           .from("orders")
           .select("id", { count: "exact", head: true })
-          .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
+          .or(orderScope)
           .in("status", ["paid", "processing", "shipped"]),
         supabase
           .from("wishlist")
@@ -112,13 +178,14 @@ export const listMyOrders = createServerFn({ method: "GET" }).handler(
   async (): Promise<{ success: boolean; data: MyOrder[]; error?: string }> => {
     try {
       const { user, supabase } = await getUserClient();
+      const email = emailScope(user.email);
       // Itens ficam na coluna JSON orders.items (schema canonico); nao existe
       // tabela order_items em prod. Shape gravado por createPayment: cartItem
       // { id, title, quantity, price, image }.
       const { data: orders, error } = await supabase
         .from("orders")
         .select("id, created_at, status, payment_status, refund_status, total, tracking_code, items")
-        .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        .or(`auth_user_id.eq.${user.id},customer_email.ilike.${email}`)
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) return { success: false, data: [], error: error.message };
@@ -156,11 +223,12 @@ export const getMyOrder = createServerFn({ method: "GET" })
     async ({ data }): Promise<{ success: boolean; data?: MyOrderDetail; error?: string }> => {
       try {
         const { user, supabase } = await getUserClient();
+        const email = emailScope(user.email);
         const { data: order, error } = await supabase
           .from("orders")
           .select("*")
           .eq("id", data.orderId)
-          .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
+          .or(`auth_user_id.eq.${user.id},customer_email.ilike.${email}`)
           .maybeSingle();
         if (error || !order) return { success: false, error: "Pedido nao encontrado" };
         const o: any = order;
@@ -536,11 +604,12 @@ export const requestRefund = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { user, supabase } = await getUserClient();
+      const email = emailScope(user.email);
       const { data: order } = await supabase
         .from("orders")
         .select("id, total, status")
         .eq("id", data.orderId)
-        .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
+        .or(`auth_user_id.eq.${user.id},customer_email.ilike.${email}`)
         .maybeSingle();
       if (!order) return { success: false as const, error: "Pedido nao encontrado" };
       const o: any = order;

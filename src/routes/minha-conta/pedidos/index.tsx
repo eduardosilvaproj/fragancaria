@@ -1,8 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
-import { getMyOrders } from "@/lib/orders.functions";
-import type { MyOrderRow } from "@/lib/orders.functions";
+import { listMyOrders, type MyOrder } from "@/lib/account.functions";
 import { Package, ChevronRight, ShoppingBag, LogIn } from "lucide-react";
 
 export const Route = createFileRoute("/minha-conta/pedidos/")({
@@ -63,16 +63,16 @@ function statusLabel(status: string): string {
 
 function MinhaContaPedidosPage() {
   const { user, loading: sessionLoading } = useSupabaseSession();
-  const [orders, setOrders] = useState<MyOrderRow[] | null>(null);
+  const listMyOrdersFn = useServerFn(listMyOrders);
+  const [orders, setOrders] = useState<MyOrder[] | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  // Carrega os pedidos via server fn. A RLS policy filtra por user_id.
   const load = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await getMyOrders();
+      const res = await listMyOrdersFn();
       if (res.success) {
         setOrders(res.data);
       } else {
@@ -80,13 +80,22 @@ function MinhaContaPedidosPage() {
         setOrders([]);
       }
     } catch (err: any) {
-      // Token expirou ou sem sessão.
       setError(err?.message || "Erro inesperado");
       setOrders([]);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user) {
+      setOrders(null);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+    void load();
+  }, [user?.id]);
 
   if (sessionLoading) {
     return (
@@ -193,7 +202,7 @@ function EmptyState() {
   );
 }
 
-function OrderCard({ order }: { order: MyOrderRow }) {
+function OrderCard({ order }: { order: MyOrder }) {
   const items = Array.isArray(order.items) ? order.items : [];
   const firstThree = items.slice(0, 3);
   const more = items.length - firstThree.length;
@@ -219,7 +228,7 @@ function OrderCard({ order }: { order: MyOrderRow }) {
             </span>
           </div>
           <p className="text-sm text-[#0F3A3E]">
-            {formatDate(order.created_at)}
+            {formatDate(order.createdAt)}
           </p>
 
           {firstThree.length > 0 && (

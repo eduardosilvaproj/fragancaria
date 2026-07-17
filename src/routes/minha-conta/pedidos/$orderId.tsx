@@ -1,8 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Package, MapPin, User } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useSupabaseUser } from "@/hooks/useSupabaseUser";
+import { useSupabaseSession } from "@/hooks/useSupabaseSession";
+import { getMyOrder } from "@/lib/account.functions";
 import { OrderTimeline } from "@/components/account/OrderTimeline";
 
 export const Route = createFileRoute("/minha-conta/pedidos/$orderId")({
@@ -15,54 +16,15 @@ function formatBRL(n: number) {
 
 function OrderDetailPage() {
   const { orderId } = Route.useParams();
-  const { data: userData } = useSupabaseUser();
-  const user = userData?.user;
+  const { user } = useSupabaseSession();
+  const getMyOrderFn = useServerFn(getMyOrder);
 
   const order = useQuery({
     queryKey: ["my-order", orderId, user?.id],
     enabled: !!user && !!orderId,
     queryFn: async () => {
-      if (!user) return null;
-      const { data: o, error } = await supabase
-        .from("orders")
-        .select("*")
-        .eq("id", orderId)
-        .or(
-          `auth_user_id.eq.${user.id},customer_email.eq.${user.email ?? ""}`
-        )
-        .maybeSingle();
-      if (error || !o) return null;
-      // Itens e histórico ficam nas colunas JSON orders.items / orders.status_history
-      // (schema canônico); não há tabelas order_items / order_status_history em prod.
-      const oo = o as any;
-      const rawItems = Array.isArray(oo.items) ? oo.items : [];
-      const rawHistory = Array.isArray(oo.status_history) ? oo.status_history : [];
-      return {
-        id: oo.id,
-        createdAt: oo.created_at ?? "",
-        status: oo.status ?? "pending",
-        paymentStatus: oo.payment_status ?? "pending",
-        refundStatus: oo.refund_status ?? null,
-        total: Number(oo.total ?? 0),
-        trackingCode: oo.tracking_code ?? null,
-        trackingUrl: null,
-        items: rawItems.map((it: any) => ({
-          name: it.title ?? it.name ?? "",
-          quantity: Number(it.quantity ?? 0),
-          price: Number(it.price ?? 0),
-        })),
-        history: rawHistory.map((h: any) => ({
-          status: h.status ?? "",
-          createdAt: h.at ?? h.created_at ?? "",
-          notes: h.detail ?? h.notes ?? null,
-        })),
-        shippingAddress: (o as any).shipping_address ?? null,
-        customer: {
-          name: (o as any).customer_name ?? "",
-          email: (o as any).customer_email ?? "",
-          phone: (o as any).customer_phone ?? null,
-        },
-      };
+      const result = await getMyOrderFn({ data: { orderId } });
+      return result.success ? result.data ?? null : null;
     },
     refetchOnWindowFocus: false,
   });
@@ -130,13 +92,10 @@ function OrderDetailPage() {
       <div className="bg-white rounded-2xl border border-[#E9E1D2] p-5">
         <h3 className="text-sm font-semibold text-[#0F3A3E] mb-3">Itens</h3>
         <ul className="divide-y divide-[#E9E1D2]">
-          {o.items.map((it: { title: string; quantity: number; price: number; variationName?: string }, i: number) => (
+          {o.items.map((it, i: number) => (
             <li key={i} className="flex justify-between py-3 text-sm">
               <span className="text-[#0F3A3E]">
-                {it.quantity}x {it.title}
-                {it.variationName && (
-                  <span className="text-[#75827E]"> — {it.variationName}</span>
-                )}
+                {it.quantity}x {it.name}
               </span>
               <span className="text-[#51635F]">{formatBRL(it.price)}</span>
             </li>

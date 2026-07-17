@@ -44,11 +44,43 @@ export type AdminCustomerRow = {
   createdAt: string;
 };
 
+export type AdminOrderAddress = {
+  street: string;
+  number: string;
+  complement: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  cep: string;
+} | null;
+
 export type AdminCustomerOrder = {
   id: string;
   status: string;
+  paymentStatus: string;
   total: number;
   createdAt: string;
+  customerName: string | null;
+  customerEmail: string | null;
+  customerPhone: string | null;
+  customerCpf: string | null;
+  trackingCode: string | null;
+  items: Array<{ name: string; quantity: number; price: number }>;
+  shippingAddress: AdminOrderAddress;
+};
+
+export type AdminCustomerAddress = {
+  id: string;
+  label: string | null;
+  recipientName: string;
+  cep: string;
+  street: string;
+  number: string;
+  complement: string | null;
+  neighborhood: string;
+  city: string;
+  state: string;
+  isDefault: boolean;
 };
 
 export type AdminCustomerNote = {
@@ -61,8 +93,46 @@ export type AdminCustomerNote = {
 export type AdminCustomerDetail = {
   customer: AdminCustomerRow;
   orders: AdminCustomerOrder[];
+  addresses: AdminCustomerAddress[];
   notes: AdminCustomerNote[];
 };
+
+function normalizeOrderAddress(raw: unknown): AdminOrderAddress {
+  if (!raw || typeof raw !== "object") return null;
+  const a = raw as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === "string" ? v : "");
+  return {
+    street: str(a.street),
+    number: str(a.number),
+    complement: str(a.complement),
+    neighborhood: str(a.neighborhood),
+    city: str(a.city),
+    state: str(a.state),
+    cep: str(a.cep) || str(a.zipCode),
+  };
+}
+
+function mapOrderRow(o: Record<string, unknown>): AdminCustomerOrder {
+  const rawItems = Array.isArray(o.items) ? (o.items as Array<Record<string, unknown>>) : [];
+  return {
+    id: String(o.id),
+    status: String(o.status ?? "pending"),
+    paymentStatus: String(o.payment_status ?? "pending"),
+    total: Number(o.total ?? 0),
+    createdAt: String(o.created_at ?? ""),
+    customerName: (o.customer_name as string | null) ?? null,
+    customerEmail: (o.customer_email as string | null) ?? null,
+    customerPhone: (o.customer_phone as string | null) ?? null,
+    customerCpf: (o.customer_cpf as string | null) ?? null,
+    trackingCode: (o.tracking_code as string | null) ?? null,
+    items: rawItems.map((it) => ({
+      name: String(it.title ?? it.name ?? "Produto"),
+      quantity: Number(it.quantity ?? 1),
+      price: Number(it.price ?? 0),
+    })),
+    shippingAddress: normalizeOrderAddress(o.shipping_address),
+  };
+}
 
 const CUSTOMER_COLUMNS = [
   "id",
@@ -152,22 +222,22 @@ export const listCustomersForAdmin = createServerFn({ method: "GET" })
         const limit = data.limit ?? 50;
         const offset = data.offset ?? 0;
 
-        // 1. Clientes com conta
-        let query = db
+        // 1. E-mails já cadastrados, para não duplicar guests na lista.
+        let emailQuery = db
           .from("customers")
-          .select(CUSTOMER_COLUMNS, { count: "exact", head: true });
+          .select("email");
 
         if (data.search && data.search.length > 0) {
           const cleaned = sanitizeSearch(data.search);
           if (cleaned.length > 0) {
             const ilike = "%" + cleaned.replace(/[%_]/g, (c) => "\\" + c) + "%";
-            query = query.or(
+            emailQuery = emailQuery.or(
               ["name.ilike." + ilike, "email.ilike." + ilike].join(","),
             );
           }
         }
 
-        const { data: customerRows, error } = await query;
+        const { data: customerRows, error } = await emailQuery;
         if (error) return { success: false, error: error.message };
 
         // 2. Clientes cadastrados (com paginação aplicada)
@@ -187,7 +257,8 @@ export const listCustomersForAdmin = createServerFn({ method: "GET" })
           }
         }
 
-        const { data: paginatedRows, count } = await paginatedQuery;
+        const { data: paginatedRows, count, error: pageError } = await paginatedQuery;
+        if (pageError) return { success: false, error: pageError.message };
         const registeredCustomers = (
           (paginatedRows ?? []) as Array<Record<string, unknown>>
         ).map(mapCustomer);
@@ -208,7 +279,7 @@ export const listCustomersForAdmin = createServerFn({ method: "GET" })
 
         const registeredEmails = new Set(
           ((customerRows ?? []) as Array<Record<string, unknown>>).map(
-            (r) => ((r.email as string) || "").toLowerCase(),
+            (r) => ((r.email as string) || "").toLowerCase().trim(),
           ),
         );
 
@@ -324,18 +395,36 @@ export const getCustomerForAdmin = createServerFn({ method: "GET" })
         if (orConditions.length > 0) {
           const { data: orderRows } = await db
             .from("orders")
-            .select("id, status, total, created_at")
+            .select(
+              "id, status, payment_status, total, created_at, customer_name, customer_email, customer_phone, customer_cpf, tracking_code, items, shipping_address",
+            )
             .or(orConditions.join(","))
             .order("created_at", { ascending: false })
             .limit(100);
-          orders = ((orderRows ?? []) as Array<Record<string, unknown>>).map(
-            (o) => ({
-              id: String(o.id),
-              status: String(o.status ?? "pending"),
-              total: Number(o.total ?? 0),
-              createdAt: String(o.created_at ?? ""),
-            }),
-          );
+          orders = ((orderRows ?? []) as Array<Record<string, unknown>>).map(mapOrderRow);
+        }
+
+        let addresses: AdminCustomerAddress[] = [];
+        if (!isGuest && customer.authUserId) {
+          const { data: addressRows } = await db
+            .from("customer_addresses")
+            .select("id, label, recipient_name, cep, street, number, complement, neighborhood, city, state, is_default")
+            .eq("user_id", customer.authUserId)
+            .order("is_default", { ascending: false })
+            .order("created_at", { ascending: false });
+          addresses = ((addressRows ?? []) as Array<Record<string, unknown>>).map((address) => ({
+            id: String(address.id),
+            label: (address.label as string | null) ?? null,
+            recipientName: String(address.recipient_name ?? ""),
+            cep: String(address.cep ?? ""),
+            street: String(address.street ?? ""),
+            number: String(address.number ?? ""),
+            complement: (address.complement as string | null) ?? null,
+            neighborhood: String(address.neighborhood ?? ""),
+            city: String(address.city ?? ""),
+            state: String(address.state ?? ""),
+            isDefault: Boolean(address.is_default),
+          }));
         }
 
         const { data: noteRows } = await db
@@ -352,7 +441,7 @@ export const getCustomerForAdmin = createServerFn({ method: "GET" })
           createdAt: String(n.created_at ?? ""),
         }));
 
-        return { success: true, data: { customer, orders, notes } };
+        return { success: true, data: { customer, orders, addresses, notes } };
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "erro";
         return { success: false, error: msg };
@@ -419,6 +508,133 @@ export const updateCustomerForAdmin = createServerFn({ method: "POST" })
       }
     },
   );
+
+const adminOrderAddressSchema = z.object({
+  street: z.string().min(1).max(200),
+  number: z.string().min(1).max(20),
+  complement: z.string().max(120).optional().nullable(),
+  neighborhood: z.string().min(1).max(120),
+  city: z.string().min(1).max(120),
+  state: z.string().length(2),
+  cep: z.string().min(8).max(9),
+});
+
+const adminAddressSchema = z.object({
+  id: z.string().uuid(),
+  label: z.string().max(60).optional().nullable(),
+  recipientName: z.string().min(1).max(120),
+  cep: z.string().min(8).max(9),
+  street: z.string().min(1).max(200),
+  number: z.string().min(1).max(20),
+  complement: z.string().max(120).optional().nullable(),
+  neighborhood: z.string().min(1).max(120),
+  city: z.string().min(1).max(120),
+  state: z.string().length(2),
+  isDefault: z.boolean().optional(),
+});
+
+export const updateOrderAddressForAdmin = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        orderId: z.string().uuid(),
+        address: adminOrderAddressSchema,
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import(
+        "@/integrations/supabase/client.server"
+      );
+      const db = supabaseAdmin as any;
+
+      const patch = {
+        street: data.address.street,
+        number: data.address.number,
+        complement: data.address.complement ?? "",
+        neighborhood: data.address.neighborhood,
+        city: data.address.city,
+        state: data.address.state.toUpperCase(),
+        cep: data.address.cep.replace(/\D/g, ""),
+        zipCode: data.address.cep.replace(/\D/g, ""),
+      };
+
+      const { error } = await db
+        .from("orders")
+        .update({ shipping_address: patch })
+        .eq("id", data.orderId);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return { success: false, error: msg };
+    }
+  });
+
+export const updateCustomerAddressForAdmin = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        customerId: z.string().uuid(),
+        address: adminAddressSchema,
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import(
+        "@/integrations/supabase/client.server"
+      );
+      const db = supabaseAdmin as any;
+
+      const { data: customer, error: customerErr } = await db
+        .from("customers")
+        .select("auth_user_id")
+        .eq("id", data.customerId)
+        .single();
+      if (customerErr || !customer?.auth_user_id) {
+        return { success: false, error: "Cliente sem conta vinculada para editar endereços" };
+      }
+
+      if (data.address.isDefault) {
+        await db
+          .from("customer_addresses")
+          .update({ is_default: false })
+          .eq("user_id", customer.auth_user_id)
+          .eq("is_default", true)
+          .neq("id", data.address.id);
+      }
+
+      const patch = {
+        label: data.address.label ?? null,
+        recipient_name: data.address.recipientName,
+        cep: data.address.cep.replace(/\D/g, ""),
+        street: data.address.street,
+        number: data.address.number,
+        complement: data.address.complement ?? null,
+        neighborhood: data.address.neighborhood,
+        city: data.address.city,
+        state: data.address.state.toUpperCase(),
+        is_default: data.address.isDefault ?? false,
+      };
+
+      const { error } = await db
+        .from("customer_addresses")
+        .update(patch)
+        .eq("id", data.address.id)
+        .eq("user_id", customer.auth_user_id);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return { success: false, error: msg };
+    }
+  });
 
 export const setCustomerBlocked = createServerFn({ method: "POST" })
   .validator((d: unknown) =>

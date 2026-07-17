@@ -17,6 +17,7 @@ import {
   Star,
   Award,
   ChevronDown,
+  MapPin,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -26,8 +27,11 @@ import {
   setCustomerBlocked,
   addCustomerNote,
   setCustomerLoyalty,
+  updateOrderAddressForAdmin,
+  updateCustomerAddressForAdmin,
   type AdminCustomerRow,
   type AdminCustomerOrder,
+  type AdminCustomerAddress,
   type AdminCustomerNote,
 } from "@/lib/customers-admin.functions";
 import { toast } from "sonner";
@@ -70,7 +74,7 @@ function TierBadge({ tier }: { tier: string }) {
   );
 }
 
-type Tab = "dados" | "pedidos" | "loyalty" | "notas";
+type Tab = "dados" | "pedidos" | "enderecos" | "loyalty" | "notas";
 
 function AdminClientes() {
   const [customers, setCustomers] = useState<AdminCustomerRow[]>([]);
@@ -80,10 +84,25 @@ function AdminClientes() {
   const [selectedCustomer, setSelectedCustomer] = useState<AdminCustomerRow | null>(null);
   const [detailData, setDetailData] = useState<{
     orders: AdminCustomerOrder[];
+    addresses: AdminCustomerAddress[];
     notes: AdminCustomerNote[];
   } | null>(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [activeTab, setActiveTab] = useState<Tab>("dados");
+
+  // Edição de endereço do pedido (snapshot usado em etiqueta/NF-e)
+  const [editingOrderAddressId, setEditingOrderAddressId] = useState<string | null>(null);
+  const [orderAddressForm, setOrderAddressForm] = useState({
+    street: "", number: "", complement: "", neighborhood: "", city: "", state: "", cep: "",
+  });
+  const [savingOrderAddress, setSavingOrderAddress] = useState(false);
+
+  // Edição de endereço salvo no livro de endereços da conta
+  const [editingAccountAddressId, setEditingAccountAddressId] = useState<string | null>(null);
+  const [accountAddressForm, setAccountAddressForm] = useState({
+    recipientName: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "", cep: "",
+  });
+  const [savingAccountAddress, setSavingAccountAddress] = useState(false);
 
   // Editable fields in the detail modal
   const [editName, setEditName] = useState("");
@@ -145,11 +164,93 @@ function AdminClientes() {
     const res = await getCustomerForAdmin({ data: { customerId: customer.id } });
     setLoadingDetail(false);
     if (res.success) {
-      setDetailData({ orders: res.data.orders, notes: res.data.notes });
+      setDetailData({ orders: res.data.orders, addresses: res.data.addresses, notes: res.data.notes });
     } else {
       toast.error("Erro ao carregar detalhes: " + res.error);
     }
   }, []);
+
+  const startEditOrderAddress = (order: AdminCustomerOrder) => {
+    setEditingOrderAddressId(order.id);
+    setOrderAddressForm({
+      street: order.shippingAddress?.street ?? "",
+      number: order.shippingAddress?.number ?? "",
+      complement: order.shippingAddress?.complement ?? "",
+      neighborhood: order.shippingAddress?.neighborhood ?? "",
+      city: order.shippingAddress?.city ?? "",
+      state: order.shippingAddress?.state ?? "",
+      cep: order.shippingAddress?.cep ?? "",
+    });
+  };
+
+  const saveOrderAddress = async () => {
+    if (!editingOrderAddressId) return;
+    setSavingOrderAddress(true);
+    const res = await updateOrderAddressForAdmin({
+      data: { orderId: editingOrderAddressId, address: orderAddressForm },
+    });
+    setSavingOrderAddress(false);
+    if (res.success) {
+      toast.success("Endereço do pedido atualizado");
+      setDetailData((prev) =>
+        prev
+          ? {
+              ...prev,
+              orders: prev.orders.map((o) =>
+                o.id === editingOrderAddressId
+                  ? { ...o, shippingAddress: { ...orderAddressForm } }
+                  : o,
+              ),
+            }
+          : prev,
+      );
+      setEditingOrderAddressId(null);
+    } else {
+      toast.error("Erro ao salvar endereço: " + res.error);
+    }
+  };
+
+  const startEditAccountAddress = (address: AdminCustomerAddress) => {
+    setEditingAccountAddressId(address.id);
+    setAccountAddressForm({
+      recipientName: address.recipientName,
+      street: address.street,
+      number: address.number,
+      complement: address.complement ?? "",
+      neighborhood: address.neighborhood,
+      city: address.city,
+      state: address.state,
+      cep: address.cep,
+    });
+  };
+
+  const saveAccountAddress = async () => {
+    if (!editingAccountAddressId || !selectedCustomer) return;
+    setSavingAccountAddress(true);
+    const res = await updateCustomerAddressForAdmin({
+      data: {
+        customerId: selectedCustomer.id,
+        address: { id: editingAccountAddressId, ...accountAddressForm },
+      },
+    });
+    setSavingAccountAddress(false);
+    if (res.success) {
+      toast.success("Endereço da conta atualizado");
+      setDetailData((prev) =>
+        prev
+          ? {
+              ...prev,
+              addresses: prev.addresses.map((a) =>
+                a.id === editingAccountAddressId ? { ...a, ...accountAddressForm } : a,
+              ),
+            }
+          : prev,
+      );
+      setEditingAccountAddressId(null);
+    } else {
+      toast.error("Erro ao salvar endereço: " + res.error);
+    }
+  };
 
   const saveProfile = async () => {
     if (!selectedCustomer) return;
@@ -269,6 +370,7 @@ function AdminClientes() {
   const TABS: { id: Tab; label: string }[] = [
     { id: "dados", label: "Dados" },
     { id: "pedidos", label: "Pedidos" },
+    { id: "enderecos", label: "Endereços" },
     { id: "loyalty", label: "Loyalty" },
     { id: "notas", label: "Notas" },
   ];
@@ -680,42 +782,157 @@ function AdminClientes() {
                   ) : !detailData || detailData.orders.length === 0 ? (
                     <p className="text-sm text-[#8A938E]">Nenhum pedido encontrado.</p>
                   ) : (
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       {detailData.orders.map((order) => {
                         const cfg = STATUS_CONFIG[order.status] ?? {
                           label: order.status,
                           color: "text-gray-700",
                           bg: "bg-gray-50",
                         };
+                        const isEditingAddress = editingOrderAddressId === order.id;
                         return (
-                          <div
-                            key={order.id}
-                            className="flex items-center justify-between p-3 bg-[#F8F4EA] rounded-lg"
-                          >
-                            <div className="flex items-center gap-3">
-                              <ShoppingBag className="h-4 w-4 text-[#8A938E]" />
-                              <div>
-                                <p className="text-sm font-medium text-[#0F3A3E] font-mono">
-                                  #{order.id.slice(0, 8).toUpperCase()}
-                                </p>
-                                <p className="text-xs text-[#8A938E]">{formatDate(order.createdAt)}</p>
+                          <div key={order.id} className="p-4 bg-[#F8F4EA] rounded-lg space-y-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <ShoppingBag className="h-4 w-4 text-[#8A938E]" />
+                                <div>
+                                  <p className="text-sm font-medium text-[#0F3A3E] font-mono">
+                                    #{order.id.slice(0, 8).toUpperCase()}
+                                  </p>
+                                  <p className="text-xs text-[#8A938E]">{formatDate(order.createdAt)}</p>
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <span className={cn("text-xs px-2 py-0.5 rounded-full", cfg.bg, cfg.color)}>
+                                  {cfg.label}
+                                </span>
+                                <p className="text-sm font-medium text-[#0F3A3E] mt-1">{formatPrice(order.total)}</p>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className={cn("text-xs px-2 py-0.5 rounded-full", cfg.bg, cfg.color)}>
-                                {cfg.label}
-                              </span>
-                              <p className="text-sm font-medium text-[#0F3A3E] mt-1">{formatPrice(order.total)}</p>
+
+                            <div className="text-xs text-[#51635F] space-y-1">
+                              <p>{order.customerName || "—"} · {order.customerEmail || "—"}</p>
+                              <p>Tel: {order.customerPhone || "—"} · CPF: {order.customerCpf || "—"}</p>
+                              <p>Pagamento: {order.paymentStatus || "—"}{order.trackingCode ? ` · Rastreio: ${order.trackingCode}` : ""}</p>
                             </div>
+
+                            <div className="border-t border-[#E9E1D2] pt-3">
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <p className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold">Endereço do pedido</p>
+                                {!isEditingAddress && (
+                                  <button
+                                    onClick={() => startEditOrderAddress(order)}
+                                    className="text-xs text-[#B07B1E] hover:underline"
+                                  >
+                                    Editar
+                                  </button>
+                                )}
+                              </div>
+                              {isEditingAddress ? (
+                                <div className="grid grid-cols-2 gap-2">
+                                  <input value={orderAddressForm.street} onChange={(e) => setOrderAddressForm((v) => ({ ...v, street: e.target.value }))} placeholder="Rua" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.number} onChange={(e) => setOrderAddressForm((v) => ({ ...v, number: e.target.value }))} placeholder="Número" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.complement} onChange={(e) => setOrderAddressForm((v) => ({ ...v, complement: e.target.value }))} placeholder="Complemento" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.neighborhood} onChange={(e) => setOrderAddressForm((v) => ({ ...v, neighborhood: e.target.value }))} placeholder="Bairro" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.city} onChange={(e) => setOrderAddressForm((v) => ({ ...v, city: e.target.value }))} placeholder="Cidade" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.state} onChange={(e) => setOrderAddressForm((v) => ({ ...v, state: e.target.value.toUpperCase() }))} placeholder="UF" maxLength={2} className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <input value={orderAddressForm.cep} onChange={(e) => setOrderAddressForm((v) => ({ ...v, cep: e.target.value }))} placeholder="CEP" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                  <div className="col-span-2 flex gap-2">
+                                    <button onClick={saveOrderAddress} disabled={savingOrderAddress} className="px-3 py-2 bg-[#0F3A3E] text-white text-sm rounded-lg disabled:opacity-50">{savingOrderAddress ? "Salvando..." : "Salvar endereço"}</button>
+                                    <button onClick={() => setEditingOrderAddressId(null)} className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg">Cancelar</button>
+                                  </div>
+                                </div>
+                              ) : order.shippingAddress ? (
+                                <p className="text-sm text-[#51635F]">
+                                  {order.shippingAddress.street}, {order.shippingAddress.number}{order.shippingAddress.complement ? ` — ${order.shippingAddress.complement}` : ""}<br />
+                                  {order.shippingAddress.neighborhood} — {order.shippingAddress.city}/{order.shippingAddress.state}<br />
+                                  CEP {order.shippingAddress.cep}
+                                </p>
+                              ) : (
+                                <p className="text-sm text-amber-700">Endereço não salvo nesta compra.</p>
+                              )}
+                            </div>
+
+                            {order.items.length > 0 && (
+                              <div className="border-t border-[#E9E1D2] pt-3">
+                                <p className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1">Itens</p>
+                                {order.items.map((item, index) => (
+                                  <p key={`${item.name}-${index}`} className="text-xs text-[#51635F]">{item.quantity}x {item.name} · {formatPrice(item.price)}</p>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         );
                       })}
-                      <a
-                        href="/admin/pedidos"
-                        className="block text-center text-xs text-[#B07B1E] hover:underline pt-1"
-                      >
+                      <a href="/admin/pedidos" className="block text-center text-xs text-[#B07B1E] hover:underline pt-1">
                         Ver todos em Pedidos →
                       </a>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── TAB: ENDEREÇOS ── */}
+              {activeTab === "enderecos" && (
+                <div>
+                  <h3 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-3 flex items-center gap-2">
+                    <MapPin className="h-4 w-4" />
+                    Endereços salvos na conta
+                  </h3>
+                  {loadingDetail ? (
+                    <p className="text-sm text-[#8A938E]">Carregando...</p>
+                  ) : !detailData || detailData.addresses.length === 0 ? (
+                    <p className="text-sm text-[#8A938E]">
+                      Este cliente não possui endereços salvos no livro de endereços.
+                    </p>
+                  ) : (
+                    <div className="space-y-3">
+                      {detailData.addresses.map((address) => {
+                        const isEditing = editingAccountAddressId === address.id;
+                        return (
+                          <div key={address.id} className="p-4 bg-[#F8F4EA] rounded-lg space-y-2">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-medium text-[#0F3A3E]">
+                                {address.label || "Endereço"}
+                                {address.isDefault && (
+                                  <span className="ml-2 text-[10px] uppercase tracking-wider text-[#B07B1E]">Padrão</span>
+                                )}
+                              </p>
+                              {!isEditing && (
+                                <button
+                                  onClick={() => startEditAccountAddress(address)}
+                                  className="text-xs text-[#B07B1E] hover:underline"
+                                >
+                                  Editar
+                                </button>
+                              )}
+                            </div>
+                            {isEditing ? (
+                              <div className="grid grid-cols-2 gap-2">
+                                <input value={accountAddressForm.recipientName} onChange={(e) => setAccountAddressForm((v) => ({ ...v, recipientName: e.target.value }))} placeholder="Nome do destinatário" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.street} onChange={(e) => setAccountAddressForm((v) => ({ ...v, street: e.target.value }))} placeholder="Rua" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.number} onChange={(e) => setAccountAddressForm((v) => ({ ...v, number: e.target.value }))} placeholder="Número" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.complement} onChange={(e) => setAccountAddressForm((v) => ({ ...v, complement: e.target.value }))} placeholder="Complemento" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.neighborhood} onChange={(e) => setAccountAddressForm((v) => ({ ...v, neighborhood: e.target.value }))} placeholder="Bairro" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.city} onChange={(e) => setAccountAddressForm((v) => ({ ...v, city: e.target.value }))} placeholder="Cidade" className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.state} onChange={(e) => setAccountAddressForm((v) => ({ ...v, state: e.target.value.toUpperCase() }))} placeholder="UF" maxLength={2} className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <input value={accountAddressForm.cep} onChange={(e) => setAccountAddressForm((v) => ({ ...v, cep: e.target.value }))} placeholder="CEP" className="col-span-2 px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg" />
+                                <div className="col-span-2 flex gap-2">
+                                  <button onClick={saveAccountAddress} disabled={savingAccountAddress} className="px-3 py-2 bg-[#0F3A3E] text-white text-sm rounded-lg disabled:opacity-50">{savingAccountAddress ? "Salvando..." : "Salvar endereço"}</button>
+                                  <button onClick={() => setEditingAccountAddressId(null)} className="px-3 py-2 border border-[#E9E1D2] text-sm rounded-lg">Cancelar</button>
+                                </div>
+                              </div>
+                            ) : (
+                              <p className="text-sm text-[#51635F]">
+                                {address.recipientName}<br />
+                                {address.street}, {address.number}{address.complement ? ` — ${address.complement}` : ""}<br />
+                                {address.neighborhood} — {address.city}/{address.state}<br />
+                                CEP {address.cep}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

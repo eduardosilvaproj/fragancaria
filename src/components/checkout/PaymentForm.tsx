@@ -372,6 +372,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customer) { toast.error("Dados do cliente ausentes"); return; }
+    if (!shippingAddress) { toast.error("Endereço de entrega ausente. Volte e preencha os dados de entrega."); return; }
     if (!sdkLoaded || !mpRef.current) { toast.error("SDK de pagamento não carregado. Aguarde..."); return; }
 
     if (!validateAll()) {
@@ -427,6 +428,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
             email: customer.email,
             firstName: customer.firstName,
             lastName: customer.lastName,
+            phone: customer.phone,
             identification: { type: "CPF", number: identificationNumber },
             address: shippingAddress
               ? {
@@ -671,6 +673,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
             email: customer.email,
             firstName: customer.firstName,
             lastName: customer.lastName,
+            phone: customer.phone,
             identification: { type: "CPF", number: customer.cpf },
             address: shippingAddress
               ? {
@@ -790,6 +793,7 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
             email: customer.email,
             firstName: customer.firstName,
             lastName: customer.lastName,
+            phone: customer.phone,
             identification: { type: "CPF", number: customer.cpf },
             address: shippingAddress
               ? {

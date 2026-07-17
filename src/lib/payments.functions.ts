@@ -24,11 +24,12 @@ function formatToken(t: string): string {
 }
 const cpfSchema = z.string().min(11).max(14).transform((v) => v.replace(/\D/g, "")).refine((d) => d.length === 11, "CPF deve ter 11 digitos");
 const payerSchema = z.object({
-  email: z.string().email(),
+  email: z.string().email().transform((e) => e.trim().toLowerCase()),
   firstName: z.string().min(1).max(120),
   lastName: z.string().min(1).max(120),
+  phone: z.string().max(40).optional(),
   identification: z.object({ type: z.literal("CPF"), number: cpfSchema }),
-  address: z.object({ zipCode: z.string().min(8).max(9), streetName: z.string().min(1), streetNumber: z.string().min(1), neighborhood: z.string().min(1), city: z.string().min(1), state: z.string().length(2), complement: z.string().optional() }).optional(),
+  address: z.object({ zipCode: z.string().min(8).max(9), streetName: z.string().min(1), streetNumber: z.string().min(1), neighborhood: z.string().min(1), city: z.string().min(1), state: z.string().length(2), complement: z.string().optional() }),
 });
 const cartItemSchema = z.object({ id: z.string(), title: z.string(), quantity: z.number().int().positive(), price: z.number().positive(), image: z.string().optional(), variationName: z.string().optional() });
 const inputSchema = z.object({
@@ -69,6 +70,66 @@ function itemsForMp(items: Array<{ id: string; title: string; quantity: number; 
   return items.map((i) => ({ id: i.id, title: i.title, quantity: i.quantity, unit_price: Number(i.price.toFixed(2)) }));
 }
 type CreatePaymentInput = z.infer<typeof inputSchema>;
+
+async function syncCheckoutCustomer(
+  admin: any,
+  payer: CreatePaymentInput["payer"],
+  authUserId: string | undefined,
+) {
+  const { data, error } = await admin
+    .from("customers")
+    .select("id, auth_user_id, email, name, phone, cpf, created_at")
+    .ilike("email", payer.email.replace(/[\\%_]/g, "\\$&"))
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+
+  const customers = (data ?? []) as Array<{
+    id: string;
+    auth_user_id: string | null;
+    email: string | null;
+    name: string | null;
+    phone: string | null;
+    cpf: string | null;
+    created_at: string;
+  }>;
+  const matchingAccount = authUserId
+    ? customers.find((row) => row.auth_user_id === authUserId)
+    : undefined;
+  const guestCustomer = customers.find((row) => row.auth_user_id === null);
+  const accountCustomer = customers.find((row) => row.auth_user_id !== null);
+  const customer = matchingAccount ?? guestCustomer;
+  const name = `${payer.firstName} ${payer.lastName}`.trim();
+
+  // Nunca altera nem cria um perfil concorrente para outra conta autenticada.
+  if (!customer && accountCustomer) return;
+
+  if (!customer) {
+    const { error: insertError } = await admin.from("customers").insert({
+      email: payer.email,
+      name,
+      phone: payer.phone || null,
+      cpf: payer.identification.number,
+      auth_user_id: authUserId ?? null,
+    });
+    if (insertError) throw insertError;
+    return;
+  }
+
+  const update: Record<string, string> = {};
+  if (authUserId && !customer.auth_user_id) update.auth_user_id = authUserId;
+  if (!customer.email) update.email = payer.email;
+  if (!customer.name && name) update.name = name;
+  if (!customer.phone && payer.phone) update.phone = payer.phone;
+  if (!customer.cpf && payer.identification.number) update.cpf = payer.identification.number;
+  if (Object.keys(update).length === 0) return;
+
+  const { error: updateError } = await admin
+    .from("customers")
+    .update(update)
+    .eq("id", customer.id);
+  if (updateError) throw updateError;
+}
+
 export const createPayment = createServerFn({ method: 'POST' })
   .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }) => {
@@ -140,18 +201,18 @@ export const createPayment = createServerFn({ method: 'POST' })
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
-            shipping_address: data.payer.address
-              ? {
-                  street: data.payer.address.streetName,
-                  number: data.payer.address.streetNumber,
-                  complement: data.payer.address.complement ?? '',
-                  neighborhood: data.payer.address.neighborhood,
-                  city: data.payer.address.city,
-                  state: data.payer.address.state,
-                  cep: data.payer.address.zipCode,
-                  zipCode: data.payer.address.zipCode,
-                }
-              : null,
+            customer_phone: data.payer.phone ?? null,
+            customer_cpf: data.payer.identification.number,
+            shipping_address: {
+              street: data.payer.address.streetName,
+              number: data.payer.address.streetNumber,
+              complement: data.payer.address.complement ?? '',
+              neighborhood: data.payer.address.neighborhood,
+              city: data.payer.address.city,
+              state: data.payer.address.state,
+              cep: data.payer.address.zipCode,
+              zipCode: data.payer.address.zipCode,
+            },
             tracking_token: generateTrackingToken(),
           })
           .select('id')
@@ -230,6 +291,19 @@ export const createPayment = createServerFn({ method: 'POST' })
           payer_email: data.payer.email,
           raw: json,
         }).eq('id', orderId);
+      }
+
+      // Cria/atualiza o cliente interno em `customers`. Toda compra passa a ter
+      // um cadastro real (mesmo guest), e quando o checkout é autenticado o
+      // perfil recebe o auth_user_id. Não pode quebrar a cobrança: se falhar,
+      // apenas registra o erro no log do servidor.
+      try {
+        await syncCheckoutCustomer(admin, data.payer, data.userId);
+      } catch (customerErr) {
+        console.error('[createPayment] Falha ao sincronizar cliente interno', {
+          orderId,
+          customerErr,
+        });
       }
 
       // Dispara e-mail de confirmação com token de rastreio (se Resend estiver configurado).
