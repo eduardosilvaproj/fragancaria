@@ -99,7 +99,28 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     await expect(page.getByText("Grátis").first()).toBeVisible();
   });
 
-  test("5. ShippingForm com CPF inválido não avança para pagamento", async ({ page }) => {
+  test("5. Drawer do carrinho delega frete e descontos ao checkout", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "fragranciaria-cart",
+        JSON.stringify({
+          state: {
+            items: [{ id: "e2e-drawer", title: "Produto Drawer", price: 120, quantity: 1 }],
+          },
+          version: 0,
+        }),
+      );
+    });
+    await page.goto("/");
+    await page.getByRole("button", { name: "Carrinho" }).click();
+    await expect(page.getByText("Frete e descontos calculados no checkout")).toBeVisible();
+    await expect(page.getByText("Código do cupom")).toHaveCount(0);
+    await page.getByRole("link", { name: "Finalizar Compra" }).click();
+    await page.waitForURL(/\/checkout$/);
+    await expect(page.getByText("Dados Pessoais")).toBeVisible();
+  });
+
+  test("6. ShippingForm com CPF inválido não avança para pagamento", async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         "fragranciaria-cart",

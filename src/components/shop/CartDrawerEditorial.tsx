@@ -1,130 +1,21 @@
 import { useCartStore } from "@/stores/cartStore";
-import { useCouponStore, formatCouponDiscount } from "@/stores/couponStore";
-import { useCheckoutStore } from "@/stores/checkoutStore";
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Minus, Plus, Trash2, X, Tag, Check, Truck, Loader2, MapPin } from "lucide-react";
-import { useState, useEffect } from "react";
-import { toast } from "sonner";
+import { ShoppingBag, Minus, Plus, Trash2, X } from "lucide-react";
 
-const FREE_SHIPPING_THRESHOLD = 199;
-
-// Tabela de frete por região (primeiro dígito do CEP)
-const TABELA_FRETE: Record<string, { pac: number; sedex: number; prazoPac: number; prazoSedex: number }> = {
-  "0": { pac: 19.90, sedex: 32.90, prazoPac: 5, prazoSedex: 2 },
-  "1": { pac: 16.90, sedex: 26.90, prazoPac: 3, prazoSedex: 1 },
-  "2": { pac: 26.90, sedex: 42.90, prazoPac: 7, prazoSedex: 3 },
-  "3": { pac: 24.90, sedex: 39.90, prazoPac: 6, prazoSedex: 3 },
-  "4": { pac: 34.90, sedex: 56.90, prazoPac: 10, prazoSedex: 4 },
-  "5": { pac: 38.90, sedex: 62.90, prazoPac: 12, prazoSedex: 5 },
-  "6": { pac: 42.90, sedex: 68.90, prazoPac: 14, prazoSedex: 6 },
-  "7": { pac: 38.90, sedex: 62.90, prazoPac: 12, prazoSedex: 5 },
-  "8": { pac: 28.90, sedex: 45.90, prazoPac: 7, prazoSedex: 3 },
-  "9": { pac: 32.90, sedex: 52.90, prazoPac: 8, prazoSedex: 4 },
-};
-
-interface FreteOption {
-  id: string;
-  name: string;
-  price: number;
-  days: number;
-}
+// O drawer é um preview do carrinho: mostra itens e subtotal, mas NÃO calcula
+// frete nem desconto. Frete e cupom são decididos no checkout.
 
 export const CartDrawerEditorial = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getTotalPrice } = useCartStore();
-  const { appliedCoupon, error: couponError, applyCoupon, removeCoupon, calculateDiscount } = useCouponStore();
-  const { shippingPrice, setShippingPrice } = useCheckoutStore();
-  const [couponCode, setCouponCode] = useState("");
-  const [isApplying, setIsApplying] = useState(false);
-
-  // Estado do cálculo de frete
-  const [cep, setCep] = useState("");
-  const [cepCalculado, setCepCalculado] = useState("");
-  const [freteOptions, setFreteOptions] = useState<FreteOption[]>([]);
-  const [selectedFrete, setSelectedFrete] = useState<string | null>(null);
-  const [loadingFrete, setLoadingFrete] = useState(false);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = getTotalPrice();
-  const discount = calculateDiscount(subtotal);
-  const remainingForFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
-
-  // Calcular total com frete
-  const freteValue = hasFreeShipping ? 0 : (shippingPrice || 0);
-  const total = subtotal - discount + freteValue;
-
-  // Quando muda frete grátis, resetar frete selecionado
-  useEffect(() => {
-    if (hasFreeShipping) {
-      setShippingPrice(0);
-      setSelectedFrete(null);
-    }
-  }, [hasFreeShipping, setShippingPrice]);
-
-  const maskCep = (v: string) =>
-    v.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
-
-  const calcularFrete = () => {
-    const digits = cep.replace(/\D/g, "");
-    if (digits.length !== 8) {
-      toast.error("CEP inválido");
-      return;
-    }
-
-    setLoadingFrete(true);
-
-    // Simular delay de API
-    setTimeout(() => {
-      const regiao = digits[0];
-      const precos = TABELA_FRETE[regiao] || TABELA_FRETE["1"];
-
-      const options: FreteOption[] = [
-        { id: "pac", name: "PAC", price: precos.pac, days: precos.prazoPac },
-        { id: "sedex", name: "SEDEX", price: precos.sedex, days: precos.prazoSedex },
-      ];
-
-      setFreteOptions(options);
-      setCepCalculado(digits);
-      setLoadingFrete(false);
-
-      // Auto-selecionar o mais barato
-      setSelectedFrete("pac");
-      setShippingPrice(precos.pac);
-    }, 800);
-  };
-
-  const handleSelectFrete = (option: FreteOption) => {
-    setSelectedFrete(option.id);
-    setShippingPrice(option.price);
-  };
 
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
       style: "currency",
       currency: "BRL",
     });
-  };
-
-  const handleApplyCoupon = () => {
-    if (!couponCode.trim()) return;
-
-    setIsApplying(true);
-    const success = applyCoupon(couponCode, subtotal);
-
-    setTimeout(() => {
-      setIsApplying(false);
-      if (success) {
-        toast.success("Cupom aplicado com sucesso!");
-        setCouponCode("");
-      } else {
-        toast.error(couponError || "Cupom inválido");
-      }
-    }, 500);
-  };
-
-  const handleRemoveCoupon = () => {
-    removeCoupon();
-    toast.success("Cupom removido");
   };
 
   if (!isOpen) return null;
@@ -151,33 +42,6 @@ export const CartDrawerEditorial = () => {
             <X className="h-5 w-5 text-[#0F3A3E]" />
           </button>
         </div>
-
-        {/* Free Shipping Progress */}
-        {items.length > 0 && (
-          <div className="px-6 py-4 bg-[#F8F4EA] border-b border-[#E0D8C7]">
-            {hasFreeShipping ? (
-              <div className="flex items-center gap-2 text-[#1c6b4a]">
-                <Check className="h-4 w-4" />
-                <span className="text-[13px] font-medium">Você ganhou frete grátis!</span>
-              </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2 mb-2">
-                  <Truck className="h-4 w-4 text-[#B07B1E]" />
-                  <span className="text-[12px] text-[#51635F]">
-                    Faltam <strong className="text-[#0F3A3E]">{formatPrice(remainingForFreeShipping)}</strong> para frete grátis
-                  </span>
-                </div>
-                <div className="h-1.5 bg-[#E0D8C7] overflow-hidden">
-                  <div
-                    className="h-full bg-[#B07B1E] transition-all duration-500"
-                    style={{ width: `${Math.min(100, (subtotal / FREE_SHIPPING_THRESHOLD) * 100)}%` }}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-        )}
 
         {/* Items */}
         <div className="flex-1 overflow-y-auto px-6 py-6">
@@ -264,203 +128,49 @@ export const CartDrawerEditorial = () => {
                 </div>
               ))}
 
-              {/* Cupom, frete, summary e Total ficam DENTRO do scroll (mesma
-                  estratégia Amazon/Shopee). Em telas baixas, o usuário rola até
-                  eles. O botão "Finalizar Compra" fica no footer fixo abaixo. */}
-              <div className="mb-5 pb-5 border-b border-[#E0D8C7]">
-              {appliedCoupon ? (
-                <div className="flex items-center justify-between bg-[#1c6b4a]/10 px-3 py-2.5 border border-[#1c6b4a]/20">
-                  <div className="flex items-center gap-2">
-                    <Tag className="h-4 w-4 text-[#1c6b4a]" />
-                    <span className="text-[13px] text-[#1c6b4a] font-medium">
-                      {appliedCoupon.code}
-                    </span>
-                    <span className="text-[11px] text-[#1c6b4a]/80">
-                      ({formatCouponDiscount(appliedCoupon)})
-                    </span>
-                  </div>
-                  <button
-                    onClick={handleRemoveCoupon}
-                    className="text-[11px] text-[#C4433A] hover:underline"
-                  >
-                    Remover
-                  </button>
-                </div>
-              ) : (
-                <div className="flex gap-2">
-                  <div className="flex-1 relative">
-                    <Tag className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9AA39F]" />
-                    <input
-                      type="text"
-                      value={couponCode}
-                      onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
-                      placeholder="Código do cupom"
-                      className="w-full pl-10 pr-3 py-2.5 text-[13px] bg-white border border-[#E0D8C7] focus:border-[#0F3A3E] focus:outline-none placeholder:text-[#9AA39F]"
-                      onKeyDown={(e) => e.key === "Enter" && handleApplyCoupon()}
-                    />
-                  </div>
-                  <button
-                    onClick={handleApplyCoupon}
-                    disabled={isApplying || !couponCode.trim()}
-                    className="px-4 py-2.5 bg-[#0F3A3E] text-white text-[11px] uppercase tracking-[0.1em] font-semibold hover:bg-[#16504F] disabled:bg-[#C4BBA8] disabled:cursor-not-allowed transition-colors"
-                  >
-                    {isApplying ? "..." : "Aplicar"}
-                  </button>
-                </div>
-              )}
-              {couponError && !appliedCoupon && (
-                <p className="text-[11px] text-[#C4433A] mt-2">{couponError}</p>
-              )}
-            </div>
-
-            {/* Shipping Calculator */}
-            {!hasFreeShipping && (
-              <div className="mb-5 pb-5 border-b border-[#E0D8C7]">
-                <div className="flex items-center gap-2 mb-3">
-                  <MapPin className="h-4 w-4 text-[#B07B1E]" />
-                  <span className="text-[13px] font-medium text-[#0F3A3E]">Calcular Frete</span>
-                </div>
-
-                {!cepCalculado ? (
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={cep}
-                      onChange={(e) => setCep(maskCep(e.target.value))}
-                      placeholder="00000-000"
-                      className="flex-1 px-3 py-2.5 text-[13px] bg-white border border-[#E0D8C7] focus:border-[#0F3A3E] focus:outline-none placeholder:text-[#9AA39F]"
-                      onKeyDown={(e) => e.key === "Enter" && calcularFrete()}
-                    />
-                    <button
-                      onClick={calcularFrete}
-                      disabled={loadingFrete || cep.replace(/\D/g, "").length !== 8}
-                      className="px-4 py-2.5 bg-[#0F3A3E] text-white text-[11px] uppercase tracking-[0.1em] font-semibold hover:bg-[#16504F] disabled:bg-[#C4BBA8] disabled:cursor-not-allowed transition-colors"
-                    >
-                      {loadingFrete ? <Loader2 className="h-4 w-4 animate-spin" /> : "Calcular"}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-[12px] text-[#51635F] mb-2">
-                      <span>CEP: {maskCep(cepCalculado)}</span>
-                      <button
-                        onClick={() => {
-                          setCepCalculado("");
-                          setFreteOptions([]);
-                          setSelectedFrete(null);
-                          setShippingPrice(0);
-                        }}
-                        className="text-[#B07B1E] hover:underline"
-                      >
-                        Alterar
-                      </button>
-                    </div>
-                    {freteOptions.map((option) => (
-                      <label
-                        key={option.id}
-                        className={`flex items-center justify-between p-3 border cursor-pointer transition-all ${
-                          selectedFrete === option.id
-                            ? "border-[#B07B1E] bg-[#F3EEE3]"
-                            : "border-[#E0D8C7] hover:border-[#B07B1E]/50"
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input
-                            type="radio"
-                            name="frete"
-                            checked={selectedFrete === option.id}
-                            onChange={() => handleSelectFrete(option)}
-                            className="w-4 h-4 accent-[#B07B1E]"
-                          />
-                          <div>
-                            <span className="text-[13px] font-medium text-[#0F3A3E]">{option.name}</span>
-                            <span className="text-[11px] text-[#51635F] ml-2">
-                              {option.days} {option.days === 1 ? "dia útil" : "dias úteis"}
-                            </span>
-                          </div>
-                        </div>
-                        <span className="text-[13px] font-medium text-[#0F3A3E]">
-                          {formatPrice(option.price)}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Order Summary */}
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#51635F]">Subtotal</span>
-                <span className="text-[15px] text-[#0F3A3E]">
-                  {formatPrice(subtotal)}
-                </span>
-              </div>
-
-              {discount > 0 && (
-                <div className="flex items-center justify-between text-[#1c6b4a]">
-                  <span className="text-[13px]">Desconto ({appliedCoupon?.code})</span>
-                  <span className="text-[15px] font-medium">
-                    -{formatPrice(discount)}
+              {/* Resumo: subtotal + aviso de que frete/desconto vêm do checkout */}
+              <div className="mt-2 pt-5 border-t border-[#E0D8C7]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] text-[#51635F]">Subtotal</span>
+                  <span className="text-[15px] text-[#0F3A3E]">
+                    {formatPrice(subtotal)}
                   </span>
                 </div>
-              )}
+                <p className="text-[12px] text-[#75827E]">
+                  Frete e descontos calculados no checkout
+                </p>
+              </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-[13px] text-[#51635F]">Frete</span>
-                <span className="text-[13px] text-[#51635F]">
-                  {hasFreeShipping ? (
-                    <span className="text-[#1c6b4a] font-medium">Grátis</span>
-                  ) : freteValue > 0 ? (
-                    <span className="text-[#0F3A3E] font-medium">{formatPrice(freteValue)}</span>
-                  ) : (
-                    "Calcule acima"
-                  )}
+              {/* Continuar Comprando */}
+              <button
+                onClick={() => setIsOpen(false)}
+                className="w-full text-center text-[12px] text-[#51635F] hover:text-[#0F3A3E] transition-colors mt-4"
+              >
+                Continuar Comprando
+              </button>
+
+              {/* Trust */}
+              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-[#E0D8C7]">
+                <span className="text-[10px] text-[#9AA39F] uppercase tracking-wider">
+                  Pagamento Seguro
                 </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">PIX</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">VISA</span>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">MC</span>
+                </div>
               </div>
             </div>
-
-            {/* Total */}
-            <div className="flex items-center justify-between py-3 border-t border-[#E0D8C7]">
-              <span className="text-[14px] font-medium text-[#0F3A3E]">Total</span>
-              <span className="font-serif text-[24px] text-[#0F3A3E]">
-                {formatPrice(total)}
-              </span>
-            </div>
-
-            {/* Continuar Comprando */}
-            <button
-              onClick={() => setIsOpen(false)}
-              className="w-full text-center text-[12px] text-[#51635F] hover:text-[#0F3A3E] transition-colors mb-4"
-            >
-              Continuar Comprando
-            </button>
-
-            {/* Trust */}
-            <div className="flex items-center justify-center gap-4 pt-4 border-t border-[#E0D8C7]">
-              <span className="text-[10px] text-[#9AA39F] uppercase tracking-wider">
-                Pagamento Seguro
-              </span>
-              <div className="flex items-center gap-2">
-                <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">PIX</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">VISA</span>
-                <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">MC</span>
-              </div>
-            </div>
-          </div>
           )}
         </div>
 
-        {/* Footer fixo: Total + botão CTA sempre visível (não rola).
-            Em telas baixas, o usuário rola o conteúdo acima até o cupom/frete;
-            o Total + botão ficam SEMPRE visíveis no rodapé. */}
+        {/* Footer fixo: Subtotal + botão CTA sempre visível (não rola). */}
         {items.length > 0 && (
           <div className="px-6 py-4 border-t border-[#E0D8C7] bg-[#F8F4EA]">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-medium text-[#0F3A3E]">Total</span>
+              <span className="text-[14px] font-medium text-[#0F3A3E]">Subtotal</span>
               <span className="font-serif text-[24px] text-[#0F3A3E]">
-                {formatPrice(total)}
+                {formatPrice(subtotal)}
               </span>
             </div>
             <Link
