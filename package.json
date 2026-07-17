@@ -9,7 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "start": "node start.js",
-    "test:unit": "tsx --test src/lib/commerce-config.test.ts src/lib/mp-webhook-handler.test.ts",
+    "test:unit": "tsx --test src/lib/commerce-config.test.ts src/lib/mp-webhook-handler.test.ts src/lib/order-payment-reconciliation.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

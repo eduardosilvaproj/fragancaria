@@ -257,6 +257,85 @@ export const getStuckApprovedOrders = createServerFn({ method: "GET" }).handler(
   },
 );
 
+export const reconcileApprovedOrderForAdmin = createServerFn({ method: "POST" })
+  .validator(
+    (d: unknown) =>
+      z
+        .object({
+          orderId: orderIdSchema,
+          patch: z
+            .object({
+              customerPhone: z.string().optional(),
+              customerCpf: z.string().optional(),
+              shippingAddress: z.record(z.string(), z.unknown()).optional(),
+            })
+            .strict(),
+        })
+        .parse(d),
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<
+      | { success: true; completedFields: string[] }
+      | { success: false; error: string; missingFields?: string[] }
+    > => {
+      try {
+        const { requireAdmin } = await import("@/lib/admin-auth");
+        await requireAdmin();
+
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+        const { reconcileApprovedOrderSnapshot } = await import(
+          "@/lib/order-payment-reconciliation"
+        );
+
+        const { data: current, error: readErr } = await supabaseAdmin
+          .from("orders")
+          .select("status, payment_status, payment_id, status_history, shipping_address, customer_phone, customer_cpf")
+          .eq("id", data.orderId)
+          .maybeSingle();
+        if (readErr || !current) {
+          return { success: false, error: "Pedido não encontrado" };
+        }
+
+        const result = reconcileApprovedOrderSnapshot(
+          current as {
+            status: string;
+            payment_status: string | null;
+            payment_id: string | null;
+            status_history: unknown;
+            shipping_address: unknown;
+            customer_phone: string | null;
+            customer_cpf: string | null;
+          },
+          data.patch,
+          new Date().toISOString(),
+        );
+
+        if (!result.success) {
+          return {
+            success: false,
+            error: result.error,
+            missingFields: result.missingFields,
+          };
+        }
+
+        const { error } = await supabaseAdmin
+          .from("orders")
+          .update(result.patch as unknown as Record<string, never>)
+          .eq("id", data.orderId);
+        if (error) return { success: false, error: error.message };
+
+        return { success: true, completedFields: result.completedFields };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "erro";
+        return { success: false, error: msg };
+      }
+    },
+  );
+
 export const updateOrderForAdmin = createServerFn({ method: "POST" })
   .validator(
     (d: unknown) =>

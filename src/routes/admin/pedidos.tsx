@@ -19,7 +19,12 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getAllOrdersForAdmin, getStuckApprovedOrders, updateOrderForAdmin } from "@/lib/orders-admin.functions";
+import {
+  getAllOrdersForAdmin,
+  getStuckApprovedOrders,
+  reconcileApprovedOrderForAdmin,
+  updateOrderForAdmin,
+} from "@/lib/orders-admin.functions";
 import type { AdminOrderList, AdminOrderRow } from "@/lib/orders-admin.functions";
 import { generateOrderLabel } from "@/lib/logistics.functions";
 import { emitNFe, getDanfePdf } from "@/lib/nfe.functions";
@@ -72,6 +77,19 @@ function PedidosPage() {
   const [generatingLabel, setGeneratingLabel] = useState(false);
   const [emittingNfe, setEmittingNfe] = useState(false);
   const [printingDanfe, setPrintingDanfe] = useState(false);
+  const [reconciliationOpen, setReconciliationOpen] = useState(false);
+  const [reconciling, setReconciling] = useState(false);
+  const [reconciliation, setReconciliation] = useState({
+    phone: "",
+    cpf: "",
+    street: "",
+    number: "",
+    complement: "",
+    neighborhood: "",
+    city: "",
+    state: "",
+    cep: "",
+  });
 
   const fetchOrders = async () => {
     setLoading(true);
@@ -131,6 +149,60 @@ function PedidosPage() {
       toast.error("Erro ao atualizar status");
     } finally {
       setUpdatingStatus(false);
+    }
+  };
+
+  const openReconciliation = (order: Order) => {
+    const address = (order.shippingAddress || {}) as Record<string, string>;
+    setReconciliation({
+      phone: order.customerPhone || "",
+      cpf: order.customerCpf || "",
+      street: address.street || "",
+      number: address.number || "",
+      complement: address.complement || "",
+      neighborhood: address.neighborhood || "",
+      city: address.city || "",
+      state: address.state || "",
+      cep: address.cep || address.zipCode || "",
+    });
+    setReconciliationOpen(true);
+  };
+
+  const reconcileOrder = async () => {
+    if (!selectedOrder) return;
+    setReconciling(true);
+    try {
+      const result = await reconcileApprovedOrderForAdmin({
+        data: {
+          orderId: selectedOrder.id,
+          patch: {
+            customerPhone: reconciliation.phone,
+            customerCpf: reconciliation.cpf,
+            shippingAddress: {
+              street: reconciliation.street,
+              number: reconciliation.number,
+              complement: reconciliation.complement,
+              neighborhood: reconciliation.neighborhood,
+              city: reconciliation.city,
+              state: reconciliation.state,
+              cep: reconciliation.cep,
+              zipCode: reconciliation.cep,
+            },
+          },
+        },
+      });
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+      toast.success("Dados completos. Pedido marcado como pago.");
+      setReconciliationOpen(false);
+      setSelectedOrder(null);
+      await fetchOrders();
+    } catch {
+      toast.error("Erro ao reconciliar pedido");
+    } finally {
+      setReconciling(false);
     }
   };
 
@@ -588,6 +660,17 @@ function PedidosPage() {
                       Cancelar
                     </button>
                   )}
+                  {selectedOrder.status === "pending" &&
+                    selectedOrder.paymentStatus === "approved" &&
+                    (selectedOrder.snapshotMissingFields?.length ?? 0) > 0 && (
+                      <button
+                        onClick={() => openReconciliation(selectedOrder)}
+                        className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded hover:bg-amber-700 flex items-center gap-1.5"
+                      >
+                        <AlertTriangle className="w-3 h-3" />
+                        Completar dados e marcar como pago
+                      </button>
+                    )}
                   {/* NF-e Badge & Button */}
                   {selectedOrder.nfeKey ? (
                     <span className="px-3 py-1.5 text-xs bg-blue-100 text-blue-800 rounded border border-blue-200 flex items-center gap-1.5">
@@ -836,6 +919,90 @@ function PedidosPage() {
                 </div>
               </div>
             </div>
+
+            {reconciliationOpen &&
+              selectedOrder.status === "pending" &&
+              selectedOrder.paymentStatus === "approved" && (
+                <div className="border border-amber-300 bg-amber-50 p-4">
+                  <h3 className="text-sm font-semibold text-amber-900 mb-3">
+                    Completar dados para liberar o pedido
+                  </h3>
+                  <p className="text-xs text-amber-800 mb-4">
+                    Faltando: {selectedOrder.snapshotMissingFields.map((field) => SNAPSHOT_FIELD_LABELS[field] || field).join(", ")}
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <input
+                      value={reconciliation.phone}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, phone: e.target.value }))}
+                      placeholder="Telefone"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.cpf}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, cpf: e.target.value }))}
+                      placeholder="CPF"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.street}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, street: e.target.value }))}
+                      placeholder="Rua"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E] md:col-span-2"
+                    />
+                    <input
+                      value={reconciliation.number}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, number: e.target.value }))}
+                      placeholder="Número"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.complement}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, complement: e.target.value }))}
+                      placeholder="Complemento"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.neighborhood}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, neighborhood: e.target.value }))}
+                      placeholder="Bairro"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.city}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, city: e.target.value }))}
+                      placeholder="Cidade"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.state}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, state: e.target.value }))}
+                      placeholder="UF"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                    <input
+                      value={reconciliation.cep}
+                      onChange={(e) => setReconciliation((prev) => ({ ...prev, cep: e.target.value }))}
+                      placeholder="CEP"
+                      className="px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
+                    />
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <button
+                      onClick={() => setReconciliationOpen(false)}
+                      className="px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F8F4EA] transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={reconcileOrder}
+                      disabled={reconciling}
+                      className="px-4 py-2 text-sm bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50"
+                    >
+                      {reconciling ? "Salvando..." : "Salvar e marcar como pago"}
+                    </button>
+                  </div>
+                </div>
+              )}
 
             {/* Modal Footer */}
             <div className="sticky bottom-0 bg-white border-t border-[#E9E1D2] px-6 py-4 flex justify-end gap-3">
