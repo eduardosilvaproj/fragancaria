@@ -9,6 +9,7 @@
     "build:dev": "vite build --mode development",
     "preview": "vite preview",
     "start": "node start.js",
+    "test:unit": "tsx --test src/lib/commerce-config.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

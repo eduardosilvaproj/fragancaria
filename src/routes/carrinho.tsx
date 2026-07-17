@@ -3,9 +3,19 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 import { useCartStore } from "@/stores/cartStore";
+import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo } from "react";
 import { Minus, Plus, Trash2, ShoppingBag, Truck, Shield, Tag } from "lucide-react";
+import {
+  DEFAULT_SHIPPING_METHOD,
+  FREE_SHIPPING_THRESHOLD,
+  calculateDiscount,
+  calculateOrderTotal,
+  calculateShipping,
+  getCoupon,
+  qualifiesForFreeShipping,
+} from "@/lib/commerce-config";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({
@@ -19,8 +29,8 @@ export const Route = createFileRoute("/carrinho")({
 function CarrinhoPage() {
   const navigate = useNavigate();
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
+  const { coupon, setCoupon } = useCheckoutStore();
   const [couponCode, setCouponCode] = useState("");
-  const [couponApplied, setCouponApplied] = useState(false);
 
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
@@ -30,13 +40,15 @@ function CarrinhoPage() {
   };
 
   const subtotal = getTotalPrice();
-  const discount = couponApplied ? subtotal * 0.1 : 0;
-  const shipping = subtotal >= 199 ? 0 : 19.90;
-  const total = subtotal - discount + shipping;
+  const discount = calculateDiscount(subtotal, { couponCode: coupon?.code });
+  const shipping = calculateShipping(subtotal, DEFAULT_SHIPPING_METHOD) ?? 0;
+  const total = calculateOrderTotal({ subtotal, shipping, discount });
 
   const handleApplyCoupon = () => {
-    if (couponCode.toLowerCase() === "frag10") {
-      setCouponApplied(true);
+    const found = getCoupon(couponCode);
+    if (found) {
+      setCoupon({ code: found.code, discountPercent: found.discountPercent });
+      setCouponCode("");
     }
   };
 
@@ -218,23 +230,23 @@ function CarrinhoPage() {
                       onChange={(e) => setCouponCode(e.target.value)}
                       placeholder="Digite seu cupom"
                       className="flex-1 px-4 py-3 border border-[#E0D8C7] text-[14px] focus:outline-none focus:border-[#0F3A3E]"
-                      disabled={couponApplied}
+                      disabled={!!coupon}
                     />
                     <button
                       onClick={handleApplyCoupon}
-                      disabled={couponApplied}
+                      disabled={!!coupon}
                       className={`px-4 py-3 text-[11px] uppercase tracking-[0.12em] font-semibold transition-colors ${
-                        couponApplied
+                        coupon
                           ? "bg-[#1c6b4a] text-white"
                           : "bg-[#0F3A3E] text-white hover:bg-[#16504F]"
                       }`}
                     >
-                      {couponApplied ? "✓" : "Aplicar"}
+                      {coupon ? "✓" : "Aplicar"}
                     </button>
                   </div>
-                  {couponApplied && (
+                  {coupon && (
                     <p className="text-[12px] text-[#1c6b4a] mt-2 flex items-center gap-1">
-                      <Tag className="h-3 w-3" /> Cupom FRAG10 aplicado: 10% de desconto
+                      <Tag className="h-3 w-3" /> Cupom {coupon.code} aplicado
                     </p>
                   )}
                 </div>
@@ -245,9 +257,9 @@ function CarrinhoPage() {
                     <span className="text-[#51635F]">Subtotal</span>
                     <span className="text-[#0F3A3E]">{formatPrice(subtotal)}</span>
                   </div>
-                  {couponApplied && (
+                  {coupon && (
                     <div className="flex justify-between text-[14px]">
-                      <span className="text-[#1c6b4a]">Desconto (10%)</span>
+                      <span className="text-[#1c6b4a]">Desconto ({coupon.discountPercent}%)</span>
                       <span className="text-[#1c6b4a]">-{formatPrice(discount)}</span>
                     </div>
                   )}
@@ -289,10 +301,10 @@ function CarrinhoPage() {
                   <div className="flex items-center gap-3">
                     <Truck className="h-4 w-4 text-[#B07B1E]" />
                     <span className="text-[12px] text-[#51635F]">
-                      {subtotal >= 199 ? (
+                      {qualifiesForFreeShipping(subtotal) ? (
                         <span className="text-[#1c6b4a]">✓ Frete grátis aplicado</span>
                       ) : (
-                        <>Frete grátis acima de R$199 (faltam {formatPrice(199 - subtotal)})</>
+                        <>Frete grátis acima de {formatPrice(FREE_SHIPPING_THRESHOLD)} (faltam {formatPrice(FREE_SHIPPING_THRESHOLD - subtotal)})</>
                       )}
                     </span>
                   </div>

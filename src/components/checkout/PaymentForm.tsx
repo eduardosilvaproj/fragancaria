@@ -4,7 +4,8 @@ import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { useCheckoutStore } from "@/stores/checkoutStore";
-import { PAYMENT_METHODS, SHIPPING_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
+import { PAYMENT_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
+import { calculateShipping, calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
 import { useServerFn } from "@tanstack/react-start";
 import { createPayment } from "@/lib/payments.functions";
 
@@ -116,24 +117,18 @@ const maskCpf = (v: string): string =>
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
-function calcTotal({ subtotal, shipping, couponPercent, pix }: { subtotal: number; shipping: number; couponPercent: number; pix: boolean }) {
-  const d1 = (subtotal * couponPercent) / 100;
-  const d2 = pix ? (subtotal * 5) / 100 : 0;
-  return Math.max(0, subtotal - d1 - d2 + shipping);
-}
-
 export function PaymentForm() {
   const { getTotalPrice, items } = useCartStore();
   const { paymentMethod, setPaymentMethod, setPaymentData, setStep, shippingMethod, coupon, customer, shippingAddress } =
     useCheckoutStore();
 
   const subtotal = getTotalPrice();
-  const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod)?.price ?? 0;
-  const couponPercent = coupon?.discountPercent ?? 0;
-  const total = calcTotal({ subtotal, shipping, couponPercent, pix: paymentMethod === "pix" });
-
-  // Calcular desconto real
-  const discount = (subtotal * couponPercent) / 100 + (paymentMethod === "pix" ? (subtotal * 5) / 100 : 0);
+  const shipping = calculateShipping(subtotal, shippingMethod) ?? 0;
+  const discount = calculateDiscount(subtotal, {
+    couponCode: coupon?.code,
+    paymentMethod,
+  });
+  const total = calculateOrderTotal({ subtotal, shipping, discount });
 
   // Mapear itens do carrinho para o formato esperado
   const cartItems = items.map(item => ({
@@ -181,6 +176,7 @@ export function PaymentForm() {
           discount={discount}
           shippingPrice={shipping}
           shippingMethod={shippingMethod}
+          couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
@@ -194,6 +190,7 @@ export function PaymentForm() {
           discount={discount}
           shippingPrice={shipping}
           shippingMethod={shippingMethod}
+          couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
@@ -207,6 +204,7 @@ export function PaymentForm() {
           discount={discount}
           shippingPrice={shipping}
           shippingMethod={shippingMethod}
+          couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
@@ -250,13 +248,14 @@ interface PaymentFormProps {
   discount: number;
   shippingPrice: number;
   shippingMethod: string | null;
+  couponCode?: string;
   items: Array<{ id: string; title: string; quantity: number; price: number; image?: string }>;
   customer: any;
   shippingAddress: any;
   onDone: (d: any) => void;
 }
 
-function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
@@ -447,7 +446,8 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
-        userId: user?.id,
+          couponCode,
+          userId: user?.id,
         },
       });
 
@@ -642,7 +642,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, it
   );
 }
 
-function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
@@ -692,7 +692,8 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
-        userId: user?.id,
+          couponCode,
+          userId: user?.id,
         },
       });
       if (!res.success) throw new Error(res.error);
@@ -771,7 +772,7 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, ite
   );
 }
 
-function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
@@ -812,7 +813,8 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
           discount,
           shippingPrice,
           shippingMethod: shippingMethod ?? undefined,
-        userId: user?.id,
+          couponCode,
+          userId: user?.id,
         },
       });
       if (!res.success) throw new Error(res.error);

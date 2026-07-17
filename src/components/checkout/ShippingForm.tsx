@@ -3,13 +3,17 @@ import { Loader2, Truck, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useCartStore } from "@/stores/cartStore";
-import { SHIPPING_METHODS, type ShippingMethodId } from "@/config/mercadopago";
+import {
+  SHIPPING_METHODS,
+  type ShippingMethodId,
+  FREE_SHIPPING_THRESHOLD,
+  calculateShipping,
+  qualifiesForFreeShipping,
+} from "@/lib/commerce-config";
 
 const STATES = [
   "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
 ];
-
-const FREE_SHIPPING_THRESHOLD = 199;
 
 // Máscaras
 const maskPhone = (v: string) =>
@@ -67,7 +71,7 @@ export function ShippingForm() {
   const { customer, shippingAddress, shippingMethod, setCustomer, setShippingAddress, setShippingMethod, setShippingPrice, setStep } = useCheckoutStore();
   const { getTotalPrice } = useCartStore();
   const subtotal = getTotalPrice();
-  const hasFreeShipping = subtotal >= FREE_SHIPPING_THRESHOLD;
+  const hasFreeShipping = qualifiesForFreeShipping(subtotal);
 
   const [c, setC] = useState(
     customer ?? { email: "", firstName: "", lastName: "", phone: "", cpf: "" }
@@ -85,15 +89,10 @@ export function ShippingForm() {
 
   // Atualiza preço do frete quando método muda
   useEffect(() => {
-    if (hasFreeShipping) {
-      setShippingPrice(0);
-    } else if (method) {
-      const selectedMethod = SHIPPING_METHODS.find(m => m.id === method);
-      if (selectedMethod) {
-        setShippingPrice(selectedMethod.price);
-      }
-    }
-  }, [method, hasFreeShipping, setShippingPrice]);
+    if (!method) return;
+    const shipping = calculateShipping(subtotal, method);
+    if (shipping !== null) setShippingPrice(shipping);
+  }, [method, subtotal, setShippingPrice]);
 
   const lookupCep = async (cep: string) => {
     const digits = cep.replace(/\D/g, "");

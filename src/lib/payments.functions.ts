@@ -2,6 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/start-server-core/request-response";
 import { z } from "zod";
 import { randomBytes } from "node:crypto";
+import {
+  calculateDiscount,
+  calculateShipping,
+  calculateOrderTotal,
+} from "@/lib/commerce-config";
 const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
@@ -44,6 +49,7 @@ const inputSchema = z.object({
   items: z.array(cartItemSchema).min(1).optional(),
   subtotal: z.number().nonnegative().optional(),
   discount: z.number().nonnegative().optional(),
+  couponCode: z.string().max(64).optional(),
   shippingPrice: z.number().nonnegative().optional(),
   shippingMethod: z.string().optional(),
   userId: z.string().uuid().optional(),
@@ -149,9 +155,6 @@ export const createPayment = createServerFn({ method: 'POST' })
       if (!data.items || data.items.length === 0) {
         return { success: false, error: 'Carrinho vazio.' };
       }
-      const SHIPPING_TABLE: Record<string, number> = { pac: 18.9, sedex: 32.5, sedex10: 45 };
-      const MAX_SHIPPING = 45;
-      const MAX_DISCOUNT_PCT = 0.3;
       const productIds = [...new Set(data.items.map((i) => i.id.split('::')[0]))];
       const { data: prodRows, error: prodErr } = await admin
         .from('products')
@@ -170,16 +173,41 @@ export const createPayment = createServerFn({ method: 'POST' })
         }
         serverSubtotal += p.price * item.quantity;
       }
-      const serverShipping =
-        data.shippingMethod && SHIPPING_TABLE[data.shippingMethod] != null
-          ? SHIPPING_TABLE[data.shippingMethod]
-          : Math.max(0, Math.min(data.shippingPrice ?? 0, MAX_SHIPPING));
-      const clientDiscount = Math.max(0, data.discount ?? 0);
-      const effectiveDiscount = Math.min(clientDiscount, serverSubtotal * MAX_DISCOUNT_PCT);
-      const serverAmount = Number((serverSubtotal - effectiveDiscount + serverShipping).toFixed(2));
+      // Frete/desconto/total autoritativos vêm das mesmas funções puras que o
+      // carrinho e o checkout usam (src/lib/commerce-config.ts) — uma única
+      // fonte de verdade, não uma tabela duplicada aqui.
+      const serverShipping = calculateShipping(serverSubtotal, data.shippingMethod);
+      if (serverShipping === null) {
+        return {
+          success: false,
+          error: "Método de frete inválido. Volte à etapa de entrega e escolha uma opção.",
+        };
+      }
+      const effectiveDiscount = calculateDiscount(serverSubtotal, {
+        couponCode: data.couponCode,
+        paymentMethod: data.method,
+      });
+      const serverAmount = calculateOrderTotal({
+        subtotal: serverSubtotal,
+        shipping: serverShipping,
+        discount: effectiveDiscount,
+      });
+      // Autoridade é o server: o valor cobrado no MP é sempre serverAmount,
+      // nunca o que o client mandou. Toda divergência é logada; só bloqueia
+      // com erro legível quando o server cobraria MAIS do que o client
+      // mostrou ao cliente (nunca trava por divergência a favor do cliente).
       if (Math.abs(serverAmount - data.amount) > 0.01) {
-        console.warn('[createPayment] divergência de valor', { serverAmount, clientAmount: data.amount });
-        return { success: false, error: 'O valor do pedido mudou. Atualize a página e tente novamente.' };
+        console.warn('[createPayment] divergência de valor', {
+          serverAmount,
+          clientAmount: data.amount,
+          orderContext: { subtotal: serverSubtotal, shipping: serverShipping, discount: effectiveDiscount },
+        });
+        if (serverAmount > data.amount) {
+          return {
+            success: false,
+            error: 'O valor do seu carrinho foi atualizado. Revise o resumo do pedido antes de continuar.',
+          };
+        }
       }
 
       // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
@@ -192,10 +220,10 @@ export const createPayment = createServerFn({ method: 'POST' })
             status: 'pending',
             payment_status: 'pending',
             payment_method: data.method,
-            total: data.amount,
-            subtotal: data.subtotal ?? data.amount,
-            discount: data.discount ?? 0,
-            shipping_price: data.shippingPrice ?? 0,
+            total: serverAmount,
+            subtotal: serverSubtotal,
+            discount: effectiveDiscount,
+            shipping_price: serverShipping,
             shipping_method: data.shippingMethod ?? null,
             items: data.items ?? [],
             auth_user_id: data.userId ?? null,
@@ -238,7 +266,7 @@ export const createPayment = createServerFn({ method: 'POST' })
           }
         : undefined;
       const body: any = {
-        transaction_amount: Number(data.amount.toFixed(2)),
+        transaction_amount: serverAmount,
         description: data.description,
         payment_method_id: data.method === 'pix' ? 'pix' : data.method === 'boleto' ? 'bolbradesco' : (data.paymentMethodId || ''),
         external_reference: orderId,
@@ -326,7 +354,7 @@ export const createPayment = createServerFn({ method: 'POST' })
               orderId,
               customerName: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
               customerEmail: data.payer.email,
-              total: Number(order.total ?? data.amount ?? 0),
+              total: Number(order.total ?? serverAmount),
               trackingTokenFormatted: formatToken(order.tracking_token),
               items: Array.isArray(order.items) ? (order.items as any[]) : data.items ?? [],
             }).catch((err) => {

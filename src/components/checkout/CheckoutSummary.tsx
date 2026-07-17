@@ -3,14 +3,16 @@ import { Shield, Award, Tag, X } from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
-import { SHIPPING_METHODS } from "@/config/mercadopago";
+import {
+  calculateShipping,
+  calculateDiscount,
+  calculateOrderTotal,
+  getCoupon,
+  PIX_DISCOUNT_PERCENT,
+} from "@/lib/commerce-config";
 
 const formatBRL = (v: number) =>
   v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
-
-const COUPONS: Record<string, number> = {
-  BEMVINDO10: 10,
-};
 
 export function CheckoutSummary() {
   const { items, getTotalPrice } = useCartStore();
@@ -18,16 +20,21 @@ export function CheckoutSummary() {
   const [code, setCode] = useState("");
 
   const subtotal = getTotalPrice();
-  const shipping = SHIPPING_METHODS.find((s) => s.id === shippingMethod)?.price ?? 0;
+  const shipping = calculateShipping(subtotal, shippingMethod) ?? 0;
   const discountCoupon = coupon ? (subtotal * coupon.discountPercent) / 100 : 0;
-  const pixDiscount = paymentMethod === "pix" ? (subtotal * 5) / 100 : 0;
-  const total = Math.max(0, subtotal - discountCoupon - pixDiscount + shipping);
+  const pixDiscount = paymentMethod === "pix" ? (subtotal * PIX_DISCOUNT_PERCENT) / 100 : 0;
+  const discount = calculateDiscount(subtotal, {
+    couponCode: coupon?.code,
+    paymentMethod,
+  });
+  const total = calculateOrderTotal({ subtotal, shipping, discount });
   const installmentValue = total / 10;
 
   const applyCoupon = () => {
     const key = code.trim().toUpperCase();
-    if (COUPONS[key]) {
-      setCoupon({ code: key, discountPercent: COUPONS[key] });
+    const found = getCoupon(key);
+    if (found) {
+      setCoupon({ code: found.code, discountPercent: found.discountPercent });
       toast.success(`Cupom ${key} aplicado!`);
       setCode("");
     } else {

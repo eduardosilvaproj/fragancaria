@@ -70,7 +70,36 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     await expect(page.getByRole("heading", { name: "Finalizar Compra" })).toBeVisible();
   });
 
-  test("4. ShippingForm com CPF inválido não avança para pagamento", async ({ page }) => {
+  test("4. Checkout cobra frete em 198,99 e exibe frete grátis em 199,00", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "fragranciaria-cart",
+        JSON.stringify({
+          state: {
+            items: [{ id: "e2e-frete", title: "Produto Frete", price: 198.99, quantity: 1 }],
+          },
+          version: 0,
+        }),
+      );
+    });
+    await page.goto("/checkout");
+    await page.locator('input[placeholder="00000-000"]').fill("01310100");
+    await page.waitForTimeout(300);
+    await expect(page.getByText("R$ 18,90")).toBeVisible();
+
+    await page.evaluate(() => {
+      const raw = window.localStorage.getItem("fragranciaria-cart");
+      const parsed = JSON.parse(raw!);
+      parsed.state.items[0].price = 199;
+      window.localStorage.setItem("fragranciaria-cart", JSON.stringify(parsed));
+    });
+    await page.reload();
+    await page.locator('input[placeholder="00000-000"]').fill("01310100");
+    await page.waitForTimeout(300);
+    await expect(page.getByText("Grátis").first()).toBeVisible();
+  });
+
+  test("5. ShippingForm com CPF inválido não avança para pagamento", async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         "fragranciaria-cart",

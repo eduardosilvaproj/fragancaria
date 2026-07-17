@@ -13,10 +13,5 @@ export const INSTALLMENTS_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   label: `${i + 1}x sem juros`,
 }));
 
-export const SHIPPING_METHODS = [
-  { id: 'pac', name: 'PAC', price: 18.90, days: '8 dias úteis' },
-  { id: 'sedex', name: 'SEDEX', price: 32.50, days: '3 dias úteis' },
-  { id: 'sedex10', name: 'SEDEX 10', price: 45.00, days: '1 dia útil' },
-] as const;
-
-export type ShippingMethodId = typeof SHIPPING_METHODS[number]['id'];
+export { SHIPPING_METHODS } from "@/lib/commerce-config";
+export type { ShippingMethodId } from "@/lib/commerce-config";
