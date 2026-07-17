@@ -7,7 +7,6 @@ import {
   CheckCircle2,
   Package,
   Truck,
-  MapPin,
   XCircle,
   ExternalLink,
 } from "lucide-react";
@@ -28,9 +27,7 @@ export const Route = createFileRoute("/pedido/$token")({
 type OrderStatus =
   | "pending"
   | "paid"
-  | "processing"
   | "shipped"
-  | "out_for_delivery"
   | "delivered"
   | "cancelled";
 
@@ -40,9 +37,7 @@ const STATUS_CONFIG: Record<
 > = {
   pending: { label: "Aguardando Pagamento", color: "#B07B1E", icon: Clock },
   paid: { label: "Pagamento Confirmado", color: "#1C6B4A", icon: CheckCircle },
-  processing: { label: "Em Separação", color: "#0F3A3E", icon: Package },
   shipped: { label: "Enviado", color: "#0F3A3E", icon: Truck },
-  out_for_delivery: { label: "Saiu para Entrega", color: "#0F3A3E", icon: MapPin },
   delivered: { label: "Entregue", color: "#1C6B4A", icon: CheckCircle2 },
   cancelled: { label: "Cancelado", color: "#DC2626", icon: XCircle },
 };
@@ -50,9 +45,7 @@ const STATUS_CONFIG: Record<
 const FLOW: OrderStatus[] = [
   "pending",
   "paid",
-  "processing",
   "shipped",
-  "out_for_delivery",
   "delivered",
 ];
 

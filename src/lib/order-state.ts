@@ -10,7 +10,6 @@
 export const ORDER_STATUS = {
   PENDING: "pending",
   PAID: "paid",
-  PROCESSING: "processing",
   SHIPPED: "shipped",
   DELIVERED: "delivered",
   CANCELLED: "cancelled",
@@ -22,7 +21,6 @@ export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 const ALL: OrderStatus[] = [
   "pending",
   "paid",
-  "processing",
   "shipped",
   "delivered",
   "cancelled",
@@ -34,8 +32,7 @@ const ALL: OrderStatus[] = [
 // acontecer mesmo depois de shipped/delivered — por isso está listado lá.
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["paid", "cancelled"],
-  paid: ["processing", "cancelled", "refunded"],
-  processing: ["shipped", "cancelled", "refunded"],
+  paid: ["shipped", "cancelled", "refunded"],
   shipped: ["delivered", "refunded"],
   delivered: ["refunded"],
   cancelled: [],
@@ -46,11 +43,10 @@ export function isOrderStatus(v: unknown): v is OrderStatus {
   return typeof v === "string" && (ALL as string[]).includes(v);
 }
 
-// "approved" e "processing" existem em pedidos antigos criados por scripts de
-// seed/teste. Tratamos como sinônimos de "paid" para permitir atualização.
+// "approved" existe em pedidos antigos (status de pagamento MP).
+// Tratamos como sinônimo de "paid" para permitir atualização.
 const STATUS_ALIAS: Record<string, string> = {
   approved: "paid",
-  processing: "paid",
 };
 
 export function canTransition(from: string, to: string): boolean {
