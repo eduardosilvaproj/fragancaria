@@ -10,6 +10,7 @@
 export const ORDER_STATUS = {
   PENDING: "pending",
   PAID: "paid",
+  PROCESSING: "processing",
   SHIPPED: "shipped",
   DELIVERED: "delivered",
   CANCELLED: "cancelled",
@@ -21,6 +22,7 @@ export type OrderStatus = (typeof ORDER_STATUS)[keyof typeof ORDER_STATUS];
 const ALL: OrderStatus[] = [
   "pending",
   "paid",
+  "processing",
   "shipped",
   "delivered",
   "cancelled",
@@ -32,7 +34,8 @@ const ALL: OrderStatus[] = [
 // acontecer mesmo depois de shipped/delivered — por isso está listado lá.
 const TRANSITIONS: Record<OrderStatus, OrderStatus[]> = {
   pending: ["paid", "cancelled"],
-  paid: ["shipped", "cancelled", "refunded"],
+  paid: ["processing", "shipped", "cancelled", "refunded"],
+  processing: ["shipped", "cancelled", "refunded"],
   shipped: ["delivered", "refunded"],
   delivered: ["refunded"],
   cancelled: [],

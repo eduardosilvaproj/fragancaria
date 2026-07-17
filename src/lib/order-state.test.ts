@@ -3,19 +3,35 @@ import assert from "node:assert";
 import { canTransition, isOrderStatus, allowedNextStatuses } from "./order-state";
 
 describe("canTransition", () => {
-  it("rejeita processing como origem", () => {
-    assert.strictEqual(canTransition("processing", "shipped"), false);
+  it("permite paid -> processing", () => {
+    assert.strictEqual(canTransition("paid", "processing"), true);
   });
 
-  it("rejeita processing como destino", () => {
-    assert.strictEqual(canTransition("paid", "processing"), false);
+  it("permite processing -> shipped", () => {
+    assert.strictEqual(canTransition("processing", "shipped"), true);
   });
 
-  it("rejeita processing como origem e destino", () => {
-    assert.strictEqual(canTransition("processing", "processing"), false);
+  it("permite processing -> cancelled", () => {
+    assert.strictEqual(canTransition("processing", "cancelled"), true);
   });
 
-  it("permite paid -> shipped", () => {
+  it("permite processing -> refunded", () => {
+    assert.strictEqual(canTransition("processing", "refunded"), true);
+  });
+
+  it("rejeita processing -> paid (regressão)", () => {
+    assert.strictEqual(canTransition("processing", "paid"), false);
+  });
+
+  it("rejeita out_for_delivery como origem", () => {
+    assert.strictEqual(canTransition("out_for_delivery", "delivered"), false);
+  });
+
+  it("rejeita out_for_delivery como destino", () => {
+    assert.strictEqual(canTransition("shipped", "out_for_delivery"), false);
+  });
+
+  it("permite paid -> shipped (expedição sem separação formal)", () => {
     assert.strictEqual(canTransition("paid", "shipped"), true);
   });
 
@@ -69,8 +85,8 @@ describe("canTransition", () => {
 });
 
 describe("isOrderStatus", () => {
-  it("rejeita processing", () => {
-    assert.strictEqual(isOrderStatus("processing"), false);
+  it("aceita processing", () => {
+    assert.strictEqual(isOrderStatus("processing"), true);
   });
 
   it("rejeita out_for_delivery", () => {
@@ -87,13 +103,18 @@ describe("isOrderStatus", () => {
 });
 
 describe("allowedNextStatuses", () => {
-  it("paid permite shipped, cancelled, refunded", () => {
+  it("paid permite processing, shipped, cancelled, refunded", () => {
     const next = allowedNextStatuses("paid");
+    assert.deepStrictEqual(next, ["processing", "shipped", "cancelled", "refunded"]);
+  });
+
+  it("processing permite shipped, cancelled, refunded", () => {
+    const next = allowedNextStatuses("processing");
     assert.deepStrictEqual(next, ["shipped", "cancelled", "refunded"]);
   });
 
-  it("rejeita processing como entrada", () => {
-    const next = allowedNextStatuses("processing");
+  it("rejeita out_for_delivery como entrada", () => {
+    const next = allowedNextStatuses("out_for_delivery");
     assert.deepStrictEqual(next, []);
   });
 });
