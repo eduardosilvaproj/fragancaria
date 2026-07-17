@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
@@ -17,6 +17,7 @@ export const Route = createFileRoute("/carrinho")({
 });
 
 function CarrinhoPage() {
+  const navigate = useNavigate();
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
   const [couponCode, setCouponCode] = useState("");
   const [couponApplied, setCouponApplied] = useState(false);
@@ -272,7 +273,10 @@ function CarrinhoPage() {
                 </p>
 
                 {/* Checkout Button */}
-                <button className="w-full bg-[#0F3A3E] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mb-3">
+                <button
+                  onClick={() => navigate({ to: "/checkout" })}
+                  className="w-full bg-[#0F3A3E] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors mb-3"
+                >
                   Finalizar Compra
                 </button>
 
