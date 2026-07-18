@@ -60,3 +60,8 @@ _tok.txt
 .claude/launch.json
 supabase/.temp/
 test-results/
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
+ruvector.db
