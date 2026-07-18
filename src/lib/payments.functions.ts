@@ -494,10 +494,7 @@ export const cotarFrete = createServerFn({ method: "POST" })
 
     const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
 
-    // shipping_rate_quotes ainda nao existe em database.types.ts: migration
-    // 20260722_shipping_rate_quotes.sql commitada mas nao aplicada em prod.
-    // Cast temporario; remover quando os tipos forem regenerados pos-aplicacao.
-    const { data: inserted, error: insertErr } = await (admin as any)
+    const { data: inserted, error: insertErr } = await admin
       .from("shipping_rate_quotes")
       .insert({
         cache_key: cacheKey,

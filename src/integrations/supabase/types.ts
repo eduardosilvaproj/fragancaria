@@ -1035,6 +1035,42 @@ export type Database = {
           },
         ]
       }
+      shipping_rate_quotes: {
+        Row: {
+          cache_key: string
+          created_at: string
+          expires_at: string
+          from_cep: string
+          id: string
+          items: Json
+          options: Json
+          source: string
+          to_cep: string
+        }
+        Insert: {
+          cache_key: string
+          created_at?: string
+          expires_at: string
+          from_cep: string
+          id?: string
+          items: Json
+          options: Json
+          source: string
+          to_cep: string
+        }
+        Update: {
+          cache_key?: string
+          created_at?: string
+          expires_at?: string
+          from_cep?: string
+          id?: string
+          items?: Json
+          options?: Json
+          source?: string
+          to_cep?: string
+        }
+        Relationships: []
+      }
       wishlist: {
         Row: {
           created_at: string
