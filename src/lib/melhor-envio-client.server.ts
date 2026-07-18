@@ -28,6 +28,27 @@ export type CotarResult =
   | { ok: true; opcoes: MelhorEnvioOpcao[] }
   | { ok: false; erro: "cep_invalido" | "sem_cobertura" | "api_indisponivel" };
 
+export type ResolverPrecoCotacaoResult =
+  | { ok: true; precoReais: number }
+  | { ok: false; erro: "nao_encontrada" | "expirada" | "opcao_invalida" };
+
+// Le uma linha ja gravada de shipping_rate_quotes.options (jsonb) e resolve o
+// preco em REAIS da opcao escolhida. options grava precoExibidoCentavos (o
+// preco JA com a regra de frete gratis aplicada), por isso divide por 100 aqui
+// — o resto do fluxo de pagamento trabalha em reais.
+export function resolverPrecoCotacao(
+  quote: { expires_at: string; options: unknown } | null | undefined,
+  servicoId: number,
+  agora: number = Date.now(),
+): ResolverPrecoCotacaoResult {
+  if (!quote) return { ok: false, erro: "nao_encontrada" };
+  if (new Date(quote.expires_at).getTime() <= agora) return { ok: false, erro: "expirada" };
+  const opcoes = (quote.options ?? []) as Array<{ servicoId: number; precoExibidoCentavos: number }>;
+  const opcao = opcoes.find((o) => o.servicoId === servicoId);
+  if (!opcao) return { ok: false, erro: "opcao_invalida" };
+  return { ok: true, precoReais: opcao.precoExibidoCentavos / 100 };
+}
+
 async function melhorEnvioRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
   const baseUrl = process.env.MELHOR_ENVIO_BASE_URL;
   const token = process.env.MELHOR_ENVIO_TOKEN;

@@ -9,7 +9,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
 } from "@/lib/commerce-config";
 import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
-import { cotar, type MelhorEnvioProduto, type MelhorEnvioOpcao } from "@/lib/melhor-envio-client.server";
+import { cotar, resolverPrecoCotacao, type MelhorEnvioProduto, type MelhorEnvioOpcao } from "@/lib/melhor-envio-client.server";
 const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
@@ -55,6 +55,8 @@ const inputSchema = z.object({
   couponCode: z.string().max(64).optional(),
   shippingPrice: z.number().nonnegative().optional(),
   shippingMethod: z.string().optional(),
+  cotacaoId: z.string().uuid().optional(),
+  servicoId: z.number().int().optional(),
   userId: z.string().uuid().optional(),
   externalReference: z.string().uuid().optional(),
 });
@@ -188,7 +190,29 @@ export const createPayment = createServerFn({ method: 'POST' })
       const freeShippingThreshold = shippingConfig.success
         ? shippingConfig.data.freeShippingThreshold
         : FREE_SHIPPING_THRESHOLD;
-      const serverShipping = calculateShipping(serverSubtotal, data.shippingMethod, freeShippingThreshold);
+      let serverShipping: number | null;
+      if (data.cotacaoId && data.servicoId !== undefined) {
+        const { data: quote, error: quoteErr } = await admin
+          .from("shipping_rate_quotes")
+          .select("expires_at, options")
+          .eq("id", data.cotacaoId)
+          .maybeSingle();
+        if (quoteErr) {
+          return { success: false, error: "Cotação de frete não encontrada. Refaça a etapa de entrega." };
+        }
+        const resolved = resolverPrecoCotacao(quote, data.servicoId);
+        if (!resolved.ok) {
+          const mensagens: Record<typeof resolved.erro, string> = {
+            nao_encontrada: "Cotação de frete não encontrada. Refaça a etapa de entrega.",
+            expirada: "Cotação de frete expirada, refaça a etapa de entrega.",
+            opcao_invalida: "Opção de frete inválida. Refaça a etapa de entrega.",
+          };
+          return { success: false, error: mensagens[resolved.erro] };
+        }
+        serverShipping = resolved.precoReais;
+      } else {
+        serverShipping = calculateShipping(serverSubtotal, data.shippingMethod, freeShippingThreshold);
+      }
       if (serverShipping === null) {
         return {
           success: false,
