@@ -1,16 +1,27 @@
 import { useEffect, useState, useRef } from "react";
-import { CreditCard, Loader2, Copy, QrCode, FileText, Check, AlertCircle, Shield, Lock } from "lucide-react";
+import {
+  CreditCard,
+  Loader2,
+  Copy,
+  QrCode,
+  FileText,
+  Check,
+  AlertCircle,
+  Shield,
+  Lock,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
-import { calculateShipping, calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
+import { calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
 import { useServerFn } from "@tanstack/react-start";
 import { createPayment } from "@/lib/payments.functions";
 
 // Mercado Pago Public Key - necessário para tokenizar cartões
-const MP_PUBLIC_KEY = import.meta.env.VITE_MP_PUBLIC_KEY || "APP_USR-f84f9b2c-7a06-4298-bc17-b0226a47989e";
+const MP_PUBLIC_KEY =
+  import.meta.env.VITE_MP_PUBLIC_KEY || "APP_USR-f84f9b2c-7a06-4298-bc17-b0226a47989e";
 
 // Declaração para o SDK do Mercado Pago
 declare global {
@@ -99,9 +110,7 @@ const maskCardNumber = (v: string): string => {
 
   // Amex tem formato diferente: 4-6-5
   if (brand === "amex") {
-    return cleaned
-      .replace(/(\d{4})(\d)/, "$1 $2")
-      .replace(/(\d{4} \d{6})(\d)/, "$1 $2");
+    return cleaned.replace(/(\d{4})(\d)/, "$1 $2").replace(/(\d{4} \d{6})(\d)/, "$1 $2");
   }
 
   // Padrão: 4-4-4-4
@@ -109,21 +118,32 @@ const maskCardNumber = (v: string): string => {
 };
 
 const maskCpf = (v: string): string =>
-  v.replace(/\D/g, "").slice(0, 11)
+  v
+    .replace(/\D/g, "")
+    .slice(0, 11)
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d)/, "$1-$2");
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function PaymentForm() {
   const { getTotalPrice, items } = useCartStore();
-  const { paymentMethod, setPaymentMethod, setPaymentData, setStep, shippingMethod, coupon, customer, shippingAddress } =
-    useCheckoutStore();
+  const {
+    paymentMethod,
+    setPaymentMethod,
+    setPaymentData,
+    setStep,
+    shippingPrice,
+    cotacaoId,
+    servicoId,
+    coupon,
+    customer,
+    shippingAddress,
+  } = useCheckoutStore();
 
   const subtotal = getTotalPrice();
-  const shipping = calculateShipping(subtotal, shippingMethod) ?? 0;
+  const shipping = shippingPrice;
   const discount = calculateDiscount(subtotal, {
     couponCode: coupon?.code,
     paymentMethod,
@@ -131,7 +151,7 @@ export function PaymentForm() {
   const total = calculateOrderTotal({ subtotal, shipping, discount });
 
   // Mapear itens do carrinho para o formato esperado
-  const cartItems = items.map(item => ({
+  const cartItems = items.map((item) => ({
     id: item.id,
     title: item.title,
     quantity: item.quantity,
@@ -153,7 +173,9 @@ export function PaymentForm() {
               type="button"
               onClick={() => select(m.id)}
               className={`relative text-left border p-4 transition-all ${
-                paymentMethod === m.id ? "border-[#B07B1E] bg-[#F3EEE3]" : "border-[#E9E1D2] hover:border-[#B07B1E]/50"
+                paymentMethod === m.id
+                  ? "border-[#B07B1E] bg-[#F3EEE3]"
+                  : "border-[#E9E1D2] hover:border-[#B07B1E]/50"
               }`}
             >
               {"discount" in m && m.discount && (
@@ -175,12 +197,16 @@ export function PaymentForm() {
           subtotal={subtotal}
           discount={discount}
           shippingPrice={shipping}
-          shippingMethod={shippingMethod}
+          cotacaoId={cotacaoId}
+          servicoId={servicoId}
           couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
-          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+          onDone={(data) => {
+            setPaymentData(data);
+            setStep("confirmation");
+          }}
         />
       )}
       {paymentMethod === "pix" && (
@@ -189,12 +215,16 @@ export function PaymentForm() {
           subtotal={subtotal}
           discount={discount}
           shippingPrice={shipping}
-          shippingMethod={shippingMethod}
+          cotacaoId={cotacaoId}
+          servicoId={servicoId}
           couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
-          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+          onDone={(data) => {
+            setPaymentData(data);
+            setStep("confirmation");
+          }}
         />
       )}
       {paymentMethod === "boleto" && (
@@ -203,12 +233,16 @@ export function PaymentForm() {
           subtotal={subtotal}
           discount={discount}
           shippingPrice={shipping}
-          shippingMethod={shippingMethod}
+          cotacaoId={cotacaoId}
+          servicoId={servicoId}
           couponCode={coupon?.code}
           items={cartItems}
           customer={customer}
           shippingAddress={shippingAddress}
-          onDone={(data) => { setPaymentData(data); setStep("confirmation"); }}
+          onDone={(data) => {
+            setPaymentData(data);
+            setStep("confirmation");
+          }}
         />
       )}
 
@@ -228,10 +262,22 @@ const inputCls = (error?: string) =>
     error ? "border-red-400 focus:border-red-500" : "border-[#E9E1D2] focus:border-[#B07B1E]"
   }`;
 
-function Field({ label, full, error, children }: { label: string; full?: boolean; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  full,
+  error,
+  children,
+}: {
+  label: string;
+  full?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className={full ? "md:col-span-2" : ""}>
-      <label className="block text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-1.5">{label}</label>
+      <label className="block text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-1.5">
+        {label}
+      </label>
       {children}
       {error && (
         <p className="text-xs text-red-500 mt-1 flex items-center gap-1">
@@ -247,7 +293,8 @@ interface PaymentFormProps {
   subtotal: number;
   discount: number;
   shippingPrice: number;
-  shippingMethod: string | null;
+  cotacaoId: string | null;
+  servicoId: number | null;
   couponCode?: string;
   items: Array<{ id: string; title: string; quantity: number; price: number; image?: string }>;
   customer: any;
@@ -255,12 +302,32 @@ interface PaymentFormProps {
   onDone: (d: any) => void;
 }
 
-function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function CardForm({
+  total,
+  subtotal,
+  discount,
+  shippingPrice,
+  cotacaoId,
+  servicoId,
+  couponCode,
+  items,
+  customer,
+  shippingAddress,
+  onDone,
+}: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
   const [sdkLoaded, setSdkLoaded] = useState(false);
-  const [card, setCard] = useState({ number: "", name: "", month: "", year: "", cvv: "", installments: 1, cpf: "" });
+  const [card, setCard] = useState({
+    number: "",
+    name: "",
+    month: "",
+    year: "",
+    cvv: "",
+    installments: 1,
+    cpf: "",
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const mpRef = useRef<any>(null);
@@ -336,17 +403,17 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
   };
 
   const handleBlur = (field: string, value: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
     const error = validateField(field, value);
-    setErrors(prev => ({ ...prev, [field]: error || "" }));
+    setErrors((prev) => ({ ...prev, [field]: error || "" }));
 
     // Validar expiração quando mês ou ano mudam
     if (field === "month" || field === "year") {
       const expError = validateExpiration();
       if (expError) {
-        setErrors(prev => ({ ...prev, expiration: expError }));
+        setErrors((prev) => ({ ...prev, expiration: expError }));
       } else {
-        setErrors(prev => ({ ...prev, expiration: "" }));
+        setErrors((prev) => ({ ...prev, expiration: "" }));
       }
     }
   };
@@ -370,9 +437,18 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
-    if (!shippingAddress) { toast.error("Endereço de entrega ausente. Volte e preencha os dados de entrega."); return; }
-    if (!sdkLoaded || !mpRef.current) { toast.error("SDK de pagamento não carregado. Aguarde..."); return; }
+    if (!customer) {
+      toast.error("Dados do cliente ausentes");
+      return;
+    }
+    if (!shippingAddress) {
+      toast.error("Endereço de entrega ausente. Volte e preencha os dados de entrega.");
+      return;
+    }
+    if (!sdkLoaded || !mpRef.current) {
+      toast.error("SDK de pagamento não carregado. Aguarde...");
+      return;
+    }
 
     if (!validateAll()) {
       toast.error("Corrija os campos em vermelho");
@@ -408,7 +484,9 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
       } catch (tokenError: any) {
         let errorMsg = "Dados do cartão inválidos";
         if (tokenError?.cause && Array.isArray(tokenError.cause)) {
-          const causes = tokenError.cause.map((c: any) => c.description || c.message).filter(Boolean);
+          const causes = tokenError.cause
+            .map((c: any) => c.description || c.message)
+            .filter(Boolean);
           if (causes.length > 0) errorMsg = causes.join(". ");
         } else if (tokenError?.message) {
           errorMsg = tokenError.message;
@@ -445,7 +523,8 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
           subtotal,
           discount,
           shippingPrice,
-          shippingMethod: shippingMethod ?? undefined,
+          cotacaoId: cotacaoId ?? undefined,
+          servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
         },
@@ -506,9 +585,7 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
             {cardBrand === "elo" && "ELO"}
             {cardBrand === "hipercard" && "HIPER"}
           </div>
-          <span className="text-xs text-[#51635F]">
-            {CARD_BRAND_NAMES[cardBrand]} detectado
-          </span>
+          <span className="text-xs text-[#51635F]">{CARD_BRAND_NAMES[cardBrand]} detectado</span>
         </div>
       )}
 
@@ -529,7 +606,9 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
           <input
             required
             value={card.name}
-            onChange={(e) => setCard({ ...card, name: e.target.value.toUpperCase().replace(/[^A-Z\s]/g, "") })}
+            onChange={(e) =>
+              setCard({ ...card, name: e.target.value.toUpperCase().replace(/[^A-Z\s]/g, "") })
+            }
             onBlur={() => handleBlur("name", card.name)}
             placeholder="COMO ESTÁ NO CARTÃO"
             className={inputCls(touched.name ? errors.name : undefined)}
@@ -548,7 +627,11 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
               autoComplete="cc-exp-month"
             >
               <option value="">MM</option>
-              {months.map((m) => <option key={m} value={m}>{m}</option>)}
+              {months.map((m) => (
+                <option key={m} value={m}>
+                  {m}
+                </option>
+              ))}
             </select>
           </Field>
           <Field label="Ano" error={touched.year ? errors.year : undefined}>
@@ -561,14 +644,23 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
               autoComplete="cc-exp-year"
             >
               <option value="">AAAA</option>
-              {years.map((y) => <option key={y} value={y}>{y}</option>)}
+              {years.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
             </select>
           </Field>
-          <Field label={`CVV${isAmex ? " (4 dígitos)" : ""}`} error={touched.cvv ? errors.cvv : undefined}>
+          <Field
+            label={`CVV${isAmex ? " (4 dígitos)" : ""}`}
+            error={touched.cvv ? errors.cvv : undefined}
+          >
             <input
               required
               value={card.cvv}
-              onChange={(e) => setCard({ ...card, cvv: e.target.value.replace(/\D/g, "").slice(0, cvvLength) })}
+              onChange={(e) =>
+                setCard({ ...card, cvv: e.target.value.replace(/\D/g, "").slice(0, cvvLength) })
+              }
               onBlur={() => handleBlur("cvv", card.cvv)}
               placeholder={isAmex ? "0000" : "000"}
               className={inputCls(touched.cvv ? errors.cvv : undefined)}
@@ -642,7 +734,19 @@ function CardForm({ total, subtotal, discount, shippingPrice, shippingMethod, co
   );
 }
 
-function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function PixForm({
+  total,
+  subtotal,
+  discount,
+  shippingPrice,
+  cotacaoId,
+  servicoId,
+  couponCode,
+  items,
+  customer,
+  shippingAddress,
+  onDone,
+}: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
@@ -661,7 +765,10 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, cou
   }, [code]);
 
   const generate = async () => {
-    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
+    if (!customer) {
+      toast.error("Dados do cliente ausentes");
+      return;
+    }
     setLoading(true);
     try {
       const res: any = await createPaymentFn({
@@ -691,7 +798,8 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, cou
           subtotal,
           discount,
           shippingPrice,
-          shippingMethod: shippingMethod ?? undefined,
+          cotacaoId: cotacaoId ?? undefined,
+          servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
         },
@@ -749,21 +857,35 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, cou
           <div className="flex flex-col items-center gap-3">
             <div className="w-48 h-48 bg-[#F3EEE3] border border-[#E9E1D2] flex items-center justify-center">
               {qrBase64 ? (
-                <img src={`data:image/png;base64,${qrBase64}`} alt="QR Code PIX" className="w-full h-full object-contain" />
+                <img
+                  src={`data:image/png;base64,${qrBase64}`}
+                  alt="QR Code PIX"
+                  className="w-full h-full object-contain"
+                />
               ) : (
                 <QrCode className="w-32 h-32 text-[#0F3A3E]" />
               )}
             </div>
             <div className="text-center">
               <div className="text-xs text-[#51635F] uppercase tracking-wider">Expira em</div>
-              <div className="font-serif text-2xl text-[#0F3A3E]">{mm}:{ss}</div>
+              <div className="font-serif text-2xl text-[#0F3A3E]">
+                {mm}:{ss}
+              </div>
             </div>
           </div>
-          <div className="border border-[#E9E1D2] p-3 break-all text-xs text-[#51635F] font-mono">{code}</div>
-          <button onClick={copy} className="w-full border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center gap-2">
+          <div className="border border-[#E9E1D2] p-3 break-all text-xs text-[#51635F] font-mono">
+            {code}
+          </div>
+          <button
+            onClick={copy}
+            className="w-full border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center gap-2"
+          >
             <Copy className="w-4 h-4" /> Copiar Código PIX
           </button>
-          <button onClick={confirm} className="w-full bg-[#1C6B4A] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#155339] flex items-center justify-center gap-2">
+          <button
+            onClick={confirm}
+            className="w-full bg-[#1C6B4A] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#155339] flex items-center justify-center gap-2"
+          >
             <Check className="w-4 h-4" /> Já fiz o pagamento
           </button>
         </div>
@@ -772,7 +894,19 @@ function PixForm({ total, subtotal, discount, shippingPrice, shippingMethod, cou
   );
 }
 
-function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, couponCode, items, customer, shippingAddress, onDone }: PaymentFormProps) {
+function BoletoForm({
+  total,
+  subtotal,
+  discount,
+  shippingPrice,
+  cotacaoId,
+  servicoId,
+  couponCode,
+  items,
+  customer,
+  shippingAddress,
+  onDone,
+}: PaymentFormProps) {
   const { user } = useSupabaseSession();
   const createPaymentFn = useServerFn(createPayment);
   const [loading, setLoading] = useState(false);
@@ -782,7 +916,10 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
   const [orderId, setOrderId] = useState<string | null>(null);
 
   const generate = async () => {
-    if (!customer) { toast.error("Dados do cliente ausentes"); return; }
+    if (!customer) {
+      toast.error("Dados do cliente ausentes");
+      return;
+    }
     setLoading(true);
     try {
       const res: any = await createPaymentFn({
@@ -812,7 +949,8 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
           subtotal,
           discount,
           shippingPrice,
-          shippingMethod: shippingMethod ?? undefined,
+          cotacaoId: cotacaoId ?? undefined,
+          servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
         },
@@ -837,14 +975,19 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
   };
 
   const confirm = () => {
-    onDone({ orderId: orderId ?? undefined, status: "pending", boletoCode: code ?? undefined, boletoUrl: boletoUrl ?? undefined });
+    onDone({
+      orderId: orderId ?? undefined,
+      status: "pending",
+      boletoCode: code ?? undefined,
+      boletoUrl: boletoUrl ?? undefined,
+    });
   };
 
   return (
     <div className="bg-white border border-[#E9E1D2] p-6 space-y-5">
       <div className="bg-[#F3EEE3] border border-[#E9E1D2] px-4 py-3 text-sm text-[#0F3A3E] flex items-center gap-2">
-        <FileText className="w-5 h-5 text-[#B07B1E]" />
-        O boleto vence em 3 dias úteis. Total: <strong>{formatBRL(total)}</strong>
+        <FileText className="w-5 h-5 text-[#B07B1E]" />O boleto vence em 3 dias úteis. Total:{" "}
+        <strong>{formatBRL(total)}</strong>
       </div>
 
       {!code ? (
@@ -861,20 +1004,28 @@ function BoletoForm({ total, subtotal, discount, shippingPrice, shippingMethod, 
             <div className="font-mono text-[#0F3A3E] text-sm tracking-wider">{code}</div>
           </div>
           <div className="flex gap-2">
-            <button onClick={copy} className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center gap-2">
+            <button
+              onClick={copy}
+              className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center gap-2"
+            >
               <Copy className="w-4 h-4" /> Copiar Código
             </button>
             <a
               href={boletoUrl ?? "#"}
               target={boletoUrl ? "_blank" : undefined}
               rel="noreferrer"
-              onClick={(e) => { if (!boletoUrl) e.preventDefault(); }}
+              onClick={(e) => {
+                if (!boletoUrl) e.preventDefault();
+              }}
               className="flex-1 border border-[#0F3A3E] text-[#0F3A3E] py-3 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#0F3A3E] hover:text-white flex items-center justify-center"
             >
               Visualizar Boleto
             </a>
           </div>
-          <button onClick={confirm} className="w-full bg-[#1C6B4A] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#155339]">
+          <button
+            onClick={confirm}
+            className="w-full bg-[#1C6B4A] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#155339]"
+          >
             Concluir Pedido
           </button>
         </div>

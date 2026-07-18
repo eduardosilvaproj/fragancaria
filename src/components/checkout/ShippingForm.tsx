@@ -1,34 +1,62 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { Loader2, Truck, CheckCircle, AlertCircle, Info } from "lucide-react";
 import { toast } from "sonner";
+import { useServerFn } from "@tanstack/react-start";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useCartStore } from "@/stores/cartStore";
-import {
-  SHIPPING_METHODS,
-  type ShippingMethodId,
-  FREE_SHIPPING_THRESHOLD,
-  calculateShipping,
-  qualifiesForFreeShipping,
-} from "@/lib/commerce-config";
+import { cotarFrete } from "@/lib/payments.functions";
 
 const STATES = [
-  "AC","AL","AP","AM","BA","CE","DF","ES","GO","MA","MT","MS","MG","PA","PB","PR","PE","PI","RJ","RN","RS","RO","RR","SC","SP","SE","TO",
+  "AC",
+  "AL",
+  "AP",
+  "AM",
+  "BA",
+  "CE",
+  "DF",
+  "ES",
+  "GO",
+  "MA",
+  "MT",
+  "MS",
+  "MG",
+  "PA",
+  "PB",
+  "PR",
+  "PE",
+  "PI",
+  "RJ",
+  "RN",
+  "RS",
+  "RO",
+  "RR",
+  "SC",
+  "SP",
+  "SE",
+  "TO",
 ];
 
 // Máscaras
 const maskPhone = (v: string) =>
-  v.replace(/\D/g, "").slice(0, 11)
+  v
+    .replace(/\D/g, "")
+    .slice(0, 11)
     .replace(/(\d{2})(\d)/, "($1) $2")
     .replace(/(\d{5})(\d)/, "$1-$2");
 
 const maskCpf = (v: string) =>
-  v.replace(/\D/g, "").slice(0, 11)
+  v
+    .replace(/\D/g, "")
+    .slice(0, 11)
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d)/, "$1.$2")
     .replace(/(\d{3})(\d)/, "$1-$2");
 
 const maskCep = (v: string) =>
-  v.replace(/\D/g, "").slice(0, 8).replace(/(\d{5})(\d)/, "$1-$2");
+  v
+    .replace(/\D/g, "")
+    .slice(0, 8)
+    .replace(/(\d{5})(\d)/, "$1-$2");
 
 import { validateCpf, validatePhone, validateCep } from "@/lib/customer-validation";
 
@@ -51,41 +79,60 @@ type FieldErrors = {
 };
 
 export function ShippingForm() {
-  const { customer, shippingAddress, shippingMethod, setCustomer, setShippingAddress, setShippingMethod, setShippingPrice, setStep } = useCheckoutStore();
-  const { getTotalPrice } = useCartStore();
-  const subtotal = getTotalPrice();
-  const hasFreeShipping = qualifiesForFreeShipping(subtotal);
+  const {
+    customer,
+    shippingAddress,
+    quoteStatus,
+    quoteError,
+    cotacaoId,
+    servicoId,
+    opcoes,
+    setCustomer,
+    setShippingAddress,
+    setShippingPrice,
+    setShippingQuote,
+    setServicoId,
+    clearShippingQuote,
+    setStep,
+  } = useCheckoutStore();
+  const { items } = useCartStore();
+  const cotarFreteFn = useServerFn(cotarFrete);
 
   const [c, setC] = useState(
-    customer ?? { email: "", firstName: "", lastName: "", phone: "", cpf: "" }
+    customer ?? { email: "", firstName: "", lastName: "", phone: "", cpf: "" },
   );
   const [a, setA] = useState(
-    shippingAddress ?? { cep: "", street: "", number: "", complement: "", neighborhood: "", city: "", state: "" }
+    shippingAddress ?? {
+      cep: "",
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+    },
   );
-  const [method, setMethod] = useState<ShippingMethodId | null>(shippingMethod);
   const [cepLoading, setCepLoading] = useState(false);
   const [errors, setErrors] = useState<FieldErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const firstErrorRef = useRef<HTMLInputElement | null>(null);
+  const quoteRequestRef = useRef(0);
+  const hasFreeShipping = opcoes.some((opcao) => opcao.precoExibidoCentavos === 0);
 
-  // Atualiza preço do frete quando método muda
-  useEffect(() => {
-    if (!method) return;
-    const shipping = calculateShipping(subtotal, method);
-    if (shipping !== null) setShippingPrice(shipping);
-  }, [method, subtotal, setShippingPrice]);
-
-  const lookupCep = async (cep: string) => {
+  const lookupCep = async (cep: string, requestId: number) => {
     const digits = cep.replace(/\D/g, "");
     if (digits.length !== 8) return;
     setCepLoading(true);
+    clearShippingQuote();
+    void cotarFretePara(digits, requestId);
     try {
       const r = await fetch(`https://viacep.com.br/ws/${digits}/json/`);
       const data = await r.json();
+      if (requestId !== quoteRequestRef.current) return;
       if (data.erro) {
-        setErrors(prev => ({ ...prev, cep: "CEP não encontrado" }));
+        setErrors((prev) => ({ ...prev, cep: "CEP não encontrado" }));
         return;
       }
       setA((prev) => ({
@@ -96,12 +143,58 @@ export function ShippingForm() {
         city: data.localidade || prev.city,
         state: data.uf || prev.state,
       }));
-      setErrors(prev => ({ ...prev, cep: undefined }));
+      setErrors((prev) => ({ ...prev, cep: undefined }));
       toast.success("Endereço preenchido!");
     } catch {
-      setErrors(prev => ({ ...prev, cep: "Erro ao buscar CEP" }));
+      if (requestId === quoteRequestRef.current) {
+        setErrors((prev) => ({ ...prev, cep: "Erro ao buscar CEP" }));
+      }
     } finally {
-      setCepLoading(false);
+      if (requestId === quoteRequestRef.current) setCepLoading(false);
+    }
+  };
+
+  const cotarFretePara = async (cepDigits: string, requestId: number) => {
+    if (items.length === 0) return;
+    setShippingQuote({ status: "loading", cep: cepDigits });
+    try {
+      const result = await cotarFreteFn({
+        data: {
+          cepDestino: cepDigits,
+          items: items.map((i) => ({ id: i.id, quantity: i.quantity })),
+        },
+      });
+      if (requestId !== quoteRequestRef.current) return;
+      if (!result.ok) {
+        const mensagem: Record<typeof result.erro, string> = {
+          cep_invalido: "CEP inválido para cotação de frete.",
+          sem_cobertura: "Não há cobertura de envio para o CEP informado.",
+          api_indisponivel: "Serviço de cotação indisponível. Tente novamente.",
+        };
+        setShippingQuote({ status: "error", cep: cepDigits, error: mensagem[result.erro] });
+        return;
+      }
+      const maisBarata = [...result.opcoes].sort(
+        (x, y) => x.precoExibidoCentavos - y.precoExibidoCentavos,
+      )[0];
+      if (maisBarata) {
+        setServicoId(maisBarata.servicoId);
+        setShippingPrice(maisBarata.precoExibidoCentavos / 100);
+      }
+      setShippingQuote({
+        status: "success",
+        cep: cepDigits,
+        cotacaoId: result.cotacaoId,
+        opcoes: result.opcoes,
+      });
+    } catch {
+      if (requestId === quoteRequestRef.current) {
+        setShippingQuote({
+          status: "error",
+          cep: cepDigits,
+          error: "Serviço de cotação indisponível. Tente novamente.",
+        });
+      }
     }
   };
 
@@ -151,9 +244,9 @@ export function ShippingForm() {
   };
 
   const handleBlur = (field: string, value: string) => {
-    setTouched(prev => ({ ...prev, [field]: true }));
+    setTouched((prev) => ({ ...prev, [field]: true }));
     const error = validateField(field, value);
-    setErrors(prev => ({ ...prev, [field]: error }));
+    setErrors((prev) => ({ ...prev, [field]: error }));
   };
 
   const validateAll = (): boolean => {
@@ -175,12 +268,23 @@ export function ShippingForm() {
     newErrors.state = validateField("state", a.state);
 
     // Frete
-    if (!method) newErrors.shipping = "Selecione um método de envio";
+    if (quoteStatus !== "success" || !cotacaoId || servicoId === null) {
+      newErrors.shipping = "Calcule e selecione uma opção de frete";
+    }
 
     setErrors(newErrors);
     setTouched({
-      email: true, firstName: true, lastName: true, phone: true, cpf: true,
-      cep: true, street: true, number: true, neighborhood: true, city: true, state: true
+      email: true,
+      firstName: true,
+      lastName: true,
+      phone: true,
+      cpf: true,
+      cep: true,
+      street: true,
+      number: true,
+      neighborhood: true,
+      city: true,
+      state: true,
     });
 
     return !Object.values(newErrors).some(Boolean);
@@ -202,11 +306,10 @@ export function ShippingForm() {
     setIsSubmitting(true);
 
     // Simular pequeno delay para feedback visual
-    await new Promise(r => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 300));
 
     setCustomer(c);
     setShippingAddress(a);
-    setShippingMethod(method!);
     setStep("payment");
     setIsSubmitting(false);
   };
@@ -283,8 +386,15 @@ export function ShippingForm() {
                 value={a.cep}
                 onChange={(e) => {
                   const v = maskCep(e.target.value);
+                  const digits = v.replace(/\D/g, "");
                   setA({ ...a, cep: v });
-                  if (v.replace(/\D/g, "").length === 8) lookupCep(v);
+                  if (digits.length !== 8) {
+                    clearShippingQuote();
+                  }
+                  if (digits.length === 8) {
+                    quoteRequestRef.current += 1;
+                    void lookupCep(v, quoteRequestRef.current);
+                  }
                 }}
                 onBlur={() => handleBlur("cep", a.cep)}
                 data-error={!!errors.cep && touched.cep}
@@ -368,7 +478,11 @@ export function ShippingForm() {
               className={inputCls(touched.state ? errors.state : undefined)}
             >
               <option value="">Selecione</option>
-              {STATES.map((s) => <option key={s} value={s}>{s}</option>)}
+              {STATES.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
             </select>
           </Field>
         </Grid>
@@ -383,40 +497,68 @@ export function ShippingForm() {
             </span>
           </div>
         )}
-        <div className="space-y-3">
-          {SHIPPING_METHODS.map((s) => {
-            const finalPrice = hasFreeShipping ? 0 : s.price;
-            return (
+        {quoteStatus === "idle" && (
+          <p className="text-sm text-[#51635F]">
+            Informe um CEP válido para calcular opções de frete.
+          </p>
+        )}
+        {quoteStatus === "loading" && (
+          <div className="flex items-center gap-2 text-sm text-[#51635F]">
+            <Loader2 className="w-4 h-4 animate-spin text-[#B07B1E]" />
+            Calculando opções de frete...
+          </div>
+        )}
+        {quoteStatus === "error" && quoteError && (
+          <p className="text-sm text-red-500 flex items-center gap-2">
+            <AlertCircle className="w-4 h-4" />
+            {quoteError}
+          </p>
+        )}
+        {quoteStatus === "success" && (
+          <div className="space-y-3">
+            {opcoes.map((opcao) => (
               <label
-                key={s.id}
+                key={opcao.servicoId}
                 className={`flex items-center gap-4 border p-4 cursor-pointer transition-all ${
-                  method === s.id ? "border-[#B07B1E] bg-[#F3EEE3]" : "border-[#E9E1D2] hover:border-[#B07B1E]/50"
-                } ${errors.shipping && !method ? "border-red-300" : ""}`}
+                  servicoId === opcao.servicoId
+                    ? "border-[#B07B1E] bg-[#F3EEE3]"
+                    : "border-[#E9E1D2] hover:border-[#B07B1E]/50"
+                } ${errors.shipping && servicoId === null ? "border-red-300" : ""}`}
               >
                 <input
                   type="radio"
                   name="shipping"
-                  checked={method === s.id}
-                  onChange={() => setMethod(s.id)}
+                  checked={servicoId === opcao.servicoId}
+                  onChange={() => {
+                    setServicoId(opcao.servicoId);
+                    setShippingPrice(opcao.precoExibidoCentavos / 100);
+                  }}
                   className="w-4 h-4 accent-[#B07B1E]"
                 />
                 <Truck className="w-5 h-5 text-[#0F3A3E]" />
                 <div className="flex-1">
-                  <div className="font-semibold text-[#0F3A3E] text-sm">{s.name}</div>
-                  <div className="text-xs text-[#51635F]">{s.days}</div>
+                  <div className="font-semibold text-[#0F3A3E] text-sm">
+                    {opcao.transportadora} • {opcao.servico}
+                  </div>
+                  <div className="text-xs text-[#51635F]">
+                    {opcao.prazoDias} {opcao.prazoDias === 1 ? "dia útil" : "dias úteis"}
+                  </div>
                 </div>
                 <div className="font-serif text-[#0F3A3E]">
-                  {hasFreeShipping ? (
+                  {opcao.precoExibidoCentavos === 0 ? (
                     <span className="text-[#1C6B4A] font-medium">Grátis</span>
                   ) : (
-                    finalPrice.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+                    (opcao.precoExibidoCentavos / 100).toLocaleString("pt-BR", {
+                      style: "currency",
+                      currency: "BRL",
+                    })
                   )}
                 </div>
               </label>
-            );
-          })}
-        </div>
-        {errors.shipping && !method && (
+            ))}
+          </div>
+        )}
+        {errors.shipping && servicoId === null && (
           <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
             <AlertCircle className="w-3 h-3" /> {errors.shipping}
           </p>
@@ -425,7 +567,7 @@ export function ShippingForm() {
 
       <button
         type="submit"
-        disabled={isSubmitting}
+        disabled={isSubmitting || quoteStatus !== "success"}
         className="w-full bg-[#0F3A3E] text-white py-4 text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
       >
         {isSubmitting ? (
@@ -443,9 +585,7 @@ export function ShippingForm() {
 
 const inputCls = (error?: string) =>
   `w-full border bg-white px-4 py-3 text-sm text-[#0F3A3E] focus:outline-none transition-colors ${
-    error
-      ? "border-red-400 focus:border-red-500"
-      : "border-[#E9E1D2] focus:border-[#B07B1E]"
+    error ? "border-red-400 focus:border-red-500" : "border-[#E9E1D2] focus:border-[#B07B1E]"
   }`;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -461,7 +601,17 @@ function Grid({ children }: { children: React.ReactNode }) {
   return <div className="grid grid-cols-1 md:grid-cols-3 gap-4">{children}</div>;
 }
 
-function Field({ label, full, error, children }: { label: string; full?: boolean; error?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  full,
+  error,
+  children,
+}: {
+  label: string;
+  full?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className={full ? "md:col-span-3" : ""}>
       <label className="block text-[10px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-1.5">

@@ -9,7 +9,12 @@ import {
   FREE_SHIPPING_THRESHOLD,
 } from "@/lib/commerce-config";
 import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
-import { cotar, resolverPrecoCotacao, type MelhorEnvioProduto, type MelhorEnvioOpcao } from "@/lib/melhor-envio-client.server";
+import {
+  cotar,
+  resolverPrecoCotacao,
+  type MelhorEnvioProduto,
+  type MelhorEnvioOpcao,
+} from "@/lib/melhor-envio-client.server";
 const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
@@ -30,16 +35,39 @@ function generateTrackingToken(): string {
 function formatToken(t: string): string {
   return `${t.slice(0, 4)}-${t.slice(4, 8)}-${t.slice(8, 12)}-${t.slice(12, 16)}`;
 }
-const cpfSchema = z.string().min(11).max(14).transform((v) => v.replace(/\D/g, "")).refine((d) => d.length === 11, "CPF deve ter 11 digitos");
+const cpfSchema = z
+  .string()
+  .min(11)
+  .max(14)
+  .transform((v) => v.replace(/\D/g, ""))
+  .refine((d) => d.length === 11, "CPF deve ter 11 digitos");
 const payerSchema = z.object({
-  email: z.string().email().transform((e) => e.trim().toLowerCase()),
+  email: z
+    .string()
+    .email()
+    .transform((e) => e.trim().toLowerCase()),
   firstName: z.string().min(1).max(120),
   lastName: z.string().min(1).max(120),
   phone: z.string().max(40).optional(),
   identification: z.object({ type: z.literal("CPF"), number: cpfSchema }),
-  address: z.object({ zipCode: z.string().min(8).max(9), streetName: z.string().min(1), streetNumber: z.string().min(1), neighborhood: z.string().min(1), city: z.string().min(1), state: z.string().length(2), complement: z.string().optional() }),
+  address: z.object({
+    zipCode: z.string().min(8).max(9),
+    streetName: z.string().min(1),
+    streetNumber: z.string().min(1),
+    neighborhood: z.string().min(1),
+    city: z.string().min(1),
+    state: z.string().length(2),
+    complement: z.string().optional(),
+  }),
 });
-const cartItemSchema = z.object({ id: z.string(), title: z.string(), quantity: z.number().int().positive(), price: z.number().positive(), image: z.string().optional(), variationName: z.string().optional() });
+const cartItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  quantity: z.number().int().positive(),
+  price: z.number().positive(),
+  image: z.string().optional(),
+  variationName: z.string().optional(),
+});
 const inputSchema = z.object({
   method: z.enum(["pix", "boleto", "credit_card"]),
   amount: z.number().positive().max(1_000_000),
@@ -62,23 +90,34 @@ const inputSchema = z.object({
 });
 function translateMpError(msg: string, method: string): string {
   const lower = (msg || "").toLowerCase();
-  if (lower.includes('collector user without key enabled for qr render')) return 'PIX nao habilitado. Use cartao.';
-  if (lower.includes('invalid card_token') || lower.includes('invalid token')) return 'Dados do cartao invalidos.';
-  if (lower.includes('invalid installments')) return 'Parcelas invalidas.';
-  if (lower.includes('invalid access token')) return 'Token MP invalido.';
+  if (lower.includes("collector user without key enabled for qr render"))
+    return "PIX nao habilitado. Use cartao.";
+  if (lower.includes("invalid card_token") || lower.includes("invalid token"))
+    return "Dados do cartao invalidos.";
+  if (lower.includes("invalid installments")) return "Parcelas invalidas.";
+  if (lower.includes("invalid access token")) return "Token MP invalido.";
   return msg;
 }
 function mpWebhookUrl(req: Request | undefined, fallback: string): string {
   try {
-    const host = req?.headers?.get('host') || req?.headers?.get('x-forwarded-host');
-    const proto = req?.headers?.get('x-forwarded-proto') || 'https';
+    const host = req?.headers?.get("host") || req?.headers?.get("x-forwarded-host");
+    const proto = req?.headers?.get("x-forwarded-proto") || "https";
     if (!host) return fallback;
     return `${proto}://${host}/api/public/mp-webhook`;
-  } catch { return fallback; }
+  } catch {
+    return fallback;
+  }
 }
-function itemsForMp(items: Array<{ id: string; title: string; quantity: number; price: number }> | undefined) {
+function itemsForMp(
+  items: Array<{ id: string; title: string; quantity: number; price: number }> | undefined,
+) {
   if (!items || items.length === 0) return undefined;
-  return items.map((i) => ({ id: i.id, title: i.title, quantity: i.quantity, unit_price: Number(i.price.toFixed(2)) }));
+  return items.map((i) => ({
+    id: i.id,
+    title: i.title,
+    quantity: i.quantity,
+    unit_price: Number(i.price.toFixed(2)),
+  }));
 }
 type CreatePaymentInput = z.infer<typeof inputSchema>;
 
@@ -134,22 +173,17 @@ async function syncCheckoutCustomer(
   if (!customer.cpf && payer.identification.number) update.cpf = payer.identification.number;
   if (Object.keys(update).length === 0) return;
 
-  const { error: updateError } = await admin
-    .from("customers")
-    .update(update)
-    .eq("id", customer.id);
+  const { error: updateError } = await admin.from("customers").update(update).eq("id", customer.id);
   if (updateError) throw updateError;
 }
 
-export const createPayment = createServerFn({ method: 'POST' })
+export const createPayment = createServerFn({ method: "POST" })
   .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }) => {
     const request = getRequest();
     const token = process.env.MP_ACCESS_TOKEN;
-    if (!token) return { success: false, error: 'MP_ACCESS_TOKEN nao configurado' };
-    const { supabaseAdmin: admin } = await import(
-      '@/integrations/supabase/client.server'
-    );
+    if (!token) return { success: false, error: "MP_ACCESS_TOKEN nao configurado" };
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
     let orderId: string | undefined;
     try {
       // P0-Segurança: recalcula o valor autoritativo NO SERVIDOR. O browser
@@ -158,23 +192,26 @@ export const createPayment = createServerFn({ method: 'POST' })
       // "pagar R$0,01". Se o total recalculado divergir do enviado, rejeita e
       // pede refresh (carrinho velho ou tentativa de manipulação).
       if (!data.items || data.items.length === 0) {
-        return { success: false, error: 'Carrinho vazio.' };
+        return { success: false, error: "Carrinho vazio." };
       }
-      const productIds = [...new Set(data.items.map((i) => i.id.split('::')[0]))];
+      const productIds = [...new Set(data.items.map((i) => i.id.split("::")[0]))];
       const { data: prodRows, error: prodErr } = await admin
-        .from('products')
-        .select('id, price, is_active')
-        .in('id', productIds);
-      if (prodErr) return { success: false, error: 'Falha ao validar preços dos produtos.' };
+        .from("products")
+        .select("id, price, is_active")
+        .in("id", productIds);
+      if (prodErr) return { success: false, error: "Falha ao validar preços dos produtos." };
       const priceById = new Map(
         (prodRows ?? []).map((p: any) => [p.id, { price: Number(p.price), active: p.is_active }]),
       );
       let serverSubtotal = 0;
       for (const item of data.items) {
-        const pid = item.id.split('::')[0];
+        const pid = item.id.split("::")[0];
         const p = priceById.get(pid);
         if (!p || !p.active) {
-          return { success: false, error: 'Um produto do carrinho não está mais disponível. Atualize a página.' };
+          return {
+            success: false,
+            error: "Um produto do carrinho não está mais disponível. Atualize a página.",
+          };
         }
         serverSubtotal += p.price * item.quantity;
       }
@@ -191,6 +228,7 @@ export const createPayment = createServerFn({ method: 'POST' })
         ? shippingConfig.data.freeShippingThreshold
         : FREE_SHIPPING_THRESHOLD;
       let serverShipping: number | null;
+      let resolvedShippingMethod: string | null = data.shippingMethod ?? null;
       if (data.cotacaoId && data.servicoId !== undefined) {
         const { data: quote, error: quoteErr } = await admin
           .from("shipping_rate_quotes")
@@ -198,7 +236,10 @@ export const createPayment = createServerFn({ method: 'POST' })
           .eq("id", data.cotacaoId)
           .maybeSingle();
         if (quoteErr) {
-          return { success: false, error: "Cotação de frete não encontrada. Refaça a etapa de entrega." };
+          return {
+            success: false,
+            error: "Cotação de frete não encontrada. Refaça a etapa de entrega.",
+          };
         }
         const resolved = resolverPrecoCotacao(quote, data.servicoId);
         if (!resolved.ok) {
@@ -209,9 +250,22 @@ export const createPayment = createServerFn({ method: 'POST' })
           };
           return { success: false, error: mensagens[resolved.erro] };
         }
+        const opcoes = (quote?.options ?? []) as Array<{
+          servicoId: number;
+          transportadora: string;
+          servico: string;
+        }>;
+        const opcaoSelecionada = opcoes.find((opcao) => opcao.servicoId === data.servicoId);
+        resolvedShippingMethod = opcaoSelecionada
+          ? `${opcaoSelecionada.transportadora} • ${opcaoSelecionada.servico}`
+          : resolvedShippingMethod;
         serverShipping = resolved.precoReais;
       } else {
-        serverShipping = calculateShipping(serverSubtotal, data.shippingMethod, freeShippingThreshold);
+        serverShipping = calculateShipping(
+          serverSubtotal,
+          data.shippingMethod,
+          freeShippingThreshold,
+        );
       }
       if (serverShipping === null) {
         return {
@@ -233,15 +287,20 @@ export const createPayment = createServerFn({ method: 'POST' })
       // com erro legível quando o server cobraria MAIS do que o client
       // mostrou ao cliente (nunca trava por divergência a favor do cliente).
       if (Math.abs(serverAmount - data.amount) > 0.01) {
-        console.warn('[createPayment] divergência de valor', {
+        console.warn("[createPayment] divergência de valor", {
           serverAmount,
           clientAmount: data.amount,
-          orderContext: { subtotal: serverSubtotal, shipping: serverShipping, discount: effectiveDiscount },
+          orderContext: {
+            subtotal: serverSubtotal,
+            shipping: serverShipping,
+            discount: effectiveDiscount,
+          },
         });
         if (serverAmount > data.amount) {
           return {
             success: false,
-            error: 'O valor do seu carrinho foi atualizado. Revise o resumo do pedido antes de continuar.',
+            error:
+              "O valor do seu carrinho foi atualizado. Revise o resumo do pedido antes de continuar.",
           };
         }
       }
@@ -251,16 +310,16 @@ export const createPayment = createServerFn({ method: 'POST' })
       orderId = data.externalReference;
       if (!orderId) {
         const { data: inserted, error: orderErr } = await admin
-          .from('orders')
+          .from("orders")
           .insert({
-            status: 'pending',
-            payment_status: 'pending',
+            status: "pending",
+            payment_status: "pending",
             payment_method: data.method,
             total: serverAmount,
             subtotal: serverSubtotal,
             discount: effectiveDiscount,
             shipping_price: serverShipping,
-            shipping_method: data.shippingMethod ?? null,
+            shipping_method: resolvedShippingMethod,
             items: data.items ?? [],
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
@@ -270,7 +329,7 @@ export const createPayment = createServerFn({ method: 'POST' })
             shipping_address: {
               street: data.payer.address.streetName,
               number: data.payer.address.streetNumber,
-              complement: data.payer.address.complement ?? '',
+              complement: data.payer.address.complement ?? "",
               neighborhood: data.payer.address.neighborhood,
               city: data.payer.address.city,
               state: data.payer.address.state,
@@ -279,10 +338,10 @@ export const createPayment = createServerFn({ method: 'POST' })
             },
             tracking_token: generateTrackingToken(),
           })
-          .select('id')
+          .select("id")
           .single();
         if (orderErr || !inserted) {
-          return { success: false, error: orderErr?.message || 'Falha ao criar pedido' };
+          return { success: false, error: orderErr?.message || "Falha ao criar pedido" };
         }
         orderId = inserted.id;
       }
@@ -304,9 +363,17 @@ export const createPayment = createServerFn({ method: 'POST' })
       const body: any = {
         transaction_amount: serverAmount,
         description: data.description,
-        payment_method_id: data.method === 'pix' ? 'pix' : data.method === 'boleto' ? 'bolbradesco' : (data.paymentMethodId || ''),
+        payment_method_id:
+          data.method === "pix"
+            ? "pix"
+            : data.method === "boleto"
+              ? "bolbradesco"
+              : data.paymentMethodId || "",
         external_reference: orderId,
-        notification_url: mpWebhookUrl(request, `${process.env.PUBLIC_URL || 'https://www.fragranciaria.com'}/api/public/mp-webhook`),
+        notification_url: mpWebhookUrl(
+          request,
+          `${process.env.PUBLIC_URL || "https://www.fragranciaria.com"}/api/public/mp-webhook`,
+        ),
         payer: {
           email: data.payer.email,
           first_name: data.payer.firstName,
@@ -318,43 +385,50 @@ export const createPayment = createServerFn({ method: 'POST' })
       if (itemsForAdditionalInfo && itemsForAdditionalInfo.length > 0) {
         body.additional_info = { items: itemsForAdditionalInfo };
       }
-      if (data.method === 'credit_card') {
+      if (data.method === "credit_card") {
         body.token = data.token;
         body.installments = data.installments || 1;
         if (data.issuerId) body.issuer_id = data.issuerId;
       }
       const resp = await fetch(MP_API, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', 'X-Idempotency-Key': orderId },
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+          "X-Idempotency-Key": orderId,
+        },
         body: JSON.stringify(body),
       });
       const json: any = await resp.json().catch(() => ({}));
       if (!resp.ok) {
         const mpMsg = json?.message || json?.error || `HTTP ${resp.status}`;
         // apaga o pedido "pending" para nao ficar orfao.
-        await admin.from('orders').delete().eq('id', orderId).is('payment_id', null);
+        await admin.from("orders").delete().eq("id", orderId).is("payment_id", null);
         return { success: false, error: translateMpError(mpMsg, data.method) };
       }
       // 3) vincula payment_id ao pedido e guarda a primeira versao do status.
       const paymentId = json?.id;
       // guarda contra MP retornar 200 sem id (resposta degenerada): trata como falha e apaga orfao.
       if (!paymentId) {
-        await admin.from('orders').delete().eq('id', orderId).is('payment_id', null);
-        return { success: false, error: 'Resposta MP sem payment_id (rejeitada sem detalhe).' };
+        await admin.from("orders").delete().eq("id", orderId).is("payment_id", null);
+        return { success: false, error: "Resposta MP sem payment_id (rejeitada sem detalhe)." };
       }
-      const status = json?.status || 'pending';
+      const status = json?.status || "pending";
       const statusDetail = json?.status_detail || null;
       if (paymentId) {
-        await admin.from('orders').update({
-          payment_id: String(paymentId),
-          payment_status: status,
-          // @ts-expect-error payment_method_id added in prior migration; generated types stale. See agente-fase1.md.
-          payment_method_id: json?.payment_method_id || null,
-          // @ts-expect-error transaction_amount added in prior migration; generated types stale. See agente-fase1.md.
-          transaction_amount: json?.transaction_amount ?? null,
-          payer_email: data.payer.email,
-          raw: json,
-        }).eq('id', orderId);
+        await admin
+          .from("orders")
+          .update({
+            payment_id: String(paymentId),
+            payment_status: status,
+            // @ts-expect-error payment_method_id added in prior migration; generated types stale. See agente-fase1.md.
+            payment_method_id: json?.payment_method_id || null,
+            // @ts-expect-error transaction_amount added in prior migration; generated types stale. See agente-fase1.md.
+            transaction_amount: json?.transaction_amount ?? null,
+            payer_email: data.payer.email,
+            raw: json,
+          })
+          .eq("id", orderId);
       }
 
       // Cria/atualiza o cliente interno em `customers`. Toda compra passa a ter
@@ -364,7 +438,7 @@ export const createPayment = createServerFn({ method: 'POST' })
       try {
         await syncCheckoutCustomer(admin, data.payer, data.userId);
       } catch (customerErr) {
-        console.error('[createPayment] Falha ao sincronizar cliente interno', {
+        console.error("[createPayment] Falha ao sincronizar cliente interno", {
           orderId,
           customerErr,
         });
@@ -392,7 +466,7 @@ export const createPayment = createServerFn({ method: 'POST' })
               customerEmail: data.payer.email,
               total: Number(order.total ?? serverAmount),
               trackingTokenFormatted: formatToken(order.tracking_token),
-              items: Array.isArray(order.items) ? (order.items as any[]) : data.items ?? [],
+              items: Array.isArray(order.items) ? (order.items as any[]) : (data.items ?? []),
             }).catch((err) => {
               console.warn("[email] Falha ao enviar (não quebra checkout)", { err });
             });
@@ -403,22 +477,30 @@ export const createPayment = createServerFn({ method: 'POST' })
       }
 
       const result: any = { id: paymentId, orderId, status };
-// devolve o token (raw + formatado) para a UI do checkout exibir o banner.
-      const { data: freshOrder } = await admin.from('orders').select('tracking_token').eq('id', orderId).maybeSingle();
-      const trackingToken = (freshOrder as unknown as { tracking_token?: string | null } | null)?.tracking_token;
+      // devolve o token (raw + formatado) para a UI do checkout exibir o banner.
+      const { data: freshOrder } = await admin
+        .from("orders")
+        .select("tracking_token")
+        .eq("id", orderId)
+        .maybeSingle();
+      const trackingToken = (freshOrder as unknown as { tracking_token?: string | null } | null)
+        ?.tracking_token;
       if (trackingToken) {
         result.trackingToken = trackingToken;
         result.trackingTokenFormatted = formatToken(trackingToken);
       }
-      if (data.method === 'pix') {
+      if (data.method === "pix") {
         const tx = json?.point_of_interaction?.transaction_data || {};
         result.pixQrCode = tx.qr_code_base64 || null;
         result.pixCode = tx.qr_code || null;
         result.pixTicketUrl = tx.ticket_url || null;
         result.expiresAt = tx.expiration_date || json?.date_of_expiration || null;
       }
-      if (data.method === 'boleto') {
-        result.boletoUrl = json?.transaction_details?.external_resource_url || json?.point_of_interaction?.transaction_data?.ticket_url || null;
+      if (data.method === "boleto") {
+        result.boletoUrl =
+          json?.transaction_details?.external_resource_url ||
+          json?.point_of_interaction?.transaction_data?.ticket_url ||
+          null;
         result.boletoBarcode = json?.barcode?.content || null;
         result.expiresAt = json?.date_of_expiration || null;
       }
@@ -428,10 +510,13 @@ export const createPayment = createServerFn({ method: 'POST' })
     } catch (e: any) {
       // se o INSERT passou antes do erro (ex.: fetch do MP estourou), apaga o orfao.
       if (orderId) {
-        try { await admin.from('orders').delete().eq('id', orderId).is('payment_id', null); }
-        catch { /* ignore secondary error */ }
+        try {
+          await admin.from("orders").delete().eq("id", orderId).is("payment_id", null);
+        } catch {
+          /* ignore secondary error */
+        }
       }
-      return { success: false, error: e?.message || 'erro' };
+      return { success: false, error: e?.message || "erro" };
     }
   });
 
@@ -500,10 +585,17 @@ export const cotarFrete = createServerFn({ method: "POST" })
     if (!cotacao.ok) return cotacao;
 
     const shippingConfig = await getPublicShippingConfig();
-    const threshold = shippingConfig.success ? shippingConfig.data.freeShippingThreshold : FREE_SHIPPING_THRESHOLD;
-    const freeShippingEnabled = shippingConfig.success ? shippingConfig.data.freeShippingEnabled : false;
+    const threshold = shippingConfig.success
+      ? shippingConfig.data.freeShippingThreshold
+      : FREE_SHIPPING_THRESHOLD;
+    const freeShippingEnabled = shippingConfig.success
+      ? shippingConfig.data.freeShippingEnabled
+      : false;
 
-    const subtotal = produtos.reduce((sum, p, i) => sum + p.insurance_value * data.items[i]!.quantity, 0);
+    const subtotal = produtos.reduce(
+      (sum, p, i) => sum + p.insurance_value * data.items[i]!.quantity,
+      0,
+    );
     const aplicaFreteGratis = freeShippingEnabled && subtotal >= threshold;
 
     const opcoes: CotarFreteOpcao[] = aplicaFreteGratis
@@ -597,14 +689,20 @@ export const listPaymentTransactions = createServerFn({ method: "GET" })
       const offset = data.offset ?? 0;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let query: any = db.from("payment_transactions").select(`
+      let query: any = db
+        .from("payment_transactions")
+        .select(
+          `
         *,
         order:orders(
           order_number,
           customer_name,
           customer_email
         )
-      `).order("created_at", { ascending: false }).range(offset, offset + limit - 1);
+      `,
+        )
+        .order("created_at", { ascending: false })
+        .range(offset, offset + limit - 1);
 
       if (data.status) query = query.eq("status", data.status);
       if (data.orderId) query = query.eq("order_id", data.orderId);
@@ -622,83 +720,89 @@ export const listPaymentTransactions = createServerFn({ method: "GET" })
 
       return { success: true as const, data: transactions };
     } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      if (e?.status === 401 || e?.status === 403)
+        return { success: false as const, error: "Não autorizado" };
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
 
-export const getPaymentStats = createServerFn({ method: "GET" })
-  .handler(async () => {
-    try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabaseAdmin as any;
+export const getPaymentStats = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { requireAdmin } = await import("@/lib/admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await db.from("payment_transactions").select("status, amount, payment_method");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await db
+      .from("payment_transactions")
+      .select("status, amount, payment_method");
 
-      if (error) return { success: false as const, error: error.message };
+    if (error) return { success: false as const, error: error.message };
 
-      const byStatus: Record<string, number> = {};
-      let totalTx = 0;
-      let pixCount = 0;
-      for (const t of data || []) {
-        const s = String((t as any).status);
-        byStatus[s] = (byStatus[s] || 0) + Number((t as any).amount);
-        totalTx++;
-        if ((t as any).payment_method === "pix") pixCount++;
-      }
-
-      const approved = byStatus.approved || 0;
-
-      return {
-        success: true as const,
-        data: {
-          totalApproved: approved,
-          totalPending: byStatus.pending || 0,
-          totalRejected: byStatus.rejected || 0,
-          approvalRate: totalTx > 0 ? Math.round((approved / totalTx) * 100) : 0,
-          pixRate: totalTx > 0 ? Math.round((pixCount / totalTx) * 100) : 0,
-        }
-      };
-    } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
-      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    const byStatus: Record<string, number> = {};
+    let totalTx = 0;
+    let pixCount = 0;
+    for (const t of data || []) {
+      const s = String((t as any).status);
+      byStatus[s] = (byStatus[s] || 0) + Number((t as any).amount);
+      totalTx++;
+      if ((t as any).payment_method === "pix") pixCount++;
     }
-  });
 
-export const getPaymentSettings = createServerFn({ method: "GET" })
-  .handler(async () => {
-    try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabaseAdmin as any;
+    const approved = byStatus.approved || 0;
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data, error } = await db.from("payment_settings").select("*").eq("id", 1).single();
+    return {
+      success: true as const,
+      data: {
+        totalApproved: approved,
+        totalPending: byStatus.pending || 0,
+        totalRejected: byStatus.rejected || 0,
+        approvalRate: totalTx > 0 ? Math.round((approved / totalTx) * 100) : 0,
+        pixRate: totalTx > 0 ? Math.round((pixCount / totalTx) * 100) : 0,
+      },
+    };
+  } catch (e: any) {
+    if (e?.status === 401 || e?.status === 403)
+      return { success: false as const, error: "Não autorizado" };
+    return { success: false as const, error: e?.message || "Erro desconhecido" };
+  }
+});
 
-      if (error) return { success: false as const, error: error.message };
-      return { success: true as const, data: data as unknown as PaymentSettings };
-    } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
-      return { success: false as const, error: e?.message || "Erro desconhecido" };
-    }
-  });
+export const getPaymentSettings = createServerFn({ method: "GET" }).handler(async () => {
+  try {
+    const { requireAdmin } = await import("@/lib/admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const db = supabaseAdmin as any;
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { data, error } = await db.from("payment_settings").select("*").eq("id", 1).single();
+
+    if (error) return { success: false as const, error: error.message };
+    return { success: true as const, data: data as unknown as PaymentSettings };
+  } catch (e: any) {
+    if (e?.status === 401 || e?.status === 403)
+      return { success: false as const, error: "Não autorizado" };
+    return { success: false as const, error: e?.message || "Erro desconhecido" };
+  }
+});
 
 export const savePaymentSettings = createServerFn({ method: "POST" })
-  .validator((d: unknown) => (d as {
-    mpPublicKey?: string;
-    mpAccessToken?: string;
-    mpSandbox?: boolean;
-    minInstallments?: number;
-    maxInstallments?: number;
-    freeInstallments?: number;
-    enabledMethods?: string[];
-  }))
+  .validator(
+    (d: unknown) =>
+      d as {
+        mpPublicKey?: string;
+        mpAccessToken?: string;
+        mpSandbox?: boolean;
+        minInstallments?: number;
+        maxInstallments?: number;
+        freeInstallments?: number;
+        enabledMethods?: string[];
+      },
+  )
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
@@ -717,12 +821,18 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
       if (data.enabledMethods !== undefined) patch.enabled_methods = data.enabledMethods;
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: updated, error } = await db.from("payment_settings").update(patch).eq("id", 1).select().single();
+      const { data: updated, error } = await db
+        .from("payment_settings")
+        .update(patch)
+        .eq("id", 1)
+        .select()
+        .single();
 
       if (error) return { success: false as const, error: error.message };
       return { success: true as const, data: updated as unknown as PaymentSettings };
     } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      if (e?.status === 401 || e?.status === 403)
+        return { success: false as const, error: "Não autorizado" };
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });

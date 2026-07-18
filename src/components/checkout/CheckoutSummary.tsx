@@ -4,23 +4,21 @@ import { toast } from "sonner";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import {
-  calculateShipping,
   calculateDiscount,
   calculateOrderTotal,
   getCoupon,
   PIX_DISCOUNT_PERCENT,
 } from "@/lib/commerce-config";
 
-const formatBRL = (v: number) =>
-  v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
 export function CheckoutSummary() {
   const { items, getTotalPrice } = useCartStore();
-  const { shippingMethod, paymentMethod, coupon, setCoupon } = useCheckoutStore();
+  const { shippingPrice, quoteStatus, paymentMethod, coupon, setCoupon } = useCheckoutStore();
   const [code, setCode] = useState("");
 
   const subtotal = getTotalPrice();
-  const shipping = calculateShipping(subtotal, shippingMethod) ?? 0;
+  const shipping = shippingPrice;
   const discountCoupon = coupon ? (subtotal * coupon.discountPercent) / 100 : 0;
   const pixDiscount = paymentMethod === "pix" ? (subtotal * PIX_DISCOUNT_PERCENT) / 100 : 0;
   const discount = calculateDiscount(subtotal, {
@@ -62,9 +60,7 @@ export function CheckoutSummary() {
                 {item.title}
               </p>
               {item.variationName && (
-                <p className="text-[11px] text-[#75827E] mt-0.5">
-                  {item.variationName}
-                </p>
+                <p className="text-[11px] text-[#75827E] mt-0.5">{item.variationName}</p>
               )}
               <div className="flex justify-between items-center mt-1 text-xs text-[#51635F]">
                 <span>Qtd: {item.quantity}</span>
@@ -111,7 +107,13 @@ export function CheckoutSummary() {
         <Row label="Subtotal" value={formatBRL(subtotal)} />
         <Row
           label="Frete"
-          value={shippingMethod ? formatBRL(shipping) : "A calcular"}
+          value={
+            quoteStatus === "success"
+              ? shipping === 0
+                ? "Grátis"
+                : formatBRL(shipping)
+              : "A calcular"
+          }
         />
         {discountCoupon > 0 && (
           <Row label="Desconto cupom" value={`- ${formatBRL(discountCoupon)}`} positive />

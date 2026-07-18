@@ -1,4 +1,51 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+const COTAR_FRETE_SERVER_FN_ID =
+  "eyJmaWxlIjoiL3NyYy9saWIvcGF5bWVudHMuZnVuY3Rpb25zLnRzP3Rzcy1zZXJ2ZXJmbi1zcGxpdCIsImV4cG9ydCI6ImNvdGFyRnJldGVfY3JlYXRlU2VydmVyRm5faGFuZGxlciJ9";
+
+const COTACAO_E2E = {
+  ok: true as const,
+  cotacaoId: "11111111-1111-4111-8111-111111111111",
+  opcoes: [
+    {
+      servicoId: 1,
+      transportadora: "Correios",
+      servico: "PAC",
+      precoCentavos: 2500,
+      prazoDias: 7,
+      precoExibidoCentavos: 0,
+    },
+    {
+      servicoId: 2,
+      transportadora: "Correios",
+      servico: "SEDEX",
+      precoCentavos: 4500,
+      prazoDias: 3,
+      precoExibidoCentavos: 2000,
+    },
+  ],
+};
+
+async function mockCheckoutQuote(page: Page) {
+  await page.route(`**/_serverFn/${COTAR_FRETE_SERVER_FN_ID}`, async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ result: COTACAO_E2E, error: null, context: {} }),
+    });
+  });
+  await page.route("https://viacep.com.br/ws/**", async (route) => {
+    await route.fulfill({
+      contentType: "application/json",
+      body: JSON.stringify({
+        logradouro: "Rua Teste",
+        bairro: "Centro",
+        localidade: "São Paulo",
+        uf: "SP",
+      }),
+    });
+  });
+}
 
 // E2E do funil de venda contra o dev server local (playwright.config.ts
 // aponta baseURL para http://localhost:8080). Não testa contra produção
@@ -70,33 +117,46 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     await expect(page.getByRole("heading", { name: "Finalizar Compra" })).toBeVisible();
   });
 
-  test("4. Checkout cobra frete em 198,99 e exibe frete grátis em 199,00", async ({ page }) => {
+  test("4. CEP completo dispara cotação mockada e pré-seleciona opção grátis no resumo", async ({ page }) => {
+    await mockCheckoutQuote(page);
     await page.addInitScript(() => {
       window.localStorage.setItem(
         "fragranciaria-cart",
         JSON.stringify({
           state: {
-            items: [{ id: "e2e-frete", title: "Produto Frete", price: 198.99, quantity: 1 }],
+            items: [
+              {
+                id: "e2e-frete::var-1",
+                title: "Produto Frete",
+                vendor: "Teste",
+                price: 199,
+                quantity: 1,
+                image: "/images/logo-dark.png",
+                variationName: "100ml",
+              },
+            ],
           },
           version: 0,
         }),
       );
     });
-    await page.goto("/checkout");
-    await page.locator('input[placeholder="00000-000"]').fill("01310100");
-    await page.waitForTimeout(300);
-    await expect(page.getByText("R$ 18,90")).toBeVisible();
 
-    await page.evaluate(() => {
-      const raw = window.localStorage.getItem("fragranciaria-cart");
-      const parsed = JSON.parse(raw!);
-      parsed.state.items[0].price = 199;
-      window.localStorage.setItem("fragranciaria-cart", JSON.stringify(parsed));
-    });
-    await page.reload();
-    await page.locator('input[placeholder="00000-000"]').fill("01310100");
-    await page.waitForTimeout(300);
-    await expect(page.getByText("Grátis").first()).toBeVisible();
+    await page.goto("/checkout");
+    await page.waitForLoadState("networkidle");
+
+    const cep = page.locator('input[placeholder="00000-000"]');
+    await cep.click();
+    await cep.pressSequentially("01310100");
+    await expect(cep).toHaveValue("01310-100");
+
+    await expect(page.getByText("Parabéns! Você ganhou frete grátis!")).toBeVisible();
+    await expect(page.getByText("Correios • PAC")).toBeVisible();
+    await expect(page.getByText("Correios • SEDEX")).toBeVisible();
+
+    const pacRadio = page.locator('input[name="shipping"]').first();
+    await expect(pacRadio).toBeChecked();
+    await expect(page.locator("aside").getByText("Frete").locator("..").getByText("Grátis")).toBeVisible();
+    await expect(page.locator("aside").getByText("R$ 199,00").last()).toBeVisible();
   });
 
   test("5. Drawer do carrinho delega frete e descontos ao checkout", async ({ page }) => {
@@ -120,34 +180,53 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     await expect(page.getByText("Dados Pessoais")).toBeVisible();
   });
 
-  test("6. ShippingForm com CPF inválido não avança para pagamento", async ({ page }) => {
+  test("6. ShippingForm com CPF inválido não avança para pagamento após cotação válida", async ({ page }) => {
+    await mockCheckoutQuote(page);
     await page.addInitScript(() => {
       window.localStorage.setItem(
         "fragranciaria-cart",
         JSON.stringify({
-          state: { items: [{ id: "e2e-produto", title: "E2E", price: 20, quantity: 1 }] },
+          state: {
+            items: [
+              {
+                id: "e2e-produto::var-1",
+                title: "E2E",
+                vendor: "Teste",
+                price: 120,
+                quantity: 1,
+                image: "/images/logo-dark.png",
+                variationName: "50ml",
+              },
+            ],
+          },
           version: 0,
         }),
       );
     });
     await page.goto("/checkout");
+    await page.waitForLoadState("networkidle");
     await expect(page.getByText("Dados Pessoais")).toBeVisible();
 
     await page.locator('input[placeholder="seu@email.com"]').fill("teste@exemplo.com");
     await page.locator('input[placeholder="João"]').fill("E2E");
     await page.locator('input[placeholder="Silva"]').fill("Teste");
     await page.locator('input[placeholder="(00) 00000-0000"]').fill("(11) 99999-9999");
-    await page.locator('input[placeholder="000.000.000-00"]').fill("111.111.111-11"); // CPF inválido (todos dígitos iguais)
-    await page.locator('input[placeholder="00000-000"]').fill("01310100");
-    await page.locator('input[placeholder="Rua, Avenida, etc."]').fill("Rua Teste");
-    await page.locator('input[placeholder="123"]').fill("100");
-    await page.locator('input[placeholder="Centro"]').fill("Centro");
-    await page.locator('input[placeholder="São Paulo"]').fill("São Paulo");
-    await page.locator("select").selectOption("SP");
+    await page.locator('input[placeholder="000.000.000-00"]').fill("111.111.111-11");
+
+    const cep = page.locator('input[placeholder="00000-000"]');
+    await cep.click();
+    await cep.pressSequentially("01310100");
+    await expect(cep).toHaveValue("01310-100");
+    await expect(page.getByText("Correios • PAC")).toBeVisible();
 
     const submit = page.getByRole("button", { name: "Continuar para Pagamento" });
+    await expect(submit).toBeEnabled();
     await submit.click();
-    await page.waitForTimeout(500);
+    await expect(submit).toBeEnabled();
+
+    await expect(page.getByText("CPF inválido")).toBeVisible();
     await expect(page.getByText("Dados Pessoais")).toBeVisible();
+    await expect(page).toHaveURL(/\/checkout$/);
+    await expect(page.getByText("Forma de Pagamento")).toHaveCount(0);
   });
 });

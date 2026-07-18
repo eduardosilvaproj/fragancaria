@@ -1,8 +1,19 @@
-import { create } from 'zustand';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import type { PaymentMethodId, ShippingMethodId } from '@/config/mercadopago';
+import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
+import type { PaymentMethodId, ShippingMethodId } from "@/config/mercadopago";
 
-export type CheckoutStep = 'cart' | 'shipping' | 'payment' | 'confirmation';
+export type CheckoutStep = "cart" | "shipping" | "payment" | "confirmation";
+
+export type ShippingQuoteStatus = "idle" | "loading" | "success" | "error";
+
+export interface ShippingQuoteOption {
+  servicoId: number;
+  transportadora: string;
+  servico: string;
+  precoCentavos: number;
+  prazoDias: number;
+  precoExibidoCentavos: number;
+}
 
 export interface Customer {
   email: string;
@@ -24,7 +35,7 @@ export interface ShippingAddress {
 
 export interface PaymentData {
   orderId?: string;
-  status?: 'pending' | 'approved' | 'rejected' | 'in_process';
+  status?: "pending" | "approved" | "rejected" | "in_process";
   pixCode?: string;
   pixQrCode?: string;
   boletoCode?: string;
@@ -47,6 +58,12 @@ interface CheckoutState {
   shippingAddress: ShippingAddress | null;
   shippingMethod: ShippingMethodId | null;
   shippingPrice: number;
+  quoteStatus: ShippingQuoteStatus;
+  quoteError: string | null;
+  quoteCep: string | null;
+  cotacaoId: string | null;
+  servicoId: number | null;
+  opcoes: ShippingQuoteOption[];
   paymentMethod: PaymentMethodId | null;
   paymentData: PaymentData | null;
   coupon: CheckoutCoupon | null;
@@ -55,6 +72,15 @@ interface CheckoutState {
   setShippingAddress: (a: ShippingAddress) => void;
   setShippingMethod: (m: ShippingMethodId) => void;
   setShippingPrice: (p: number) => void;
+  setShippingQuote: (q: {
+    status: ShippingQuoteStatus;
+    cotacaoId?: string;
+    opcoes?: ShippingQuoteOption[];
+    cep?: string;
+    error?: string | null;
+  }) => void;
+  setServicoId: (id: number) => void;
+  clearShippingQuote: () => void;
   setPaymentMethod: (m: PaymentMethodId) => void;
   setPaymentData: (d: PaymentData) => void;
   setCoupon: (c: CheckoutCoupon | null) => void;
@@ -64,11 +90,17 @@ interface CheckoutState {
 export const useCheckoutStore = create<CheckoutState>()(
   persist(
     (set) => ({
-      step: 'shipping',
+      step: "shipping",
       customer: null,
       shippingAddress: null,
       shippingMethod: null,
       shippingPrice: 0,
+      quoteStatus: "idle",
+      quoteError: null,
+      quoteCep: null,
+      cotacaoId: null,
+      servicoId: null,
+      opcoes: [],
       paymentMethod: null,
       paymentData: null,
       coupon: null,
@@ -77,27 +109,58 @@ export const useCheckoutStore = create<CheckoutState>()(
       setShippingAddress: (shippingAddress) => set({ shippingAddress }),
       setShippingMethod: (shippingMethod) => set({ shippingMethod }),
       setShippingPrice: (shippingPrice) => set({ shippingPrice }),
+      setShippingQuote: ({ status, cotacaoId, opcoes, cep, error }) =>
+        set({
+          quoteStatus: status,
+          quoteError: error ?? null,
+          quoteCep: cep ?? null,
+          cotacaoId: cotacaoId ?? null,
+          opcoes: opcoes ?? [],
+        }),
+      setServicoId: (servicoId) => set({ servicoId }),
+      clearShippingQuote: () =>
+        set({
+          quoteStatus: "idle",
+          quoteError: null,
+          quoteCep: null,
+          cotacaoId: null,
+          servicoId: null,
+          opcoes: [],
+          shippingPrice: 0,
+        }),
       setPaymentMethod: (paymentMethod) => set({ paymentMethod }),
       setPaymentData: (paymentData) => set({ paymentData }),
       setCoupon: (coupon) => set({ coupon }),
       clearCheckout: () =>
         set({
-          step: 'shipping',
+          step: "shipping",
           paymentMethod: null,
           paymentData: null,
           shippingPrice: 0,
+          quoteStatus: "idle",
+          quoteError: null,
+          quoteCep: null,
+          cotacaoId: null,
+          servicoId: null,
+          opcoes: [],
         }),
     }),
     {
-      name: 'fragranciaria-checkout',
+      name: "fragranciaria-checkout",
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         customer: state.customer,
         shippingAddress: state.shippingAddress,
         shippingMethod: state.shippingMethod,
         shippingPrice: state.shippingPrice,
+        quoteStatus: state.quoteStatus,
+        quoteError: state.quoteError,
+        quoteCep: state.quoteCep,
+        cotacaoId: state.cotacaoId,
+        servicoId: state.servicoId,
+        opcoes: state.opcoes,
         coupon: state.coupon,
       }),
-    }
-  )
+    },
+  ),
 );
