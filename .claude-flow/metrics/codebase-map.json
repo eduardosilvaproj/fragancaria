@@ -1,0 +1,11 @@
+{
+  "timestamp": "2026-07-18T13:33:10.343Z",
+  "projectRoot": "C:\\dev\\fragancaria",
+  "structure": {
+    "hasPackageJson": true,
+    "hasTsConfig": true,
+    "hasClaudeConfig": true,
+    "hasClaudeFlow": true
+  },
+  "scannedAt": 1784381590344
+}

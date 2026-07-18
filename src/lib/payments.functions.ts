@@ -6,7 +6,9 @@ import {
   calculateDiscount,
   calculateShipping,
   calculateOrderTotal,
+  FREE_SHIPPING_THRESHOLD,
 } from "@/lib/commerce-config";
+import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
 const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
@@ -175,8 +177,17 @@ export const createPayment = createServerFn({ method: 'POST' })
       }
       // Frete/desconto/total autoritativos vêm das mesmas funções puras que o
       // carrinho e o checkout usam (src/lib/commerce-config.ts) — uma única
-      // fonte de verdade, não uma tabela duplicada aqui.
-      const serverShipping = calculateShipping(serverSubtotal, data.shippingMethod);
+      // fonte de verdade, não uma tabela duplicada aqui. O limiar de frete
+      // grátis, porém, é lido do banco (shipping_settings), que é a fonte
+      // de verdade correta aqui; cai no hardcoded só se a leitura falhar.
+      // O client ainda usa FREE_SHIPPING_THRESHOLD hardcoded (ver nota em
+      // CLAUDE.md) — mudar o valor no banco sem mudar o código deixa
+      // client e server temporariamente divergentes.
+      const shippingConfig = await getPublicShippingConfig();
+      const freeShippingThreshold = shippingConfig.success
+        ? shippingConfig.data.freeShippingThreshold
+        : FREE_SHIPPING_THRESHOLD;
+      const serverShipping = calculateShipping(serverSubtotal, data.shippingMethod, freeShippingThreshold);
       if (serverShipping === null) {
         return {
           success: false,

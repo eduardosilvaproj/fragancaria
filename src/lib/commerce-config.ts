@@ -25,8 +25,11 @@ export const COUPONS: Record<string, Coupon> = {
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
-export function qualifiesForFreeShipping(subtotal: number): boolean {
-  return subtotal >= FREE_SHIPPING_THRESHOLD;
+export function qualifiesForFreeShipping(
+  subtotal: number,
+  threshold: number = FREE_SHIPPING_THRESHOLD,
+): boolean {
+  return subtotal >= threshold;
 }
 
 export function getShippingPrice(methodId: string | null | undefined): number | null {
@@ -35,14 +38,17 @@ export function getShippingPrice(methodId: string | null | undefined): number | 
 }
 
 // Retorna o frete cobrado (0 quando há frete grátis) ou null se o método
-// for inválido/ausente — quem chama decide o fallback de exibição.
+// for inválido/ausente — quem chama decide o fallback de exibição. O
+// threshold é parametrizado para permitir que o server passe o valor lido
+// de shipping_settings; quem não passar nada usa o hardcoded (client).
 export function calculateShipping(
   subtotal: number,
   methodId: string | null | undefined,
+  freeShippingThreshold: number = FREE_SHIPPING_THRESHOLD,
 ): number | null {
   const shippingPrice = getShippingPrice(methodId);
   if (shippingPrice === null) return null;
-  return qualifiesForFreeShipping(subtotal) ? 0 : shippingPrice;
+  return qualifiesForFreeShipping(subtotal, freeShippingThreshold) ? 0 : shippingPrice;
 }
 
 export function getCoupon(code: string | null | undefined): Coupon | null {

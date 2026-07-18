@@ -191,15 +191,27 @@ export const submitReview = createServerFn({ method: "POST" })
         }
 
         // Verifica compra para marcar is_verified_purchase.
+        // Duas queries encadeadas em vez de .or() com template literal:
+        // evita interpolar user.email sem sanitização (ver auditoria fase 4).
         let isVerified = false;
         if (data.orderId) {
-          const { data: order } = await db
+          const { data: orderByUser } = await db
             .from("orders")
             .select("id")
             .eq("id", data.orderId)
-            .or(`auth_user_id.eq.${user.id},customer_email.eq.${user.email}`)
+            .eq("auth_user_id", user.id)
             .maybeSingle();
-          isVerified = !!order;
+          if (orderByUser) {
+            isVerified = true;
+          } else if (user.email) {
+            const { data: orderByEmail } = await db
+              .from("orders")
+              .select("id")
+              .eq("id", data.orderId)
+              .eq("customer_email", user.email)
+              .maybeSingle();
+            isVerified = !!orderByEmail;
+          }
         }
 
         const { error } = await db.from("product_reviews").insert({
