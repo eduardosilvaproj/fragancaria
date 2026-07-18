@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/start-server-core/request-response";
 import { z } from "zod";
-import { randomBytes } from "node:crypto";
+import { randomBytes, createHash } from "node:crypto";
 import {
   calculateDiscount,
   calculateShipping,
@@ -9,6 +9,7 @@ import {
   FREE_SHIPPING_THRESHOLD,
 } from "@/lib/commerce-config";
 import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
+import { cotar, type MelhorEnvioProduto, type MelhorEnvioOpcao } from "@/lib/melhor-envio-client.server";
 const MP_API = "https://api.mercadopago.com/v1/payments";
 
 // A3: token alphabet (31 glyphs: A-Z minus I/L/O plus 2-9) matches the
@@ -408,6 +409,112 @@ export const createPayment = createServerFn({ method: 'POST' })
       }
       return { success: false, error: e?.message || 'erro' };
     }
+  });
+
+// =============================================================================
+// COTACAO DE FRETE (checkout): cota via Melhor Envio a partir de ids+quantity,
+// nunca de peso/dimensao/preco vindos do client.
+// =============================================================================
+
+const cotarFreteInputSchema = z.object({
+  cepDestino: z.string(),
+  items: z.array(z.object({ id: z.string(), quantity: z.number().int().positive() })).min(1),
+});
+
+export type CotarFreteOpcao = MelhorEnvioOpcao & { precoExibidoCentavos: number };
+
+export type CotarFreteResult =
+  | { ok: true; cotacaoId: string; opcoes: CotarFreteOpcao[] }
+  | { ok: false; erro: "cep_invalido" | "sem_cobertura" | "api_indisponivel" };
+
+function aplicarFreteGratis(opcoes: MelhorEnvioOpcao[]): CotarFreteOpcao[] {
+  const maisBarato = Math.min(...opcoes.map((o) => o.precoCentavos));
+  return opcoes.map((o) => ({
+    ...o,
+    precoExibidoCentavos: o.precoCentavos === maisBarato ? 0 : o.precoCentavos - maisBarato,
+  }));
+}
+
+export const cotarFrete = createServerFn({ method: "POST" })
+  .validator((d: unknown) => cotarFreteInputSchema.parse(d))
+  .handler(async ({ data }): Promise<CotarFreteResult> => {
+    const cepDestino = data.cepDestino.replace(/\D/g, "");
+    if (cepDestino.length !== 8) {
+      return { ok: false, erro: "cep_invalido" };
+    }
+
+    const { supabaseAdmin: admin } = await import("@/integrations/supabase/client.server");
+
+    const productIds = [...new Set(data.items.map((i) => i.id.split("::")[0]))];
+    const { data: prodRows, error: prodErr } = await admin
+      .from("products")
+      .select("id, price, weight_grams, height_cm, width_cm, length_cm, is_active")
+      .in("id", productIds);
+    if (prodErr) return { ok: false, erro: "api_indisponivel" };
+
+    const productById = new Map((prodRows ?? []).map((p: any) => [p.id, p]));
+
+    const produtos: MelhorEnvioProduto[] = [];
+    for (const item of data.items) {
+      const pid = item.id.split("::")[0];
+      const p = productById.get(pid);
+      if (!p || !p.is_active) {
+        return { ok: false, erro: "sem_cobertura" };
+      }
+      produtos.push({
+        id: pid,
+        weight: Number(p.weight_grams ?? 0) / 1000,
+        width: Number(p.width_cm ?? 0),
+        height: Number(p.height_cm ?? 0),
+        length: Number(p.length_cm ?? 0),
+        insurance_value: Number(p.price),
+        quantity: item.quantity,
+      });
+    }
+
+    const cotacao = await cotar(cepDestino, produtos);
+    if (!cotacao.ok) return cotacao;
+
+    const shippingConfig = await getPublicShippingConfig();
+    const threshold = shippingConfig.success ? shippingConfig.data.freeShippingThreshold : FREE_SHIPPING_THRESHOLD;
+    const freeShippingEnabled = shippingConfig.success ? shippingConfig.data.freeShippingEnabled : false;
+
+    const subtotal = produtos.reduce((sum, p, i) => sum + p.insurance_value * data.items[i]!.quantity, 0);
+    const aplicaFreteGratis = freeShippingEnabled && subtotal >= threshold;
+
+    const opcoes: CotarFreteOpcao[] = aplicaFreteGratis
+      ? aplicarFreteGratis(cotacao.opcoes)
+      : cotacao.opcoes.map((o) => ({ ...o, precoExibidoCentavos: o.precoCentavos }));
+
+    const fromCep = (process.env.MELHOR_ENVIO_FROM_CEP ?? "").replace(/\D/g, "");
+    const itemsOrdenados = [...data.items].sort((a, b) => a.id.localeCompare(b.id));
+    const cacheKey = createHash("sha256")
+      .update(JSON.stringify({ fromCep, cepDestino, items: itemsOrdenados }))
+      .digest("hex");
+
+    const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000).toISOString();
+
+    // shipping_rate_quotes ainda nao existe em database.types.ts: migration
+    // 20260722_shipping_rate_quotes.sql commitada mas nao aplicada em prod.
+    // Cast temporario; remover quando os tipos forem regenerados pos-aplicacao.
+    const { data: inserted, error: insertErr } = await (admin as any)
+      .from("shipping_rate_quotes")
+      .insert({
+        cache_key: cacheKey,
+        from_cep: fromCep,
+        to_cep: cepDestino,
+        items: data.items,
+        options: opcoes,
+        source: "melhor_envio",
+        expires_at: expiresAt,
+      })
+      .select("id")
+      .single();
+    if (insertErr || !inserted) {
+      return { ok: false, erro: "api_indisponivel" };
+    }
+
+    return { ok: true, cotacaoId: inserted.id, opcoes };
   });
 
 // =============================================================================
