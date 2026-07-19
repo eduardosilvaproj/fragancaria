@@ -229,6 +229,12 @@ export const createPayment = createServerFn({ method: "POST" })
         : FREE_SHIPPING_THRESHOLD;
       let serverShipping: number | null;
       let resolvedShippingMethod: string | null = data.shippingMethod ?? null;
+      let resolvedShippingServiceId: number | null = null;
+      let resolvedShippingServiceName: string | null = null;
+      let resolvedShippingQuotedCents: number | null = null;
+      let resolvedShippingChargedCents: number | null = null;
+      let resolvedShippingSource: string | null = null;
+      let resolvedShippingRateQuoteId: string | null = null;
       if (data.cotacaoId && data.servicoId !== undefined) {
         const { data: quote, error: quoteErr } = await admin
           .from("shipping_rate_quotes")
@@ -254,11 +260,21 @@ export const createPayment = createServerFn({ method: "POST" })
           servicoId: number;
           transportadora: string;
           servico: string;
+          precoCentavos: number;
+          precoExibidoCentavos: number;
         }>;
         const opcaoSelecionada = opcoes.find((opcao) => opcao.servicoId === data.servicoId);
         resolvedShippingMethod = opcaoSelecionada
           ? `${opcaoSelecionada.transportadora} • ${opcaoSelecionada.servico}`
           : resolvedShippingMethod;
+        if (opcaoSelecionada) {
+          resolvedShippingServiceId = opcaoSelecionada.servicoId;
+          resolvedShippingServiceName = resolvedShippingMethod;
+          resolvedShippingQuotedCents = opcaoSelecionada.precoCentavos;
+          resolvedShippingChargedCents = opcaoSelecionada.precoExibidoCentavos;
+          resolvedShippingSource = "melhor_envio";
+          resolvedShippingRateQuoteId = data.cotacaoId;
+        }
         serverShipping = resolved.precoReais;
       } else {
         serverShipping = calculateShipping(
@@ -421,12 +437,20 @@ export const createPayment = createServerFn({ method: "POST" })
           .update({
             payment_id: String(paymentId),
             payment_status: status,
-            // @ts-expect-error payment_method_id added in prior migration; generated types stale. See agente-fase1.md.
             payment_method_id: json?.payment_method_id || null,
-            // @ts-expect-error transaction_amount added in prior migration; generated types stale. See agente-fase1.md.
             transaction_amount: json?.transaction_amount ?? null,
             payer_email: data.payer.email,
             raw: json,
+            ...(resolvedShippingRateQuoteId
+              ? {
+                  shipping_rate_quote_id: resolvedShippingRateQuoteId,
+                  shipping_service_id: resolvedShippingServiceId,
+                  shipping_service_name: resolvedShippingServiceName,
+                  shipping_quoted_cents: resolvedShippingQuotedCents,
+                  shipping_charged_cents: resolvedShippingChargedCents,
+                  shipping_source: resolvedShippingSource,
+                }
+              : {}),
           })
           .eq("id", orderId);
       }

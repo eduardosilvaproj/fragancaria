@@ -840,12 +840,20 @@ export type Database = {
           payer_email: string | null
           payment_id: string | null
           payment_method: string | null
+          payment_method_id: string | null
           payment_status: string | null
           raw: Json | null
+          transaction_amount: number | null
           refund_status: string | null
           shipping_address: Json | null
+          shipping_charged_cents: number | null
           shipping_method: string | null
           shipping_price: number | null
+          shipping_quoted_cents: number | null
+          shipping_rate_quote_id: string | null
+          shipping_service_id: number | null
+          shipping_service_name: string | null
+          shipping_source: string | null
           status: string | null
           status_history: Json | null
           subtotal: number | null
@@ -870,12 +878,20 @@ export type Database = {
           payer_email?: string | null
           payment_id?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
           payment_status?: string | null
           raw?: Json | null
+          transaction_amount?: number | null
           refund_status?: string | null
           shipping_address?: Json | null
+          shipping_charged_cents?: number | null
           shipping_method?: string | null
           shipping_price?: number | null
+          shipping_quoted_cents?: number | null
+          shipping_rate_quote_id?: string | null
+          shipping_service_id?: number | null
+          shipping_service_name?: string | null
+          shipping_source?: string | null
           status?: string | null
           status_history?: Json | null
           subtotal?: number | null
@@ -900,12 +916,20 @@ export type Database = {
           payer_email?: string | null
           payment_id?: string | null
           payment_method?: string | null
+          payment_method_id?: string | null
           payment_status?: string | null
           raw?: Json | null
+          transaction_amount?: number | null
           refund_status?: string | null
           shipping_address?: Json | null
+          shipping_charged_cents?: number | null
           shipping_method?: string | null
           shipping_price?: number | null
+          shipping_quoted_cents?: number | null
+          shipping_rate_quote_id?: string | null
+          shipping_service_id?: number | null
+          shipping_service_name?: string | null
+          shipping_source?: string | null
           status?: string | null
           status_history?: Json | null
           subtotal?: number | null
