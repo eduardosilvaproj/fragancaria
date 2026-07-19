@@ -163,7 +163,7 @@ test("comprarEtiqueta retorna shipmentIdExternal, labelUrl e trackingCode no flu
         status: 200,
       });
     }
-    if (url.endsWith("/api/v2/me/cart/ship-123")) {
+    if (url.endsWith("/api/v2/me/orders/ship-123")) {
       return new Response(JSON.stringify({ tracking: "ME123BR" }), { status: 200 });
     }
 
@@ -183,7 +183,7 @@ test("comprarEtiqueta retorna shipmentIdExternal, labelUrl e trackingCode no flu
     "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout",
     "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/generate",
     "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/preview",
-    "https://sandbox.melhorenvio.com.br/api/v2/me/cart/ship-123",
+    "https://sandbox.melhorenvio.com.br/api/v2/me/orders/ship-123",
   ]);
 });
 
@@ -265,7 +265,7 @@ test("comprarEtiqueta aceita tracking null como sucesso válido", async () => {
         status: 200,
       });
     }
-    if (url.endsWith("/api/v2/me/cart/ship-123")) {
+    if (url.endsWith("/api/v2/me/orders/ship-123")) {
       return new Response(JSON.stringify({ tracking: null }), { status: 200 });
     }
 
@@ -280,4 +280,48 @@ test("comprarEtiqueta aceita tracking null como sucesso válido", async () => {
     labelUrl: "https://sandbox.melhorenvio.com.br/label/ship-123",
     trackingCode: null,
   });
+});
+
+test("comprarEtiqueta mantém sucesso se busca de tracking falhar", async () => {
+  const chamadas: string[] = [];
+  globalThis.fetch = (async (input) => {
+    const url = String(input);
+    chamadas.push(url);
+
+    if (url.endsWith("/api/v2/me/cart")) {
+      return new Response(JSON.stringify({ id: "ship-123" }), { status: 200 });
+    }
+    if (url.endsWith("/api/v2/me/shipment/checkout")) {
+      return new Response(JSON.stringify({ purchase: { status: "paid" } }), { status: 200 });
+    }
+    if (url.endsWith("/api/v2/me/shipment/generate")) {
+      return new Response(JSON.stringify({ "ship-123": { status: true } }), { status: 200 });
+    }
+    if (url.endsWith("/api/v2/me/shipment/preview")) {
+      return new Response(JSON.stringify({ url: "https://sandbox.melhorenvio.com.br/label/ship-123" }), {
+        status: 200,
+      });
+    }
+    if (url.endsWith("/api/v2/me/orders/ship-123")) {
+      return new Response(JSON.stringify({ error: "Not Found" }), { status: 404 });
+    }
+
+    throw new Error(`URL inesperada: ${url}`);
+  }) as typeof fetch;
+
+  const resultado = await comprarEtiqueta(COMPRA_INPUT);
+
+  assert.deepEqual(resultado, {
+    ok: true,
+    shipmentIdExternal: "ship-123",
+    labelUrl: "https://sandbox.melhorenvio.com.br/label/ship-123",
+    trackingCode: null,
+  });
+  assert.deepEqual(chamadas, [
+    "https://sandbox.melhorenvio.com.br/api/v2/me/cart",
+    "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/checkout",
+    "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/generate",
+    "https://sandbox.melhorenvio.com.br/api/v2/me/shipment/preview",
+    "https://sandbox.melhorenvio.com.br/api/v2/me/orders/ship-123",
+  ]);
 });

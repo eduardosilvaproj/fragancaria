@@ -204,7 +204,7 @@ type MelhorEnvioPreviewResponse = {
   url?: string | null;
 };
 
-type MelhorEnvioCartItemResponse = {
+type MelhorEnvioOrderResponse = {
   tracking?: string | null;
 };
 
@@ -333,19 +333,25 @@ export async function comprarEtiqueta(
       return { ok: false, erro: "Melhor Envio sandbox nao retornou URL da etiqueta." };
     }
 
-    const cartItem = await melhorEnvioSandboxRequest<MelhorEnvioCartItemResponse>(
-      `/api/v2/me/cart/${shipmentIdExternal}`,
-      { method: "GET" },
-    );
+    let trackingCode: string | null = null;
+
+    try {
+      const order = await melhorEnvioSandboxRequest<MelhorEnvioOrderResponse>(
+        `/api/v2/me/orders/${shipmentIdExternal}`,
+        { method: "GET" },
+      );
+
+      trackingCode =
+        typeof order.tracking === "string" && order.tracking.trim() ? order.tracking : null;
+    } catch {
+      trackingCode = null;
+    }
 
     return {
       ok: true,
       shipmentIdExternal,
       labelUrl,
-      trackingCode:
-        typeof cartItem.tracking === "string" && cartItem.tracking.trim()
-          ? cartItem.tracking
-          : null,
+      trackingCode,
     };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Erro desconhecido no Melhor Envio sandbox." };
