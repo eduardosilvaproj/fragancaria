@@ -116,9 +116,13 @@ function isValidVolume(volume: MelhorEnvioVolume): boolean {
 
 function buildContatoFromSender(sender: SenderInfo): MelhorEnvioContato | null {
   const address = sender.address;
+  const senderDigits = String(sender.document ?? "").replace(/\D/g, "");
+  // Melhor Envio separa PF de PJ: CPF (11 díg.) vai em `document`, CNPJ (14
+  // díg.) em `company_document` — mandar CNPJ em `document` retorna 422.
+  const isCnpj = senderDigits.length === 14;
   if (
     !sender.name ||
-    !sender.document ||
+    (senderDigits.length !== 11 && senderDigits.length !== 14) ||
     !sender.phone ||
     !sender.email ||
     !address?.street ||
@@ -135,7 +139,8 @@ function buildContatoFromSender(sender: SenderInfo): MelhorEnvioContato | null {
     name: sender.name,
     phone: sender.phone,
     email: sender.email,
-    document: sender.document,
+    document: isCnpj ? undefined : senderDigits,
+    company_document: isCnpj ? senderDigits : undefined,
     address: address.street,
     number: address.number,
     complement: address.complement || undefined,

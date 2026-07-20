@@ -30,7 +30,7 @@ export type MelhorEnvioContato = {
   name: string;
   phone: string;
   email: string;
-  document: string;
+  document?: string;
   company_document?: string;
   state_register?: string;
   address: string;
