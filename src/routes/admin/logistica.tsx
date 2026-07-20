@@ -29,6 +29,7 @@ import {
   listShipments,
   getShipmentStats,
   createShipment,
+  generateOrderLabel,
   refreshTracking,
   updateShipmentStatus,
   getShipmentLabel,
@@ -200,6 +201,29 @@ function AdminLogistica() {
       } else {
         toast.error(result?.error || "Erro ao gerar declaração");
       }
+    },
+  });
+
+  // Comprar frete REAL via Melhor Envio (gasta saldo). Diferente do
+  // createShipment/getShipmentLabel, que só gera etiqueta local sem comprar.
+  const comprarFreteFn = useServerFn(generateOrderLabel);
+  const comprarFreteMutation = useMutation({
+    mutationFn: async (orderId: string) => comprarFreteFn({ data: { orderId } }),
+    onSuccess: (result) => {
+      if (result?.success) {
+        if (result.data?.tracking_code) {
+          toast.success(`Frete comprado! Código: ${result.data.tracking_code}`);
+        } else {
+          toast.success("Frete comprado! Etiqueta gerada (rastreio pendente).");
+        }
+        queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+        queryClient.invalidateQueries({ queryKey: ["admin-shipment-stats"] });
+      } else {
+        toast.error(result?.error || "Erro ao comprar frete");
+      }
+    },
+    onError: () => {
+      toast.error("Erro ao comprar frete");
     },
   });
 
@@ -726,6 +750,28 @@ function AdminLogistica() {
                     >
                       <Package className="h-3 w-3" />
                       Visualizar Itens
+                    </button>
+                  )}
+
+                  {/* Comprar Frete: compra REAL via Melhor Envio (gasta saldo) */}
+                  {!shipment.shipment_id && (shipment.status === "paid" || shipment.status === "processing") && (
+                    <button
+                      onClick={() => comprarFreteMutation.mutate(shipment.order_id)}
+                      disabled={comprarFreteMutation.isPending || shipment.shipping_service_id == null}
+                      title={
+                        shipment.shipping_service_id == null
+                          ? "Pedido sem serviço de frete vinculado — não é possível comprar frete automático"
+                          : "Compra frete real no Melhor Envio (gasta saldo)"
+                      }
+                      className="px-4 py-2 text-xs bg-[#B07B1E] text-white hover:bg-[#8a5e10] transition-colors disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-1"
+                    >
+                      {comprarFreteMutation.isPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Truck className="h-3 w-3" />
+                      )}
+                      Comprar Frete
+                      {shipment.shipping_service_name ? ` (${shipment.shipping_service_name})` : ""}
                     </button>
                   )}
 

@@ -30,6 +30,8 @@ export type Shipment = {
   carrier: string | null;
   service: string | null;
   service_code: string | null;
+  shipping_service_id: number | null;
+  shipping_service_name: string | null;
   price: number;
   final_price: number;
   estimated_days: number | null;
@@ -120,7 +122,7 @@ export const listShipments = createServerFn({ method: "GET" })
       // existir no banco.
       const { data: orders, error: ordersError } = await db
         .from("orders")
-        .select("id, status, customer_name, customer_email, customer_phone, shipping_address, tracking_code, created_at")
+        .select("id, status, customer_name, customer_email, customer_phone, shipping_address, tracking_code, shipping_service_id, shipping_service_name, created_at")
         .in("status", ["processing", "shipped", "delivered"])
         .order("created_at", { ascending: false })
         .limit(limit);
@@ -161,6 +163,8 @@ export const listShipments = createServerFn({ method: "GET" })
           carrier: q?.carrier ?? null,
           service: q?.service ?? null,
           service_code: q?.service_code ?? null,
+          shipping_service_id: o.shipping_service_id ?? null,
+          shipping_service_name: o.shipping_service_name ?? null,
           price: q?.price ?? 0,
           final_price: q?.final_price ?? 0,
           estimated_days: q?.estimated_days ?? null,
