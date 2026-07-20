@@ -69,11 +69,6 @@ function PedidosPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
   const [labelModalOpen, setLabelModalOpen] = useState(false);
   const [labelOrder, setLabelOrder] = useState<Order | null>(null);
-  const [labelService, setLabelService] = useState<"PAC" | "SEDEX" | "SEDEX10">("PAC");
-  const [labelWeight, setLabelWeight] = useState(500);
-  const [labelHeight, setLabelHeight] = useState(10);
-  const [labelWidth, setLabelWidth] = useState(20);
-  const [labelLength, setLabelLength] = useState(20);
   const [generatingLabel, setGeneratingLabel] = useState(false);
   const [emittingNfe, setEmittingNfe] = useState(false);
   const [printingDanfe, setPrintingDanfe] = useState(false);
@@ -256,11 +251,6 @@ function PedidosPage() {
 
   const openLabelModal = (order: Order) => {
     setLabelOrder(order);
-    setLabelService("PAC");
-    setLabelWeight(500);
-    setLabelHeight(10);
-    setLabelWidth(20);
-    setLabelLength(20);
     setLabelModalOpen(true);
   };
 
@@ -271,11 +261,6 @@ function PedidosPage() {
       const result = await generateOrderLabel({
         data: {
           orderId: labelOrder.id,
-          service: labelService,
-          packageWeight: labelWeight,
-          packageHeight: labelHeight,
-          packageWidth: labelWidth,
-          packageLength: labelLength,
         },
       });
       if (result.success && result.data) {
@@ -1033,78 +1018,22 @@ function PedidosPage() {
               </p>
               <div>
                 <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
-                  Serviço
+                  Serviço vinculado ao pedido
                 </label>
-                <div className="grid grid-cols-3 gap-2">
-                  {(["PAC", "SEDEX", "SEDEX10"] as const).map((svc) => (
-                    <button
-                      key={svc}
-                      onClick={() => setLabelService(svc)}
-                      className={cn(
-                        "px-3 py-2 text-xs rounded border transition-colors",
-                        labelService === svc
-                          ? "bg-[#0F3A3E] text-white border-[#0F3A3E]"
-                          : "border-[#E9E1D2] text-[#51635F] hover:bg-[#F8F4EA]"
-                      )}
-                    >
-                      {svc}
-                    </button>
-                  ))}
+                <div className="rounded border border-[#E9E1D2] bg-[#F8F4EA] px-3 py-2 text-sm text-[#0F3A3E]">
+                  {labelOrder.shippingServiceName ||
+                    (labelOrder.shippingServiceId != null
+                      ? `Serviço #${labelOrder.shippingServiceId}`
+                      : "Pedido sem serviço de frete vinculado")}
                 </div>
+                {labelOrder.shippingServiceId == null && (
+                  <p className="mt-2 text-xs text-red-700">
+                    Este pedido não tem serviço de frete gravado. Não é possível gerar etiqueta automática.
+                  </p>
+                )}
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
-                    Peso (g)
-                  </label>
-                  <input
-                    type="number"
-                    value={labelWeight}
-                    onChange={(e) => setLabelWeight(Number(e.target.value))}
-                    min={50}
-                    max={30000}
-                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
-                    Altura (cm)
-                  </label>
-                  <input
-                    type="number"
-                    value={labelHeight}
-                    onChange={(e) => setLabelHeight(Number(e.target.value))}
-                    min={1}
-                    max={100}
-                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
-                    Largura (cm)
-                  </label>
-                  <input
-                    type="number"
-                    value={labelWidth}
-                    onChange={(e) => setLabelWidth(Number(e.target.value))}
-                    min={1}
-                    max={100}
-                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
-                    Comprimento (cm)
-                  </label>
-                  <input
-                    type="number"
-                    value={labelLength}
-                    onChange={(e) => setLabelLength(Number(e.target.value))}
-                    min={1}
-                    max={100}
-                    className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
-                  />
-                </div>
+              <div className="rounded border border-[#E9E1D2] bg-[#F8F4EA] px-3 py-3 text-sm text-[#51635F]">
+                Peso e dimensões serão recalculados a partir dos produtos do pedido, usando os mesmos dados canônicos da cotação de frete.
               </div>
             </div>
             <div className="px-6 py-4 border-t border-[#E9E1D2] flex justify-end gap-3">
@@ -1116,7 +1045,7 @@ function PedidosPage() {
               </button>
               <button
                 onClick={handleGenerateLabel}
-                disabled={generatingLabel}
+                disabled={generatingLabel || labelOrder.shippingServiceId == null}
                 className="px-4 py-2 text-sm bg-[#0F3A3E] text-white hover:bg-[#1a5054] disabled:opacity-50 flex items-center gap-2"
               >
                 {generatingLabel && <RefreshCw className="w-4 h-4 animate-spin" />}

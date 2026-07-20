@@ -50,6 +50,8 @@ export type AdminOrderRow = {
   authUserId: string | null;
   shippingAddress: Record<string, unknown> | null;
   shippingMethod: string | null;
+  shippingServiceId: number | null;
+  shippingServiceName: string | null;
   nfeKey: string | null;
   nfeNumber: number | null;
   nfeStatus: string | null;
@@ -89,6 +91,8 @@ const LIST_COLUMNS = [
   "auth_user_id",
   "shipping_address",
   "shipping_method",
+  "shipping_service_id",
+  "shipping_service_name",
   "nfe_key",
   "nfe_number",
   "nfe_status",
@@ -128,6 +132,8 @@ function toAdminOrderRow(
     authUserId: (row.auth_user_id as string | null) ?? null,
     shippingAddress: (row.shipping_address as Record<string, unknown> | null) ?? null,
     shippingMethod: (row.shipping_method as string | null) ?? null,
+    shippingServiceId: (row.shipping_service_id as number | null) ?? null,
+    shippingServiceName: (row.shipping_service_name as string | null) ?? null,
     nfeKey: (row.nfe_key as string | null) ?? null,
     nfeNumber: (row.nfe_number as number | null) ?? null,
     nfeStatus: (row.nfe_status as string | null) ?? null,

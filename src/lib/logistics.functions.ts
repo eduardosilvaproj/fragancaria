@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { runGenerateOrderLabelCore } from "@/lib/generate-order-label-core";
 
 // =====================================================
 // TIPOS
@@ -1171,25 +1172,18 @@ export const listSigepLabels = createServerFn({ method: "GET" })
 // =====================================================
 // GERAR ETIQUETA A PARTIR DO PEDIDO (UI wrapper)
 // =====================================================
+// O núcleo (idempotência + compra Melhor Envio + gravação) vive em
+// generate-order-label-core.ts, compartilhado com o script de smoke. Este
+// wrapper só adiciona requireAdmin().
 
 export type GenerateLabelInput = {
   orderId: string;
-  service: "PAC" | "SEDEX" | "SEDEX10";
-  packageWeight: number;
-  packageHeight: number;
-  packageWidth: number;
-  packageLength: number;
 };
 
 export const generateOrderLabel = createServerFn({ method: "POST" })
   .validator((d: unknown) => {
     return z.object({
       orderId: z.string().uuid(),
-      service: z.enum(["PAC", "SEDEX", "SEDEX10"]),
-      packageWeight: z.number().positive(),
-      packageHeight: z.number().positive(),
-      packageWidth: z.number().positive(),
-      packageLength: z.number().positive(),
     }).parse(d);
   })
   .handler(async ({ data }) => {
@@ -1197,169 +1191,11 @@ export const generateOrderLabel = createServerFn({ method: "POST" })
       const { requireAdmin } = await import("@/lib/admin-auth");
       await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const db = supabaseAdmin as any;
 
-      // Buscar pedido com endereço
-      const { data: order, error: orderError } = await db
-        .from("orders")
-        .select("id, customer_name, customer_email, customer_phone, shipping_address, items, total")
-        .eq("id", data.orderId)
-        .single();
-
-      if (orderError || !order) {
-        return { success: false, error: "Pedido não encontrado" };
-      }
-
-      if (order.tracking_code) {
-        return { success: false, error: "Este pedido já possui código de rastreio" };
-      }
-
-      const addr = order.shipping_address as Record<string, string> | null;
-      if (!addr || !addr.zipCode) {
-        return { success: false, error: "Endereço de entrega não encontrado no pedido" };
-      }
-
-      const serviceMap: Record<string, { code: string; carrier: string; price: number; days: number }> = {
-        PAC: { code: "03298", carrier: "Correios", price: 0, days: 7 },
-        SEDEX: { code: "03220", carrier: "Correios", price: 0, days: 3 },
-        SEDEX10: { code: "04162", carrier: "Correios", price: 0, days: 1 },
-      };
-
-      const svc = serviceMap[data.service];
-
-      let trackingCode: string | null = null;
-      let labelUrl: string | null = null;
-
-      const { data: credsRow } = await supabaseAdmin
-        .from("shipping_settings")
-        .select("value")
-        .eq("key", "sigep_credentials")
-        .single();
-      const credentials = credsRow?.value as SigepCredentials | undefined;
-
-      const { data: senderRow } = await supabaseAdmin
-        .from("shipping_settings")
-        .select("value")
-        .eq("key", "sender_info")
-        .single();
-      const sender = (senderRow?.value || {}) as Record<string, any>;
-
-      if (credentials?.usuario && credentials?.codigoAcesso && credentials?.cartaoPostagem) {
-        const { criarPrepostagem } = await import("@/lib/correios-client.server");
-        try {
-          const result = await criarPrepostagem(
-            {
-              usuario: credentials.usuario,
-              codigoAcesso: credentials.codigoAcesso,
-              cartaoPostagem: credentials.cartaoPostagem,
-              cepOrigem: credentials.cepOrigem,
-            },
-            {
-              servico: data.service,
-              remetente: {
-                nome: sender.name || "Fragranciaria",
-                telefone: sender.phone || "",
-                email: "contato@fragranciaria.com",
-                endereco: {
-                  logradouro: sender.address?.street || "",
-                  numero: sender.address?.number || "",
-                  complemento: sender.address?.complement || "",
-                  bairro: sender.address?.neighborhood || "",
-                  cidade: sender.address?.city || "",
-                  uf: sender.address?.state || "",
-                  cep: credentials.cepOrigem,
-                },
-              },
-              destinatario: {
-                nome: order.customer_name || "Cliente",
-                telefone: order.customer_phone || "",
-                email: order.customer_email || "",
-                endereco: {
-                  logradouro: addr.street || "",
-                  numero: addr.number || "",
-                  complemento: addr.complement || "",
-                  bairro: addr.neighborhood || "",
-                  cidade: addr.city || "",
-                  uf: addr.state || "",
-                  cep: addr.zipCode || addr.cep || "",
-                },
-              },
-              pesoGramas: data.packageWeight,
-              alturaCm: data.packageHeight,
-              larguraCm: data.packageWidth,
-              comprimentoCm: data.packageLength,
-              valorDeclarado: order.total || 0,
-            },
-          );
-
-          trackingCode = result.codigoObjeto;
-          labelUrl = result.urlEtiqueta || null;
-        } catch (apiError: any) {
-          console.error("[generateOrderLabel] Correios API error:", apiError);
-          // Não aborta: segue para etiqueta local sem código de rastreio, igual createShipment.
-        }
-      }
-      // Sem credenciais SIGEP (ou falha na API), trackingCode/labelUrl ficam null
-      // e o insert abaixo cria a etiqueta local (status "pending").
-
-      // Salvar shipping_quote
-      const { data: shipment, error: insertError } = await db
-        .from("shipping_quotes")
-        .insert({
-          order_id: order.id,
-          carrier: svc.carrier,
-          service: data.service,
-          service_code: svc.code,
-          price: svc.price,
-          final_price: svc.price,
-          estimated_days: svc.days,
-          weight_grams: data.packageWeight,
-          height_cm: data.packageHeight,
-          width_cm: data.packageWidth,
-          length_cm: data.packageLength,
-          recipient_name: order.customer_name || "Cliente",
-          recipient_email: order.customer_email || "",
-          recipient_phone: order.customer_phone || null,
-          recipient_postal_code: addr.zipCode || addr.cep || "",
-          recipient_address: addr,
-          status: trackingCode ? "paid" : "pending",
-          tracking_code: trackingCode,
-          label_url: labelUrl,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        return { success: false, error: "Erro ao salvar etiqueta: " + insertError.message };
-      }
-
-      // Atualizar pedido com tracking
-      if (trackingCode) {
-        await db
-          .from("orders")
-          .update({
-            tracking_code: trackingCode,
-            shipping_carrier: svc.carrier,
-            shipping_method: `${svc.carrier} ${data.service}`,
-          })
-          .eq("id", order.id);
-      }
-
-      return {
-        success: true,
-        data: {
-          id: shipment.id,
-          tracking_code: trackingCode,
-          label_url: labelUrl,
-          status: trackingCode ? "paid" : "pending",
-          service: data.service,
-          carrier: svc.carrier,
-        },
-      };
+      return await runGenerateOrderLabelCore(supabaseAdmin, data.orderId);
     } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false, error: "Não autorizado" };
-      return { success: false, error: e?.message || "Erro desconhecido" };
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
 // =====================================================
