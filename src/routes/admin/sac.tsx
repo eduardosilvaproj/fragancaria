@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   listConversations,
   getMessages,
@@ -83,6 +83,7 @@ function AdminSAC() {
   const [loadingConvs, setLoadingConvs] = useState(true);
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const lastPollTsRef = useRef<string>("");
 
   // Carrega a lista de conversas reais.
   const loadConversations = useCallback(async () => {
@@ -95,10 +96,35 @@ function AdminSAC() {
     loadConversations();
   }, [loadConversations]);
 
+  // Polling de mensagens quando uma conversa web está aberta.
+  useEffect(() => {
+    if (!selectedConversation) return;
+    const convId = selectedConversation.id;
+    const poll = async () => {
+      const res = await getMessages({ data: { conversationId: convId } });
+      if (!res.success) return;
+      const cutoff = lastPollTsRef.current;
+      const fresh = cutoff
+        ? res.data.filter((m) => m.timestamp > cutoff)
+        : res.data;
+      if (fresh.length > 0) {
+        lastPollTsRef.current = fresh[fresh.length - 1].timestamp;
+        setMessages((prev) => {
+          const existing = new Set(prev.map((m) => m.id));
+          const toAdd = fresh.filter((m) => !existing.has(m.id));
+          return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+        });
+      }
+    };
+    const id = setInterval(poll, 3000);
+    return () => clearInterval(id);
+  }, [selectedConversation]);
+
   // Ao selecionar uma conversa, carrega suas mensagens (e marca como lida).
   const selectConversation = useCallback(async (conv: Conversation) => {
     setSelectedConversation(conv);
     setMessages([]);
+    lastPollTsRef.current = "";
     const res = await getMessages({ data: { conversationId: conv.id } });
     if (res.success) setMessages(res.data);
     // Reflete localmente que a conversa foi lida.

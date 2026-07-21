@@ -21,8 +21,10 @@ import {
   Copy,
   Check,
   Wand2,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateCaption } from "@/lib/agent/generate-caption.functions";
 
 export const Route = createFileRoute("/admin/redes-sociais")({
   component: AdminRedesSociais,
@@ -86,22 +88,34 @@ function AdminRedesSociais() {
   const [generatedCaption, setGeneratedCaption] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState("");
   const [selectedPlatform, setSelectedPlatform] = useState<"instagram" | "facebook" | "twitter">("instagram");
   const [productDescription, setProductDescription] = useState("");
   const [tone, setTone] = useState<"casual" | "profissional" | "divertido">("casual");
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
+    if (!productDescription.trim()) return;
     setIsGenerating(true);
-    // Simular geração de IA
-    setTimeout(() => {
-      const captions = [
-        "✨ Transforme seus fios com esse tratamento incrível! 💇‍♀️\n\nHidratação profunda + brilho intenso = cabelo dos sonhos!\n\n🛒 Link na bio\n📦 Frete grátis acima de R$199\n\n#cabelosdossonhos #tratamentocapilar #hidratacao #fragranciaria",
-        "🔥 ALERTA DE OFERTA! 🔥\n\nSeu cabelo merece esse mimo! Kit completo de tratamento profissional com preço especial.\n\n✅ Produtos originais\n✅ Entrega rápida\n✅ Parcelamento em até 10x\n\n#oferta #promocao #cabeloperfeito",
-        "💜 O segredo das madeixas perfeitas? Produtos de qualidade profissional!\n\nNa Fragranciaria você encontra as melhores marcas do mercado.\n\n👆 Link na bio para conferir!\n\n#fragranciaria #cabeloprofissional #beleza",
-      ];
-      setGeneratedCaption(captions[Math.floor(Math.random() * captions.length)]);
+    setError("");
+    setGeneratedCaption("");
+    try {
+      const result = await generateCaption({
+        data: {
+          tema: productDescription,
+          tom: tone,
+          plataforma: selectedPlatform,
+        },
+      });
+      if (result.success) {
+        setGeneratedCaption(result.caption);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao gerar legenda");
+    } finally {
       setIsGenerating(false);
-    }, 2000);
+    }
   };
 
   const handleCopy = () => {
@@ -330,6 +344,12 @@ function AdminRedesSociais() {
             </div>
 
             <div className="p-4">
+              {error && (
+                <div className="mb-4 flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                  <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                  <p className="text-sm text-red-700">{error}</p>
+                </div>
+              )}
               {generatedCaption ? (
                 <div className="space-y-4">
                   {/* Preview */}
