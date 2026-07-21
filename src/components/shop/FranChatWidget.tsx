@@ -63,9 +63,17 @@ export function FranChatWidget() {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Ref sincrona do lastPollTimestamp para evitar stale closure no polling
+  // Refs síncronas para evitar stale closure e dependências instáveis
   const lastPollTsRef = useRef(lastPollTimestamp);
   lastPollTsRef.current = lastPollTimestamp;
+  const loadHistoryRef = useRef(loadHistory);
+  loadHistoryRef.current = loadHistory;
+  const addMessageRef = useRef(addMessage);
+  addMessageRef.current = addMessage;
+  const setRepliedByRef = useRef(setRepliedBy);
+  setRepliedByRef.current = setRepliedBy;
+  const setLastPollTsRef = useRef(setLastPollTimestamp);
+  setLastPollTsRef.current = setLastPollTimestamp;
   // Ref do repliedBy ANTERIOR (atualizada via useEffect pós-render)
   const prevRepliedByRef = useRef(repliedBy);
   useEffect(() => {
@@ -97,8 +105,8 @@ export function FranChatWidget() {
   // não sobrescreve.
   useEffect(() => {
     if (!isOpen) return;
-    loadHistory();
-  }, [isOpen, loadHistory]);
+    loadHistoryRef.current();
+  }, [isOpen]);
 
   // Polling: só roda quando widget está aberto E já existe conversa (messages.length > 0)
   useEffect(() => {
@@ -121,17 +129,17 @@ export function FranChatWidget() {
 
         // Atualiza repliedBy (handoff)
         if (result.repliedBy) {
-          setRepliedBy(result.repliedBy);
+          setRepliedByRef.current(result.repliedBy);
         }
 
         // Adiciona mensagens novas (só assistant — user já está no store local)
         for (const msg of result.messages) {
           if (msg.sender === "agent") {
-            addMessage({ role: "assistant", content: msg.content });
+            addMessageRef.current({ role: "assistant", content: msg.content });
           }
           // Avança o cursor para o timestamp desta mensagem
           if (msg.created_at > since) {
-            setLastPollTimestamp(msg.created_at);
+            setLastPollTsRef.current(msg.created_at);
           }
         }
       } catch {
@@ -146,7 +154,7 @@ export function FranChatWidget() {
         pollTimerRef.current = null;
       }
     };
-  }, [isOpen, messages.length, sessionId, lastPollTimestamp, addMessage, setRepliedBy, setLastPollTimestamp]);
+  }, [isOpen, messages.length, sessionId, lastPollTimestamp]);
 
   const handleSend = useCallback(
     async (text?: string) => {
