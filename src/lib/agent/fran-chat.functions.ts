@@ -30,13 +30,18 @@ const historyItemSchema = z.object({
 const inputSchema = z.object({
   mensagem: z.string().min(1).max(4000),
   historico: z.array(historyItemSchema).max(50).default([]),
+  /** Identificador de navegador (UUID do franChatStore). Não é identidade de
+   *  pessoa — limpar navegador gera nova sessão. Usado para log de conversas
+   *  web e controle de handoff (replied_by). */
+  sessionId: z.string().optional(),
 });
 
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
 
 export type FranChatResult =
   | { success: true; resposta: string; historico: FranHistoryItem[] }
-  | { success: false; error: string };
+  | { success: false; error: string }
+  | { success: false; error: "human_mode"; resposta: string };
 
 const TOOLS = [
   {
@@ -62,8 +67,56 @@ const TOOLS = [
         id: { type: "string", description: "Id do produto." },
       },
       required: ["id"],
-      // cache_control no último tool cacheia o prefixo de tools (fixo).
-      // (posicionado aqui via anexação abaixo)
+    },
+  },
+  {
+    name: "trackOrder",
+    description:
+      "Consulta o status de um pedido. Duas formas de uso: (1) se o cliente tem o tracking_token (código de 16 caracteres do email), passe só o token; (2) se não tem o token, passe orderId + email (email deve bater com o cadastro do pedido). Retorna status, paymentStatus, trackingCode, itens e histórico. Use quando o cliente perguntar 'onde está meu pedido', 'quando chega', 'qual o status'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        token: { type: "string", description: "Tracking token de 16 caracteres (formato XXXX-XXXX-XXXX-XXXX). Opcional se orderId+email forem fornecidos." },
+        orderId: { type: "string", description: "Número do pedido (ex: 'ORD-12345'). Opcional se token for fornecido." },
+        email: { type: "string", description: "Email cadastrado no pedido. Opcional se token for fornecido." },
+      },
+    },
+  },
+  {
+    name: "getPaymentStatus",
+    description:
+      "Consulta apenas o status de pagamento de um pedido. Duas formas: (1) tracking_token direto; (2) orderId + email. Retorna string: 'pending', 'paid', 'refunded', 'cancelled', etc. Use quando o cliente perguntar 'já foi pago?', 'o pagamento confirmou?'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        token: { type: "string", description: "Tracking token de 16 caracteres. Opcional se orderId+email forem fornecidos." },
+        orderId: { type: "string", description: "Número do pedido. Opcional se token for fornecido." },
+        email: { type: "string", description: "Email cadastrado no pedido. Opcional se token for fornecido." },
+      },
+    },
+  },
+  {
+    name: "quoteShipping",
+    description:
+      "Calcula frete em tempo real via Melhor Envio para um CEP de destino. Precisa dos produtos (id + quantidade) para calcular peso e dimensões. Retorna lista de opções com transportadora, serviço, preço em reais e prazo em dias. Use quando o cliente perguntar 'quanto fica o frete', 'qual o prazo', 'entrega para meu CEP'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        toCep: { type: "string", description: "CEP de destino (apenas números, 8 dígitos)." },
+        productIds: {
+          type: "array",
+          description: "Lista de {id, quantity} dos produtos para cotar frete.",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", description: "Id do produto no catálogo." },
+              quantity: { type: "number", description: "Quantidade deste produto." },
+            },
+            required: ["id", "quantity"],
+          },
+        },
+      },
+      required: ["toCep", "productIds"],
     },
   },
 ];
@@ -95,11 +148,60 @@ export const chatWithFran = createServerFn({ method: "POST" })
       return { success: false, error: "Histórico muito longo. Inicie uma nova conversa." };
     }
 
+    // =============================================================
+    // Log de conversa web + controle de handoff (replied_by)
+    // =============================================================
+    // Se sessionId foi enviado, grava/atualiza a conversa no banco.
+    // A checagem de replied_by acontece a CADA chamada — se um atendente
+    // assumiu (replied_by = 'human'), a Fran não responde.
+    let conversationId: string | null = null;
+    if (data.sessionId) {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      // Upsert da conversa: busca por session_id + channel='web'
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { data: existing } = await (supabaseAdmin as any)
+        .from("conversations")
+        .select("id, replied_by")
+        .eq("session_id", data.sessionId)
+        .eq("channel", "web")
+        .maybeSingle();
+
+      if (existing) {
+        conversationId = existing.id;
+        // Checagem de replied_by A CADA mensagem: se human, Fran não responde
+        if (existing.replied_by === "human") {
+          return {
+            success: false,
+            error: "human_mode",
+            resposta: "Este atendimento foi assumido por um consultor. Em breve ele(a) responderá.",
+          };
+        }
+      } else {
+        // Cria nova conversa web
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: created } = await (supabaseAdmin as any)
+          .from("conversations")
+          .insert({
+            channel: "web",
+            session_id: data.sessionId,
+            customer_name: "Visitante",
+            status: "open",
+            replied_by: "fran",
+          })
+          .select("id")
+          .single();
+        conversationId = created?.id ?? null;
+      }
+    }
+
     try {
       const Anthropic = (await import("@anthropic-ai/sdk")).default;
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { FRAN_SYSTEM_PROMPT } = await import("./fran-persona");
       const { searchProducts, getProduct } = await import("./product-search");
+      const { getOrderByToken, getOrderByIdAndEmail } = await import("./order-status");
+      const { getPaymentStatusByToken, getPaymentStatusByIdAndEmail } = await import("./order-status");
+      const { quoteShipping, buscarProdutosParaCotacao } = await import("./quote-shipping");
 
       const client = new Anthropic({ apiKey });
 
@@ -152,6 +254,28 @@ export const chatWithFran = createServerFn({ method: "POST" })
             } else if (block.name === "getProduct") {
               const args = block.input as { id: string };
               result = await getProduct(supabaseAdmin, args.id);
+            } else if (block.name === "trackOrder") {
+              const args = block.input as { token?: string; orderId?: string; email?: string };
+              if (args.token) {
+                result = await getOrderByToken(supabaseAdmin, args.token);
+              } else if (args.orderId && args.email) {
+                result = await getOrderByIdAndEmail(supabaseAdmin, args.orderId, args.email);
+              } else {
+                result = { error: "Informe o tracking_token ou o número do pedido + email." };
+              }
+            } else if (block.name === "getPaymentStatus") {
+              const args = block.input as { token?: string; orderId?: string; email?: string };
+              if (args.token) {
+                result = await getPaymentStatusByToken(supabaseAdmin, args.token);
+              } else if (args.orderId && args.email) {
+                result = await getPaymentStatusByIdAndEmail(supabaseAdmin, args.orderId, args.email);
+              } else {
+                result = { error: "Informe o tracking_token ou o número do pedido + email." };
+              }
+            } else if (block.name === "quoteShipping") {
+              const args = block.input as { toCep: string; productIds: Array<{ id: string; quantity: number }> };
+              const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
+              result = await quoteShipping(args.toCep, produtos);
             } else {
               result = { error: `Ferramenta desconhecida: ${block.name}` };
             }
@@ -170,6 +294,25 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
       if (!respostaFinal) {
         return { success: false, error: "A Fran não conseguiu formular uma resposta. Tente reformular." };
+      }
+
+      // Grava as mensagens no banco (se for conversa web logada)
+      if (conversationId) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseAdmin as any).from("messages").insert([
+          { conversation_id: conversationId, content: data.mensagem, sender: "customer" },
+          { conversation_id: conversationId, content: respostaFinal, sender: "agent" },
+        ]);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (supabaseAdmin as any)
+          .from("conversations")
+          .update({
+            last_message: respostaFinal,
+            last_message_at: new Date().toISOString(),
+            unread: true,
+          })
+          .eq("id", conversationId);
       }
 
       return {

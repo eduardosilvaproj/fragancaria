@@ -79,6 +79,8 @@ export function FranChatWidget() {
     }
   }, [isOpen, prefillMessage, hasUsedPrefill]);
 
+  const sessionId = useFranChatStore((s) => s.sessionId);
+
   const handleSend = useCallback(
     async (text?: string) => {
       const msg = (text ?? input).trim();
@@ -95,11 +97,16 @@ export function FranChatWidget() {
           data: {
             mensagem: msg,
             historico: messages.map((m) => ({ role: m.role, content: m.content })),
+            sessionId,
           },
         });
 
         if (!result.success) {
-          setError(result.error);
+          if (result.error === "human_mode") {
+            addMessage({ role: "assistant", content: result.resposta });
+          } else {
+            setError(result.error);
+          }
         } else {
           addMessage({ role: "assistant", content: result.resposta });
         }
@@ -109,7 +116,7 @@ export function FranChatWidget() {
         setLoading(false);
       }
     },
-    [input, isLoading, messages, addMessage, setLoading],
+    [input, isLoading, messages, addMessage, setLoading, sessionId],
   );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
