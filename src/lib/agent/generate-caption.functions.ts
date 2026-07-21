@@ -50,7 +50,8 @@ POR TOM:
 const MODO_PRODUTO = `${SYSTEM_PROMPT_BASE}
 
 MODO: PRODUTO
-Você está divulgando um produto específico da loja. Use os dados reais do produto fornecidos (nome, preço, descrição, marca) — nunca invente preço, desconto ou características. Destaque os benefícios do produto de forma persuasiva.`;
+Você está divulgando um produto específico da loja. Use os dados reais do produto fornecidos (nome, preço, descrição, marca) — nunca invente preço, desconto ou características. Destaque os benefícios do produto de forma persuasiva.
+IMPORTANTE: Termine a legenda com um call-to-action de compra seguido do link direto do produto (ex: "Corre comprar! https://fragranciaria.com/produto/ID_DO_PRODUTO"). O link exato será fornecido nos dados do produto.`;
 
 const MODO_DICA = `${SYSTEM_PROMPT_BASE}
 
@@ -102,6 +103,7 @@ export const generateCaption = createServerFn({ method: "POST" })
             `Preço: R$ ${product.price.toFixed(2)}`,
             product.description ? `Descrição: ${product.description}` : "",
             product.category ? `Categoria: ${product.category}` : "",
+            `Link: https://fragranciaria.com/produto/${data.productId}`,
           ]
             .filter(Boolean)
             .join("\n");
