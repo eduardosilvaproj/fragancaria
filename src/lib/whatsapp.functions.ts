@@ -343,6 +343,81 @@ export const pollWebMessages = createServerFn({ method: "GET" })
     }
   );
 
+// Retorna o histórico COMPLETO de mensagens de uma sessão web (sem filtro
+// since). Mesma segurança do pollWebMessages: público, rate-limit 30/10min,
+// só retorna mensagens do sessionId pedido. Usado pelo widget ao abrir para
+// recarregar a conversa após F5.
+export const getWebHistory = createServerFn({ method: "GET" })
+  .validator((d: unknown) =>
+    z.object({
+      sessionId: z.string().min(1),
+    }).parse(d)
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      success: boolean;
+      messages: PollMessageDTO[];
+      repliedBy: "fran" | "human" | null;
+      error?: string;
+    }> => {
+      try {
+        const { rateLimit } = await import("@/lib/rate-limit");
+        const { getRequestHeader } = await import("@tanstack/react-start/server");
+        const ip =
+          getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
+          getRequestHeader("x-real-ip") ||
+          "unknown";
+        const rl = rateLimit(`poll:${ip}`, 30, 10 * 60 * 1000);
+        if (!rl.allowed) {
+          return {
+            success: false,
+            messages: [],
+            repliedBy: null,
+            error: `Muitas tentativas. Tente novamente em ${rl.retryAfterSeconds} segundos.`,
+          };
+        }
+
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+
+        const conv = await (supabaseAdmin as any)
+          .from("conversations")
+          .select("id, replied_by")
+          .eq("session_id", data.sessionId)
+          .eq("channel", "web")
+          .maybeSingle();
+
+        if (!conv.data) {
+          return { success: true, messages: [], repliedBy: null };
+        }
+
+        const conversationId = conv.data.id;
+        const repliedBy = (conv.data.replied_by || null) as "fran" | "human" | null;
+
+        const { data: rows } = await (supabaseAdmin as any)
+          .from("messages")
+          .select("id, content, sender, created_at")
+          .eq("conversation_id", conversationId)
+          .order("created_at", { ascending: true })
+          .limit(500);
+
+        const messages: PollMessageDTO[] = (rows ?? []).map((r: any) => ({
+          id: String(r.id),
+          content: r.content || "",
+          sender: r.sender as "customer" | "agent",
+          created_at: r.created_at,
+        }));
+
+        return { success: true, messages, repliedBy };
+      } catch (err: any) {
+        return { success: false, messages: [], repliedBy: null, error: err?.message || "erro" };
+      }
+    }
+  );
+
 // Altera o replied_by de uma conversa web (handoff Fran ↔ humano).
 export const updateRepliedBy = createServerFn({ method: "POST" })
   .validator((d: unknown) =>

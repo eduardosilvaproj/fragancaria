@@ -55,6 +55,7 @@ export function FranChatWidget() {
     isOpen, prefillMessage, messages, isLoading, repliedBy,
     open, close, addMessage, setLoading, clearMessages,
     setRepliedBy, setLastPollTimestamp, lastPollTimestamp, sessionId,
+    loadHistory,
   } = useFranChatStore();
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -82,6 +83,14 @@ export function FranChatWidget() {
       handleSend(prefillMessage);
     }
   }, [isOpen, prefillMessage, hasUsedPrefill]);
+
+  // Carrega histórico do banco ao abrir o widget (recupera conversa após F5).
+  // Roda uma vez por abertura — se já há mensagens (conversa nova em andamento),
+  // não sobrescreve.
+  useEffect(() => {
+    if (!isOpen) return;
+    loadHistory();
+  }, [isOpen, loadHistory]);
 
   // Polling: só roda quando widget está aberto E já existe conversa (messages.length > 0)
   useEffect(() => {

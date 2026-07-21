@@ -26,6 +26,8 @@ interface FranChatState {
   clearMessages: () => void;
   setRepliedBy: (v: "fran" | "human" | null) => void;
   setLastPollTimestamp: (v: string) => void;
+  /** Carrega histórico do banco e popula messages. Retorna true se achou conversa. */
+  loadHistory: () => Promise<boolean>;
 }
 
 function loadSessionId(): string {
@@ -41,7 +43,7 @@ function loadSessionId(): string {
   return id;
 }
 
-export const useFranChatStore = create<FranChatState>()((set) => ({
+export const useFranChatStore = create<FranChatState>()((set, get) => ({
   isOpen: false,
   prefillMessage: null,
   messages: [],
@@ -66,4 +68,24 @@ export const useFranChatStore = create<FranChatState>()((set) => ({
   setRepliedBy: (v) => set({ repliedBy: v }),
 
   setLastPollTimestamp: (v) => set({ lastPollTimestamp: v }),
+
+  loadHistory: async () => {
+    const { getWebHistory } = await import("@/lib/whatsapp.functions");
+    const sessionId = get().sessionId;
+    const result = await getWebHistory({ data: { sessionId } });
+    if (!result.success || result.messages.length === 0) {
+      return false;
+    }
+    const msgs = result.messages.map((m) => ({
+      role: (m.sender === "customer" ? "user" : "assistant") as "user" | "assistant",
+      content: m.content,
+    }));
+    // Último timestamp vira cursor do polling
+    const lastTs = result.messages[result.messages.length - 1].created_at;
+    set({ messages: msgs, lastPollTimestamp: lastTs });
+    if (result.repliedBy) {
+      set({ repliedBy: result.repliedBy });
+    }
+    return true;
+  },
 }));
