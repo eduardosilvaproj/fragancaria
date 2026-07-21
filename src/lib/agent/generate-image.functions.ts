@@ -39,7 +39,7 @@ export const generateImage = createServerFn({ method: "POST" })
       const client = new OpenAI({ apiKey });
 
       const response = await client.responses.create({
-        model: "gpt-image-2",
+        model: "gpt-5.6",
         input: [
           {
             role: "user",
