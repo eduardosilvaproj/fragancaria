@@ -15,6 +15,7 @@ const inputSchema = z.object({
   tema: z.string().min(1).max(2000),
   tom: z.enum(["casual", "profissional", "divertido"]),
   plataforma: z.enum(["instagram", "facebook", "twitter"]),
+  modo: z.enum(["produto", "dica", "livre"]),
   productId: z.string().optional(),
 });
 
@@ -24,7 +25,7 @@ export type GenerateCaptionResult =
   | { success: true; caption: string }
   | { success: false; error: string };
 
-const SYSTEM_PROMPT = `Você é um redator especializado em redes sociais para uma loja de cosméticos capilares chamada Fragranciaria.
+const SYSTEM_PROMPT_BASE = `Você é um redator especializado em redes sociais para uma loja de cosméticos capilares chamada Fragranciaria.
 Sua função é gerar legendas curtas, persuasivas e adaptadas para cada plataforma.
 
 REGRAS GERAIS:
@@ -44,9 +45,30 @@ POR PLATAFORMA:
 POR TOM:
 - casual: natural, como se uma amiga estivesse recomendando
 - profissional: elegante, foco em qualidade e resultados, linguagem técnica mas acessível
-- divertido: descontraído, brincadeiras leves, emojis liberados, pontuação criativa
+- divertido: descontraído, brincadeiras leves, emojis liberados, pontuação criativa`;
 
-Se dados de produto forem fornecidos (nome, preço, descrição, marca), use APENAS informações reais — nunca invente preço, desconto ou características.`;
+const MODO_PRODUTO = `${SYSTEM_PROMPT_BASE}
+
+MODO: PRODUTO
+Você está divulgando um produto específico da loja. Use os dados reais do produto fornecidos (nome, preço, descrição, marca) — nunca invente preço, desconto ou características. Destaque os benefícios do produto de forma persuasiva.`;
+
+const MODO_DICA = `${SYSTEM_PROMPT_BASE}
+
+MODO: DICA EDUCATIVA
+Você está criando uma dica educativa sobre cuidados capilares. O tema foi fornecido pelo usuário. Gere conteúdo útil e educativo que ajude o seguidor a aprender algo novo sobre cabelo. Não mencione produtos específicos a menos que o tema explicitamente peça. Foco em ensinar, não em vender.`;
+
+const MODO_LIVRE = `${SYSTEM_PROMPT_BASE}
+
+MODO: TEMA LIVRE
+Você está criando conteúdo sobre o tema fornecido pelo usuário. Pode ser sobre cuidados capilares, tendências, curiosidades ou qualquer assunto relacionado ao universo de beleza e cabelos. Seja criativo e engajante.`;
+
+function getSystemPrompt(modo: string): string {
+  switch (modo) {
+    case "produto": return MODO_PRODUTO;
+    case "dica": return MODO_DICA;
+    default: return MODO_LIVRE;
+  }
+}
 
 export const generateCaption = createServerFn({ method: "POST" })
   .validator((d: unknown) => inputSchema.parse(d))
@@ -86,7 +108,10 @@ export const generateCaption = createServerFn({ method: "POST" })
         }
       }
 
+      const systemPrompt = getSystemPrompt(data.modo);
+
       const userPrompt = [
+        `Modo: ${data.modo}`,
         `Plataforma: ${data.plataforma}`,
         `Tom: ${data.tom}`,
         `Tema: ${data.tema}`,
@@ -102,7 +127,7 @@ export const generateCaption = createServerFn({ method: "POST" })
         model: MODEL,
         max_tokens: MAX_TOKENS,
         system: [
-          { type: "text" as const, text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" as const } },
+          { type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } },
         ],
         messages: [{ role: "user", content: userPrompt }],
       });
