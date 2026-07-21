@@ -29,8 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCaption } from "@/lib/agent/generate-caption.functions";
-import { searchProducts } from "@/lib/agent/product-search";
-import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { searchProductsAdmin } from "@/lib/agent/product-search-admin.functions";
 import type { AgentProduct } from "@/lib/agent/product-search";
 
 export const Route = createFileRoute("/admin/redes-sociais")({
@@ -141,7 +140,7 @@ function AdminRedesSociais() {
     const timer = setTimeout(async () => {
       setIsSearchingProducts(true);
       try {
-        const results = await searchProducts(supabaseAdmin, { query: productSearchQuery, limit: 6 });
+        const results = await searchProductsAdmin({ data: { query: productSearchQuery, limit: 6 } });
         setProductSearchResults(results);
       } catch {
         setProductSearchResults([]);
