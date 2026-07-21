@@ -257,6 +257,92 @@ export const sendMessage = createServerFn({ method: "POST" })
     }
   );
 
+// Polling público de mensagens para o widget da Fran.
+// Retorna mensagens de uma conversa web criadas depois de `since` (ISO string
+// com ms). Sem requireAdmin — é chamado pelo navegador do cliente. Rate-limit
+// por IP (30/10min) igual ao chatWithFran.
+export type PollMessageDTO = {
+  id: string;
+  content: string;
+  sender: "customer" | "agent";
+  created_at: string; // ISO com ms
+};
+
+export const pollWebMessages = createServerFn({ method: "GET" })
+  .validator((d: unknown) =>
+    z.object({
+      sessionId: z.string().min(1),
+      since: z.string().min(1),
+    }).parse(d)
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{
+      success: boolean;
+      messages: PollMessageDTO[];
+      repliedBy: "fran" | "human" | null;
+      error?: string;
+    }> => {
+      try {
+        const { rateLimit } = await import("@/lib/rate-limit");
+        const { getRequestHeader } = await import("@tanstack/react-start/server");
+        const ip =
+          getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
+          getRequestHeader("x-real-ip") ||
+          "unknown";
+        const rl = rateLimit(`poll:${ip}`, 30, 10 * 60 * 1000);
+        if (!rl.allowed) {
+          return {
+            success: false,
+            messages: [],
+            repliedBy: null,
+            error: `Muitas tentativas. Tente novamente em ${rl.retryAfterSeconds} segundos.`,
+          };
+        }
+
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+
+        // Busca conversa web por session_id
+        const conv = await (supabaseAdmin as any)
+          .from("conversations")
+          .select("id, replied_by")
+          .eq("session_id", data.sessionId)
+          .eq("channel", "web")
+          .maybeSingle();
+
+        if (!conv.data) {
+          return { success: true, messages: [], repliedBy: null };
+        }
+
+        const conversationId = conv.data.id;
+        const repliedBy = (conv.data.replied_by || null) as "fran" | "human" | null;
+
+        // Busca mensagens criadas depois de `since` (precisão de ms)
+        const { data: rows } = await (supabaseAdmin as any)
+          .from("messages")
+          .select("id, content, sender, created_at")
+          .eq("conversation_id", conversationId)
+          .gt("created_at", data.since)
+          .order("created_at", { ascending: true })
+          .limit(100);
+
+        const messages: PollMessageDTO[] = (rows ?? []).map((r: any) => ({
+          id: String(r.id),
+          content: r.content || "",
+          sender: r.sender as "customer" | "agent",
+          created_at: r.created_at,
+        }));
+
+        return { success: true, messages, repliedBy };
+      } catch (err: any) {
+        return { success: false, messages: [], repliedBy: null, error: err?.message || "erro" };
+      }
+    }
+  );
+
 // Altera o replied_by de uma conversa web (handoff Fran ↔ humano).
 export const updateRepliedBy = createServerFn({ method: "POST" })
   .validator((d: unknown) =>

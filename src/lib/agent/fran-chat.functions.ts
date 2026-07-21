@@ -171,6 +171,22 @@ export const chatWithFran = createServerFn({ method: "POST" })
         conversationId = existing.id;
         // Checagem de replied_by A CADA mensagem: se human, Fran não responde
         if (existing.replied_by === "human") {
+          // Grava a mensagem do cliente no banco antes de retornar
+          await (supabaseAdmin as any).from("messages").insert({
+            conversation_id: existing.id,
+            content: data.mensagem,
+            sender: "customer",
+            message_type: "text",
+            read: false,
+          });
+          await (supabaseAdmin as any)
+            .from("conversations")
+            .update({
+              last_message: data.mensagem,
+              last_message_at: new Date().toISOString(),
+              unread: true,
+            })
+            .eq("id", existing.id);
           return {
             success: false,
             error: "human_mode",
