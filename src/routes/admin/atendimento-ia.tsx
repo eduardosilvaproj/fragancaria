@@ -19,8 +19,25 @@ import {
   BookOpen,
   HelpCircle,
   Search,
+  Send,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { chatWithFran, type FranHistoryItem } from "@/lib/agent/fran-chat.functions";
+
+// Torna links /produto/{id} clicáveis na resposta da Fran; resto é texto puro.
+function renderFranText(text: string) {
+  const parts = text.split(/(\/produto\/[A-Za-z0-9_-]+)/g);
+  return parts.map((part, i) =>
+    /^\/produto\/[A-Za-z0-9_-]+$/.test(part) ? (
+      <a key={i} href={part} target="_blank" rel="noreferrer" className="underline">
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    ),
+  );
+}
 
 export const Route = createFileRoute("/admin/atendimento-ia")({
   component: AdminAtendimentoIA,
@@ -125,6 +142,35 @@ function AdminAtendimentoIA() {
   const [activeTab, setActiveTab] = useState<"chatbot" | "faqs" | "training">("chatbot");
   const [chatbotActive, setChatbotActive] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Bancada de teste da Fran: chat real contra chatWithFran.
+  const [franHistory, setFranHistory] = useState<FranHistoryItem[]>([]);
+  const [franInput, setFranInput] = useState("");
+  const [franLoading, setFranLoading] = useState(false);
+  const [franError, setFranError] = useState<string | null>(null);
+
+  const sendToFran = async () => {
+    const mensagem = franInput.trim();
+    if (!mensagem || franLoading) return;
+    setFranInput("");
+    setFranError(null);
+    setFranLoading(true);
+    // Mostra a mensagem do usuário na hora; o histórico autoritativo vem da resposta.
+    const optimistic: FranHistoryItem[] = [...franHistory, { role: "user", content: mensagem }];
+    setFranHistory(optimistic);
+    try {
+      const result = await chatWithFran({ data: { mensagem, historico: franHistory } });
+      if (result.success) {
+        setFranHistory(result.historico);
+      } else {
+        setFranError(result.error);
+      }
+    } catch (e) {
+      setFranError(e instanceof Error ? e.message : "Erro ao falar com a Fran");
+    } finally {
+      setFranLoading(false);
+    }
+  };
 
   const filteredFaqs = MOCK_FAQS.filter(
     (faq) =>
@@ -304,36 +350,58 @@ function AdminAtendimentoIA() {
             </div>
           </div>
 
-          {/* Preview */}
+          {/* Bancada de teste — chat real com a Fran (chatWithFran) */}
           <div className="bg-white border border-[#E9E1D2] overflow-hidden">
-            <div className="p-4 border-b border-[#E9E1D2]">
-              <h3 className="font-serif text-lg text-[#0F3A3E]">Preview do Chatbot</h3>
+            <div className="p-4 border-b border-[#E9E1D2] flex items-center justify-between">
+              <h3 className="font-serif text-lg text-[#0F3A3E]">Conversar com a Fran</h3>
+              {franHistory.length > 0 && (
+                <button
+                  onClick={() => {
+                    setFranHistory([]);
+                    setFranError(null);
+                  }}
+                  className="text-xs text-[#8A938E] hover:text-[#0F3A3E]"
+                >
+                  Limpar
+                </button>
+              )}
             </div>
 
             <div className="h-[400px] bg-[#F9F7F3] p-4 overflow-y-auto">
-              {/* Chat Preview */}
               <div className="space-y-4">
-                <div className="flex justify-start">
-                  <div className="bg-[#0F3A3E] text-white rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%]">
-                    <p className="text-sm">
-                      Olá! 👋 Seja bem-vindo(a) à Fragranciaria! Como posso ajudar você hoje?
-                    </p>
+                {franHistory.length === 0 && !franLoading && (
+                  <p className="text-sm text-[#8A938E] text-center mt-8">
+                    Converse com a Fran como se fosse um cliente. Ex: "meu cabelo é cacheado e ressecado, o que você indica?"
+                  </p>
+                )}
+                {franHistory.map((msg, i) => (
+                  <div key={i} className={cn("flex", msg.role === "user" ? "justify-end" : "justify-start")}>
+                    <div
+                      className={cn(
+                        "rounded-2xl px-4 py-3 max-w-[80%] text-sm whitespace-pre-wrap",
+                        msg.role === "user"
+                          ? "bg-white rounded-br-md shadow-sm text-[#0F3A3E]"
+                          : "bg-[#0F3A3E] rounded-bl-md text-white",
+                      )}
+                    >
+                      {msg.role === "assistant" ? renderFranText(msg.content) : msg.content}
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex justify-end">
-                  <div className="bg-white rounded-2xl rounded-br-md px-4 py-3 shadow-sm max-w-[80%]">
-                    <p className="text-sm text-[#0F3A3E]">Qual o prazo de entrega?</p>
+                ))}
+                {franLoading && (
+                  <div className="flex justify-start">
+                    <div className="bg-[#0F3A3E] text-white rounded-2xl rounded-bl-md px-4 py-3">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    </div>
                   </div>
-                </div>
-
-                <div className="flex justify-start">
-                  <div className="bg-[#0F3A3E] text-white rounded-2xl rounded-bl-md px-4 py-3 max-w-[80%]">
-                    <p className="text-sm">
-                      O prazo de entrega varia de 3 a 10 dias úteis, dependendo da sua região. Após a confirmação do pagamento, você receberá o código de rastreio por e-mail. 📦
-                    </p>
+                )}
+                {franError && (
+                  <div className="flex justify-start">
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm max-w-[80%]">
+                      {franError}
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
 
@@ -341,10 +409,24 @@ function AdminAtendimentoIA() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Teste o chatbot..."
-                  className="flex-1 bg-[#F5F3EE] rounded-lg px-4 py-2 text-sm outline-none"
+                  value={franInput}
+                  onChange={(e) => setFranInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendToFran();
+                    }
+                  }}
+                  disabled={franLoading}
+                  placeholder="Escreva como um cliente..."
+                  className="flex-1 bg-[#F5F3EE] rounded-lg px-4 py-2 text-sm outline-none disabled:opacity-50"
                 />
-                <button className="px-4 py-2 bg-[#0F3A3E] text-white rounded-lg text-sm">
+                <button
+                  onClick={sendToFran}
+                  disabled={franLoading || !franInput.trim()}
+                  className="px-4 py-2 bg-[#0F3A3E] text-white rounded-lg text-sm disabled:opacity-50 flex items-center gap-2"
+                >
+                  {franLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                   Enviar
                 </button>
               </div>

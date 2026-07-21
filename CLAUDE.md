@@ -32,7 +32,7 @@ puro nesta conversa e estao marcadas para rotacao.
 | `VITE_SENDER_NAME` | sim | nao | NF sender |
 | `VITE_SENDER_DOCUMENT` | sim | nao | NF sender |
 | `VITE_SENDER_POSTAL_CODE` | sim | nao | NF sender |
-| `ANTHROPIC_API_KEY` | **nao** | sim (`SECRETA`) | Claude API (se usarmos Claude) |
+| `ANTHROPIC_API_KEY` | **sim** (server-only) | sim (`SECRETA`) | Claude API. Storefront: consultora Fran, lida so em `.handler()`, nunca `VITE_` |
 | `GEMINI_API_KEY` | **nao** | sim (`SECRETA`) | Gemini API (se usarmos Gemini) |
 | `COHERE_API_KEY` | **nao** | sim (`SECRETA`) | Cohere API (classificador) |
 | `OPENAI_API_KEY` | **nao** | sim (`SECRETA`) | OpenAI (embeddings/RAG) |
@@ -45,7 +45,13 @@ puro nesta conversa e estao marcadas para rotacao.
 
 ### Regras
 
-1. **Storefront** NUNCA tera chave de LLM. Risco: vazar em bundle.
+1. **Chave de LLM na storefront**: PERMITIDA, mas SOMENTE server-only —
+   lida via `process.env` dentro do `.handler()` de uma server fn, NUNCA
+   com prefixo `VITE_`, nunca no topo de arquivo `.tsx`/rota. Verificado
+   por `npm run build` + grep no `dist/client/`: nome e valor do secret
+   ausentes do bundle do browser (2026-07-21). A proibição anterior
+   ("storefront nunca terá chave de LLM") era do desenho de serviço
+   separado; a consultora Fran roda dentro da storefront (site-first).
 2. **Agent Service** tera SUPABASE_SERVICE_ROLE_KEY (precisa bypassar
    RLS para inserir agent_events, agent_decisions).
 3. **Agent Service** NAO tera MP_ACCESS_TOKEN (pagamento e job do
