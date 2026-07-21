@@ -4,18 +4,18 @@ import {
   listConversations,
   getMessages,
   sendMessage,
+  updateRepliedBy,
 } from "@/lib/whatsapp.functions";
 import {
   MessageSquare,
   Search,
-  Filter,
   Send,
   Paperclip,
   Phone,
   Mail,
   Camera,
+  Globe,
   MoreHorizontal,
-  Clock,
   CheckCheck,
   User,
   Star,
@@ -28,7 +28,7 @@ export const Route = createFileRoute("/admin/sac")({
   component: AdminSAC,
 });
 
-type Channel = "whatsapp" | "instagram" | "email";
+type Channel = "whatsapp" | "instagram" | "email" | "web";
 
 interface Conversation {
   id: string;
@@ -46,6 +46,7 @@ interface Conversation {
   status: "open" | "pending" | "resolved";
   priority: "low" | "medium" | "high";
   tags: string[];
+  repliedBy?: "fran" | "human";
 }
 
 interface Message {
@@ -61,6 +62,7 @@ const CHANNEL_CONFIG = {
   whatsapp: { icon: Phone, color: "text-green-600 bg-green-100", label: "WhatsApp" },
   instagram: { icon: Camera, color: "text-pink-600 bg-pink-100", label: "Instagram" },
   email: { icon: Mail, color: "text-blue-600 bg-blue-100", label: "Email" },
+  web: { icon: Globe, color: "text-purple-600 bg-purple-100", label: "Site (Fran)" },
 };
 
 const STATUS_CONFIG = {
@@ -178,6 +180,7 @@ function AdminSAC() {
               <option value="whatsapp">WhatsApp</option>
               <option value="instagram">Instagram</option>
               <option value="email">Email</option>
+              <option value="web">Site (Fran)</option>
             </select>
             <select
               value={statusFilter}
@@ -265,6 +268,11 @@ function AdminSAC() {
                         ))}
                       </div>
                     )}
+                    {conv.repliedBy === "fran" && (
+                      <span className="text-[10px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded mt-1 inline-block">
+                        Fran
+                      </span>
+                    )}
                   </div>
 
                   {/* Unread indicator */}
@@ -313,6 +321,41 @@ function AdminSAC() {
             </div>
 
             <div className="flex items-center gap-2">
+              {selectedConversation.channel === "web" && (
+                <>
+                  {selectedConversation.repliedBy === "fran" ? (
+                    <button
+                      onClick={async () => {
+                        const res = await updateRepliedBy({
+                          data: { conversationId: selectedConversation.id, repliedBy: "human" },
+                        });
+                        if (res.success) {
+                          setSelectedConversation((prev) => prev ? { ...prev, repliedBy: "human" } : null);
+                          loadConversations();
+                        }
+                      }}
+                      className="text-xs bg-amber-100 text-amber-800 px-3 py-1.5 rounded-full hover:bg-amber-200 transition-colors"
+                    >
+                      Assumir
+                    </button>
+                  ) : (
+                    <button
+                      onClick={async () => {
+                        const res = await updateRepliedBy({
+                          data: { conversationId: selectedConversation.id, repliedBy: "fran" },
+                        });
+                        if (res.success) {
+                          setSelectedConversation((prev) => prev ? { ...prev, repliedBy: "fran" } : null);
+                          loadConversations();
+                        }
+                      }}
+                      className="text-xs bg-purple-100 text-purple-700 px-3 py-1.5 rounded-full hover:bg-purple-200 transition-colors"
+                    >
+                      Devolver pra Fran
+                    </button>
+                  )}
+                </>
+              )}
               <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
                 <User className="h-5 w-5" />
               </button>

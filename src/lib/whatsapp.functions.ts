@@ -6,7 +6,7 @@ import { z } from "zod";
 // 20260628_whatsapp_conversations.sql. O envio de resposta usa a Z-API
 // (send-text). Sem auth no /admin ainda; quando existir, proteger aqui.
 
-export type Channel = "whatsapp" | "instagram" | "email";
+export type Channel = "whatsapp" | "instagram" | "email" | "web";
 
 export type ConversationDTO = {
   id: string;
@@ -18,6 +18,7 @@ export type ConversationDTO = {
   status: "open" | "pending" | "resolved";
   priority: "low" | "medium" | "high";
   tags: string[];
+  repliedBy?: "fran" | "human";
 };
 
 export type MessageDTO = {
@@ -76,6 +77,7 @@ export const listConversations = createServerFn({ method: "GET" }).handler(
         status: (r.status || "open") as "open" | "pending" | "resolved",
         priority: (r.priority || "medium") as "low" | "medium" | "high",
         tags: Array.isArray(r.tags) ? r.tags : [],
+        repliedBy: r.replied_by || undefined,
       }));
 
       return { success: true, data: mapped };
@@ -156,7 +158,7 @@ export const sendMessage = createServerFn({ method: "POST" })
           "@/integrations/supabase/client.server"
         );
 
-        // Busca o telefone do contato.
+        // Busca dados da conversa.
         const conv = await supabaseAdmin
           .from("conversations")
           .select("customer_phone, channel")
@@ -166,10 +168,34 @@ export const sendMessage = createServerFn({ method: "POST" })
         if (conv.error || !conv.data) {
           return { success: false, error: "Conversa não encontrada" };
         }
-        const phone = (conv.data as any).customer_phone as string | null;
+        const convData = conv.data as any;
+        const channel = convData.channel as string;
+
+        if (channel === "web") {
+          // Canal web (Fran): apenas grava a mensagem e marca handoff.
+          await supabaseAdmin.from("messages").insert({
+            conversation_id: data.conversationId,
+            content: data.content,
+            sender: "agent",
+            message_type: "text",
+            read: true,
+          });
+          await supabaseAdmin
+            .from("conversations")
+            .update({
+              last_message: data.content,
+              last_message_at: new Date().toISOString(),
+              unread: false,
+              replied_by: "human",
+            })
+            .eq("id", data.conversationId);
+          return { success: true };
+        }
+
+        // Canais com envio externo (WhatsApp etc.).
+        const phone = convData.customer_phone as string | null;
         if (!phone) return { success: false, error: "Conversa sem telefone" };
 
-        // Envia via Z-API.
         const instanceId = process.env.ZAPI_INSTANCE_ID;
         const instanceToken = process.env.ZAPI_INSTANCE_TOKEN;
         const clientToken = process.env.ZAPI_CLIENT_TOKEN;
@@ -206,7 +232,6 @@ export const sendMessage = createServerFn({ method: "POST" })
         const sent = (await resp.json()) as any;
         const waMessageId = sent?.messageId ?? sent?.id ?? null;
 
-        // Grava a mensagem enviada (sender = agent).
         await supabaseAdmin.from("messages").insert({
           conversation_id: data.conversationId,
           wa_message_id: waMessageId,
@@ -216,7 +241,6 @@ export const sendMessage = createServerFn({ method: "POST" })
           read: true,
         });
 
-        // Atualiza resumo da conversa (sai de não lida).
         await supabaseAdmin
           .from("conversations")
           .update({
@@ -224,6 +248,39 @@ export const sendMessage = createServerFn({ method: "POST" })
             last_message_at: new Date().toISOString(),
             unread: false,
           })
+          .eq("id", data.conversationId);
+
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message || "erro" };
+      }
+    }
+  );
+
+// Altera o replied_by de uma conversa web (handoff Fran ↔ humano).
+export const updateRepliedBy = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        conversationId: z.string(),
+        repliedBy: z.enum(["fran", "human"]),
+      })
+      .parse(d)
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const { requireAdmin } = await import("./admin-auth");
+        await requireAdmin();
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+
+        await supabaseAdmin
+          .from("conversations")
+          .update({ replied_by: data.repliedBy })
           .eq("id", data.conversationId);
 
         return { success: true };
