@@ -63,6 +63,14 @@ export function FranChatWidget() {
   const listRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Ref sincrona do lastPollTimestamp para evitar stale closure no polling
+  const lastPollTsRef = useRef(lastPollTimestamp);
+  lastPollTsRef.current = lastPollTimestamp;
+  // Ref do repliedBy ANTERIOR (atualizada via useEffect pós-render)
+  const prevRepliedByRef = useRef(repliedBy);
+  useEffect(() => {
+    prevRepliedByRef.current = repliedBy;
+  });
 
   // Auto-scroll ao receber nova mensagem
   useEffect(() => {
@@ -104,8 +112,10 @@ export function FranChatWidget() {
 
     const poll = async () => {
       try {
+        // Usa a ref sincrona para evitar stale closure
+        const since = lastPollTsRef.current;
         const result = await pollWebMessages({
-          data: { sessionId, since: lastPollTimestamp },
+          data: { sessionId, since },
         });
         if (!result.success) return;
 
@@ -120,7 +130,7 @@ export function FranChatWidget() {
             addMessage({ role: "assistant", content: msg.content });
           }
           // Avança o cursor para o timestamp desta mensagem
-          if (msg.created_at > lastPollTimestamp) {
+          if (msg.created_at > since) {
             setLastPollTimestamp(msg.created_at);
           }
         }
@@ -163,7 +173,11 @@ export function FranChatWidget() {
 
         if (!result.success) {
           if (result.error === "human_mode") {
-            addMessage({ role: "assistant", content: result.resposta });
+            // Só mostra "assumido" na TRANSIÇÃO fran→human, não a cada envio
+            if (prevRepliedByRef.current !== "human") {
+              addMessage({ role: "assistant", content: result.resposta });
+            }
+            setRepliedBy("human");
           } else {
             setError(result.error);
           }
