@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Share2,
   Camera,
@@ -22,9 +22,16 @@ import {
   Check,
   Wand2,
   AlertCircle,
+  Search,
+  Package,
+  Lightbulb,
+  Feather,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCaption } from "@/lib/agent/generate-caption.functions";
+import { searchProducts } from "@/lib/agent/product-search";
+import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import type { AgentProduct } from "@/lib/agent/product-search";
 
 export const Route = createFileRoute("/admin/redes-sociais")({
   component: AdminRedesSociais,
@@ -92,6 +99,11 @@ function AdminRedesSociais() {
   const [selectedPlatform, setSelectedPlatform] = useState<"instagram" | "facebook" | "twitter">("instagram");
   const [productDescription, setProductDescription] = useState("");
   const [tone, setTone] = useState<"casual" | "profissional" | "divertido">("casual");
+  const [modo, setModo] = useState<"produto" | "dica" | "livre">("produto");
+  const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [productSearchResults, setProductSearchResults] = useState<AgentProduct[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<AgentProduct | null>(null);
+  const [isSearchingProducts, setIsSearchingProducts] = useState(false);
 
   const handleGenerate = async () => {
     if (!productDescription.trim()) return;
@@ -104,6 +116,8 @@ function AdminRedesSociais() {
           tema: productDescription,
           tom: tone,
           plataforma: selectedPlatform,
+          modo,
+          productId: modo === "produto" ? (selectedProduct?.id ?? undefined) : undefined,
         },
       });
       if (result.success) {
@@ -117,6 +131,26 @@ function AdminRedesSociais() {
       setIsGenerating(false);
     }
   };
+
+  // Debounced product search (modo produto)
+  useEffect(() => {
+    if (modo !== "produto" || productSearchQuery.trim().length < 2) {
+      setProductSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setIsSearchingProducts(true);
+      try {
+        const results = await searchProducts(supabaseAdmin, { query: productSearchQuery, limit: 6 });
+        setProductSearchResults(results);
+      } catch {
+        setProductSearchResults([]);
+      } finally {
+        setIsSearchingProducts(false);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [modo, productSearchQuery]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedCaption);
@@ -210,6 +244,35 @@ function AdminRedesSociais() {
         <div className="grid lg:grid-cols-2 gap-6">
           {/* Input */}
           <div className="space-y-6">
+            {/* Mode Selection */}
+            <div className="bg-white border border-[#E9E1D2] p-4">
+              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-3">
+                Modo de Criação
+              </label>
+              <div className="flex gap-2">
+                {[
+                  { value: "produto", label: "Produto", icon: Package, desc: "Divulgar um produto específico" },
+                  { value: "dica", label: "Dica Educativa", icon: Lightbulb, desc: "Conteúdo educativo sobre cabelos" },
+                  { value: "livre", label: "Tema Livre", icon: Feather, desc: "Qualquer assunto do universo capilar" },
+                ].map((m) => (
+                  <button
+                    key={m.value}
+                    onClick={() => { setModo(m.value as any); setSelectedProduct(null); setProductSearchQuery(""); setProductSearchResults([]); }}
+                    className={cn(
+                      "flex-1 p-3 rounded-lg text-left transition-colors border-2",
+                      modo === m.value
+                        ? "border-[#B07B1E] bg-[#B07B1E]/5"
+                        : "border-transparent bg-[#F5F3EE] hover:bg-[#E9E1D2]"
+                    )}
+                  >
+                    <m.icon className={cn("h-5 w-5 mb-1", modo === m.value ? "text-[#B07B1E]" : "text-[#8A938E]")} />
+                    <span className="block text-sm font-medium text-[#0F3A3E]">{m.label}</span>
+                    <span className="block text-[10px] text-[#8A938E] mt-0.5">{m.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Platform Selection */}
             <div className="bg-white border border-[#E9E1D2] p-4">
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-3">
@@ -239,19 +302,84 @@ function AdminRedesSociais() {
               </div>
             </div>
 
-            {/* Product/Topic */}
-            <div className="bg-white border border-[#E9E1D2] p-4">
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-3">
-                Sobre o que é o post?
-              </label>
-              <textarea
-                value={productDescription}
-                onChange={(e) => setProductDescription(e.target.value)}
-                placeholder="Ex: Kit de tratamento capilar com shampoo, condicionador e máscara. Ideal para cabelos danificados. Promoção de 30% OFF."
-                rows={4}
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none resize-none"
-              />
-            </div>
+            {/* Product Search (modo produto) */}
+            {modo === "produto" && (
+              <div className="bg-white border border-[#E9E1D2] p-4">
+                <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-3">
+                  Buscar Produto
+                </label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#8A938E]" />
+                  <input
+                    type="text"
+                    value={productSearchQuery}
+                    onChange={(e) => setProductSearchQuery(e.target.value)}
+                    placeholder="Digite o nome do produto..."
+                    className="w-full bg-[#F5F3EE] rounded-lg pl-10 pr-4 py-2.5 text-sm outline-none"
+                  />
+                </div>
+                {isSearchingProducts && (
+                  <div className="mt-2 text-xs text-[#8A938E]">Buscando...</div>
+                )}
+                {productSearchResults.length > 0 && (
+                  <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                    {productSearchResults.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => {
+                          setSelectedProduct(p);
+                          setProductDescription(`${p.name}${p.brand ? ` — ${p.brand}` : ""}${p.price ? ` — R$ ${p.price}` : ""}`);
+                          setProductSearchQuery("");
+                          setProductSearchResults([]);
+                        }}
+                        className={cn(
+                          "w-full flex items-start gap-3 p-2.5 rounded-lg text-left transition-colors",
+                          selectedProduct?.id === p.id
+                            ? "bg-[#B07B1E]/10 border border-[#B07B1E]/30"
+                            : "bg-[#F5F3EE] hover:bg-[#E9E1D2]"
+                        )}
+                      >
+                        <Package className="h-4 w-4 text-[#B07B1E] mt-0.5 flex-shrink-0" />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-[#0F3A3E] truncate">{p.name}</p>
+                          <p className="text-xs text-[#8A938E] truncate">
+                            {p.brand && `${p.brand}`}{p.price && ` — R$ ${p.price}`}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {selectedProduct && (
+                  <div className="mt-2 flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2">
+                    <Check className="h-4 w-4 text-emerald-600 flex-shrink-0" />
+                    <span className="text-sm text-emerald-700 truncate">{selectedProduct.name}</span>
+                    <button
+                      onClick={() => { setSelectedProduct(null); setProductDescription(""); }}
+                      className="ml-auto text-xs text-red-500 hover:text-red-700 flex-shrink-0"
+                    >
+                      Remover
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Topic (modos dica e livre) */}
+            {modo !== "produto" && (
+              <div className="bg-white border border-[#E9E1D2] p-4">
+                <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-3">
+                  Sobre o que é o post?
+                </label>
+                <textarea
+                  value={productDescription}
+                  onChange={(e) => setProductDescription(e.target.value)}
+                  placeholder={modo === "dica" ? "Ex: Como hidratar cabelos crespos corretamente — passo a passo com os melhores ingredientes." : "Ex: Tendências de cuidados capilares para o verão 2025."}
+                  rows={4}
+                  className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none resize-none"
+                />
+              </div>
+            )}
 
             {/* Tone */}
             <div className="bg-white border border-[#E9E1D2] p-4">
