@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAppUpdate } from "../hooks/useAppUpdate";
 import { WhatsAppButton } from "../components/shop/WhatsAppButton";
+import { FranChatWidget } from "../components/shop/FranChatWidget";
 import { ScrollToTop } from "../components/ui/ScrollToTop";
 
 import {
@@ -182,6 +183,7 @@ function RootComponent() {
       <Outlet />
       <ScrollToTop />
       <WhatsAppButton />
+      <FranChatWidget />
       <div data-testid="sonner-container">
         <Toaster />
       </div>

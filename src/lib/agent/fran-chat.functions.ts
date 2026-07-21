@@ -1,15 +1,25 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn, getRequestHeader } from "@tanstack/react-start";
 import { z } from "zod";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Cérebro da Fran: loop de tool-use síncrono, dentro da storefront (sem serviço
 // separado, sem webhook — site-first). Todos os imports server-only (SDK,
 // supabaseAdmin, persona, tools) são dinâmicos DENTRO do .handler() — assim a
 // ANTHROPIC_API_KEY (process.env, nunca VITE_) fica fora do bundle do cliente.
 // Verificado por grep no dist/client/ (ver CLAUDE.md, regra de chave LLM).
+//
+// Proteção contra abuso (público):
+//   - Rate-limit por IP: 30 chamadas / 10 min (teto duro de custo)
+//   - Teto de histórico: 50k chars totais (evita inflação de tokens)
+//   - Limite UX de 25 msg/sessão no widget (client-side, nudge)
 
 const MODEL = "claude-sonnet-5";
 const MAX_TOKENS = 1024;
 const MAX_TOOL_ITERATIONS = 5;
+
+const RATE_LIMIT_MAX = 30;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000; // 10 min
+const MAX_HISTORY_CHARS = 50_000;
 
 const historyItemSchema = z.object({
   role: z.enum(["user", "assistant"]),
@@ -63,6 +73,25 @@ export const chatWithFran = createServerFn({ method: "POST" })
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return { success: false, error: "ANTHROPIC_API_KEY não configurada no servidor." };
+    }
+
+    // Rate-limit por IP (teto duro de custo — 30 chamadas / 10 min)
+    const ip =
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
+      getRequestHeader("x-real-ip") ||
+      "unknown";
+    const rl = rateLimit(`fran:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+    if (!rl.allowed) {
+      return {
+        success: false,
+        error: `Muitas tentativas. Tente novamente em ${rl.retryAfterSeconds} segundos.`,
+      };
+    }
+
+    // Teto de tamanho total do histórico (evita inflação de tokens)
+    const totalChars = data.historico.reduce((acc, m) => acc + m.content.length, 0);
+    if (totalChars > MAX_HISTORY_CHARS) {
+      return { success: false, error: "Histórico muito longo. Inicie uma nova conversa." };
     }
 
     try {

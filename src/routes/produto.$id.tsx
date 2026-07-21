@@ -11,6 +11,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
+import { useFranChatStore } from "@/stores/franChatStore";
 import { toast } from "sonner";
 import {
   Star,
@@ -44,6 +45,7 @@ function ProductPage() {
   const addToCart = useCartStore((state) => state.addItem);
   const setCartOpen = useCartStore((state) => state.setIsOpen);
   const addToRecentlyViewed = useRecentlyViewedStore((state) => state.addItem);
+  const openFranChat = useFranChatStore((state) => state.open);
   const navigate = useNavigate();
 
   const { products, isPending } = useProducts();
@@ -488,6 +490,19 @@ function ProductPage() {
                   productImage={p.images[0]}
                   productPrice={p.price}
                 />
+              </div>
+
+              {/* Pergunte à Fran */}
+              <div className="mt-6 pt-6 border-t border-[#E0D8C7]">
+                <button
+                  onClick={() => openFranChat(`Olá! Tenho uma dúvida sobre o produto "${p.name}" (https://fragranciaria.com.br/produto/${p.id}). Poderia me ajudar?`)}
+                  className="w-full flex items-center justify-center gap-3 py-4 bg-[#F8F6F0] border border-[#E0D8C7] text-[#0F3A3E] text-[13px] font-medium hover:bg-[#F0EBE0] transition-colors"
+                >
+                  <svg className="w-5 h-5 text-[#B07B1E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456zM16.894 20.567L16.5 21.75l-.394-1.183a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.183-.394a2.25 2.25 0 001.423-1.423l.394-1.183.394 1.183a2.25 2.25 0 001.423 1.423l1.183.394-1.183.394a2.25 2.25 0 00-1.423 1.423z" />
+                  </svg>
+                  Dúvida sobre este produto? Pergunte à Fran
+                </button>
               </div>
             </div>
           </div>
