@@ -49,6 +49,7 @@ interface Message {
   content: string;
   sender: "customer" | "agent";
   timestamp: string;
+  created_at: string;
   read: boolean;
 }
 
@@ -96,19 +97,26 @@ function AdminSAC() {
     if (!selectedConversation) return;
     const convId = selectedConversation.id;
     const poll = async () => {
-      const res = await getMessages({ data: { conversationId: convId } });
-      if (!res.success) return;
-      const cutoff = lastPollTsRef.current;
-      const fresh = cutoff
-        ? res.data.filter((m) => m.timestamp > cutoff)
-        : res.data;
-      if (fresh.length > 0) {
-        lastPollTsRef.current = fresh[fresh.length - 1].timestamp;
-        setMessages((prev) => {
-          const existing = new Set(prev.map((m) => m.id));
-          const toAdd = fresh.filter((m) => !existing.has(m.id));
-          return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
-        });
+      try {
+        const res = await getMessages({ data: { conversationId: convId } });
+        if (!res.success) {
+          console.error("[AdminSAC] poll error:", res.error);
+          return;
+        }
+        const cutoff = lastPollTsRef.current;
+        const fresh = cutoff
+          ? res.data.filter((m) => m.created_at > cutoff)
+          : res.data;
+        if (fresh.length > 0) {
+          lastPollTsRef.current = fresh[fresh.length - 1].created_at;
+          setMessages((prev) => {
+            const existing = new Set(prev.map((m) => m.id));
+            const toAdd = fresh.filter((m) => !existing.has(m.id));
+            return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+          });
+        }
+      } catch (err) {
+        console.error("[AdminSAC] poll exception:", err);
       }
     };
     const id = setInterval(poll, 3000);

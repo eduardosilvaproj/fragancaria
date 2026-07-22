@@ -26,6 +26,7 @@ export type MessageDTO = {
   content: string;
   sender: "customer" | "agent";
   timestamp: string;
+  created_at: string;
   read: boolean;
 };
 
@@ -115,6 +116,7 @@ export const getMessages = createServerFn({ method: "GET" })
           content: r.content || "",
           sender: (r.sender || "customer") as "customer" | "agent",
           timestamp: formatTime(r.created_at),
+          created_at: r.created_at || "",
           read: Boolean(r.read),
         }));
 
