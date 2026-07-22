@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import { ART_DIRECTOR_SYSTEM_PROMPT, buildArtPrompt } from "@/lib/agent/art-director";
 
 const RATE_LIMIT_MAX = 20;
 const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
@@ -8,6 +9,11 @@ const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
 const inputSchema = z.object({
   prompt: z.string().min(1).max(2000),
   productId: z.string().optional(),
+  productName: z.string().optional(),
+  productBrand: z.string().optional(),
+  productDescription: z.string().optional(),
+  caption: z.string().optional(),
+  modo: z.enum(["produto", "dica", "livre"]).optional(),
 });
 
 export type GenerateImageInput = z.infer<typeof inputSchema>;
@@ -15,6 +21,43 @@ export type GenerateImageInput = z.infer<typeof inputSchema>;
 export type GenerateImageResult =
   | { success: true; url: string }
   | { success: false; error: string };
+
+async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
+  const sharp = (await import("sharp")).default;
+  const fs = await import("fs/promises");
+  const path = await import("path");
+
+  const logoPath = path.resolve(process.cwd(), "public/images/logo-editorial.png");
+  let logoBuffer: Buffer;
+  try {
+    logoBuffer = await fs.readFile(logoPath);
+  } catch {
+    // Se não achar o logo, retorna a imagem sem carimbo
+    return imageBuffer;
+  }
+
+  const imageMeta = await sharp(imageBuffer).metadata();
+  const imgWidth = imageMeta.width ?? 1024;
+  const imgHeight = imageMeta.height ?? 1024;
+
+  // Logo redimensionado para ~18% da largura da imagem
+  const logoWidth = Math.round(imgWidth * 0.18);
+
+  const resizedLogo = await sharp(logoBuffer)
+    .resize(logoWidth, null, { fit: "inside", withoutEnlargement: true })
+    .toBuffer();
+
+  const logoMeta = await sharp(resizedLogo).metadata();
+
+  // Posição: canto inferior direito com margem de ~4% da largura
+  const margin = Math.round(imgWidth * 0.04);
+  const left = imgWidth - (logoMeta.width ?? logoWidth) - margin;
+  const top = imgHeight - (logoMeta.height ?? Math.round(logoWidth)) - margin;
+
+  return sharp(imageBuffer)
+    .composite([{ input: resizedLogo, top, left }])
+    .toBuffer();
+}
 
 export const generateImage = createServerFn({ method: "POST" })
   .validator((d: unknown) => inputSchema.parse(d))
@@ -36,15 +79,29 @@ export const generateImage = createServerFn({ method: "POST" })
       const OpenAI = (await import("openai")).default;
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+      // Se veio com dados de produto/caption, usa o diretor de arte para gerar o prompt
+      let finalPrompt = data.prompt;
+      if (data.caption) {
+        const product = data.productName
+          ? { name: data.productName, brand: data.productBrand, description: data.productDescription }
+          : null;
+        const artPrompt = buildArtPrompt(product, data.caption, data.modo ?? "produto");
+        finalPrompt = artPrompt;
+      }
+
       const client = new OpenAI({ apiKey });
 
       const response = await client.responses.create({
         model: "gpt-5.6",
         input: [
           {
+            role: "system",
+            content: ART_DIRECTOR_SYSTEM_PROMPT,
+          },
+          {
             role: "user",
             content: [
-              { type: "input_text", text: data.prompt },
+              { type: "input_text", text: finalPrompt },
             ],
           },
         ],
@@ -70,6 +127,9 @@ export const generateImage = createServerFn({ method: "POST" })
       const base64Data = genCall.result.replace(/^data:[^;]+;base64,/, "");
       const buffer = Buffer.from(base64Data, "base64");
 
+      // Carimba o logo
+      const stampedBuffer = await stampLogo(buffer);
+
       const timestamp = Date.now();
       const randomStr = Math.random().toString(36).substring(2, 8);
       const slug = data.productId
@@ -79,7 +139,7 @@ export const generateImage = createServerFn({ method: "POST" })
 
       const { error: uploadError } = await supabaseAdmin.storage
         .from("product-images")
-        .upload(filename, buffer, {
+        .upload(filename, stampedBuffer, {
           contentType: "image/webp",
           upsert: false,
         });

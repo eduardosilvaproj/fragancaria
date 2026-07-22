@@ -168,11 +168,15 @@ function AdminRedesSociais() {
     setImageGenTime(null);
     const start = Date.now();
     try {
-      const prompt = `Crie uma imagem para post de rede social sobre: ${generatedCaption.substring(0, 500)}. Estilo: fotográfico, iluminação natural, composição elegante, tons quentes e sofisticados.`;
       const result = await generateImage({
         data: {
-          prompt,
+          prompt: generatedCaption.substring(0, 500),
           productId: modo === "produto" ? (selectedProduct?.id ?? undefined) : undefined,
+          productName: selectedProduct?.name ?? undefined,
+          productBrand: selectedProduct?.brand ?? undefined,
+          productDescription: selectedProduct?.description ?? undefined,
+          caption: generatedCaption,
+          modo,
         },
       });
       if (result.success) {
