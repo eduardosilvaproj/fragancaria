@@ -26,13 +26,32 @@ async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
   const fs = await import("fs/promises");
   const path = await import("path");
+  const url = await import("url");
 
-  const logoPath = path.resolve(process.cwd(), "public/images/logo-editorial.png");
-  let logoBuffer: Buffer;
-  try {
-    logoBuffer = await fs.readFile(logoPath);
-  } catch {
-    // Se não achar o logo, retorna a imagem sem carimbo
+  // O logo está em public/images/logo.png (dev) → copiado para dist/client/images/logo.png (build).
+  // O servidor roda de dist/server/index.js. Tentamos os dois caminhos.
+  const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+  const candidates = [
+    path.resolve(__dirname, "..", "client", "images", "logo.png"),
+    path.resolve(process.cwd(), "dist", "client", "images", "logo.png"),
+    path.resolve(process.cwd(), "public", "images", "logo.png"),
+  ];
+
+  let logoBuffer: Buffer | null = null;
+  let usedPath = "";
+  for (const p of candidates) {
+    try {
+      logoBuffer = await fs.readFile(p);
+      usedPath = p;
+      break;
+    } catch {
+      // try next
+    }
+  }
+
+  if (!logoBuffer) {
+    console.error("[stampLogo] LOGO NÃO ENCONTRADO. Tentados:", candidates.join(", "));
+    // Não carimba, mas retorna a imagem original em vez de quebrar
     return imageBuffer;
   }
 
