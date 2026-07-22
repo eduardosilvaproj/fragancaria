@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCaption } from "@/lib/agent/generate-caption.functions";
+import { generateImage } from "@/lib/agent/generate-image.functions";
 import { searchProductsAdmin } from "@/lib/agent/product-search-admin.functions";
 import type { AgentProduct } from "@/lib/agent/product-search";
 
@@ -103,6 +104,9 @@ function AdminRedesSociais() {
   const [productSearchResults, setProductSearchResults] = useState<AgentProduct[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<AgentProduct | null>(null);
   const [isSearchingProducts, setIsSearchingProducts] = useState(false);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState("");
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+  const [imageGenTime, setImageGenTime] = useState<number | null>(null);
 
   const handleGenerate = async () => {
     if (!productDescription.trim()) return;
@@ -155,6 +159,33 @@ function AdminRedesSociais() {
     navigator.clipboard.writeText(generatedCaption);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleGenerateImage = async () => {
+    if (!generatedCaption.trim()) return;
+    setIsGeneratingImage(true);
+    setGeneratedImageUrl("");
+    setImageGenTime(null);
+    const start = Date.now();
+    try {
+      const prompt = `Crie uma imagem para post de rede social sobre: ${generatedCaption.substring(0, 500)}. Estilo: fotográfico, iluminação natural, composição elegante, tons quentes e sofisticados.`;
+      const result = await generateImage({
+        data: {
+          prompt,
+          productId: modo === "produto" ? (selectedProduct?.id ?? undefined) : undefined,
+        },
+      });
+      if (result.success) {
+        setGeneratedImageUrl(result.url);
+      } else {
+        setError(result.error);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao gerar imagem");
+    } finally {
+      setIsGeneratingImage(false);
+      setImageGenTime(Date.now() - start);
+    }
   };
 
   return (
@@ -490,13 +521,45 @@ function AdminRedesSociais() {
                         <p className="text-xs text-[#8A938E]">Agora</p>
                       </div>
                     </div>
-                    <div className="bg-gray-200 w-full h-48 rounded-lg mb-3 flex items-center justify-center">
-                      <Image className="h-12 w-12 text-gray-400" />
-                    </div>
+                    {generatedImageUrl ? (
+                      <img
+                        src={generatedImageUrl}
+                        alt="Imagem gerada por IA"
+                        className="w-full h-48 object-cover rounded-lg mb-3"
+                      />
+                    ) : (
+                      <div className="bg-gray-200 w-full h-48 rounded-lg mb-3 flex items-center justify-center">
+                        <Image className="h-12 w-12 text-gray-400" />
+                      </div>
+                    )}
                     <p className="text-sm text-[#0F3A3E] whitespace-pre-wrap">
                       {generatedCaption}
                     </p>
                   </div>
+
+                  {/* Generate Image Button */}
+                  <button
+                    onClick={handleGenerateImage}
+                    disabled={isGeneratingImage}
+                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {isGeneratingImage ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                        Gerando imagem... pode levar 1-2 minutos
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="h-4 w-4" />
+                        Gerar Imagem com IA
+                      </>
+                    )}
+                  </button>
+                  {imageGenTime !== null && (
+                    <p className="text-xs text-[#8A938E] text-center">
+                      Imagem gerada em {(imageGenTime / 1000).toFixed(1)}s
+                    </p>
+                  )}
 
                   {/* Actions */}
                   <div className="flex gap-3">

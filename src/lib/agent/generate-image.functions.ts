@@ -51,11 +51,8 @@ export const generateImage = createServerFn({ method: "POST" })
         tools: [
           {
             type: "image_generation",
-            image_generation: {
-              format: "webp",
-              quality: "hd",
-              style: "vivid",
-            },
+            output_format: "webp",
+            quality: "high",
           },
         ],
         tool_choice: { type: "image_generation" },
