@@ -450,3 +450,36 @@ export const updateRepliedBy = createServerFn({ method: "POST" })
       }
     }
   );
+
+// Altera o status de uma conversa (ex: marcar como resolvida).
+export const updateConversationStatus = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        conversationId: z.string(),
+        status: z.enum(["open", "pending", "resolved"]),
+      })
+      .parse(d)
+  )
+  .handler(
+    async ({
+      data,
+    }): Promise<{ success: boolean; error?: string }> => {
+      try {
+        const { requireAdmin } = await import("./admin-auth");
+        await requireAdmin();
+        const { supabaseAdmin } = await import(
+          "@/integrations/supabase/client.server"
+        );
+
+        await supabaseAdmin
+          .from("conversations")
+          .update({ status: data.status })
+          .eq("id", data.conversationId);
+
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err?.message || "erro" };
+      }
+    }
+  );

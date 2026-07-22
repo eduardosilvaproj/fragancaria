@@ -5,22 +5,17 @@ import {
   getMessages,
   sendMessage,
   updateRepliedBy,
+  updateConversationStatus,
 } from "@/lib/whatsapp.functions";
 import {
   MessageSquare,
   Search,
   Send,
-  Paperclip,
   Phone,
   Mail,
   Camera,
   Globe,
-  MoreHorizontal,
   CheckCheck,
-  User,
-  Star,
-  Archive,
-  Tag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -334,14 +329,27 @@ function AdminSAC() {
                   >
                     {CHANNEL_CONFIG[selectedConversation.channel].label}
                   </span>
-                  <span
+                  <select
+                    value={selectedConversation.status}
+                    onChange={async (e) => {
+                      const newStatus = e.target.value as "open" | "pending" | "resolved";
+                      const res = await updateConversationStatus({
+                        data: { conversationId: selectedConversation.id, status: newStatus },
+                      });
+                      if (res.success) {
+                        setSelectedConversation((prev) => prev ? { ...prev, status: newStatus } : null);
+                        loadConversations();
+                      }
+                    }}
                     className={cn(
-                      "px-2 py-0.5 rounded-full text-[10px]",
+                      "px-2 py-0.5 rounded-full text-[10px] outline-none cursor-pointer",
                       STATUS_CONFIG[selectedConversation.status].color
                     )}
                   >
-                    {STATUS_CONFIG[selectedConversation.status].label}
-                  </span>
+                    <option value="open">Aberto</option>
+                    <option value="pending">Pendente</option>
+                    <option value="resolved">Resolvido</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -382,21 +390,6 @@ function AdminSAC() {
                   )}
                 </>
               )}
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <User className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <Tag className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <Star className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <Archive className="h-5 w-5" />
-              </button>
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <MoreHorizontal className="h-5 w-5" />
-              </button>
             </div>
           </div>
 
@@ -450,9 +443,6 @@ function AdminSAC() {
           {/* Input */}
           <div className="bg-white border-t border-[#E9E1D2] p-4">
             <div className="flex items-end gap-3">
-              <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                <Paperclip className="h-5 w-5" />
-              </button>
               <div className="flex-1">
                 <textarea
                   value={messageInput}
