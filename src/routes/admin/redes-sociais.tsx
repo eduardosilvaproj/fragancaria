@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Share2,
   Camera,
@@ -29,7 +29,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateCaption } from "@/lib/agent/generate-caption.functions";
-import { generateImage } from "@/lib/agent/generate-image.functions";
+import { startImageGeneration, pollImageGeneration } from "@/lib/agent/generate-image.functions";
 import { searchProductsAdmin } from "@/lib/agent/product-search-admin.functions";
 import { publishNow, schedulePost, saveDraft, listPosts, cancelPost } from "@/lib/agent/social-publish.functions";
 import type { AgentProduct } from "@/lib/agent/product-search";
@@ -235,14 +235,67 @@ function AdminRedesSociais() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const jobIdRef = useRef<string | null>(null);
+  const startTimeRef = useRef<number>(0);
+
+  // Polling: monitora o job de geração de imagem
+  useEffect(() => {
+    if (!isGeneratingImage || !jobIdRef.current) return;
+
+    const poll = async () => {
+      try {
+        const result = await pollImageGeneration({ data: { jobId: jobIdRef.current! } });
+        if (!result.success) {
+          setError(result.error);
+          setIsGeneratingImage(false);
+          if (pollTimerRef.current) {
+            clearInterval(pollTimerRef.current);
+            pollTimerRef.current = null;
+          }
+          return;
+        }
+
+        if (result.status === "ready") {
+          setGeneratedImageUrl(result.url ?? "");
+          setImageGenTime(Date.now() - startTimeRef.current);
+          setIsGeneratingImage(false);
+          if (pollTimerRef.current) {
+            clearInterval(pollTimerRef.current);
+            pollTimerRef.current = null;
+          }
+        } else if (result.status === "failed") {
+          setError(result.error ?? "Falha ao gerar imagem");
+          setIsGeneratingImage(false);
+          if (pollTimerRef.current) {
+            clearInterval(pollTimerRef.current);
+            pollTimerRef.current = null;
+          }
+        }
+        // pending/processing → continua polling
+      } catch (err) {
+        console.error("[pollImage] erro:", err);
+      }
+    };
+
+    pollTimerRef.current = setInterval(poll, 3000);
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+        pollTimerRef.current = null;
+      }
+    };
+  }, [isGeneratingImage]);
+
   const handleGenerateImage = async () => {
     if (!generatedCaption.trim()) return;
     setIsGeneratingImage(true);
     setGeneratedImageUrl("");
     setImageGenTime(null);
-    const start = Date.now();
+    setError("");
+    startTimeRef.current = Date.now();
     try {
-      const result = await generateImage({
+      const result = await startImageGeneration({
         data: {
           prompt: generatedCaption.substring(0, 500),
           productId: modo === "produto" ? (selectedProduct?.id ?? undefined) : undefined,
@@ -254,15 +307,14 @@ function AdminRedesSociais() {
         },
       });
       if (result.success) {
-        setGeneratedImageUrl(result.url);
+        jobIdRef.current = result.jobId;
       } else {
         setError(result.error);
+        setIsGeneratingImage(false);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao gerar imagem");
-    } finally {
       setIsGeneratingImage(false);
-      setImageGenTime(Date.now() - start);
     }
   };
 
@@ -609,19 +661,6 @@ function AdminRedesSociais() {
                       <div className="bg-gray-200 w-full h-48 rounded-lg mb-3 flex items-center justify-center">
                         <Image className="h-12 w-12 text-gray-400" />
                       </div>
-                    )}
-                    {!generatedImageUrl && (
-                      <button
-                        onClick={handleGenerateImage}
-                        disabled={isGeneratingImage}
-                        className="w-full mb-3 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {isGeneratingImage ? (
-                          <><RefreshCw className="h-4 w-4 animate-spin" />Gerando imagem...</>
-                        ) : (
-                          <><Wand2 className="h-4 w-4" />Gerar Imagem</>
-                        )}
-                      </button>
                     )}
                     <p className="text-sm text-[#0F3A3E] whitespace-pre-wrap">
                       {generatedCaption}
