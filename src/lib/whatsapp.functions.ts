@@ -291,13 +291,13 @@ export const pollWebMessages = createServerFn({ method: "GET" })
           getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
           getRequestHeader("x-real-ip") ||
           "unknown";
-        const rl = rateLimit(`poll:${ip}`, 30, 10 * 60 * 1000);
+        const rl = rateLimit(`poll-msg:${ip}`, 400, 10 * 60 * 1000);
         if (!rl.allowed) {
           return {
             success: false,
             messages: [],
             repliedBy: null,
-            error: `Muitas tentativas. Tente novamente em ${rl.retryAfterSeconds} segundos.`,
+            error: `rate_limited`,
           };
         }
 
@@ -369,13 +369,13 @@ export const getWebHistory = createServerFn({ method: "GET" })
           getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
           getRequestHeader("x-real-ip") ||
           "unknown";
-        const rl = rateLimit(`poll:${ip}`, 30, 10 * 60 * 1000);
+        const rl = rateLimit(`poll-history:${ip}`, 30, 10 * 60 * 1000);
         if (!rl.allowed) {
           return {
             success: false,
             messages: [],
             repliedBy: null,
-            error: `Muitas tentativas. Tente novamente em ${rl.retryAfterSeconds} segundos.`,
+            error: `rate_limited`,
           };
         }
 

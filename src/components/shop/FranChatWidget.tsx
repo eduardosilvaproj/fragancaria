@@ -9,7 +9,7 @@ const MotionDiv = motion.div as any;
 const MotionButton = motion.button as any;
 
 const SESSION_LIMIT = 25;
-const POLL_INTERVAL_MS = 3000;
+const POLL_INTERVAL_MS = 5000;
 
 function FranMessage({ msg }: { msg: FranChatMessage }) {
   const isUser = msg.role === "user";
@@ -125,7 +125,12 @@ export function FranChatWidget() {
         const result = await pollWebMessages({
           data: { sessionId, since },
         });
-        if (!result.success) return;
+        if (!result.success) {
+          if (result.error === "rate_limited") {
+            console.warn("[FranWidget] poll rate limited — skipping cycle");
+          }
+          return;
+        }
 
         // Atualiza repliedBy (handoff)
         if (result.repliedBy) {
@@ -142,8 +147,8 @@ export function FranChatWidget() {
             setLastPollTsRef.current(msg.created_at);
           }
         }
-      } catch {
-        // Polling falhou silenciosamente — tenta de novo no próximo ciclo
+      } catch (err) {
+        console.error("[FranWidget] poll error:", err);
       }
     };
 

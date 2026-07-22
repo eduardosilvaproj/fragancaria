@@ -355,7 +355,7 @@ function AdminSAC() {
             </div>
 
             <div className="flex items-center gap-2">
-              {selectedConversation.channel === "web" && (
+              {(selectedConversation.channel === "web" || selectedConversation.channel === "whatsapp") && (
                 <>
                   {selectedConversation.repliedBy === "fran" ? (
                     <button

@@ -73,7 +73,13 @@ export const useFranChatStore = create<FranChatState>()((set, get) => ({
     const { getWebHistory } = await import("@/lib/whatsapp.functions");
     const sessionId = get().sessionId;
     const result = await getWebHistory({ data: { sessionId } });
-    if (!result.success || result.messages.length === 0) {
+    if (!result.success) {
+      if (result.error === "rate_limited") {
+        console.warn("[FranStore] loadHistory rate limited");
+      }
+      return false;
+    }
+    if (result.messages.length === 0) {
       return false;
     }
     const msgs = result.messages.map((m) => ({
