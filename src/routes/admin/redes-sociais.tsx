@@ -31,56 +31,25 @@ import { cn } from "@/lib/utils";
 import { generateCaption } from "@/lib/agent/generate-caption.functions";
 import { generateImage } from "@/lib/agent/generate-image.functions";
 import { searchProductsAdmin } from "@/lib/agent/product-search-admin.functions";
+import { publishNow, schedulePost, saveDraft, listPosts, cancelPost } from "@/lib/agent/social-publish.functions";
 import type { AgentProduct } from "@/lib/agent/product-search";
+import type { SocialPost } from "@/lib/agent/social-publish.functions";
 
 export const Route = createFileRoute("/admin/redes-sociais")({
   component: AdminRedesSociais,
 });
 
-interface ScheduledPost {
-  id: string;
-  content: string;
-  image?: string;
-  platform: "instagram" | "facebook" | "twitter";
-  scheduledFor: string;
-  status: "scheduled" | "published" | "failed";
-}
-
-const MOCK_POSTS: ScheduledPost[] = [
-  {
-    id: "1",
-    content: "✨ Novidade na loja! Kit completo de tratamento capilar com 30% OFF. Aproveite! #cabelos #tratamento #beleza",
-    image: "/images/products/kit-tratamento.jpg",
-    platform: "instagram",
-    scheduledFor: "2024-01-20 10:00",
-    status: "scheduled",
-  },
-  {
-    id: "2",
-    content: "Seu cabelo merece o melhor! 💇‍♀️ Confira nossa linha profissional de coloração.",
-    platform: "facebook",
-    scheduledFor: "2024-01-20 14:00",
-    status: "scheduled",
-  },
-  {
-    id: "3",
-    content: "Frete grátis para todo Brasil em compras acima de R$199! 🚚✨",
-    platform: "instagram",
-    scheduledFor: "2024-01-19 18:00",
-    status: "published",
-  },
-];
+const STATUS_CONFIG = {
+  draft: { label: "Rascunho", color: "bg-gray-100 text-gray-700" },
+  scheduled: { label: "Agendado", color: "bg-amber-100 text-amber-700" },
+  published: { label: "Publicado", color: "bg-emerald-100 text-emerald-700" },
+  failed: { label: "Falhou", color: "bg-red-100 text-red-700" },
+};
 
 const PLATFORM_CONFIG = {
   instagram: { icon: Camera, color: "bg-gradient-to-br from-purple-500 to-pink-500", label: "Instagram" },
   facebook: { icon: Globe, color: "bg-blue-600", label: "Facebook" },
   twitter: { icon: MessageCircle, color: "bg-sky-500", label: "Twitter" },
-};
-
-const STATUS_CONFIG = {
-  scheduled: { label: "Agendado", color: "bg-amber-100 text-amber-700" },
-  published: { label: "Publicado", color: "bg-emerald-100 text-emerald-700" },
-  failed: { label: "Falhou", color: "bg-red-100 text-red-700" },
 };
 
 const CAPTION_TEMPLATES = [
@@ -107,6 +76,111 @@ function AdminRedesSociais() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageGenTime, setImageGenTime] = useState<number | null>(null);
+
+  // Real posts from Supabase
+  const [posts, setPosts] = useState<SocialPost[]>([]);
+  const [isLoadingPosts, setIsLoadingPosts] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishError, setPublishError] = useState("");
+  const [isCancelling, setIsCancelling] = useState(false);
+
+  // Schedule modal state
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState("");
+  const [scheduleTime, setScheduleTime] = useState("");
+
+  // Load posts on mount
+  useEffect(() => {
+    (async () => {
+      setIsLoadingPosts(true);
+      const result = await listPosts();
+      if ("posts" in result) {
+        setPosts(result.posts);
+      }
+      setIsLoadingPosts(false);
+    })();
+  }, []);
+
+  const handlePublishNow = async () => {
+    if (!generatedCaption.trim()) return;
+    setIsPublishing(true);
+    setPublishError("");
+    const result = await publishNow({
+      data: {
+        content: generatedCaption,
+        imageUrl: generatedImageUrl || undefined,
+        platform: selectedPlatform,
+      },
+    });
+    if (result.success) {
+      setPosts((prev) => [result.post, ...prev]);
+    } else {
+      setPublishError(result.error);
+    }
+    setIsPublishing(false);
+  };
+
+  const handleSchedule = async () => {
+    if (!generatedCaption.trim()) return;
+    setShowScheduleModal(true);
+  };
+
+  const handleScheduleConfirm = async () => {
+    if (!scheduleDate || !scheduleTime) return;
+    const scheduledFor = `${scheduleDate}T${scheduleTime}:00`;
+    setShowScheduleModal(false);
+    setIsPublishing(true);
+    setPublishError("");
+    const result = await schedulePost({
+      data: {
+        content: generatedCaption,
+        imageUrl: generatedImageUrl || undefined,
+        platform: selectedPlatform,
+        scheduledFor,
+      },
+    });
+    if (result.success) {
+      setPosts((prev) => [result.post, ...prev]);
+    } else {
+      setPublishError(result.error);
+    }
+    setIsPublishing(false);
+  };
+
+  const handleSaveDraft = async () => {
+    if (!generatedCaption.trim()) return;
+    setIsPublishing(true);
+    setPublishError("");
+    const result = await saveDraft({
+      data: {
+        content: generatedCaption,
+        imageUrl: generatedImageUrl || undefined,
+        platform: selectedPlatform,
+      },
+    });
+    if (result.success) {
+      setPosts((prev) => [result.post, ...prev]);
+    } else {
+      setPublishError(result.error);
+    }
+    setIsPublishing(false);
+  };
+
+  const handleCancelPost = async (postId: string, zernioPostId: string) => {
+    if (!confirm("Tem certeza que deseja cancelar este post agendado?")) return;
+    setIsCancelling(true);
+    const result = await cancelPost({ data: { id: postId, zernioPostId } });
+    if (result.success) {
+      setPosts((prev) =>
+        prev.map((p) =>
+          p.id === postId ? { ...p, status: "failed", error_message: "Cancelado pelo usuário" } : p,
+        ),
+      );
+    } else {
+      alert(result.error);
+    }
+    setIsCancelling(false);
+  };
 
   const handleGenerate = async () => {
     if (!productDescription.trim()) return;
@@ -536,6 +610,19 @@ function AdminRedesSociais() {
                         <Image className="h-12 w-12 text-gray-400" />
                       </div>
                     )}
+                    {!generatedImageUrl && (
+                      <button
+                        onClick={handleGenerateImage}
+                        disabled={isGeneratingImage}
+                        className="w-full mb-3 py-2.5 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                        {isGeneratingImage ? (
+                          <><RefreshCw className="h-4 w-4 animate-spin" />Gerando imagem...</>
+                        ) : (
+                          <><Wand2 className="h-4 w-4" />Gerar Imagem</>
+                        )}
+                      </button>
+                    )}
                     <p className="text-sm text-[#0F3A3E] whitespace-pre-wrap">
                       {generatedCaption}
                     </p>
@@ -566,14 +653,39 @@ function AdminRedesSociais() {
                   )}
 
                   {/* Actions */}
+                  {publishError && (
+                    <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
+                      <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-red-700">{publishError}</p>
+                    </div>
+                  )}
                   <div className="flex gap-3">
-                    <button className="flex-1 py-3 bg-[#0F3A3E] text-white rounded-lg text-sm hover:bg-[#16504F] transition-colors">
-                      <Send className="h-4 w-4 inline mr-2" />
-                      Publicar Agora
+                    <button
+                      onClick={handlePublishNow}
+                      disabled={isPublishing}
+                      className="flex-1 py-3 bg-[#0F3A3E] text-white rounded-lg text-sm hover:bg-[#16504F] transition-colors disabled:opacity-50"
+                    >
+                      {isPublishing ? (
+                        <><RefreshCw className="h-4 w-4 inline mr-2 animate-spin" />Publicando...</>
+                      ) : (
+                        <><Send className="h-4 w-4 inline mr-2" />Publicar Agora</>
+                      )}
                     </button>
-                    <button className="flex-1 py-3 border border-[#E9E1D2] text-[#0F3A3E] rounded-lg text-sm hover:bg-[#F9F7F3] transition-colors">
+                    <button
+                      onClick={handleSchedule}
+                      disabled={isPublishing}
+                      className="flex-1 py-3 border border-[#E9E1D2] text-[#0F3A3E] rounded-lg text-sm hover:bg-[#F9F7F3] transition-colors disabled:opacity-50"
+                    >
                       <Calendar className="h-4 w-4 inline mr-2" />
                       Agendar
+                    </button>
+                    <button
+                      onClick={handleSaveDraft}
+                      disabled={isPublishing}
+                      className="py-3 px-4 border border-[#E9E1D2] text-[#51635F] rounded-lg text-sm hover:bg-[#F9F7F3] transition-colors disabled:opacity-50"
+                      title="Salvar rascunho"
+                    >
+                      <Edit2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -601,8 +713,13 @@ function AdminRedesSociais() {
             </button>
           </div>
 
+          {isLoadingPosts ? (
+            <div className="p-8 text-center text-[#8A938E] text-sm">Carregando posts...</div>
+          ) : posts.length === 0 ? (
+            <div className="p-8 text-center text-[#8A938E] text-sm">Nenhum post encontrado.</div>
+          ) : (
           <div className="divide-y divide-[#E9E1D2]">
-            {MOCK_POSTS.map((post) => {
+            {posts.map((post) => {
               const PlatformIcon = PLATFORM_CONFIG[post.platform].icon;
               return (
                 <div key={post.id} className="p-4 hover:bg-[#F9F7F3] transition-colors">
@@ -633,7 +750,7 @@ function AdminRedesSociais() {
                       <p className="text-sm text-[#51635F] line-clamp-2 mb-2">{post.content}</p>
                       <div className="flex items-center gap-2 text-xs text-[#8A938E]">
                         <Clock className="h-3 w-3" />
-                        <span>{post.scheduledFor}</span>
+                        <span>{post.scheduled_for ?? "—"}</span>
                       </div>
                     </div>
 
@@ -641,15 +758,22 @@ function AdminRedesSociais() {
                       <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
                         <Edit2 className="h-4 w-4" />
                       </button>
-                      <button className="p-2 text-red-500 hover:bg-red-50 rounded-lg">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      {post.status === "scheduled" && post.zernio_post_id && (
+                        <button
+                          onClick={() => handleCancelPost(post.id, post.zernio_post_id!)}
+                          disabled={isCancelling}
+                          className="px-3 py-2 text-xs text-red-600 hover:bg-red-50 rounded-lg font-medium transition-colors disabled:opacity-50"
+                        >
+                          {isCancelling ? "Cancelando..." : "Cancelar"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 </div>
               );
             })}
           </div>
+        )}
         </div>
       )}
 
@@ -683,6 +807,50 @@ function AdminRedesSociais() {
             </p>
             <p className="font-serif text-2xl text-[#0F3A3E]">892</p>
             <p className="text-xs text-emerald-600 mt-1">+25% vs mês anterior</p>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Modal */}
+      {showScheduleModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white w-full max-w-sm mx-4 p-6 shadow-xl">
+            <h3 className="font-serif text-lg text-[#0F3A3E] mb-4">Agendar Post</h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">Data</label>
+                <input
+                  type="date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">Horário</label>
+                <input
+                  type="time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none"
+                />
+              </div>
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setShowScheduleModal(false)}
+                className="px-4 py-2 text-sm text-[#51635F] hover:text-[#0F3A3E] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleScheduleConfirm}
+                disabled={!scheduleDate || !scheduleTime}
+                className="px-4 py-2 text-sm bg-[#B07B1E] text-white rounded-lg hover:bg-[#8E6418] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
         </div>
       )}

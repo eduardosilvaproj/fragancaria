@@ -88,7 +88,10 @@ The left ~35% of the image should contain negative space (soft background, wall,
 
 ## Output format
 
-Generate a 1024×1024 WebP image following this template exactly. The image must be self-contained — all text rendered inside the image canvas. The photograph fills the entire frame edge to edge; the top-left corner (approx 24% × 13%) is clear for the logo, and the headline starts immediately below it.`;
+Generate a 1024×1024 WebP image following this template exactly. The image must be self-contained — all text rendered inside the image canvas. The photograph fills the entire frame edge to edge.
+
+CRITICAL — LOGO ZONE (HARD CONSTRAINT):
+The top-left corner (24% width × 13% height) must contain ONLY background — absolutely no text, no headline, no product, no props. The first line of the headline starts STRICTLY below this zone. This is a hard constraint, not a preference.`;
 
 export function buildArtPrompt(
   product: { name: string; brand: string; description: string } | null,

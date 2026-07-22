@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { createZernioPost } from "@/lib/zernio";
+import { createZernioPost, deleteZernioPost } from "@/lib/zernio";
 
 // Tipos locais (social_posts não está no database.types.ts)
 export interface SocialPost {
@@ -165,5 +165,31 @@ export const listPosts = createServerFn({ method: "GET" })
     } catch (err) {
       console.error("[listPosts] erro:", err instanceof Error ? err.message : err);
       return { error: err instanceof Error ? err.message : "erro desconhecido" };
+    }
+  });
+
+/**
+ * Cancela um post agendado no Zernio e marca como failed no Supabase.
+ */
+export const cancelPost = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({
+    id: z.string(),
+    zernioPostId: z.string(),
+  }).parse(d))
+  .handler(async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+    try {
+      await deleteZernioPost(data.zernioPostId);
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error } = await supabaseAdmin
+        .from("social_posts")
+        .update({ status: "failed", error_message: "Cancelado pelo usuário" })
+        .eq("id", data.id);
+
+      if (error) throw new Error(error.message);
+      return { success: true };
+    } catch (err) {
+      console.error("[cancelPost] erro:", err instanceof Error ? err.message : err);
+      return { success: false, error: err instanceof Error ? err.message : "erro desconhecido" };
     }
   });

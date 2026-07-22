@@ -126,3 +126,15 @@ export async function getZernioPostStatus(
 ): Promise<ZernioPostResponse> {
   return zernioFetch<ZernioPostResponse>(`/posts/${zernioPostId}`);
 }
+
+/**
+ * Deleta um post rascunho ou agendado no Zernio.
+ * Posts publicados não podem ser deletados.
+ */
+export async function deleteZernioPost(
+  zernioPostId: string,
+): Promise<{ message: string }> {
+  return zernioFetch<{ message: string }>(`/posts/${zernioPostId}`, {
+    method: "DELETE",
+  });
+}
