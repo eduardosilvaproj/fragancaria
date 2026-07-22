@@ -59,8 +59,8 @@ async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
   const imgWidth = imageMeta.width ?? 1024;
   const imgHeight = imageMeta.height ?? 1024;
 
-  // Logo redimensionado para ~18% da largura da imagem
-  const logoWidth = Math.round(imgWidth * 0.18);
+  // Logo redimensionado para ~25% da largura da imagem
+  const logoWidth = Math.round(imgWidth * 0.25);
 
   const resizedLogo = await sharp(logoBuffer)
     .resize(logoWidth, null, { fit: "inside", withoutEnlargement: true })
@@ -68,10 +68,10 @@ async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
 
   const logoMeta = await sharp(resizedLogo).metadata();
 
-  // Posição: canto inferior direito com margem de ~4% da largura
-  const margin = Math.round(imgWidth * 0.04);
-  const left = imgWidth - (logoMeta.width ?? logoWidth) - margin;
-  const top = imgHeight - (logoMeta.height ?? Math.round(logoWidth)) - margin;
+  // Posição: topo esquerdo com margem de ~5% da largura
+  const margin = Math.round(imgWidth * 0.05);
+  const left = margin;
+  const top = margin;
 
   return sharp(imageBuffer)
     .composite([{ input: resizedLogo, top, left }])
