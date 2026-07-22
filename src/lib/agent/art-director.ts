@@ -35,21 +35,21 @@ These are the Fragrânciaria brand colors — every image must use them as the p
 
 The layout is derived from three approved reference images. Every generated image MUST follow this structure:
 
-### Scene — single cohesive photographic scene
-The entire 1024×1024 canvas is ONE continuous photographic scene. Never split the canvas with a solid-color panel or hard vertical divider. The composition should feel like a natural editorial photograph where the left portion happens to have negative space suitable for text.
+### Scene — single cohesive photographic scene, edge to edge
+The photograph fills the entire 1024×1024 canvas edge to edge; the text sits over naturally darker or blurred areas of the scene. No empty margins, no dead space, no hard vertical divider. The composition should feel like a natural editorial photograph where the left portion happens to have negative space suitable for text.
 
-### Logo zone — top 20% of the canvas COMPLETELY EMPTY
-The top ~20% of the image (roughly the top 200px) must be completely clear — solid background color, soft gradient, or out-of-focus negative space. No product, no props, no text, no visual elements of any kind in this zone. The brand logo will be composited there separately.
+### Logo zone — top-left corner only (approx 24% width × 13% height)
+Reserve ONLY the top-left corner (roughly 250px wide × 135px tall) clear of text and objects for the brand logo. The headline begins IMMEDIATELY below this corner. Do NOT leave an empty horizontal band across the image — the rest of the top area is filled by the scene.
 
 ### Text zone — natural negative space in the left third
-The left ~35% of the image should contain negative space (soft background, wall, out-of-focus area) where text can be placed. The text elements below should be rendered inside the image in this zone, positioned below the logo zone.
+The left ~35% of the image should contain negative space (soft background, wall, out-of-focus area) where text can be placed. Compose tightly — the text block should occupy the left side from just below the logo zone down to the bottom margin, with even rhythm between headline, paragraph and benefits. The frame must feel full and balanced, never sparse.
 
 ### Text elements (rendered inside the image, in the left negative space)
 
 1. **Headline** — serif, elegant, 2–3 lines. First phrase in dark (#1C302E) or white (if on dark background). Second phrase in amber/gold (#B07B1E). Example: "CABELOS QUE\nENCANTAM" where "CABELOS QUE" is dark and "ENCANTAM" is gold.
 2. **Gold divider** — a short, thin horizontal line in gold (#B07B1E or #E8C25A) below the headline.
 3. **Body paragraph** — 3–4 lines, sans-serif, small weight, discreet color (dark gray or cream depending on background).
-4. **4 benefits** — each with a thin gold line icon on the left, followed by the label in ALL CAPS with wide letter-spacing. Two lines per benefit. The benefits MUST be specific to the product being promoted, not generic.
+4. **4 benefits** — each benefit has a thin gold LINE ICON (leaf, dropper bottle, diamond, award medal — outline style, not filled dots) to the left of its uppercase label. Two lines per benefit. The benefits MUST be specific to the product being promoted, not generic.
 
 ### Photography — right ~65% of the canvas
 
@@ -84,10 +84,11 @@ The left ~35% of the image should contain negative space (soft background, wall,
 - Amateur photography, flat lighting, or harsh on-camera flash
 - Never split the canvas with a hard vertical divider or solid-color panel — the scene must be a single cohesive photograph
 - Never invent, repeat, or hallucinate text — the specified Portuguese copy must render correctly with accents
+- Never leave an empty horizontal band across the top of the image — the scene fills edge to edge
 
 ## Output format
 
-Generate a 1024×1024 WebP image following this template exactly. The image must be self-contained — all text rendered inside the image canvas. Leave enough empty space in the top 20% and left third for the logo and text overlay.`;
+Generate a 1024×1024 WebP image following this template exactly. The image must be self-contained — all text rendered inside the image canvas. The photograph fills the entire frame edge to edge; the top-left corner (approx 24% × 13%) is clear for the logo, and the headline starts immediately below it.`;
 
 export function buildArtPrompt(
   product: { name: string; brand: string; description: string } | null,
@@ -118,12 +119,13 @@ ${descBlock}
 Caption/theme: "${caption}"
 
 Follow the brand template exactly:
-- Single cohesive photographic scene — never a split canvas.
-- Top 20% completely empty for logo placement.
-- Left ~35%: natural negative space where text sits.
+- Single cohesive photographic scene filling the entire canvas edge to edge — no empty margins, no dead space, no split canvas.
+- Top-left corner (approx 24% × 13%) clear for logo — NO empty horizontal band across the top.
+- Left ~35%: natural negative space where text sits, from just below the logo zone down to the bottom margin.
 - Right ~65%: editorial product photography on marble/travertine/gold surface with 1–2 subtle props.
-- Text in left negative space: serif headline in two colors (dark/white + gold #B07B1E), gold divider line, short body paragraph, and exactly 4 bullet benefits in Portuguese (each on 2 lines, using "•"). All text must be rendered inside the image with correct Portuguese accents.
+- Text in left negative space: serif headline in two colors (dark/white + gold #B07B1E), gold divider line, short body paragraph, and exactly 4 benefits in Portuguese (each with a thin gold LINE ICON — leaf, dropper, diamond, medal — not filled dots, on 2 lines). All text rendered inside the image with correct Portuguese accents.
 - The 4 benefits must be SPECIFIC to ${productName}, not generic.
+- Compose tightly — the frame must feel full and balanced, never sparse.
 - Photography style: premium niche perfume campaign, soft window light, 85mm f/2.8, shallow DOF, ultra-realistic.
 
 Output: 1024×1024 WebP.`;
