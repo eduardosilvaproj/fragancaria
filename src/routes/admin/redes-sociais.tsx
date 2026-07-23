@@ -22,6 +22,7 @@ import {
   Check,
   Wand2,
   AlertCircle,
+  CheckCircle,
   Search,
   Package,
   Lightbulb,
@@ -83,6 +84,7 @@ function AdminRedesSociais() {
   const [isLoadingPosts, setIsLoadingPosts] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishError, setPublishError] = useState("");
+  const [publishSuccess, setPublishSuccess] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
 
   // Schedule modal state
@@ -106,6 +108,7 @@ function AdminRedesSociais() {
     if (!generatedCaption.trim()) return;
     setIsPublishing(true);
     setPublishError("");
+    setPublishSuccess(false);
     const result = await publishNow({
       data: {
         content: generatedCaption,
@@ -115,6 +118,7 @@ function AdminRedesSociais() {
     });
     if (result.success) {
       setPosts((prev) => [result.post, ...prev]);
+      setPublishSuccess(true);
     } else {
       setPublishError(result.error);
     }
@@ -722,6 +726,12 @@ function AdminRedesSociais() {
                   )}
 
                   {/* Actions */}
+                  {publishSuccess && (
+                    <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                      <CheckCircle className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-green-700">Publicado no Instagram!</p>
+                    </div>
+                  )}
                   {publishError && (
                     <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg p-3">
                       <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
@@ -731,11 +741,13 @@ function AdminRedesSociais() {
                   <div className="flex gap-3">
                     <button
                       onClick={handlePublishNow}
-                      disabled={isPublishing}
+                      disabled={isPublishing || publishSuccess}
                       className="flex-1 py-3 bg-[#0F3A3E] text-white rounded-lg text-sm hover:bg-[#16504F] transition-colors disabled:opacity-50"
                     >
                       {isPublishing ? (
                         <><RefreshCw className="h-4 w-4 inline mr-2 animate-spin" />Publicando...</>
+                      ) : publishSuccess ? (
+                        <><CheckCircle className="h-4 w-4 inline mr-2" />Publicado</>
                       ) : (
                         <><Send className="h-4 w-4 inline mr-2" />Publicar Agora</>
                       )}
