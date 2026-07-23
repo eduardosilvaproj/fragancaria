@@ -76,6 +76,7 @@ function AdminRedesSociais() {
   const [generatedImageUrl, setGeneratedImageUrl] = useState("");
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageGenTime, setImageGenTime] = useState<number | null>(null);
+  const [imageQuality, setImageQuality] = useState<"low" | "high">("low");
 
   // Real posts from Supabase
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -304,6 +305,7 @@ function AdminRedesSociais() {
           productDescription: selectedProduct?.description ?? undefined,
           caption: generatedCaption,
           modo,
+          quality: imageQuality,
         },
       });
       if (result.success) {
@@ -667,24 +669,52 @@ function AdminRedesSociais() {
                     </p>
                   </div>
 
-                  {/* Generate Image Button */}
-                  <button
-                    onClick={handleGenerateImage}
-                    disabled={isGeneratingImage}
-                    className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
-                  >
-                    {isGeneratingImage ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        Gerando imagem... pode levar 1-2 minutos
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="h-4 w-4" />
-                        Gerar Imagem com IA
-                      </>
-                    )}
-                  </button>
+                  {/* Quality Selector + Generate Image Button */}
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-3 bg-[#F9F7F3] rounded-lg p-2">
+                      <button
+                        type="button"
+                        onClick={() => setImageQuality("low")}
+                        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                          imageQuality === "low"
+                            ? "bg-white shadow-sm text-[#0F3A3E]"
+                            : "text-[#8A938E] hover:text-[#0F3A3E]"
+                        }`}
+                      >
+                        <span className="block">Rascunho</span>
+                        <span className="block text-[10px] opacity-70">~R$0,03</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setImageQuality("high")}
+                        className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-all ${
+                          imageQuality === "high"
+                            ? "bg-white shadow-sm text-[#0F3A3E]"
+                            : "text-[#8A938E] hover:text-[#0F3A3E]"
+                        }`}
+                      >
+                        <span className="block">Final</span>
+                        <span className="block text-[10px] opacity-70">~R$1,20</span>
+                      </button>
+                    </div>
+                    <button
+                      onClick={handleGenerateImage}
+                      disabled={isGeneratingImage}
+                      className="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-500 text-white rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {isGeneratingImage ? (
+                        <>
+                          <RefreshCw className="h-4 w-4 animate-spin" />
+                          Gerando imagem... pode levar 1-2 minutos
+                        </>
+                      ) : (
+                        <>
+                          <Wand2 className="h-4 w-4" />
+                          Gerar Imagem com IA
+                        </>
+                      )}
+                    </button>
+                  </div>
                   {imageGenTime !== null && (
                     <p className="text-xs text-[#8A938E] text-center">
                       Imagem gerada em {(imageGenTime / 1000).toFixed(1)}s

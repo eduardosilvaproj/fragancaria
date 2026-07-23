@@ -14,6 +14,7 @@ const startInputSchema = z.object({
   productDescription: z.string().optional(),
   caption: z.string().optional(),
   modo: z.enum(["produto", "dica", "livre"]).optional(),
+  quality: z.enum(["low", "high"]).optional().default("low"),
 });
 
 const pollInputSchema = z.object({
@@ -129,7 +130,7 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
         {
           type: "image_generation",
           output_format: "webp",
-          quality: "hd",
+          quality: data.quality,
         },
       ],
       tool_choice: { type: "image_generation" },
@@ -224,6 +225,7 @@ export const startImageGeneration = createServerFn({ method: "POST" })
           product_description: data.productDescription,
           caption: data.caption,
           modo: data.modo,
+          quality: data.quality,
         })
         .select("id")
         .single();
