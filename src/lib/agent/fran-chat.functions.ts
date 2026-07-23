@@ -295,6 +295,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
               }
             } else if (block.name === "quoteShipping") {
               const args = block.input as { toCep: string; productIds: Array<{ id: string; quantity: number }> };
+              console.log(`[fran-chat] quoteShipping input: toCep=${args.toCep}, productIds=${JSON.stringify(args.productIds)}`);
               const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
               result = await quoteShipping(args.toCep, produtos);
             } else {
@@ -304,6 +305,10 @@ export const chatWithFran = createServerFn({ method: "POST" })
             const msg = err instanceof Error ? err.message : "erro na ferramenta";
             console.error(`[fran-chat] tool ${block.name} falhou:`, msg, err instanceof Error ? err.stack : "");
             result = { error: msg };
+          }
+          // Loga resultado estruturado de erro (tool retornou {ok:false}, não exceção)
+          if (typeof result === "object" && result !== null && "ok" in result && (result as Record<string, unknown>).ok === false) {
+            console.log(`[fran-chat] tool ${block.name} retornou erro:`, JSON.stringify(result));
           }
           toolResults.push({
             type: "tool_result" as const,
@@ -316,6 +321,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
       }
 
       if (!respostaFinal) {
+        console.error(`[fran-chat] loop esgotou apos ${MAX_TOOL_ITERATIONS} iteracoes sem resposta final`);
         return { success: false, error: "A Fran não conseguiu formular uma resposta. Tente reformular." };
       }
 

@@ -72,13 +72,16 @@ export async function quoteShipping(
   toCep: string,
   produtos: MelhorEnvioProduto[],
 ): Promise<AgentShippingResult> {
+  // Sanitiza CEP: remove tudo que não for dígito (LLM pode mandar com máscara)
+  const cepLimpo = toCep.replace(/\D/g, "");
+
   if (produtos.length === 0) {
     return { ok: false, erro: "Nenhum produto informado para cotação." };
   }
 
   // Import dinâmico para evitar dependência server-only no bundle do cliente.
   const { cotar } = await import("../melhor-envio-client.server");
-  const result: CotarResult = await cotar(toCep, produtos);
+  const result: CotarResult = await cotar(cepLimpo, produtos);
 
   if (!result.ok) {
     const erros: Record<string, string> = {
