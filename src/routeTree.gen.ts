@@ -66,6 +66,7 @@ import { Route as MinhaContaAvaliacoesIndexRouteImport } from './routes/minha-co
 import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/dashboard/index'
 import { Route as AdminProdutosIndexRouteImport } from './routes/admin/produtos/index'
 import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
+import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/zernio-webhook'
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
@@ -368,6 +369,11 @@ const MinhaContaPedidosOrderIdRoute =
     path: '/pedidos/$orderId',
     getParentRoute: () => MinhaContaRoute,
   } as any)
+const ApiPublicZernioWebhookRoute = ApiPublicZernioWebhookRouteImport.update({
+  id: '/api/public/zernio-webhook',
+  path: '/api/public/zernio-webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicWhatsappWebhookRoute =
   ApiPublicWhatsappWebhookRouteImport.update({
     id: '/api/public/whatsapp-webhook',
@@ -472,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
@@ -536,6 +543,7 @@ export interface FileRoutesByTo {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardIndexRoute
@@ -605,6 +613,7 @@ export interface FileRoutesById {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
   '/afiliado/dashboard/': typeof AfiliadoDashboardIndexRoute
@@ -675,6 +684,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
     | '/afiliado/dashboard/'
@@ -739,6 +749,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos'
     | '/afiliado/dashboard'
@@ -807,6 +818,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
     | '/afiliado/dashboard/'
@@ -852,6 +864,7 @@ export interface RootRouteChildren {
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
+  ApiPublicZernioWebhookRoute: typeof ApiPublicZernioWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1255,6 +1268,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MinhaContaPedidosOrderIdRouteImport
       parentRoute: typeof MinhaContaRoute
     }
+    '/api/public/zernio-webhook': {
+      id: '/api/public/zernio-webhook'
+      path: '/api/public/zernio-webhook'
+      fullPath: '/api/public/zernio-webhook'
+      preLoaderRoute: typeof ApiPublicZernioWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/whatsapp-webhook': {
       id: '/api/public/whatsapp-webhook'
       path: '/api/public/whatsapp-webhook'
@@ -1461,6 +1481,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
+  ApiPublicZernioWebhookRoute: ApiPublicZernioWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
