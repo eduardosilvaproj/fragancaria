@@ -754,7 +754,7 @@ function AdminRedesSociais() {
                     </button>
                     <button
                       onClick={handleSchedule}
-                      disabled={isPublishing}
+                      disabled={isPublishing || publishSuccess}
                       className="flex-1 py-3 border border-[#E9E1D2] text-[#0F3A3E] rounded-lg text-sm hover:bg-[#F9F7F3] transition-colors disabled:opacity-50"
                     >
                       <Calendar className="h-4 w-4 inline mr-2" />
@@ -762,7 +762,7 @@ function AdminRedesSociais() {
                     </button>
                     <button
                       onClick={handleSaveDraft}
-                      disabled={isPublishing}
+                      disabled={isPublishing || publishSuccess}
                       className="py-3 px-4 border border-[#E9E1D2] text-[#51635F] rounded-lg text-sm hover:bg-[#F9F7F3] transition-colors disabled:opacity-50"
                       title="Salvar rascunho"
                     >
