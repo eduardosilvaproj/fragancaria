@@ -49,9 +49,15 @@ POR TOM:
 - profissional: elegante, foco em qualidade e resultados, linguagem técnica mas acessível
 - divertido: descontraído, brincadeiras leves, emojis liberados, pontuação criativa`;
 
-const MODO_PRODUTO = `${SYSTEM_PROMPT_BASE}
+const MODO_PRODUTO_INSTAGRAM = `${SYSTEM_PROMPT_BASE}
 
-MODO: PRODUTO
+MODO: PRODUTO — INSTAGRAM
+Você está divulgando um produto específico da loja. Use os dados reais do produto fornecidos (nome, preço, descrição, marca) — nunca invente preço, desconto ou características. Destaque os benefícios do produto de forma persuasiva.
+IMPORTANTE: Termine a legenda com um CTA como "🔗 O link do nosso site está na bio — venha conhecer todos os nossos produtos!" e NÃO inclua URL alguma. No Instagram, links em legendas não são clicáveis.`;
+
+const MODO_PRODUTO_OUTRAS = `${SYSTEM_PROMPT_BASE}
+
+MODO: PRODUTO — FACEBOOK / TWITTER
 Você está divulgando um produto específico da loja. Use os dados reais do produto fornecidos (nome, preço, descrição, marca) — nunca invente preço, desconto ou características. Destaque os benefícios do produto de forma persuasiva.
 IMPORTANTE: Termine a legenda com um call-to-action de compra seguido do link direto do produto (ex: "Corre comprar! https://fragranciaria.com/produto/ID_DO_PRODUTO"). O link exato será fornecido nos dados do produto.`;
 
@@ -65,9 +71,11 @@ const MODO_LIVRE = `${SYSTEM_PROMPT_BASE}
 MODO: TEMA LIVRE
 Você está criando conteúdo sobre o tema fornecido pelo usuário. Pode ser sobre cuidados capilares, tendências, curiosidades ou qualquer assunto relacionado ao universo de beleza e cabelos. Seja criativo e engajante.`;
 
-function getSystemPrompt(modo: string): string {
+function getSystemPrompt(modo: string, plataforma: string): string {
+  if (modo === "produto") {
+    return plataforma === "instagram" ? MODO_PRODUTO_INSTAGRAM : MODO_PRODUTO_OUTRAS;
+  }
   switch (modo) {
-    case "produto": return MODO_PRODUTO;
     case "dica": return MODO_DICA;
     default: return MODO_LIVRE;
   }
@@ -113,7 +121,7 @@ export const generateCaption = createServerFn({ method: "POST" })
         }
       }
 
-      const systemPrompt = getSystemPrompt(data.modo);
+      const systemPrompt = getSystemPrompt(data.modo, data.plataforma);
 
       const userPrompt = [
         `Modo: ${data.modo}`,
