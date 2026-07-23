@@ -43,12 +43,12 @@ export async function buscarProdutosParaCotacao(
 ): Promise<MelhorEnvioProduto[]> {
   if (productIds.length === 0) return [];
 
-  const ids = productIds.map((p) => p.id);
+  const cleanIds = [...new Set(productIds.map((p) => p.id.split("::")[0]))];
   const { data, error } = await db
     .from("products")
     .select("id, weight_grams, price, width_cm, height_cm, length_cm")
-    .in("id", ids)
-    .eq("active", true);
+    .in("id", cleanIds)
+    .eq("is_active", true);
 
   if (error || !Array.isArray(data)) return [];
 
@@ -76,7 +76,7 @@ export async function quoteShipping(
   const cepLimpo = toCep.replace(/\D/g, "");
 
   if (produtos.length === 0) {
-    return { ok: false, erro: "Nenhum produto informado para cotação." };
+    return { ok: false, erro: "Nenhum produto encontrado no catálogo para cotar frete." };
   }
 
   // Import dinâmico para evitar dependência server-only no bundle do cliente.
