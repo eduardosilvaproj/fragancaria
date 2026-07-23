@@ -128,11 +128,9 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
       tools: [
         {
           type: "image_generation",
-          image_generation: {
-            format: "webp",
-            quality: "hd",
-            style: "vivid",
-          },
+          output_format: "webp",
+          quality: "hd",
+          style: "vivid",
         },
       ],
       tool_choice: { type: "image_generation" },
@@ -253,12 +251,35 @@ export const pollImageGeneration = createServerFn({ method: "GET" })
 
       const { data: job, error } = await supabaseAdmin
         .from("ai_image_jobs")
-        .select("status, result_url, error")
+        .select("status, result_url, error, created_at")
         .eq("id", data.jobId)
         .single();
 
       if (error || !job) {
         return { success: false, error: error?.message ?? "Job não encontrado." };
+      }
+
+      // Timeout automático: jobs stuck em pending/processing > 10 min viram failed
+      const STUCK_TIMEOUT_MS = 10 * 60 * 1000;
+      if (
+        (job.status === "pending" || job.status === "processing") &&
+        job.created_at &&
+        Date.now() - new Date(job.created_at).getTime() > STUCK_TIMEOUT_MS
+      ) {
+        await supabaseAdmin
+          .from("ai_image_jobs")
+          .update({
+            status: "failed",
+            error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", data.jobId);
+
+        return {
+          success: true,
+          status: "failed",
+          error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+        };
       }
 
       return {
