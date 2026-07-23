@@ -130,7 +130,6 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
           type: "image_generation",
           output_format: "webp",
           quality: "hd",
-          style: "vivid",
         },
       ],
       tool_choice: { type: "image_generation" },
