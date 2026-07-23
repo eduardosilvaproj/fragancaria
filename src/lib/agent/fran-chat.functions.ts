@@ -34,6 +34,8 @@ const inputSchema = z.object({
    *  pessoa — limpar navegador gera nova sessão. Usado para log de conversas
    *  web e controle de handoff (replied_by). */
   sessionId: z.string().optional(),
+  /** Canal de atendimento: 'web' (chat do site) ou 'instagram' (DM). */
+  channel: z.enum(["web", "instagram"]).default("web"),
 });
 
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
@@ -157,8 +159,6 @@ export const chatWithFran = createServerFn({ method: "POST" })
     let conversationId: string | null = null;
     if (data.sessionId) {
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-      // Upsert da conversa: busca por session_id + channel='web'
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: existing } = await (supabaseAdmin as any)
         .from("conversations")
@@ -213,6 +213,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
     try {
       const Anthropic = (await import("@anthropic-ai/sdk")).default;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { FRAN_SYSTEM_PROMPT } = await import("./fran-persona");
       const { searchProducts, getProduct } = await import("./product-search");
       const { getOrderByToken, getOrderByIdAndEmail } = await import("./order-status");
@@ -221,9 +222,13 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
       const client = new Anthropic({ apiKey });
 
-      // system + tools são fixos → cache_control ephemeral derruba custo de input.
+      // Monta system prompt com instrução de canal
+      const channelInstruction =
+        data.channel === "instagram"
+          ? "Você está atendendo por mensagem direta no Instagram. A pessoa NÃO está no site. Quando fizer sentido, convide para [www.fragranciaria.com](https://www.fragranciaria.com)."
+          : "Você está atendendo pelo chat do site.";
       const system = [
-        { type: "text" as const, text: FRAN_SYSTEM_PROMPT, cache_control: { type: "ephemeral" as const } },
+        { type: "text" as const, text: `${FRAN_SYSTEM_PROMPT}\n\n${channelInstruction}`, cache_control: { type: "ephemeral" as const } },
       ];
       const tools = TOOLS.map((tool, i) =>
         i === TOOLS.length - 1 ? { ...tool, cache_control: { type: "ephemeral" as const } } : tool,
@@ -296,7 +301,9 @@ export const chatWithFran = createServerFn({ method: "POST" })
               result = { error: `Ferramenta desconhecida: ${block.name}` };
             }
           } catch (err) {
-            result = { error: err instanceof Error ? err.message : "erro na ferramenta" };
+            const msg = err instanceof Error ? err.message : "erro na ferramenta";
+            console.error(`[fran-chat] tool ${block.name} falhou:`, msg, err instanceof Error ? err.stack : "");
+            result = { error: msg };
           }
           toolResults.push({
             type: "tool_result" as const,
@@ -314,7 +321,6 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
       // Grava as mensagens no banco (se for conversa web logada)
       if (conversationId) {
-        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         await (supabaseAdmin as any).from("messages").insert([
           { conversation_id: conversationId, content: data.mensagem, sender: "customer" },

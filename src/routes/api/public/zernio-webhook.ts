@@ -97,11 +97,12 @@ async function processFranResponse(payload: {
     return;
   }
 
-  // Busca histórico da conversa (últimas 20 mensagens) para dar contexto à Fran
+  // Busca histórico da conversa (exclui a mensagem atual para não duplicar)
   const { data: historicoBruto } = await (supabaseAdmin as any)
     .from("messages")
     .select("content, sender, created_at")
     .eq("conversation_id", conv.id)
+    .neq("zernio_message_id", payload.message.id)
     .order("created_at", { ascending: true })
     .limit(20);
 
@@ -121,6 +122,7 @@ async function processFranResponse(payload: {
     data: {
       mensagem: text,
       historico,
+      channel: "instagram",
     },
   });
 
@@ -136,6 +138,23 @@ async function processFranResponse(payload: {
     payload.account.id,
     result.resposta,
   );
+
+  // Grava a resposta da Fran no banco (sender='agent') e atualiza a conversa
+  await (supabaseAdmin as any).from("messages").insert({
+    conversation_id: conv.id,
+    content: result.resposta,
+    sender: "agent",
+    message_type: "text",
+    read: false,
+  });
+  await (supabaseAdmin as any)
+    .from("conversations")
+    .update({
+      last_message: result.resposta,
+      last_message_at: new Date().toISOString(),
+      unread: true,
+    })
+    .eq("id", conv.id);
 }
 
 export const Route = createFileRoute("/api/public/zernio-webhook")({

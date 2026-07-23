@@ -1,0 +1,1198 @@
+[96msrc/components/admin/ImageUploader.tsx[0m:[93m40[0m:[93m85[0m - [91merror[0m[90m TS2339: [0mProperty 'data' does not exist on type '{ success: true; error?: undefined; }'.
+
+[7m40[0m         onChange?.(value.filter((url) => !url.includes("product-images/") || result.data !== getPathFromUrl(url)));
+[7m  [0m [91m                                                                                    ~~~~[0m
+
+[96msrc/components/shop/FranChatWidget.tsx[0m:[93m191[0m:[93m63[0m - [91merror[0m[90m TS2339: [0mProperty 'resposta' does not exist on type '{ success: false; error: string; } | { success: false; error: "human_mode"; resposta: string; }'.
+  Property 'resposta' does not exist on type '{ success: false; error: string; }'.
+
+[7m191[0m               addMessage({ role: "assistant", content: result.resposta });
+[7m   [0m [91m                                                              ~~~~~~~~[0m
+
+[96msrc/components/shop/Testimonials.tsx[0m:[93m25[0m:[93m17[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"product_reviews"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"product_reviews"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m25[0m           .from("product_reviews")
+[7m  [0m [91m                ~~~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/components/shop/Testimonials.tsx[0m:[93m27[0m:[93m15[0m - [91merror[0m[90m TS2345: [0mArgument of type '"status"' is not assignable to parameter of type '"created_at"'.
+
+[7m27[0m           .eq("status", "approved")
+[7m  [0m [91m              ~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m252[0m:[93m39[0m - [91merror[0m[90m TS2677: [0mA type predicate's type must be assignable to its parameter's type.
+  Type '{ type: "text"; text: string; }' is not assignable to type 'ContentBlock'.
+    Property 'citations' is missing in type '{ type: "text"; text: string; }' but required in type 'TextBlock'.
+
+[7m252[0m             .filter((block): block is { type: "text"; text: string } => block.type === "text")
+[7m   [0m [91m                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+  [96mnode_modules/@anthropic-ai/sdk/resources/messages/messages.d.mts[0m:[93m1052[0m:[93m5[0m
+    [7m1052[0m     citations: Array<TextCitation> | null;
+    [7m    [0m [96m    ~~~~~~~~~[0m
+    'citations' is declared here.
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m253[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'text' does not exist on type 'ContentBlock'.
+  Property 'text' does not exist on type 'ThinkingBlock'.
+
+[7m253[0m             .map((block) => block.text)
+[7m   [0m [91m                                  ~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m269[0m:[93m45[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m269[0m               result = await searchProducts(supabaseAdmin, { query: args.query, limit: args.limit });
+[7m   [0m [91m                                            ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m272[0m:[93m41[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m272[0m               result = await getProduct(supabaseAdmin, args.id);
+[7m   [0m [91m                                        ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m276[0m:[93m48[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m276[0m                 result = await getOrderByToken(supabaseAdmin, args.token);
+[7m   [0m [91m                                               ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m278[0m:[93m53[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m278[0m                 result = await getOrderByIdAndEmail(supabaseAdmin, args.orderId, args.email);
+[7m   [0m [91m                                                    ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m285[0m:[93m56[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m285[0m                 result = await getPaymentStatusByToken(supabaseAdmin, args.token);
+[7m   [0m [91m                                                       ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m287[0m:[93m61[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m287[0m                 result = await getPaymentStatusByIdAndEmail(supabaseAdmin, args.orderId, args.email);
+[7m   [0m [91m                                                            ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/fran-chat.functions.ts[0m:[93m293[0m:[93m64[0m - [91merror[0m[90m TS2304: [0mCannot find name 'supabaseAdmin'.
+
+[7m293[0m               const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
+[7m   [0m [91m                                                               ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m90[0m:[93m13[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m90[0m       .from("ai_image_jobs")
+[7m  [0m [91m            ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m91[0m:[93m17[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m91[0m       .update({ status: "processing", updated_at: new Date().toISOString() })
+[7m  [0m [91m                ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m91[0m:[93m17[0m
+    [7m91[0m       .update({ status: "processing", updated_at: new Date().toISOString() })
+    [7m  [0m [96m                ~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m91[0m:[93m39[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m91[0m       .update({ status: "processing", updated_at: new Date().toISOString() })
+[7m  [0m [91m                                      ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m91[0m:[93m39[0m
+    [7m91[0m       .update({ status: "processing", updated_at: new Date().toISOString() })
+    [7m  [0m [96m                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m92[0m:[93m11[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m92[0m       .eq("id", jobId);
+[7m  [0m [91m          ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m97[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m97[0m         .from("ai_image_jobs")
+[7m  [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m19[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+[7m  [0m [91m                  ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m19[0m
+    [7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+    [7m  [0m [96m                  ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m37[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+[7m  [0m [91m                                    ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m37[0m
+    [7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+    [7m  [0m [96m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m79[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+[7m  [0m [91m                                                                              ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m98[0m:[93m79[0m
+    [7m98[0m         .update({ status: "failed", error: "OPENAI_API_KEY não configurada.", updated_at: new Date().toISOString() })
+    [7m  [0m [96m                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m99[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m99[0m         .eq("id", jobId);
+[7m  [0m [91m            ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m109[0m:[93m40[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ name: string; brand: string | undefined; description: string | undefined; } | null' is not assignable to parameter of type '{ name: string; brand: string; description: string; } | null'.
+  Type '{ name: string; brand: string | undefined; description: string | undefined; }' is not assignable to type '{ name: string; brand: string; description: string; }'.
+    Types of property 'brand' are incompatible.
+      Type 'string | undefined' is not assignable to type 'string'.
+        Type 'undefined' is not assignable to type 'string'.
+
+[7m109[0m       const artPrompt = buildArtPrompt(product, data.caption, data.modo ?? "produto");
+[7m   [0m [91m                                       ~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m141[0m:[93m23[0m - [91merror[0m[90m TS2677: [0mA type predicate's type must be assignable to its parameter's type.
+  Type '{ type: "image_generation_call"; result: string; }' is not assignable to type 'ResponseOutputItem'.
+    Type '{ type: "image_generation_call"; result: string; }' is missing the following properties from type 'ImageGenerationCall': id, status
+
+[7m141[0m       (item): item is { type: "image_generation_call"; result: string } =>
+[7m   [0m [91m                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m145[0m:[93m19[0m - [91merror[0m[90m TS2339: [0mProperty 'result' does not exist on type 'ResponseOutputItem'.
+  Property 'result' does not exist on type 'ResponseOutputMessage'.
+
+[7m145[0m     if (!genCall?.result) {
+[7m   [0m [91m                  ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m147[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m147[0m         .from("ai_image_jobs")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m19[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+[7m   [0m [91m                  ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m19[0m
+    [7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+    [7m   [0m [96m                  ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m37[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+[7m   [0m [91m                                    ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m37[0m
+    [7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m75[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+[7m   [0m [91m                                                                          ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m148[0m:[93m75[0m
+    [7m148[0m         .update({ status: "failed", error: "OpenAI não retornou imagem.", updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                                                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m149[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m149[0m         .eq("id", jobId);
+[7m   [0m [91m            ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m153[0m:[93m32[0m - [91merror[0m[90m TS2339: [0mProperty 'result' does not exist on type 'ResponseOutputItem'.
+  Property 'result' does not exist on type 'ResponseOutputMessage'.
+
+[7m153[0m     const base64Data = genCall.result.replace(/^data:[^;]+;base64,/, "");
+[7m   [0m [91m                               ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m174[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m174[0m         .from("ai_image_jobs")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m19[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+[7m   [0m [91m                  ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m19[0m
+    [7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                  ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m37[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                    ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m37[0m
+    [7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m65[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                                                ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m175[0m:[93m65[0m
+    [7m175[0m         .update({ status: "failed", error: uploadError.message, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m176[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m176[0m         .eq("id", jobId);
+[7m   [0m [91m            ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m185[0m:[93m13[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m185[0m       .from("ai_image_jobs")
+[7m   [0m [91m            ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m17[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+[7m   [0m [91m                ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m17[0m
+    [7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                ~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m34[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                 ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m34[0m
+    [7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'result_url' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m65[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                                                ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m186[0m:[93m65[0m
+    [7m186[0m       .update({ status: "ready", result_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                                                ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m187[0m:[93m11[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m187[0m       .eq("id", jobId);
+[7m   [0m [91m          ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m193[0m:[93m13[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m193[0m       .from("ai_image_jobs")
+[7m   [0m [91m            ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m17[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+[7m   [0m [91m                ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m17[0m
+    [7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m35[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                  ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m35[0m
+    [7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                  ~~~~~~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m47[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+[7m   [0m [91m                                              ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m194[0m:[93m47[0m
+    [7m194[0m       .update({ status: "failed", error: msg, updated_at: new Date().toISOString() })
+    [7m   [0m [96m                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m195[0m:[93m11[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m195[0m       .eq("id", jobId);
+[7m   [0m [91m          ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m219[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m219[0m         .from("ai_image_jobs")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m221[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m221[0m           status: "pending",
+[7m   [0m [91m          ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m222[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m222[0m           prompt: data.prompt,
+[7m   [0m [91m          ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m223[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m223[0m           product_id: data.productId,
+[7m   [0m [91m          ~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m224[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m224[0m           product_name: data.productName,
+[7m   [0m [91m          ~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m225[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m225[0m           product_brand: data.productBrand,
+[7m   [0m [91m          ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m226[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m226[0m           product_description: data.productDescription,
+[7m   [0m [91m          ~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m227[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m227[0m           caption: data.caption,
+[7m   [0m [91m          ~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m228[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"produto" | "dica" | "livre" | undefined' is not assignable to type 'never'.
+  Type 'undefined' is not assignable to type 'never'.
+
+[7m228[0m           modo: data.modo,
+[7m   [0m [91m          ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m229[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"high" | "low"' is not assignable to type 'never'.
+  Type '"high"' is not assignable to type 'never'.
+
+[7m229[0m           quality: data.quality,
+[7m   [0m [91m          ~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m239[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'SelectQueryError<"column 'id' does not exist on 'affiliates'."> | SelectQueryError<"column 'id' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'id' does not exist on type 'SelectQueryError<"column 'id' does not exist on 'affiliates'.">'.
+
+[7m239[0m       runGeneration(job.id, data);
+[7m   [0m [91m                        ~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m241[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'SelectQueryError<"column 'id' does not exist on 'affiliates'."> | SelectQueryError<"column 'id' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'id' does not exist on type 'SelectQueryError<"column 'id' does not exist on 'affiliates'.">'.
+
+[7m241[0m       return { success: true, jobId: job.id };
+[7m   [0m [91m                                         ~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m255[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m255[0m         .from("ai_image_jobs")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m257[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m257[0m         .eq("id", data.jobId)
+[7m   [0m [91m            ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m267[0m:[93m14[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m267[0m         (job.status === "pending" || job.status === "processing") &&
+[7m   [0m [91m             ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m267[0m:[93m42[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m267[0m         (job.status === "pending" || job.status === "processing") &&
+[7m   [0m [91m                                         ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m268[0m:[93m13[0m - [91merror[0m[90m TS2339: [0mProperty 'created_at' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'created_at' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m268[0m         job.created_at &&
+[7m   [0m [91m            ~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m269[0m:[93m35[0m - [91merror[0m[90m TS2339: [0mProperty 'created_at' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'created_at' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m269[0m         Date.now() - new Date(job.created_at).getTime() > STUCK_TIMEOUT_MS
+[7m   [0m [91m                                  ~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m272[0m:[93m17[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"ai_image_jobs"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m272[0m           .from("ai_image_jobs")
+[7m   [0m [91m                ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m274[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m274[0m             status: "failed",
+[7m   [0m [91m            ~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m274[0m:[93m13[0m
+    [7m274[0m             status: "failed",
+    [7m   [0m [96m            ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m275[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m275[0m             error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+[7m   [0m [91m            ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m275[0m:[93m13[0m
+    [7m275[0m             error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+    [7m   [0m [96m            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m275[0m:[93m82[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m275[0m             error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+[7m   [0m [91m                                                                                 ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m276[0m:[93m13[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m276[0m             updated_at: new Date().toISOString(),
+[7m   [0m [91m            ~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m276[0m:[93m13[0m
+    [7m276[0m             updated_at: new Date().toISOString(),
+    [7m   [0m [96m            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'updated_at' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m278[0m:[93m15[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m278[0m           .eq("id", data.jobId);
+[7m   [0m [91m              ~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m283[0m:[93m80[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m283[0m           error: "Tempo limite excedido (10 min). O job ficou preso em " + job.status + ".",
+[7m   [0m [91m                                                                               ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m289[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'status' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m289[0m         status: job.status as "pending" | "processing" | "ready" | "failed",
+[7m   [0m [91m                    ~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m290[0m:[93m18[0m - [91merror[0m[90m TS2339: [0mProperty 'result_url' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'."> | SelectQueryError<"column 'status' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'result_url' does not exist on type 'SelectQueryError<"column 'status' does not exist on 'affiliates'.">'.
+
+[7m290[0m         url: job.result_url ?? undefined,
+[7m   [0m [91m                 ~~~~~~~~~~[0m
+
+[96msrc/lib/agent/generate-image.functions.ts[0m:[93m291[0m:[93m9[0m - [91merror[0m[90m TS2322: [0mType 'boolean' is not assignable to type 'string'.
+
+[7m291[0m         error: job.error ?? undefined,
+[7m   [0m [91m        ~~~~~[0m
+
+  [96msrc/lib/agent/generate-image.functions.ts[0m:[93m31[0m:[93m91[0m
+    [7m31[0m   | { success: true; status: "pending" | "processing" | "ready" | "failed"; url?: string; error?: string }
+    [7m  [0m [96m                                                                                          ~~~~~[0m
+    The expected type comes from property 'error' which is declared here on type 'PollImageResult'
+
+[96msrc/lib/agent/order-status.test.ts[0m:[93m50[0m:[93m17[0m - [91merror[0m[90m TS2339: [0mProperty 'selectedCols' does not exist on type '{ eqs: [string, unknown][]; }'.
+
+[7m50[0m           state.selectedCols = cols;
+[7m  [0m [91m                ~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/order-status.test.ts[0m:[93m114[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'null' is not assignable to type '{ title: string; quantity: number; price: number; }[] | { title: string; quantity: number; price: number; }[]'.
+
+[7m114[0m       items: null,
+[7m   [0m [91m      ~~~~~[0m
+
+  [96msrc/lib/agent/order-status.test.ts[0m:[93m17[0m:[93m5[0m
+    [7m17[0m     items: [
+    [7m  [0m [96m    ~~~~~~~~[0m
+    [7m18[0m       { title: "Perfume Wella Invigo", quantity: 2, price: 734 },
+    [7m  [0m [96m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m19[0m       { title: "Máscara Truss Scalp", quantity: 1, price: 170.99 },
+    [7m  [0m [96m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m20[0m     ],
+    [7m  [0m [96m~~~~~[0m
+    The expected type comes from property 'items' which is declared here on type '{ id: string; status: string; payment_status: string; tracking_code: string; created_at: string; items: { title: string; quantity: number; price: number; }[]; status_history: { status: string; at: string; }[]; tracking_token: string; customer_email: string; } | { ...; }'
+
+[96msrc/lib/agent/order-status.test.ts[0m:[93m115[0m:[93m7[0m - [91merror[0m[90m TS2322: [0mType 'null' is not assignable to type '{ status: string; at: string; }[] | { status: string; at: string; }[]'.
+
+[7m115[0m       status_history: null,
+[7m   [0m [91m      ~~~~~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/order-status.test.ts[0m:[93m21[0m:[93m5[0m
+    [7m 21[0m     status_history: [
+    [7m   [0m [96m    ~~~~~~~~~~~~~~~~~[0m
+    [7m 22[0m       { status: "pending", at: "2025-01-15T10:00:00Z" },
+    [7m   [0m [96m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m...[0m 
+    [7m 24[0m       { status: "shipped", at: "2025-01-16T08:00:00Z" },
+    [7m   [0m [96m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    [7m 25[0m     ],
+    [7m   [0m [96m~~~~~[0m
+    The expected type comes from property 'status_history' which is declared here on type '{ id: string; status: string; payment_status: string; tracking_code: string; created_at: string; items: { title: string; quantity: number; price: number; }[]; status_history: { status: string; at: string; }[]; tracking_token: string; customer_email: string; } | { ...; }'
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m43[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m43[0m         .from("social_posts")
+[7m  [0m [91m              ~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m45[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"instagram" | "facebook" | "twitter"' is not assignable to type 'never'.
+  Type '"instagram"' is not assignable to type 'never'.
+
+[7m45[0m           platform: data.platform,
+[7m  [0m [91m          ~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m46[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m46[0m           content: data.content,
+[7m  [0m [91m          ~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m47[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | null' is not assignable to type 'never'.
+  Type 'null' is not assignable to type 'never'.
+
+[7m47[0m           image_url: data.imageUrl ?? null,
+[7m  [0m [91m          ~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m48[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m48[0m           status: "draft",
+[7m  [0m [91m          ~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m84[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m84[0m         .from("social_posts")
+[7m  [0m [91m              ~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m86[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"instagram" | "facebook" | "twitter"' is not assignable to type 'never'.
+  Type '"instagram"' is not assignable to type 'never'.
+
+[7m86[0m           platform: data.platform,
+[7m  [0m [91m          ~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m87[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m87[0m           content: data.content,
+[7m  [0m [91m          ~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m88[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | null' is not assignable to type 'never'.
+  Type 'null' is not assignable to type 'never'.
+
+[7m88[0m           image_url: data.imageUrl ?? null,
+[7m  [0m [91m          ~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m89[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m89[0m           status: "published",
+[7m  [0m [91m          ~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m90[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m90[0m           zernio_post_id: zernioPost.id,
+[7m  [0m [91m          ~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m91[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m91[0m           published_at: new Date().toISOString(),
+[7m  [0m [91m          ~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m130[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m130[0m         .from("social_posts")
+[7m   [0m [91m              ~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m132[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType '"instagram" | "facebook" | "twitter"' is not assignable to type 'never'.
+  Type '"instagram"' is not assignable to type 'never'.
+
+[7m132[0m           platform: data.platform,
+[7m   [0m [91m          ~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m133[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m133[0m           content: data.content,
+[7m   [0m [91m          ~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m134[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string | null' is not assignable to type 'never'.
+  Type 'null' is not assignable to type 'never'.
+
+[7m134[0m           image_url: data.imageUrl ?? null,
+[7m   [0m [91m          ~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m135[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m135[0m           status: "scheduled",
+[7m   [0m [91m          ~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m136[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m136[0m           scheduled_for: data.scheduledFor,
+[7m   [0m [91m          ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m137[0m:[93m11[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m137[0m           zernio_post_id: zernioPost.id,
+[7m   [0m [91m          ~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m158[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m158[0m         .from("social_posts")
+[7m   [0m [91m              ~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m185[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"social_posts"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m185[0m         .from("social_posts")
+[7m   [0m [91m              ~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m186[0m:[93m19[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m186[0m         .update({ status: "failed", error_message: "Cancelado pelo usuário" })
+[7m   [0m [91m                  ~~~~~~[0m
+
+  [96msrc/lib/agent/social-publish.functions.ts[0m:[93m186[0m:[93m19[0m
+    [7m186[0m         .update({ status: "failed", error_message: "Cancelado pelo usuário" })
+    [7m   [0m [96m                  ~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'status' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m186[0m:[93m37[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m186[0m         .update({ status: "failed", error_message: "Cancelado pelo usuário" })
+[7m   [0m [91m                                    ~~~~~~~~~~~~~[0m
+
+  [96msrc/lib/agent/social-publish.functions.ts[0m:[93m186[0m:[93m37[0m
+    [7m186[0m         .update({ status: "failed", error_message: "Cancelado pelo usuário" })
+    [7m   [0m [96m                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'error_message' which is declared here on type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id?: string | undefined; } | { affiliate_id?: string | undefined; city?: string | null | undefined; converted?: boolean | ... 1 more ... | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } ...'
+
+[96msrc/lib/agent/social-publish.functions.ts[0m:[93m187[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"id"' is not assignable to parameter of type '"created_at"'.
+
+[7m187[0m         .eq("id", data.id);
+[7m   [0m [91m            ~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m843[0m:[93m54[0m - [91merror[0m[90m TS2322: [0mType '"PATCH"' is not assignable to type 'Method | undefined'.
+
+[7m843[0m export const updateShipmentStatus = createServerFn({ method: "PATCH" })
+[7m   [0m [91m                                                     ~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m951[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m951[0m         .from("shipping_settings")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m953[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"key"' is not assignable to parameter of type '"created_at"'.
+
+[7m953[0m         .eq("key", "sigep_credentials")
+[7m   [0m [91m            ~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m960[0m:[93m27[0m - [91merror[0m[90m TS2551: [0mProperty 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'."> | SelectQueryError<"column 'value' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'. Did you mean 'valueOf'?
+  Property 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'.">'.
+
+[7m960[0m       const value = data?.value as SigepCredentials | undefined;
+[7m   [0m [91m                          ~~~~~[0m
+
+  [96mnode_modules/typescript/lib/lib.es5.d.ts[0m:[93m529[0m:[93m5[0m
+    [7m529[0m     valueOf(): string;
+    [7m   [0m [96m    ~~~~~~~~~~~~~~~~~~[0m
+    'valueOf' is declared here.
+
+[96msrc/lib/logistics.functions.ts[0m:[93m967[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'updated_at' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'."> | SelectQueryError<"column 'value' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'.
+  Property 'updated_at' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'.">'.
+
+[7m967[0m           lastUpdated: data?.updated_at || null,
+[7m   [0m [91m                             ~~~~~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m989[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m989[0m         .from("shipping_settings")
+[7m   [0m [91m              ~~~~~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m991[0m:[93m11[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'key' does not exist in type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id: string; } | { affiliate_id: string; city?: string | null | undefined; converted?: boolean | null | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } | ... 19 more ... | { ...; }, { ...;...'.
+
+[7m991[0m           key: "sigep_credentials",
+[7m   [0m [91m          ~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1027[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m1027[0m         .from("shipping_settings")
+[7m    [0m [91m              ~~~~~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1029[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"key"' is not assignable to parameter of type '"created_at"'.
+
+[7m1029[0m         .eq("key", "sigep_credentials")
+[7m    [0m [91m            ~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1032[0m:[93m34[0m - [91merror[0m[90m TS2551: [0mProperty 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'."> | SelectQueryError<"column 'value' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'. Did you mean 'valueOf'?
+  Property 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'.">'.
+
+[7m1032[0m       const credentials = creds?.value as SigepCredentials | undefined;
+[7m    [0m [91m                                 ~~~~~[0m
+
+  [96mnode_modules/typescript/lib/lib.es5.d.ts[0m:[93m529[0m:[93m5[0m
+    [7m529[0m     valueOf(): string;
+    [7m   [0m [96m    ~~~~~~~~~~~~~~~~~~[0m
+    'valueOf' is declared here.
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1039[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_settings"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m1039[0m         .from("shipping_settings")
+[7m    [0m [91m              ~~~~~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1041[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"key"' is not assignable to parameter of type '"created_at"'.
+
+[7m1041[0m         .eq("key", "sender_info")
+[7m    [0m [91m            ~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1043[0m:[93m34[0m - [91merror[0m[90m TS2551: [0mProperty 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'."> | SelectQueryError<"column 'value' does not exist on 'affiliate_links'."> | ... 19 more ... | SelectQueryError<...>'. Did you mean 'valueOf'?
+  Property 'value' does not exist on type 'SelectQueryError<"column 'value' does not exist on 'affiliates'.">'.
+
+[7m1043[0m       const sender = (senderRow?.value || {}) as Record<string, any>;
+[7m    [0m [91m                                 ~~~~~[0m
+
+  [96mnode_modules/typescript/lib/lib.es5.d.ts[0m:[93m529[0m:[93m5[0m
+    [7m529[0m     valueOf(): string;
+    [7m   [0m [96m    ~~~~~~~~~~~~~~~~~~[0m
+    'valueOf' is declared here.
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1114[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_tags"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_tags"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m1114[0m         .from("shipping_tags")
+[7m    [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1115[0m:[93m17[0m - [91merror[0m[90m TS2345: [0mArgument of type '{ tracking_code: string; service: string; status: string; }[]' is not assignable to parameter of type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id: string; } | { affiliate_id: string; city?: string | null | undefined; converted?: boolean | null | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } | ... 19 more ... | { ...; }, { ...;...'.
+  Type '{ tracking_code: string; service: string; status: string; }[]' is not assignable to type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id: string; } | { affiliate_id: string; city?: string | null | undefined; converted?: boolean | null | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } | ... 19 more ... | { ...; }, { ...;...'.
+    Type '{ tracking_code: string; service: string; status: string; }' is not assignable to type 'RejectExcessProperties<{ created_at?: string | undefined; email?: string | null | undefined; user_id: string; } | { affiliate_id: string; city?: string | null | undefined; converted?: boolean | null | undefined; ... 10 more ...; user_agent?: string | ... 1 more ... | undefined; } | ... 19 more ... | { ...; }, { ...;...'.
+      Type '{ tracking_code: string; service: string; status: string; }' is not assignable to type '{ status: never; tracking_code: never; service: never; }'.
+        Types of property 'status' are incompatible.
+          Type 'string' is not assignable to type 'never'.
+
+[7m1115[0m         .insert(labels.map(l => ({
+[7m    [0m [91m                ~~~~~~~~~~~~~~~~~~[0m
+[7m1116[0m           tracking_code: l.codigo,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m ...[0m 
+[7m1118[0m           status: l.status,
+[7m    [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m1119[0m         })));
+[7m    [0m [91m~~~~~~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1152[0m:[93m15[0m - [91merror[0m[90m TS2769: [0mNo overload matches this call.
+  Overload 1 of 2, '(relation: "affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"): PostgrestQueryBuilder<...>', gave the following error.
+    Argument of type '"shipping_tags"' is not assignable to parameter of type '"affiliates" | "affiliate_links" | "affiliate_tiers" | "conversations" | "orders" | "admins" | "affiliate_clicks" | "affiliate_notifications" | "affiliate_payouts" | "affiliate_sales" | ... 11 more ... | "wishlist"'.
+  Overload 2 of 2, '(relation: "affiliate_dashboard_summary"): PostgrestQueryBuilder<{ PostgrestVersion: "14.5"; }, { Tables: { admins: { Row: { created_at: string; email: string | null; user_id: string; }; Insert: { created_at?: string | undefined; email?: string | ... 1 more ... | undefined; user_id: string; }; Update: { ...; }; Relationships: []; }; ... 20 more ...; wishlist: { ...; }; }; Views: { ...; }; Functions: { ...; }; Enums: {}; CompositeTypes: {}; }, { ...; }, "affiliate_dashboard_summary", []>', gave the following error.
+    Argument of type '"shipping_tags"' is not assignable to parameter of type '"affiliate_dashboard_summary"'.
+
+[7m1152[0m         .from("shipping_tags")
+[7m    [0m [91m              ~~~~~~~~~~~~~~~[0m
+
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1154[0m:[93m13[0m - [91merror[0m[90m TS2345: [0mArgument of type '"status"' is not assignable to parameter of type '"created_at"'.
+
+[7m1154[0m         .eq("status", "disponivel")
+[7m    [0m [91m            ~~~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1163[0m:[93m17[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; } | ... 20 more ... | { ...; }'.
+  Property 'id' does not exist on type '{ created_at: string; email: string | null; user_id: string; }'.
+
+[7m1163[0m           id: l.id,
+[7m    [0m [91m                ~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1164[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'tracking_code' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; } | ... 20 more ... | { ...; }'.
+  Property 'tracking_code' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; }'.
+
+[7m1164[0m           codigo: l.tracking_code,
+[7m    [0m [91m                    ~~~~~~~~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1165[0m:[93m22[0m - [91merror[0m[90m TS2339: [0mProperty 'service' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; } | ... 20 more ... | { ...; }'.
+  Property 'service' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; }'.
+
+[7m1165[0m           service: l.service,
+[7m    [0m [91m                     ~~~~~~~[0m
+
+[96msrc/lib/logistics.functions.ts[0m:[93m1166[0m:[93m21[0m - [91merror[0m[90m TS2339: [0mProperty 'status' does not exist on type '{ channel: string; created_at: string; customer_name: string | null; customer_phone: string | null; id: string; last_message: string | null; last_message_at: string | null; priority: string; status: string; tags: string[]; unread: boolean; updated_at: string; } | ... 20 more ... | { ...; }'.
+  Property 'status' does not exist on type '{ content: string | null; conversation_id: string; created_at: string; id: string; message_type: string; read: boolean; sender: string; wa_message_id: string | null; }'.
+
+[7m1166[0m           status: l.status,
+[7m    [0m [91m                    ~~~~~~[0m
+
+[96msrc/lib/melhor-envio-client.server.ts[0m:[93m216[0m:[93m22[0m - [91merror[0m[90m TS7053: [0mElement implicitly has an 'any' type because expression of type 'string' can't be used to index type 'MelhorEnvioGenerateResponse'.
+  No index signature with a parameter of type 'string' was found on type 'MelhorEnvioGenerateResponse'.
+
+[7m216[0m     const perOrder = response[shipmentIdExternal];
+[7m   [0m [91m                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/lib/melhor-envio-client.server.ts[0m:[93m224[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType 'string | { status?: boolean | undefined; message?: string | undefined; }' is not assignable to type 'string | null'.
+  Type '{ status?: boolean | undefined; message?: string | undefined; }' is not assignable to type 'string'.
+
+[7m224[0m     return response.message || "Melhor Envio sandbox falhou ao gerar etiqueta.";
+[7m   [0m [91m    ~~~~~~[0m
+
+[96msrc/lib/mp-webhook-handler.test.ts[0m:[93m126[0m:[93m5[0m - [91merror[0m[90m TS2322: [0mType '(message: string, context: unknown) => number' is not assignable to type '() => void'.
+  Target signature provides too few arguments. Expected 2 or more, but got 0.
+
+[7m126[0m     log: (message: string, context: unknown) => logs.push([message, context]),
+[7m   [0m [91m    ~~~[0m
+
+  [96msrc/lib/mp-webhook-handler.test.ts[0m:[93m34[0m:[93m12[0m
+    [7m34[0m     log: { log: () => {}, error: () => {} },
+    [7m  [0m [96m           ~~~~~~~~~~~~~[0m
+    The expected type comes from property 'log' which is declared here on type '{ log: () => void; error: () => void; }'
+
+[96msrc/lib/order-payment-reconciliation.test.ts[0m:[93m51[0m:[93m16[0m - [91merror[0m[90m TS18048: [0m'last' is possibly 'undefined'.
+
+[7m51[0m   assert.equal(last.status, "snapshot_completed");
+[7m  [0m [91m               ~~~~[0m
+
+[96msrc/lib/order-payment-reconciliation.test.ts[0m:[93m52[0m:[93m16[0m - [91merror[0m[90m TS18048: [0m'last' is possibly 'undefined'.
+
+[7m52[0m   assert.match(last.detail, /customer_cpf/);
+[7m  [0m [91m               ~~~~[0m
+
+[96msrc/lib/order-payment-reconciliation.test.ts[0m:[93m52[0m:[93m16[0m - [91merror[0m[90m TS2345: [0mArgument of type 'unknown' is not assignable to parameter of type 'string'.
+
+[7m52[0m   assert.match(last.detail, /customer_cpf/);
+[7m  [0m [91m               ~~~~~~~~~~~[0m
+
+[96msrc/lib/order-payment-reconciliation.test.ts[0m:[93m53[0m:[93m23[0m - [91merror[0m[90m TS18048: [0m'last' is possibly 'undefined'.
+
+[7m53[0m   assert.doesNotMatch(last.detail, /customer_phone/);
+[7m  [0m [91m                      ~~~~[0m
+
+[96msrc/lib/order-payment-reconciliation.test.ts[0m:[93m53[0m:[93m23[0m - [91merror[0m[90m TS2345: [0mArgument of type 'unknown' is not assignable to parameter of type 'string'.
+
+[7m53[0m   assert.doesNotMatch(last.detail, /customer_phone/);
+[7m  [0m [91m                      ~~~~~~~~~~~[0m
+
+[96msrc/lib/orders-admin.functions.ts[0m:[93m231[0m:[93m3[0m - [91merror[0m[90m TS2345: [0mArgument of type '() => Promise<{ success: true; data: AdminOrderRow[]; } | { success: false; error: string; }>' is not assignable to parameter of type 'ServerFn<Register, "GET", undefined, undefined, Promise<{ success: true; data: AdminOrderRow[]; } | { success: false; error: string; }>, true>'.
+  Type 'Promise<{ success: true; data: AdminOrderRow[]; } | { success: false; error: string; }>' is not assignable to type 'Promise<ValidateSerializableMapped<{ success: true; data: AdminOrderRow[]; }, RegisteredSerializableInput<Register>> | ValidateSerializableMapped<...>>'.
+    Type '{ success: true; data: AdminOrderRow[]; } | { success: false; error: string; }' is not assignable to type 'ValidateSerializableMapped<{ success: true; data: AdminOrderRow[]; }, RegisteredSerializableInput<Register>> | ValidateSerializableMapped<...>'.
+      Type '{ success: true; data: AdminOrderRow[]; }' is not assignable to type 'ValidateSerializableMapped<{ success: true; data: AdminOrderRow[]; }, RegisteredSerializableInput<Register>> | ValidateSerializableMapped<...>'.
+        Type '{ success: true; data: AdminOrderRow[]; }' is not assignable to type 'ValidateSerializableMapped<{ success: true; data: AdminOrderRow[]; }, RegisteredSerializableInput<Register>>'.
+          Types of property 'data' are incompatible.
+            Type 'AdminOrderRow[]' is not assignable to type 'ValidateSerializableMapped<AdminOrderRow, RegisteredSerializableInput<Register>>[]'.
+              Type 'AdminOrderRow' is not assignable to type 'ValidateSerializableMapped<AdminOrderRow, RegisteredSerializableInput<Register>>'.
+                Types of property 'items' are incompatible.
+                  Type 'Record<string, unknown>[]' is not assignable to type 'ValidateSerializableMapped<Record<string, unknown>, RegisteredSerializableInput<Register>>[]'.
+                    Type 'Record<string, unknown>' is not assignable to type 'ValidateSerializableMapped<Record<string, unknown>, RegisteredSerializableInput<Register>>'.
+                      'string' index signatures are incompatible.
+                        Type 'unknown' is not assignable to type 'SerializationError<"Type may not be serializable">'.
+
+[7m231[0m   async (): Promise<
+[7m   [0m [91m  ~~~~~~~~~~~~~~~~~~[0m
+[7m232[0m     { success: true; data: AdminOrderRow[] } | { success: false; error: string }
+[7m   [0m [91m~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~[0m
+[7m233[0m   > => {
+[7m   [0m [91m~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m498[0m:[93m31[0m - [91merror[0m[90m TS2339: [0mProperty 'imageUrl' does not exist on type '{ weight: number | null; height: number | null; width: number | null; length: number | null; }'.
+
+[7m498[0m             imageUrl = mlData.imageUrl;
+[7m   [0m [91m                              ~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m528[0m:[93m17[0m - [91merror[0m[90m TS2345: [0mArgument of type 'Record<string, unknown>' is not assignable to parameter of type 'RejectExcessProperties<{ brand?: string | null | undefined; brand_slug?: string | null | undefined; category?: string | null | undefined; category_slug?: string | null | undefined; created_at?: string | undefined; ... 16 more ...; updated_at?: string | undefined; }, Record<...>>'.
+  Type 'Record<string, unknown>' is not assignable to type '{ [x: string]: never; }'.
+    'string' index signatures are incompatible.
+      Type 'unknown' is not assignable to type 'never'.
+
+[7m528[0m         .update(updates)
+[7m   [0m [91m                ~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m595[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'name' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m595[0m               name: product.name,
+[7m   [0m [91m                            ~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m596[0m:[93m30[0m - [91merror[0m[90m TS2339: [0mProperty 'brand' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m596[0m               brand: product.brand,
+[7m   [0m [91m                             ~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m597[0m:[93m33[0m - [91merror[0m[90m TS2339: [0mProperty 'category' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m597[0m               category: product.category,
+[7m   [0m [91m                                ~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m598[0m:[93m29[0m - [91merror[0m[90m TS2339: [0mProperty 'tags' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m598[0m               tags: product.tags || [],
+[7m   [0m [91m                            ~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m607[0m:[93m25[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m607[0m             if (product.id.startsWith("MLB")) {
+[7m   [0m [91m                        ~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m608[0m:[93m57[0m - [91merror[0m[90m TS2339: [0mProperty 'id' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m608[0m               mlData = await fetchMLProductData(product.id);
+[7m   [0m [91m                                                        ~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m613[0m:[93m66[0m - [91merror[0m[90m TS2339: [0mProperty 'name' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m613[0m               const imageUrl = await searchProductByName(product.name, product.brand);
+[7m   [0m [91m                                                                 ~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m613[0m:[93m80[0m - [91merror[0m[90m TS2339: [0mProperty 'brand' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m613[0m               const imageUrl = await searchProductByName(product.name, product.brand);
+[7m   [0m [91m                                                                               ~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m628[0m:[93m45[0m - [91merror[0m[90m TS2339: [0mProperty 'images' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m628[0m               const currentImages = product.images || [];
+[7m   [0m [91m                                            ~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m641[0m:[93m88[0m - [91merror[0m[90m TS2339: [0mProperty 'category' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m641[0m               const estimated = !mlData?.weight ? estimateDimensionsByCategory(product.category, product.name) : null;
+[7m   [0m [91m                                                                                       ~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m641[0m:[93m106[0m - [91merror[0m[90m TS2339: [0mProperty 'name' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m641[0m               const estimated = !mlData?.weight ? estimateDimensionsByCategory(product.category, product.name) : null;
+[7m   [0m [91m                                                                                                         ~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m643[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'weight_grams' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m643[0m               if (!product.weight_grams) {
+[7m   [0m [91m                           ~~~~~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m646[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'height_cm' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m646[0m               if (!product.height_cm) {
+[7m   [0m [91m                           ~~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m649[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'width_cm' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'.
+
+[7m649[0m               if (!product.width_cm) {
+[7m   [0m [91m                           ~~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m652[0m:[93m28[0m - [91merror[0m[90m TS2551: [0mProperty 'length_cm' does not exist on type 'SelectQueryError<"column 'weight_grams' does not exist on 'products'.">'. Did you mean 'length'?
+
+[7m652[0m               if (!product.length_cm) {
+[7m   [0m [91m                           ~~~~~~~~~[0m
+
+  [96mnode_modules/typescript/lib/lib.es5.d.ts[0m:[93m517[0m:[93m14[0m
+    [7m517[0m     readonly length: number;
+    [7m   [0m [96m             ~~~~~~[0m
+    'length' is declared here.
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m661[0m:[93m23[0m - [91merror[0m[90m TS2345: [0mArgument of type 'Record<string, unknown>' is not assignable to parameter of type 'RejectExcessProperties<{ brand?: string | null | undefined; brand_slug?: string | null | undefined; category?: string | null | undefined; category_slug?: string | null | undefined; created_at?: string | undefined; ... 16 more ...; updated_at?: string | undefined; }, Record<...>>'.
+  Type 'Record<string, unknown>' is not assignable to type '{ [x: string]: never; }'.
+    'string' index signatures are incompatible.
+      Type 'unknown' is not assignable to type 'never'.
+
+[7m661[0m               .update(updates)
+[7m   [0m [91m                      ~~~~~~~[0m
+
+[96msrc/lib/product-enrich.functions.ts[0m:[93m772[0m:[93m19[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'ncm' does not exist in type 'RejectExcessProperties<{ brand?: string | null | undefined; brand_slug?: string | null | undefined; category?: string | null | undefined; category_slug?: string | null | undefined; created_at?: string | undefined; ... 16 more ...; updated_at?: string | undefined; }, { ...; }>'.
+
+[7m772[0m         .update({ ncm: data.ncm })
+[7m   [0m [91m                  ~~~[0m
+
+[96msrc/lib/shipping-settings.functions.ts[0m:[93m137[0m:[93m55[0m - [91merror[0m[90m TS2322: [0mType '"PATCH"' is not assignable to type 'Method | undefined'.
+
+[7m137[0m export const updateShippingSetting = createServerFn({ method: "PATCH" })
+[7m   [0m [91m                                                      ~~~~~~[0m
+
+[96msrc/lib/storage.functions.ts[0m:[93m85[0m:[93m52[0m - [91merror[0m[90m TS2322: [0mType '"DELETE"' is not assignable to type 'Method | undefined'.
+
+[7m85[0m export const deleteProductImage = createServerFn({ method: "DELETE" })
+[7m  [0m [91m                                                   ~~~~~~[0m
+
+[96msrc/lib/whatsapp.functions.ts[0m:[93m191[0m:[93m15[0m - [91merror[0m[90m TS2322: [0mType 'string' is not assignable to type 'never'.
+
+[7m191[0m               replied_by: "human",
+[7m   [0m [91m              ~~~~~~~~~~[0m
+
+  [96msrc/lib/whatsapp.functions.ts[0m:[93m191[0m:[93m15[0m
+    [7m191[0m               replied_by: "human",
+    [7m   [0m [96m              ~~~~~~~~~~~~~~~~~~~[0m
+    The expected type comes from property 'replied_by' which is declared here on type 'RejectExcessProperties<{ channel?: string | undefined; created_at?: string | undefined; customer_name?: string | null | undefined; customer_phone?: string | null | undefined; id?: string | undefined; last_message?: string | ... 1 more ... | undefined; ... 5 more ...; updated_at?: string | undefined; }, { ...; }>'
+
+[96msrc/lib/whatsapp.functions.ts[0m:[93m446[0m:[93m21[0m - [91merror[0m[90m TS2353: [0mObject literal may only specify known properties, and 'replied_by' does not exist in type 'RejectExcessProperties<{ channel?: string | undefined; created_at?: string | undefined; customer_name?: string | null | undefined; customer_phone?: string | null | undefined; id?: string | undefined; last_message?: string | ... 1 more ... | undefined; ... 5 more ...; updated_at?: string | undefined; }, { ...; }>'.
+
+[7m446[0m           .update({ replied_by: data.repliedBy })
+[7m   [0m [91m                    ~~~~~~~~~~[0m
+
+[96msrc/routes/admin/configuracoes.tsx[0m:[93m1027[0m:[93m34[0m - [91merror[0m[90m TS2339: [0mProperty 'webservice_url' does not exist on type 'NfeSettings'.
+
+[7m1027[0m         webservice_url: settings.webservice_url || "",
+[7m    [0m [91m                                 ~~~~~~~~~~~~~~[0m
+
+[96msrc/routes/admin/configuracoes.tsx[0m:[93m1028[0m:[93m36[0m - [91merror[0m[90m TS2339: [0mProperty 'certificado_path' does not exist on type 'NfeSettings'.
+
+[7m1028[0m         certificado_path: settings.certificado_path || "",
+[7m    [0m [91m                                   ~~~~~~~~~~~~~~~~[0m
+
+[96msrc/routes/admin/configuracoes.tsx[0m:[93m1034[0m:[93m62[0m - [91merror[0m[90m TS2339: [0mProperty 'data' does not exist on type 'OptionalFetcherDataOptions<undefined, (d: unknown) => { cnpj: string; inscricao_estadual: string; razao_social: string; endereco: { cep: string; logradouro: string; numero: string; bairro: string; cidade: string; uf: string; complemento?: string | undefined; pais?: string | undefined; telefone?: string | undefined; ...'.
+
+[7m1034[0m     mutationFn: async (payload: Parameters<typeof saveFn>[0]["data"]) => {
+[7m    [0m [91m                                                             ~~~~~~[0m
+
+[96msrc/routes/admin/configuracoes.tsx[0m:[93m1368[0m:[93m56[0m - [91merror[0m[90m TS2345: [0mArgument of type 'number' is not assignable to parameter of type 'string'.
+
+[7m1368[0m                 onChange={(e) => setField("nfe_serie", Number(e.target.value))}
+[7m    [0m [91m                                                       ~~~~~~~~~~~~~~~~~~~~~~[0m
+
+[96msrc/routes/admin/pedidos.tsx[0m:[93m276[0m:[93m28[0m - [91merror[0m[90m TS2339: [0mProperty 'error' does not exist on type '{ success: true; data: { id: string; tracking_code: string | null; label_url: string; shipment_id_external: string; status: "paid"; service: string; carrier: string; }; } | { success: false; error: any; }'.
+  Property 'error' does not exist on type '{ success: true; data: { id: string; tracking_code: string | null; label_url: string; shipment_id_external: string; status: "paid"; service: string; carrier: string; }; }'.
+
+[7m276[0m         toast.error(result.error || "Erro ao gerar etiqueta");
+[7m   [0m [91m                           ~~~~~[0m
+
+[96msrc/routes/admin/produtos/index.tsx[0m:[93m1044[0m:[93m63[0m - [91merror[0m[90m TS2551: [0mProperty 'error' does not exist on type '{ success: boolean; processed: number; updated: number; errors: string[]; }'. Did you mean 'errors'?
+
+[7m1044[0m         toast.error("Erro ao enriquecer", { description: res?.error || "Erro desconhecido" });
+[7m    [0m [91m                                                              ~~~~~[0m
+
+  [96msrc/lib/product-enrich.functions.ts[0m:[93m563[0m:[93m94[0m
+    [7m563[0m   .handler(async ({ data }): Promise<{ success: boolean; processed: number; updated: number; errors: string[] }> => {
+    [7m   [0m [96m                                                                                             ~~~~~~[0m
+    'errors' is declared here.
+
+[96msrc/routes/api/public/mp-webhook.ts[0m:[93m6[0m:[93m8[0m - [91merror[0m[90m TS2459: [0mModule '"@/lib/mp-webhook-handler"' declares 'WebhookUpdate' locally, but it is not exported.
+
+[7m6[0m   type WebhookUpdate,
+[7m [0m [91m       ~~~~~~~~~~~~~[0m
+
+  [96msrc/lib/mp-webhook-handler.ts[0m:[93m28[0m:[93m6[0m
+    [7m28[0m type WebhookUpdate = {
+    [7m  [0m [96m     ~~~~~~~~~~~~~[0m
+    'WebhookUpdate' is declared here.
+
+
+Found 161 errors in 20 files.
+
+Errors  Files
+     1  src/components/admin/ImageUploader.tsx[90m:40[0m
+     1  src/components/shop/FranChatWidget.tsx[90m:191[0m
+     2  src/components/shop/Testimonials.tsx[90m:25[0m
+     9  src/lib/agent/fran-chat.functions.ts[90m:252[0m
+    61  src/lib/agent/generate-image.functions.ts[90m:90[0m
+     3  src/lib/agent/order-status.test.ts[90m:50[0m
+    24  src/lib/agent/social-publish.functions.ts[90m:43[0m
+    21  src/lib/logistics.functions.ts[90m:843[0m
+     2  src/lib/melhor-envio-client.server.ts[90m:216[0m
+     1  src/lib/mp-webhook-handler.test.ts[90m:126[0m
+     5  src/lib/order-payment-reconciliation.test.ts[90m:51[0m
+     1  src/lib/orders-admin.functions.ts[90m:231[0m
+    19  src/lib/product-enrich.functions.ts[90m:498[0m
+     1  src/lib/shipping-settings.functions.ts[90m:137[0m
+     1  src/lib/storage.functions.ts[90m:85[0m
+     2  src/lib/whatsapp.functions.ts[90m:191[0m
+     4  src/routes/admin/configuracoes.tsx[90m:1027[0m
+     1  src/routes/admin/pedidos.tsx[90m:276[0m
+     1  src/routes/admin/produtos/index.tsx[90m:1044[0m
+     1  src/routes/api/public/mp-webhook.ts[90m:6[0m
