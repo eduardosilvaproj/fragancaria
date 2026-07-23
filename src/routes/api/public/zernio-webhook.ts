@@ -97,17 +97,19 @@ async function processFranResponse(payload: {
     return;
   }
 
-  // Busca histórico da conversa (exclui a mensagem atual para não duplicar)
+  // Busca histórico da conversa (exclui a mensagem atual para não duplicar).
+  // Usamos .neq("zernio_message_id") NÃO funciona porque as respostas da Fran
+  // têm zernio_message_id=NULL, e SQL NULL != 'id' é NULL (falso) — essas
+  // linhas seriam excluídas. Buscamos tudo e filtramos em JS.
   const { data: historicoBruto } = await (supabaseAdmin as any)
     .from("messages")
-    .select("content, sender, created_at")
+    .select("content, sender, created_at, zernio_message_id")
     .eq("conversation_id", conv.id)
-    .neq("zernio_message_id", payload.message.id)
     .order("created_at", { ascending: true })
     .limit(20);
 
   const historico = (historicoBruto || [])
-    .filter((m: any) => m.content)
+    .filter((m: any) => m.content && m.zernio_message_id !== payload.message.id)
     .map((m: any) => ({
       role: m.sender === "agent" ? ("assistant" as const) : ("user" as const),
       content: m.content,
