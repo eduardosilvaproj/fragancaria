@@ -2,10 +2,11 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
 
-// Geração de legenda para redes sociais via Claude. Server-only (ANTHROPIC_API_KEY
-// fica no servidor). Rate-limit por IP admin: 60 chamadas / 10 min.
+// Geração de legenda para redes sociais via OpenAI Responses API.
+// Server-only (OPENAI_API_KEY fica no servidor).
+// Rate-limit por IP admin: 60 chamadas / 10 min.
 
-const MODEL = "claude-sonnet-5";
+const MODEL = "gpt-4o";
 const MAX_TOKENS = 600;
 
 const RATE_LIMIT_MAX = 60;
@@ -17,6 +18,7 @@ const inputSchema = z.object({
   plataforma: z.enum(["instagram", "facebook", "twitter"]),
   modo: z.enum(["produto", "dica", "livre"]),
   productId: z.string().optional(),
+  semPreco: z.boolean().optional().default(false),
 });
 
 export type GenerateCaptionInput = z.infer<typeof inputSchema>;
@@ -74,9 +76,9 @@ function getSystemPrompt(modo: string): string {
 export const generateCaption = createServerFn({ method: "POST" })
   .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }): Promise<GenerateCaptionResult> => {
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
-      return { success: false, error: "ANTHROPIC_API_KEY não configurada no servidor." };
+      return { success: false, error: "OPENAI_API_KEY não configurada no servidor." };
     }
 
     // Rate-limit por IP (admin — 60 chamadas / 10 min)
@@ -89,7 +91,7 @@ export const generateCaption = createServerFn({ method: "POST" })
     }
 
     try {
-      const Anthropic = (await import("@anthropic-ai/sdk")).default;
+      const OpenAI = (await import("openai")).default;
       const { getProduct } = await import("./product-search");
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -97,16 +99,17 @@ export const generateCaption = createServerFn({ method: "POST" })
       if (data.productId) {
         const product = await getProduct(supabaseAdmin, data.productId);
         if (product) {
-          productInfo = [
+          const lines = [
             `Produto: ${product.name}`,
             product.brand ? `Marca: ${product.brand}` : "",
-            `Preço: R$ ${product.price.toFixed(2)}`,
             product.description ? `Descrição: ${product.description}` : "",
             product.category ? `Categoria: ${product.category}` : "",
             `Link: https://fragranciaria.com/produto/${data.productId}`,
-          ]
-            .filter(Boolean)
-            .join("\n");
+          ];
+          if (!data.semPreco) {
+            lines.splice(2, 0, `Preço: R$ ${product.price.toFixed(2)}`);
+          }
+          productInfo = lines.filter(Boolean).join("\n");
         }
       }
 
@@ -123,22 +126,16 @@ export const generateCaption = createServerFn({ method: "POST" })
         .filter(Boolean)
         .join("\n");
 
-      const client = new Anthropic({ apiKey });
+      const client = new OpenAI({ apiKey });
 
-      const response = await client.messages.create({
+      const response = await client.responses.create({
         model: MODEL,
-        max_tokens: MAX_TOKENS,
-        system: [
-          { type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } },
-        ],
-        messages: [{ role: "user", content: userPrompt }],
+        instructions: systemPrompt,
+        input: userPrompt,
+        max_output_tokens: MAX_TOKENS,
       });
 
-      const caption = response.content
-        .filter((block): block is { type: "text"; text: string } => block.type === "text")
-        .map((block) => block.text)
-        .join("\n")
-        .trim();
+      const caption = response.output_text?.trim();
 
       if (!caption) {
         return { success: false, error: "Não foi possível gerar a legenda. Tente novamente." };

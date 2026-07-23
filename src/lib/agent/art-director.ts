@@ -1,5 +1,5 @@
 // System prompt do Diretor de Arte — tradutor de produto + legenda em prompt
-// de imagem para o gerador gpt-image-2 da OpenAI.
+// de imagem para o gerador DALL-E 3 da OpenAI.
 // Versionado separado para poder afinar sem mexer no código de geração.
 // O prompt final é SEMPRE em inglês (OpenAI responde melhor a prompts em inglês).
 
@@ -96,7 +96,8 @@ The top-left corner (24% width × 13% height) must contain ONLY background — a
 export function buildArtPrompt(
   product: { name: string; brand: string; description: string } | null,
   caption: string,
-  modo: "produto" | "dica" | "livre"
+  modo: "produto" | "dica" | "livre",
+  semPreco: boolean = false
 ): string {
   const productName = product?.name ?? "nosso produto";
   const brand = product?.brand ?? "Fragrânciaria";
@@ -111,6 +112,10 @@ export function buildArtPrompt(
 
   const descBlock = description
     ? `Product description for reference: "${description}".`
+    : "";
+
+  const priceBlock = semPreco
+    ? "\n\nCRITICAL: do NOT render any price, monetary value, currency symbol (R$) or numeric cost anywhere in the image. No price tags, no price text."
     : "";
 
   return `Create a 1024×1024 brand template image for Fragrânciaria.
@@ -131,5 +136,5 @@ Follow the brand template exactly:
 - Compose tightly — the frame must feel full and balanced, never sparse.
 - Photography style: premium niche perfume campaign, soft window light, 85mm f/2.8, shallow DOF, ultra-realistic.
 
-Output: 1024×1024 WebP.`;
+Output: 1024×1024 WebP.${priceBlock}`;
 }

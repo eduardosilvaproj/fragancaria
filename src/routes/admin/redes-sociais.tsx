@@ -78,6 +78,7 @@ function AdminRedesSociais() {
   const [isGeneratingImage, setIsGeneratingImage] = useState(false);
   const [imageGenTime, setImageGenTime] = useState<number | null>(null);
   const [imageQuality, setImageQuality] = useState<"low" | "high">("low");
+  const [semPreco, setSemPreco] = useState(false);
 
   // Real posts from Supabase
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -200,6 +201,7 @@ function AdminRedesSociais() {
           plataforma: selectedPlatform,
           modo,
           productId: modo === "produto" ? (selectedProduct?.id ?? undefined) : undefined,
+          semPreco,
         },
       });
       if (result.success) {
@@ -310,6 +312,7 @@ function AdminRedesSociais() {
           caption: generatedCaption,
           modo,
           quality: imageQuality,
+          semPreco,
         },
       });
       if (result.success) {
@@ -573,6 +576,34 @@ function AdminRedesSociais() {
                 ))}
               </div>
             </div>
+
+            {/* Ocultar Preço (modo produto) */}
+            {modo === "produto" && (
+              <div className="bg-white border border-[#E9E1D2] p-4">
+                <label className="flex items-center justify-between cursor-pointer">
+                  <span className="text-[11px] uppercase tracking-wider text-[#8A938E]">
+                    Ocultar preço
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={semPreco}
+                    onClick={() => setSemPreco(!semPreco)}
+                    className={cn(
+                      "relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                      semPreco ? "bg-[#B07B1E]" : "bg-gray-200"
+                    )}
+                  >
+                    <span
+                      className={cn(
+                        "pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow-sm transform transition-transform",
+                        semPreco ? "translate-x-4" : "translate-x-0"
+                      )}
+                    />
+                  </button>
+                </label>
+              </div>
+            )}
 
             {/* Templates */}
             <div className="bg-white border border-[#E9E1D2] p-4">

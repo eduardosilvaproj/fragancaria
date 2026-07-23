@@ -15,6 +15,7 @@ const startInputSchema = z.object({
   caption: z.string().optional(),
   modo: z.enum(["produto", "dica", "livre"]).optional(),
   quality: z.enum(["low", "high"]).optional().default("low"),
+  semPreco: z.boolean().optional().default(false),
 });
 
 const pollInputSchema = z.object({
@@ -30,6 +31,9 @@ export type StartImageResult =
 export type PollImageResult =
   | { success: true; status: "pending" | "processing" | "ready" | "failed"; url?: string; error?: string }
   | { success: false; error: string };
+
+const LOGO_STORAGE_URL =
+  "https://gzxlupgdmrtkprwhiutp.supabase.co/storage/v1/object/public/product-images/brand/logo.png";
 
 async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
   const sharp = (await import("sharp")).default;
@@ -54,8 +58,24 @@ async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
     }
   }
 
+  // Fallback: baixar do Supabase Storage se não encontrou localmente
   if (!logoBuffer) {
-    console.error("[stampLogo] LOGO NÃO ENCONTRADO. Tentados:", candidates.join(", "));
+    try {
+      const response = await fetch(LOGO_STORAGE_URL);
+      if (response.ok) {
+        const arrayBuffer = await response.arrayBuffer();
+        logoBuffer = Buffer.from(arrayBuffer);
+        console.log("[stampLogo] Logo carregado do Supabase Storage");
+      } else {
+        console.error("[stampLogo] Storage retornou", response.status);
+      }
+    } catch (err) {
+      console.error("[stampLogo] Erro ao baixar logo do Storage:", err);
+    }
+  }
+
+  if (!logoBuffer) {
+    console.error("[stampLogo] LOGO NÃO ENCONTRADO. Tentados locais:", candidates.join(", "), "e storage:", LOGO_STORAGE_URL);
     return imageBuffer;
   }
 
@@ -106,7 +126,7 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
       const product = data.productName
         ? { name: data.productName, brand: data.productBrand, description: data.productDescription }
         : null;
-      const artPrompt = buildArtPrompt(product, data.caption, data.modo ?? "produto");
+      const artPrompt = buildArtPrompt(product, data.caption, data.modo ?? "produto", data.semPreco);
       finalPrompt = artPrompt;
     }
 
