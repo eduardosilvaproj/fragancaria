@@ -236,16 +236,16 @@ function AdminRedesSociais() {
   };
 
   const pollTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const jobIdRef = useRef<string | null>(null);
+  const [jobId, setJobId] = useState<string | null>(null);
   const startTimeRef = useRef<number>(0);
 
   // Polling: monitora o job de geração de imagem
   useEffect(() => {
-    if (!isGeneratingImage || !jobIdRef.current) return;
+    if (!isGeneratingImage || !jobId) return;
 
     const poll = async () => {
       try {
-        const result = await pollImageGeneration({ data: { jobId: jobIdRef.current! } });
+        const result = await pollImageGeneration({ data: { jobId } });
         if (!result.success) {
           setError(result.error);
           setIsGeneratingImage(false);
@@ -285,7 +285,7 @@ function AdminRedesSociais() {
         pollTimerRef.current = null;
       }
     };
-  }, [isGeneratingImage]);
+  }, [isGeneratingImage, jobId]);
 
   const handleGenerateImage = async () => {
     if (!generatedCaption.trim()) return;
@@ -307,7 +307,7 @@ function AdminRedesSociais() {
         },
       });
       if (result.success) {
-        jobIdRef.current = result.jobId;
+        setJobId(result.jobId);
       } else {
         setError(result.error);
         setIsGeneratingImage(false);
