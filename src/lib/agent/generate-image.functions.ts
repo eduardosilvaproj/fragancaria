@@ -77,6 +77,7 @@ async function stampLogo(imageBuffer: Buffer): Promise<Buffer> {
 
   return sharp(imageBuffer)
     .composite([{ input: resizedLogo, top, left }])
+    .jpeg({ quality: 90 })
     .toBuffer();
 }
 
@@ -129,7 +130,7 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
       tools: [
         {
           type: "image_generation",
-          output_format: "webp",
+          output_format: "jpeg",
           quality: data.quality,
         },
       ],
@@ -159,12 +160,12 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
     const slug = data.productId
       ? data.productId.replace(/[^a-zA-Z0-9]/g, "-")
       : "ai";
-    const filename = `ai-generated/${timestamp}-${randomStr}-${slug}.webp`;
+    const filename = `ai-generated/${timestamp}-${randomStr}-${slug}.jpg`;
 
     const { error: uploadError } = await supabaseAdmin.storage
       .from("product-images")
       .upload(filename, stampedBuffer, {
-        contentType: "image/webp",
+        contentType: "image/jpeg",
         upsert: false,
       });
 
