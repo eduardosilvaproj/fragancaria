@@ -1,4 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
+import { z } from "zod";
 
 export type AdminAffiliateRow = {
   id: string;
@@ -85,7 +86,11 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
 
 export const approveAffiliate = createServerFn({
   method: "POST",
-}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+})
+  .validator((d: unknown) =>
+    z.object({ affiliateId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
     await requireAdmin();
@@ -116,7 +121,11 @@ export const approveAffiliate = createServerFn({
 
 export const rejectAffiliate = createServerFn({
   method: "POST",
-}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+})
+  .validator((d: unknown) =>
+    z.object({ affiliateId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
     await requireAdmin();
@@ -147,7 +156,11 @@ export const rejectAffiliate = createServerFn({
 
 export const suspendAffiliate = createServerFn({
   method: "POST",
-}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+})
+  .validator((d: unknown) =>
+    z.object({ affiliateId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
     await requireAdmin();
@@ -178,7 +191,11 @@ export const suspendAffiliate = createServerFn({
 
 export const getAffiliateDetails = createServerFn({
   method: "GET",
-}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+})
+  .validator((d: unknown) =>
+    z.object({ affiliateId: z.string().uuid() }).parse(d),
+  )
+  .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
     await requireAdmin();

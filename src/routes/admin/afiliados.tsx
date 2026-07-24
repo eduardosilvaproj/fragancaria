@@ -72,7 +72,7 @@ function AdminAfiliados() {
       const { approveAffiliate } = await import(
         "@/lib/affiliates-admin.functions"
       );
-      const result = await approveAffiliate({ affiliateId });
+      const result = await approveAffiliate({ data: { affiliateId } });
       if (result.success) {
         alert("Afiliado aprovado com sucesso!");
         window.location.reload();
@@ -90,7 +90,7 @@ function AdminAfiliados() {
       const { rejectAffiliate } = await import(
         "@/lib/affiliates-admin.functions"
       );
-      const result = await rejectAffiliate({ affiliateId });
+      const result = await rejectAffiliate({ data: { affiliateId } });
       if (result.success) {
         alert("Afiliado rejeitado com sucesso!");
         window.location.reload();
@@ -108,7 +108,7 @@ function AdminAfiliados() {
       const { suspendAffiliate } = await import(
         "@/lib/affiliates-admin.functions"
       );
-      const result = await suspendAffiliate({ affiliateId });
+      const result = await suspendAffiliate({ data: { affiliateId } });
       if (result.success) {
         alert("Afiliado suspenso com sucesso!");
         window.location.reload();
@@ -125,7 +125,7 @@ function AdminAfiliados() {
       const { getAffiliateDetails } = await import(
         "@/lib/affiliates-admin.functions"
       );
-      const result = await getAffiliateDetails({ affiliateId });
+      const result = await getAffiliateDetails({ data: { affiliateId } });
       if (result.success) {
         alert(`Detalhes do afiliado:\n${JSON.stringify(result.data, null, 2)}`);
       } else {
