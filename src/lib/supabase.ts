@@ -82,11 +82,21 @@ export const affiliateAuth = {
     if (authError) throw authError;
     if (!authData.user) throw new Error('Erro ao criar usuário');
 
-    // 2. Criar registro na tabela affiliates
+    // 2. Gerar código único de afiliado
+    const { data: affiliateCode, error: codeError } = await supabase
+      .rpc('generate_affiliate_code');
+
+    if (codeError || !affiliateCode) {
+      await supabase.auth.admin.deleteUser(authData.user.id);
+      throw codeError || new Error('Erro ao gerar código de afiliado');
+    }
+
+    // 3. Criar registro na tabela affiliates
     const { data: affiliate, error: affiliateError } = await supabase
       .from('affiliates')
       .insert({
         user_id: authData.user.id,
+        affiliate_code: affiliateCode,
         full_name: form.full_name,
         email: form.email,
         phone: form.phone || null,

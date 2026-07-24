@@ -1,10 +1,5 @@
 import { createServerFn } from "@tanstack/react-start";
 
-// Painel administrativo de afiliados — somente leitura por enquanto.
-// As ações destrutivas (aprovar/rejeitar/suspender) dependem de autenticação
-// no /admin, que ainda não existe. Quando a auth for definida, adicionar
-// server functions de mutação protegidas por ela.
-
 export type AdminAffiliateRow = {
   id: string;
   full_name: string;
@@ -87,3 +82,124 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
     }
   },
 );
+
+export const approveAffiliate = createServerFn({
+  method: "POST",
+}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+  try {
+    const { requireAdmin } = await import("./admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("affiliates")
+      .update({
+        status: "approved",
+        approved_at: new Date().toISOString()
+      })
+      .eq("id", affiliateId)
+      .select();
+
+    if (error) {
+      console.error("Erro ao aprovar afiliado:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Exception ao aprovar afiliado:", err);
+    return { success: false, error: err?.message || "Erro interno" };
+  }
+});
+
+export const rejectAffiliate = createServerFn({
+  method: "POST",
+}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+  try {
+    const { requireAdmin } = await import("./admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("affiliates")
+      .update({
+        status: "rejected",
+        rejected_at: new Date().toISOString()
+      })
+      .eq("id", affiliateId)
+      .select();
+
+    if (error) {
+      console.error("Erro ao rejeitar afiliado:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Exception ao rejeitar afiliado:", err);
+    return { success: false, error: err?.message || "Erro interno" };
+  }
+});
+
+export const suspendAffiliate = createServerFn({
+  method: "POST",
+}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+  try {
+    const { requireAdmin } = await import("./admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("affiliates")
+      .update({
+        status: "suspended",
+        suspended_at: new Date().toISOString()
+      })
+      .eq("id", affiliateId)
+      .select();
+
+    if (error) {
+      console.error("Erro ao suspender afiliado:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Exception ao suspender afiliado:", err);
+    return { success: false, error: err?.message || "Erro interno" };
+  }
+});
+
+export const getAffiliateDetails = createServerFn({
+  method: "GET",
+}).handler(async ({ affiliateId }: { affiliateId: string }) => {
+  try {
+    const { requireAdmin } = await import("./admin-auth");
+    await requireAdmin();
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    const { data, error } = await supabaseAdmin
+      .from("affiliates")
+      .select("*")
+      .eq("id", affiliateId)
+      .single();
+
+    if (error) {
+      console.error("Erro ao buscar detalhes do afiliado:", error);
+      return { success: false, error: error.message };
+    }
+
+    return { success: true, data };
+  } catch (err: any) {
+    console.error("Exception ao buscar detalhes do afiliado:", err);
+    return { success: false, error: err?.message || "Erro interno" };
+  }
+});

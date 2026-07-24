@@ -66,6 +66,80 @@ function AdminAfiliados() {
   const totalSales = affiliates.reduce((sum, a) => sum + a.total_sales, 0);
   const totalCommissions = affiliates.reduce((sum, a) => sum + a.total_commission, 0);
 
+  const handleApprove = async (affiliateId: string) => {
+    if (!confirm("Tem certeza que deseja aprovar este afiliado?")) return;
+    try {
+      const { approveAffiliate } = await import(
+        "@/lib/affiliates-admin.functions"
+      );
+      const result = await approveAffiliate({ affiliateId });
+      if (result.success) {
+        alert("Afiliado aprovado com sucesso!");
+        window.location.reload();
+      } else {
+        alert(`Erro ao aprovar: ${result.error}`);
+      }
+    } catch {
+      alert("Erro ao aprovar afiliado");
+    }
+  };
+
+  const handleReject = async (affiliateId: string) => {
+    if (!confirm("Tem certeza que deseja rejeitar este afiliado?")) return;
+    try {
+      const { rejectAffiliate } = await import(
+        "@/lib/affiliates-admin.functions"
+      );
+      const result = await rejectAffiliate({ affiliateId });
+      if (result.success) {
+        alert("Afiliado rejeitado com sucesso!");
+        window.location.reload();
+      } else {
+        alert(`Erro ao rejeitar: ${result.error}`);
+      }
+    } catch {
+      alert("Erro ao rejeitar afiliado");
+    }
+  };
+
+  const handleSuspend = async (affiliateId: string) => {
+    if (!confirm("Tem certeza que deseja suspender este afiliado?")) return;
+    try {
+      const { suspendAffiliate } = await import(
+        "@/lib/affiliates-admin.functions"
+      );
+      const result = await suspendAffiliate({ affiliateId });
+      if (result.success) {
+        alert("Afiliado suspenso com sucesso!");
+        window.location.reload();
+      } else {
+        alert(`Erro ao suspender: ${result.error}`);
+      }
+    } catch {
+      alert("Erro ao suspender afiliado");
+    }
+  };
+
+  const handleViewDetails = async (affiliateId: string) => {
+    try {
+      const { getAffiliateDetails } = await import(
+        "@/lib/affiliates-admin.functions"
+      );
+      const result = await getAffiliateDetails({ affiliateId });
+      if (result.success) {
+        alert(`Detalhes do afiliado:\n${JSON.stringify(result.data, null, 2)}`);
+      } else {
+        alert(`Erro ao buscar detalhes: ${result.error}`);
+      }
+    } catch {
+      alert("Erro ao buscar detalhes do afiliado");
+    }
+  };
+
+  const handleSendEmail = (email: string) => {
+    window.open(`mailto:${email}`, "_blank");
+  };
+
   const formatCurrency = (value: number) =>
     value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
@@ -83,16 +157,6 @@ function AdminAfiliados() {
         <p className="text-[#51635F] mt-2">
           Acompanhe cadastros, vendas e comissões dos seus afiliados.
         </p>
-      </div>
-
-      {/* Read-only notice */}
-      <div className="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-lg p-4">
-        <Lock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-        <div className="text-sm text-amber-800">
-          <span className="font-medium">Modo somente leitura.</span> Aprovar,
-          rejeitar e suspender afiliados ficam desabilitados até o painel
-          administrativo ter autenticação. Os dados abaixo são reais (Supabase).
-        </div>
       </div>
 
       {/* Load error */}
@@ -260,35 +324,44 @@ function AdminAfiliados() {
                       {affiliate.status === "pending" && (
                         <>
                           <button
-                            disabled
-                            className="p-2 text-emerald-600 rounded-lg opacity-40 cursor-not-allowed"
-                            title="Aprovar (requer autenticação admin)"
+                            onClick={() => handleApprove(affiliate.id)}
+                            className="p-2 text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                            title="Aprovar afiliado"
                           >
                             <Check className="h-4 w-4" />
                           </button>
                           <button
-                            disabled
-                            className="p-2 text-red-600 rounded-lg opacity-40 cursor-not-allowed"
-                            title="Rejeitar (requer autenticação admin)"
+                            onClick={() => handleReject(affiliate.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Rejeitar afiliado"
                           >
                             <X className="h-4 w-4" />
                           </button>
                         </>
                       )}
+                      {affiliate.status === "active" && (
+                        <button
+                          onClick={() => handleSuspend(affiliate.id)}
+                          className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
+                          title="Suspender afiliado"
+                        >
+                          <Lock className="h-4 w-4" />
+                        </button>
+                      )}
                       <button
-                        disabled
-                        className="p-2 text-[#51635F] rounded-lg opacity-40 cursor-not-allowed"
-                        title="Ver detalhes (em breve)"
+                        onClick={() => handleViewDetails(affiliate.id)}
+                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
+                        title="Ver detalhes"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
-                      <a
-                        href={`mailto:${affiliate.email}`}
-                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors inline-flex"
+                      <button
+                        onClick={() => handleSendEmail(affiliate.email)}
+                        className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
                         title="Enviar email"
                       >
                         <Mail className="h-4 w-4" />
-                      </a>
+                      </button>
                     </div>
                   </td>
                 </tr>
