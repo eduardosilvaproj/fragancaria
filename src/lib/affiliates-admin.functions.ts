@@ -189,6 +189,46 @@ export const suspendAffiliate = createServerFn({
   }
 });
 
+export type AffiliateFullDetails = {
+  // Dados cadastrais
+  id: string;
+  user_id: string;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  cpf: string | null;
+  birth_date: string | null;
+  instagram: string | null;
+  youtube: string | null;
+  tiktok: string | null;
+  website: string | null;
+  // Endereço
+  address_zip: string | null;
+  address_street: string | null;
+  address_number: string | null;
+  address_complement: string | null;
+  address_neighborhood: string | null;
+  address_city: string | null;
+  address_state: string | null;
+  // Status e código
+  status: string;
+  affiliate_code: string | null;
+  current_tier_id: string | null;
+  custom_commission_rate: number | null;
+  // Pix
+  pix_key_type: string | null;
+  pix_key: string | null;
+  // Datas
+  created_at: string;
+  updated_at: string;
+  approved_at: string | null;
+  accepted_terms: boolean;
+  accepted_terms_at: string | null;
+  // Relacionados
+  links: { id: string; code: string; url: string; created_at: string; clicks_count: number }[];
+  clicks: { id: string; link_id: string; clicked_at: string; referrer: string | null }[];
+};
+
 export const getAffiliateDetails = createServerFn({
   method: "GET",
 })
@@ -203,18 +243,33 @@ export const getAffiliateDetails = createServerFn({
       "@/integrations/supabase/client.server"
     );
 
-    const { data, error } = await supabaseAdmin
-      .from("affiliates")
-      .select("*")
-      .eq("id", affiliateId)
-      .single();
+    const [affiliateResult, linksResult, clicksResult] = await Promise.all([
+      supabaseAdmin.from("affiliates").select("*").eq("id", affiliateId).single(),
+      supabaseAdmin.from("affiliate_links").select("*").eq("affiliate_id", affiliateId).order("created_at", { ascending: false }),
+      supabaseAdmin.from("affiliate_clicks").select("*").eq("affiliate_id", affiliateId).order("clicked_at", { ascending: false }).limit(50),
+    ]);
 
-    if (error) {
-      console.error("Erro ao buscar detalhes do afiliado:", error);
-      return { success: false, error: error.message };
+    if (affiliateResult.error) {
+      console.error("getAffiliateDetails error:", affiliateResult.error.message);
+      return { success: false, error: affiliateResult.error.message };
     }
 
-    return { success: true, data };
+    const links = (linksResult.data ?? []).map((l: any) => ({
+      id: l.id,
+      code: l.code ?? "",
+      url: l.url ?? "",
+      created_at: l.created_at ?? "",
+      clicks_count: l.clicks_count ?? 0,
+    }));
+
+    const clicks = (clicksResult.data ?? []).map((c: any) => ({
+      id: c.id,
+      link_id: c.link_id ?? "",
+      clicked_at: c.clicked_at ?? "",
+      referrer: c.referrer ?? null,
+    }));
+
+    return { success: true, data: { ...affiliateResult.data, links, clicks } as AffiliateFullDetails };
   } catch (err: any) {
     console.error("Exception ao buscar detalhes do afiliado:", err);
     return { success: false, error: err?.message || "Erro interno" };

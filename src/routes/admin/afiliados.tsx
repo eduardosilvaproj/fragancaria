@@ -13,9 +13,18 @@ import {
   TrendingUp,
   UserPlus,
   Lock,
+  Link2,
+  MousePointerClick,
+  CreditCard,
+  BarChart3,
+  Layers,
+  Calendar,
+  Hash,
+  Copy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listAffiliates, type AdminAffiliateRow } from "@/lib/affiliates-admin.functions";
+import type { AffiliateFullDetails } from "@/lib/affiliates-admin.functions";
 
 export const Route = createFileRoute("/admin/afiliados")({
   loader: async () => {
@@ -25,7 +34,7 @@ export const Route = createFileRoute("/admin/afiliados")({
   component: AdminAfiliados,
 });
 
-const STATUS_CONFIG = {
+const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending: { label: "Pendente", color: "bg-amber-100 text-amber-700" },
   approved: { label: "Ativo", color: "bg-emerald-100 text-emerald-700" },
   suspended: { label: "Suspenso", color: "bg-red-100 text-red-700" },
@@ -33,11 +42,247 @@ const STATUS_CONFIG = {
 };
 
 function statusConfigFor(status: string) {
+  return STATUS_CONFIG[status] ?? { label: status, color: "bg-gray-100 text-gray-700" };
+}
+
+function formatDate(iso: string | null) {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatCurrency(value: number) {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function DetailModal({
+  details,
+  onClose,
+}: {
+  details: AffiliateFullDetails;
+  onClose: () => void;
+}) {
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
+  const copyCode = (code: string, i: number) => {
+    navigator.clipboard.writeText(code);
+    setCopiedIndex(i);
+    setTimeout(() => setCopiedIndex(null), 1500);
+  };
+
   return (
-    STATUS_CONFIG[status as keyof typeof STATUS_CONFIG] ?? {
-      label: status,
-      color: "bg-gray-100 text-gray-700",
-    }
+    <div className="fixed inset-0 z-50 flex items-start justify-center pt-12 pb-12 overflow-y-auto bg-black/40">
+      <div className="relative w-full max-w-3xl mx-4 bg-white shadow-xl">
+        {/* Header */}
+        <div className="sticky top-0 z-10 bg-white border-b border-[#E9E1D2] px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-[#0F3A3E] flex items-center justify-center text-white font-medium">
+              {details.full_name.charAt(0)}
+            </div>
+            <div>
+              <h2 className="font-serif text-xl text-[#0F3A3E]">{details.full_name}</h2>
+              <p className="text-sm text-[#8A938E]">{details.email}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-[#F3EEE3] rounded-lg transition-colors"
+          >
+            <X className="h-5 w-5 text-[#51635F]" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-8">
+          {/* Status + Código */}
+          <div className="flex flex-wrap items-center gap-4">
+            <span
+              className={cn(
+                "inline-block px-3 py-1 rounded-full text-xs font-medium",
+                statusConfigFor(details.status).color
+              )}
+            >
+              {statusConfigFor(details.status).label}
+            </span>
+            {details.affiliate_code && (
+              <span className="flex items-center gap-1.5 text-sm text-[#51635F] bg-[#F5F3EE] px-3 py-1 rounded-full">
+                <Hash className="h-3.5 w-3.5" />
+                {details.affiliate_code}
+              </span>
+            )}
+          </div>
+
+          {/* Grid: Dados Cadastrais + Pagamento */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Dados Cadastrais */}
+            <SectionCard icon={Users} title="Dados Cadastrais">
+              <Field label="Nome" value={details.full_name} />
+              <Field label="E-mail" value={details.email} />
+              <Field label="Telefone" value={details.phone ?? "—"} />
+              <Field label="CPF" value={details.cpf ?? "—"} />
+              <Field label="Nascimento" value={details.birth_date ? formatDate(details.birth_date) : "—"} />
+              <Field label="Instagram" value={details.instagram ? `@${details.instagram}` : "—"} />
+              <Field label="YouTube" value={details.youtube ?? "—"} />
+              <Field label="TikTok" value={details.tiktok ? `@${details.tiktok}` : "—"} />
+              <Field label="Site" value={details.website ?? "—"} />
+              {details.address_city && (
+                <Field
+                  label="Endereço"
+                  value={[
+                    details.address_street,
+                    details.address_number,
+                    details.address_complement,
+                    details.address_neighborhood,
+                    details.address_city,
+                    details.address_state,
+                    details.address_zip,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
+                />
+              )}
+            </SectionCard>
+
+            {/* Pagamento */}
+            <SectionCard icon={CreditCard} title="Dados de Pagamento">
+              <Field label="Tipo de Chave" value={details.pix_key_type ?? "—"} />
+              <Field label="Chave Pix" value={details.pix_key ?? "—"} />
+              <Field label="Comissão Personalizada" value={details.custom_commission_rate ? `${details.custom_commission_rate}%` : "Padrão (não definida)"} />
+            </SectionCard>
+          </div>
+
+          {/* Datas */}
+          <SectionCard icon={Calendar} title="Datas">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Field label="Cadastro" value={formatDate(details.created_at)} />
+              <Field label="Aprovação" value={formatDate(details.approved_at)} />
+              <Field label="Aceite dos Termos" value={formatDate(details.accepted_terms_at)} />
+            </div>
+          </SectionCard>
+
+          {/* Links */}
+          <SectionCard icon={Link2} title="Links de Indicação">
+            {details.links.length === 0 ? (
+              <EmptyState message="Nenhum link gerado ainda." />
+            ) : (
+              <div className="space-y-2">
+                {details.links.map((link, i) => (
+                  <div
+                    key={link.id}
+                    className="flex items-center justify-between gap-3 bg-[#F9F7F3] px-4 py-3 text-sm"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[#0F3A3E] font-medium truncate">{link.url}</p>
+                      <p className="text-[#8A938E] text-xs">
+                        Código: {link.code} · {link.clicks_count} cliques · Criado em {formatDate(link.created_at)}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => copyCode(link.code, i)}
+                      className="p-1.5 text-[#51635F] hover:text-[#B07B1E] transition-colors shrink-0"
+                      title="Copiar código"
+                    >
+                      {copiedIndex === i ? (
+                        <Check className="h-4 w-4 text-emerald-600" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Cliques */}
+          <SectionCard icon={MousePointerClick} title="Cliques Recentes">
+            {details.clicks.length === 0 ? (
+              <EmptyState message="Nenhum clique registrado ainda." />
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-[#E9E1D2] text-[11px] uppercase tracking-wider text-[#8A938E]">
+                      <th className="text-left pb-2 font-medium">Data</th>
+                      <th className="text-left pb-2 font-medium">Link</th>
+                      <th className="text-left pb-2 font-medium">Referrer</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {details.clicks.slice(0, 20).map((click) => (
+                      <tr key={click.id} className="border-b border-[#E9E1D2]/50">
+                        <td className="py-2 text-[#51635F]">{formatDate(click.clicked_at)}</td>
+                        <td className="py-2 text-[#0F3A3E]">{click.link_id.substring(0, 8)}…</td>
+                        <td className="py-2 text-[#8A938E]">{click.referrer ?? "—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Placeholders vazios */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <SectionCard icon={BarChart3} title="Vendas">
+              <EmptyState message="Nenhuma venda atribuída ainda. A atribuição será implementada em breve." />
+            </SectionCard>
+            <SectionCard icon={DollarSign} title="Comissões">
+              <EmptyState message="Nenhuma comissão gerada ainda." />
+            </SectionCard>
+            <SectionCard icon={CreditCard} title="Pagamentos">
+              <EmptyState message="Nenhum pagamento realizado ainda." />
+            </SectionCard>
+            <SectionCard icon={Layers} title="Histórico de Nível">
+              <EmptyState message="Nenhuma alteração de nível registrada ainda." />
+            </SectionCard>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  children,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="border border-[#E9E1D2]">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-[#E9E1D2] bg-[#F9F7F3]">
+        <Icon className="h-4 w-4 text-[#B07B1E]" />
+        <span className="text-[11px] uppercase tracking-[0.1em] text-[#51635F] font-medium">
+          {title}
+        </span>
+      </div>
+      <div className="p-4">{children}</div>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="mb-2 last:mb-0">
+      <span className="text-[11px] uppercase tracking-wider text-[#8A938E] block">{label}</span>
+      <span className="text-sm text-[#0F3A3E]">{value}</span>
+    </div>
+  );
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="py-6 text-center">
+      <p className="text-sm text-[#8A938E]">{message}</p>
+    </div>
   );
 }
 
@@ -48,6 +293,8 @@ function AdminAfiliados() {
   };
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [modalDetails, setModalDetails] = useState<AffiliateFullDetails | null>(null);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const filteredAffiliates = useMemo(
     () =>
@@ -121,27 +368,27 @@ function AdminAfiliados() {
   };
 
   const handleViewDetails = async (affiliateId: string) => {
+    setModalLoading(true);
     try {
       const { getAffiliateDetails } = await import(
         "@/lib/affiliates-admin.functions"
       );
       const result = await getAffiliateDetails({ data: { affiliateId } });
       if (result.success) {
-        alert(`Detalhes do afiliado:\n${JSON.stringify(result.data, null, 2)}`);
+        setModalDetails(result.data as AffiliateFullDetails);
       } else {
         alert(`Erro ao buscar detalhes: ${result.error}`);
       }
     } catch {
       alert("Erro ao buscar detalhes do afiliado");
+    } finally {
+      setModalLoading(false);
     }
   };
 
   const handleSendEmail = (email: string) => {
     window.open(`mailto:${email}`, "_blank");
   };
-
-  const formatCurrency = (value: number) =>
-    value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   return (
     <div className="p-6 md:p-8">
@@ -223,7 +470,6 @@ function AdminAfiliados() {
       {/* Filters */}
       <div className="bg-white border border-[#E9E1D2] p-4 mb-6">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
           <div className="flex-1 flex items-center gap-2 bg-[#F5F3EE] rounded-lg px-4 py-2">
             <Search className="h-4 w-4 text-[#8A938E]" />
             <input
@@ -235,7 +481,6 @@ function AdminAfiliados() {
             />
           </div>
 
-          {/* Status Filter */}
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-[#8A938E]" />
             <select
@@ -353,7 +598,11 @@ function AdminAfiliados() {
                         className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg transition-colors"
                         title="Ver detalhes"
                       >
-                        <Eye className="h-4 w-4" />
+                        {modalLoading ? (
+                          <span className="block h-4 w-4 animate-spin rounded-full border-2 border-[#51635F] border-t-transparent" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
                       </button>
                       <button
                         onClick={() => handleSendEmail(affiliate.email)}
@@ -377,6 +626,11 @@ function AdminAfiliados() {
           </div>
         )}
       </div>
+
+      {/* Detail Modal */}
+      {modalDetails && (
+        <DetailModal details={modalDetails} onClose={() => setModalDetails(null)} />
+      )}
     </div>
   );
 }
