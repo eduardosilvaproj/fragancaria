@@ -87,6 +87,7 @@ const inputSchema = z.object({
   servicoId: z.number().int().optional(),
   userId: z.string().uuid().optional(),
   externalReference: z.string().uuid().optional(),
+  affiliateCode: z.string().optional(),
 });
 function translateMpError(msg: string, method: string): string {
   const lower = (msg || "").toLowerCase();
@@ -321,6 +322,38 @@ export const createPayment = createServerFn({ method: "POST" })
         }
       }
 
+      // Resolve afiliado (se código enviado). Falha silenciosa: pedido segue sem afiliado.
+      let resolvedAffiliateId: string | null = null;
+      let resolvedAffiliateLinkId: string | null = null;
+      let resolvedAffiliateCommissionRate: number | null = null;
+      if (data.affiliateCode) {
+        try {
+          const { data: link } = await admin
+            .from("affiliate_links")
+            .select("id, affiliate_id, affiliates!inner(id, email, status, current_tier_id, affiliate_tiers!inner(commission_rate))")
+            .eq("code", data.affiliateCode)
+            .eq("is_active", true)
+            .maybeSingle();
+          if (link) {
+            const aff = link.affiliates as any;
+            if (aff?.status === "approved" || aff?.status === "active") {
+              // Bloqueia auto-indicação: compara e-mail do afiliado com e-mail do comprador.
+              const affiliateEmail = (aff.email ?? "").toLowerCase().trim();
+              const payerEmail = data.payer.email.toLowerCase().trim();
+              if (affiliateEmail && affiliateEmail === payerEmail) {
+                console.warn("[createPayment] auto-indicação bloqueada", { code: data.affiliateCode, email: payerEmail });
+              } else {
+                resolvedAffiliateLinkId = link.id;
+                resolvedAffiliateId = link.affiliate_id;
+                resolvedAffiliateCommissionRate = aff?.affiliate_tiers?.commission_rate ?? 0.08;
+              }
+            }
+          }
+        } catch (e) {
+          console.warn("[createPayment] falha ao resolver afiliado, segue sem", e);
+        }
+      }
+
       // 1) cria pedido "pending" antes de chamar MP. external_reference = order.id.
       //    se o cliente reenviar, o id do pedido continua igual (idempotente).
       orderId = data.externalReference;
@@ -352,6 +385,9 @@ export const createPayment = createServerFn({ method: "POST" })
               cep: data.payer.address.zipCode,
               zipCode: data.payer.address.zipCode,
             },
+            affiliate_id: resolvedAffiliateId,
+            affiliate_link_id: resolvedAffiliateLinkId,
+            affiliate_commission_rate: resolvedAffiliateCommissionRate,
             tracking_token: generateTrackingToken(),
           })
           .select("id")

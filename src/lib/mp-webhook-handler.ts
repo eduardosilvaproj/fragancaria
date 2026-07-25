@@ -23,6 +23,12 @@ export type WebhookOrder = PaymentSnapshotOrder & {
   status: string;
   payment_status: string | null;
   status_history: unknown;
+  affiliate_id?: string | null;
+  affiliate_link_id?: string | null;
+  affiliate_commission_rate?: number | null;
+  subtotal?: number | null;
+  discount?: number | null;
+  total?: number | null;
 };
 
 type WebhookUpdate = {
@@ -44,6 +50,14 @@ export type MpWebhookDependencies = {
   findOrderById: (orderId: string) => Promise<WebhookOrder | null>;
   findOrderByPaymentId: (paymentId: string) => Promise<WebhookOrder | null>;
   updateOrder: (orderId: string, patch: WebhookUpdate) => Promise<void>;
+  createAffiliateSale?: (params: {
+    orderId: string;
+    affiliateId: string;
+    linkId: string | null;
+    orderTotal: number;
+    commissionRate: number;
+    commissionBase: number;
+  }) => Promise<void>;
   now?: () => string;
   log?: Pick<Console, "log" | "error">;
 };
@@ -186,6 +200,23 @@ export async function handleMpWebhookRequest(
       raw: payment,
       updated_at: now,
     });
+
+    // Se pagamento aprovado e pedido tem afiliado, registra a comissão.
+    // Falha silenciosa: UNIQUE(order_id) + try/catch garantem idempotência.
+    if (nextStatus === "paid" && existing.affiliate_id && deps.createAffiliateSale) {
+      const commissionBase = Math.max(0, (existing.subtotal ?? 0) - (existing.discount ?? 0));
+      const rate = existing.affiliate_commission_rate ?? 0.08;
+      deps.createAffiliateSale({
+        orderId: existing.id,
+        affiliateId: existing.affiliate_id,
+        linkId: existing.affiliate_link_id,
+        orderTotal: existing.total ?? 0,
+        commissionRate: rate,
+        commissionBase,
+      }).catch((err) => {
+        log.error("[mp-webhook] falha ao criar affiliate_sale (ignorada)", { orderId: existing.id, err });
+      });
+    }
 
     log.log("[mp-webhook] pagamento processado", {
       orderId: existing.id,

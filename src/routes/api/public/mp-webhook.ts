@@ -28,7 +28,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
           findOrderById: async (orderId) => {
             const { data, error } = await supabaseAdmin
               .from("orders")
-              .select("id, status, payment_status, payment_id, status_history, shipping_address, customer_phone, customer_cpf")
+              .select("id, status, payment_status, payment_id, status_history, shipping_address, customer_phone, customer_cpf, affiliate_id, affiliate_link_id, affiliate_commission_rate, subtotal, discount, total")
               .eq("id", orderId)
               .maybeSingle();
             if (error) throw error;
@@ -37,7 +37,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
           findOrderByPaymentId: async (paymentId) => {
             const { data, error } = await supabaseAdmin
               .from("orders")
-              .select("id, status, payment_status, payment_id, status_history, shipping_address, customer_phone, customer_cpf")
+              .select("id, status, payment_status, payment_id, status_history, shipping_address, customer_phone, customer_cpf, affiliate_id, affiliate_link_id, affiliate_commission_rate, subtotal, discount, total")
               .eq("payment_id", paymentId)
               .maybeSingle();
             if (error) throw error;
@@ -46,6 +46,19 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
           updateOrder: async (orderId, patch: WebhookUpdate) => {
             const { error } = await supabaseAdmin.from("orders").update(patch).eq("id", orderId);
             if (error) throw error;
+          },
+          createAffiliateSale: async (params) => {
+            const commissionAmount = Number((params.commissionBase * params.commissionRate).toFixed(2));
+            const { error } = await supabaseAdmin.from("affiliate_sales").insert({
+              order_id: params.orderId,
+              affiliate_id: params.affiliateId,
+              link_id: params.linkId,
+              order_total: params.orderTotal,
+              commission_rate: params.commissionRate,
+              commission_amount: commissionAmount,
+              status: "pending",
+            });
+            if (error && !error.message?.includes("duplicate key")) throw error;
           },
         });
       },

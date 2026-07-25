@@ -18,6 +18,7 @@ import { PAYMENT_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/c
 import { calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
 import { useServerFn } from "@tanstack/react-start";
 import { createPayment } from "@/lib/payments.functions";
+import { getAffiliateCode } from "@/lib/affiliateTracking";
 
 // Mercado Pago Public Key - necessário para tokenizar cartões
 const MP_PUBLIC_KEY =
@@ -527,6 +528,7 @@ function CardForm({
           servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
+          affiliateCode: getAffiliateCode() ?? undefined,
         },
       });
 
@@ -802,6 +804,7 @@ function PixForm({
           servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
+          affiliateCode: getAffiliateCode() ?? undefined,
         },
       });
       if (!res.success) throw new Error(res.error);
@@ -953,6 +956,7 @@ function BoletoForm({
           servicoId: servicoId ?? undefined,
           couponCode,
           userId: user?.id,
+          affiliateCode: getAffiliateCode() ?? undefined,
         },
       });
       if (!res.success) throw new Error(res.error);
