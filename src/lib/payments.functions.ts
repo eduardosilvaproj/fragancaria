@@ -329,14 +329,12 @@ export const createPayment = createServerFn({ method: "POST" })
       let resolvedAffiliateCommissionRate: number | null = null;
       if (data.affiliateCode) {
         try {
-          console.log("[createPayment] buscando link para:", data.affiliateCode);
           const { data: link, error: linkErr } = await admin
             .from("affiliate_links")
-            .select("id, affiliate_id, affiliates!inner(id, email, status, current_tier_id, affiliate_tiers!inner(commission_rate))")
+            .select("id, affiliate_id, affiliates!inner(id, email, status, current_tier_id, affiliate_tiers(commission_rate))")
             .eq("code", data.affiliateCode)
             .eq("is_active", true)
             .maybeSingle();
-          console.log("[createPayment] link:", link, "erro:", linkErr);
           if (link) {
             const aff = link.affiliates as any;
             if (aff?.status === "approved" || aff?.status === "active") {
@@ -348,11 +346,12 @@ export const createPayment = createServerFn({ method: "POST" })
               } else {
                 resolvedAffiliateLinkId = link.id;
                 resolvedAffiliateId = link.affiliate_id;
+                // Sem tier (current_tier_id NULL) o afiliado ainda pontua na taxa base.
                 resolvedAffiliateCommissionRate = aff?.affiliate_tiers?.commission_rate ?? 0.08;
               }
             }
           } else {
-            console.log("[createPayment] link NÃO resolvido para:", data.affiliateCode);
+            console.warn("[createPayment] link de afiliado não resolvido", { code: data.affiliateCode, error: linkErr });
           }
         } catch (e) {
           console.warn("[createPayment] falha ao resolver afiliado, segue sem", e);

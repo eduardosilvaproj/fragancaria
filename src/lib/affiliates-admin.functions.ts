@@ -98,11 +98,21 @@ export const approveAffiliate = createServerFn({
       "@/integrations/supabase/client.server"
     );
 
+    // Aprovar sem tier deixa current_tier_id NULL e o inner join em createPayment
+    // descarta a atribuição inteira. Fixa o afiliado no tier base (menor rate).
+    const { data: baseTier } = await supabaseAdmin
+      .from("affiliate_tiers")
+      .select("id")
+      .order("commission_rate", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
     const { data, error } = await supabaseAdmin
       .from("affiliates")
       .update({
         status: "approved",
-        approved_at: new Date().toISOString()
+        approved_at: new Date().toISOString(),
+        ...(baseTier ? { current_tier_id: baseTier.id } : {}),
       })
       .eq("id", affiliateId)
       .select();
