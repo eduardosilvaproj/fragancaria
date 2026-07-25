@@ -181,6 +181,7 @@ async function syncCheckoutCustomer(
 export const createPayment = createServerFn({ method: "POST" })
   .validator((d: unknown) => inputSchema.parse(d))
   .handler(async ({ data }) => {
+    console.log("[createPayment] affiliateCode recebido:", data.affiliateCode);
     const request = getRequest();
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) return { success: false, error: "MP_ACCESS_TOKEN nao configurado" };
