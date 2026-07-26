@@ -33,36 +33,41 @@ export async function captureAffiliateFromUrl(): Promise<void> {
 
   if (!refCode) return;
 
+  // Sanidade mínima: evita guardar lixo de querystring arbitrária.
+  if (!/^[A-Za-z0-9]{4,32}$/.test(refCode)) {
+    console.warn('Affiliate ref inválido, ignorado:', refCode);
+    return;
+  }
+
   try {
-    // Find the affiliate link
-    const { data: link, error } = await supabase
+    // Busca o link de afiliado. Pode não existir: links de indicação usam
+    // affiliate_code (tabela affiliates), que a RLS impede o cliente anônimo
+    // de ler. Nesse caso guardamos o ref cru e o servidor valida no createPayment.
+    const { data: link } = await supabase
       .from('affiliate_links')
       .select('id, affiliate_id, product_id, code')
       .eq('code', refCode)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
-    if (error || !link) {
-      console.warn('Affiliate link not found:', refCode);
-      return;
-    }
-
-    // Store affiliate info
+    // Store affiliate info (com ou sem link resolvido)
     const now = new Date();
     const expiresAt = new Date(now.getTime() + AFFILIATE_EXPIRY_DAYS * 24 * 60 * 60 * 1000);
 
     const affiliateData: StoredAffiliate = {
       code: refCode,
-      link_id: link.id,
-      product_id: link.product_id,
+      link_id: link?.id,
+      product_id: link?.product_id,
       captured_at: now.toISOString(),
       expires_at: expiresAt.toISOString(),
     };
 
     localStorage.setItem(AFFILIATE_STORAGE_KEY, JSON.stringify(affiliateData));
 
-    // Record click
-    await recordClick(link.id);
+    // Record click (só quando o link existe)
+    if (link) {
+      await recordClick(link.id);
+    }
 
     // Clean URL (remove ref parameter)
     const newUrl = new URL(window.location.href);

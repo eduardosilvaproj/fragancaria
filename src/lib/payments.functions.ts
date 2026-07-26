@@ -351,7 +351,28 @@ export const createPayment = createServerFn({ method: "POST" })
               }
             }
           } else {
-            console.warn("[createPayment] link de afiliado não resolvido", { code: data.affiliateCode, error: linkErr });
+            // Fallback: não há linha em affiliate_links com esse code. O link de
+            // indicação usa affiliates.affiliate_code, que a RLS esconde do cliente
+            // anônimo — mas aqui o admin (service role) bypassa a RLS e resolve.
+            const { data: affRow, error: affErr } = await admin
+              .from("affiliates")
+              .select("id, email, status, current_tier_id, affiliate_tiers(commission_rate)")
+              .eq("affiliate_code", data.affiliateCode)
+              .in("status", ["approved", "active"])
+              .maybeSingle();
+            if (affRow) {
+              const affiliateEmail = (affRow.email ?? "").toLowerCase().trim();
+              const payerEmail = data.payer.email.toLowerCase().trim();
+              if (affiliateEmail && affiliateEmail === payerEmail) {
+                console.warn("[createPayment] auto-indicação bloqueada", { code: data.affiliateCode, email: payerEmail });
+              } else {
+                resolvedAffiliateId = affRow.id;
+                resolvedAffiliateLinkId = null;
+                resolvedAffiliateCommissionRate = (affRow.affiliate_tiers as any)?.commission_rate ?? 0.08;
+              }
+            } else {
+              console.warn("[createPayment] afiliado não resolvido (nem link nem code)", { code: data.affiliateCode, linkError: linkErr, affError: affErr });
+            }
           }
         } catch (e) {
           console.warn("[createPayment] falha ao resolver afiliado, segue sem", e);
