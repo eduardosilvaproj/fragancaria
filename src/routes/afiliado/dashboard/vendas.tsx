@@ -59,7 +59,7 @@ function VendasPage() {
   };
 
   // Summary stats
-  const totalSales = filteredSales.reduce((sum, s) => sum + s.order_total, 0);
+  const totalSales = filteredSales.reduce((sum, s) => sum + (s.commission_base ?? s.order_total), 0);
   const totalCommission = filteredSales.reduce((sum, s) => sum + s.commission_amount, 0);
   const confirmedCommission = filteredSales
     .filter((s) => s.status === "confirmed" || s.status === "paid")
@@ -78,7 +78,7 @@ function VendasPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-[#E9E1D2] p-4 md:p-5">
-          <p className="text-[11px] uppercase tracking-[0.1em] text-[#75827E]">Total em Vendas</p>
+          <p className="text-[11px] uppercase tracking-[0.1em] text-[#75827E]">Base de Comissão</p>
           <p className="font-serif text-[22px] text-[#0F3A3E] mt-1">{formatCurrency(totalSales)}</p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4 md:p-5">
@@ -179,7 +179,7 @@ function VendasPage() {
                     Data
                   </th>
                   <th className="text-right p-4 text-[11px] uppercase tracking-[0.1em] text-[#75827E] font-medium">
-                    Valor
+                    Base Comissão
                   </th>
                   <th className="text-right p-4 text-[11px] uppercase tracking-[0.1em] text-[#75827E] font-medium">
                     Comissão
@@ -210,7 +210,12 @@ function VendasPage() {
                         <p className="text-[13px] text-[#51635F]">{formatDate(sale.created_at)}</p>
                       </td>
                       <td className="p-4 text-right">
-                        <p className="text-[14px] text-[#0F3A3E]">{formatCurrency(sale.order_total)}</p>
+                        <p className="text-[14px] text-[#0F3A3E]">
+                          {formatCurrency(sale.commission_base ?? sale.order_total)}
+                        </p>
+                        <p className="text-[10px] text-[#8A938E] mt-0.5">
+                          Pedido {formatCurrency(sale.order_total)}
+                        </p>
                       </td>
                       <td className="p-4 text-right">
                         <p className="text-[14px] font-medium" style={{ color: status.color }}>

@@ -54,6 +54,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
               affiliate_id: params.affiliateId,
               link_id: params.linkId,
               order_total: params.orderTotal,
+              commission_base: params.commissionBase,
               commission_rate: params.commissionRate,
               commission_amount: commissionAmount,
               status: "pending",

@@ -188,6 +188,7 @@ export interface AffiliateSale {
   order_shipping: number;
   order_discount: number;
   order_total: number;
+  commission_base?: number | null;
 
   // Comissão
   commission_rate: number;
