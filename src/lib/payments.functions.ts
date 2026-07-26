@@ -331,7 +331,7 @@ export const createPayment = createServerFn({ method: "POST" })
         try {
           const { data: link, error: linkErr } = await admin
             .from("affiliate_links")
-            .select("id, affiliate_id, affiliates!inner(id, email, status, current_tier_id, affiliate_tiers(commission_rate))")
+            .select("id, affiliate_id, affiliates!inner(id, email, status, custom_commission_rate, current_tier_id, affiliate_tiers(commission_rate))")
             .eq("code", data.affiliateCode)
             .eq("is_active", true)
             .maybeSingle();
@@ -346,8 +346,10 @@ export const createPayment = createServerFn({ method: "POST" })
               } else {
                 resolvedAffiliateLinkId = link.id;
                 resolvedAffiliateId = link.affiliate_id;
-                // Sem tier (current_tier_id NULL) o afiliado ainda pontua na taxa base.
-                resolvedAffiliateCommissionRate = aff?.affiliate_tiers?.commission_rate ?? 0.08;
+                // Mesma precedência do COALESCE da view affiliate_dashboard_summary:
+                // taxa negociada > tier > base. Sem isso o dashboard promete uma taxa
+                // e o sistema paga outra.
+                resolvedAffiliateCommissionRate = aff?.custom_commission_rate ?? aff?.affiliate_tiers?.commission_rate ?? 0.08;
               }
             }
           } else {
@@ -356,7 +358,7 @@ export const createPayment = createServerFn({ method: "POST" })
             // anônimo — mas aqui o admin (service role) bypassa a RLS e resolve.
             const { data: affRow, error: affErr } = await admin
               .from("affiliates")
-              .select("id, email, status, current_tier_id, affiliate_tiers(commission_rate)")
+              .select("id, email, status, custom_commission_rate, current_tier_id, affiliate_tiers(commission_rate)")
               .eq("affiliate_code", data.affiliateCode)
               .in("status", ["approved", "active"])
               .maybeSingle();
@@ -368,7 +370,7 @@ export const createPayment = createServerFn({ method: "POST" })
               } else {
                 resolvedAffiliateId = affRow.id;
                 resolvedAffiliateLinkId = null;
-                resolvedAffiliateCommissionRate = (affRow.affiliate_tiers as any)?.commission_rate ?? 0.08;
+                resolvedAffiliateCommissionRate = (affRow as any).custom_commission_rate ?? (affRow.affiliate_tiers as any)?.commission_rate ?? 0.08;
               }
             } else {
               console.warn("[createPayment] afiliado não resolvido (nem link nem code)", { code: data.affiliateCode, linkError: linkErr, affError: affErr });
