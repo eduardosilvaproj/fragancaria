@@ -237,6 +237,16 @@ export type AffiliateFullDetails = {
   // Relacionados
   links: { id: string; code: string; url: string; created_at: string; clicks_count: number }[];
   clicks: { id: string; link_id: string; clicked_at: string; referrer: string | null }[];
+  sales: {
+    id: string;
+    order_number: string | null;
+    created_at: string;
+    commission_base: number | null;
+    order_total: number;
+    commission_amount: number;
+    commission_rate: number;
+    status: string;
+  }[];
 };
 
 export const getAffiliateDetails = createServerFn({
@@ -253,10 +263,11 @@ export const getAffiliateDetails = createServerFn({
       "@/integrations/supabase/client.server"
     );
 
-    const [affiliateResult, linksResult, clicksResult] = await Promise.all([
+    const [affiliateResult, linksResult, clicksResult, salesResult] = await Promise.all([
       supabaseAdmin.from("affiliates").select("*").eq("id", affiliateId).single(),
       supabaseAdmin.from("affiliate_links").select("*").eq("affiliate_id", affiliateId).order("created_at", { ascending: false }),
       supabaseAdmin.from("affiliate_clicks").select("*").eq("affiliate_id", affiliateId).order("clicked_at", { ascending: false }).limit(50),
+      supabaseAdmin.from("affiliate_sales").select("id, order_number, created_at, commission_base, order_total, commission_amount, commission_rate, status").eq("affiliate_id", affiliateId).order("created_at", { ascending: false }),
     ]);
 
     if (affiliateResult.error) {
@@ -279,7 +290,18 @@ export const getAffiliateDetails = createServerFn({
       referrer: c.referrer ?? null,
     }));
 
-    return { success: true, data: { ...affiliateResult.data, links, clicks } as AffiliateFullDetails };
+    const sales = (salesResult.data ?? []).map((s: any) => ({
+      id: s.id,
+      order_number: s.order_number ?? null,
+      created_at: s.created_at ?? "",
+      commission_base: s.commission_base ?? null,
+      order_total: Number(s.order_total ?? 0),
+      commission_amount: Number(s.commission_amount ?? 0),
+      commission_rate: Number(s.commission_rate ?? 0),
+      status: s.status ?? "pending",
+    }));
+
+    return { success: true, data: { ...affiliateResult.data, links, clicks, sales } as AffiliateFullDetails };
   } catch (err: any) {
     console.error("Exception ao buscar detalhes do afiliado:", err);
     return { success: false, error: err?.message || "Erro interno" };

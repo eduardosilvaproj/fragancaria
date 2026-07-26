@@ -226,13 +226,64 @@ function DetailModal({
             )}
           </SectionCard>
 
-          {/* Placeholders vazios */}
+          {/* Vendas + Comissões (dados reais de affiliate_sales) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <SectionCard icon={BarChart3} title="Vendas">
-              <EmptyState message="Nenhuma venda atribuída ainda. A atribuição será implementada em breve." />
+              {details.sales.length === 0 ? (
+                <EmptyState message="Nenhuma venda ainda." />
+              ) : (
+                <div className="space-y-2">
+                  {details.sales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center justify-between gap-3 bg-[#F9F7F3] px-4 py-3 text-sm"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#0F3A3E] font-medium truncate">
+                          #{sale.order_number ?? "—"}
+                        </p>
+                        <p className="text-[#8A938E] text-xs">{formatDate(sale.created_at)}</p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-[#0F3A3E] font-medium">
+                          {formatCurrency(sale.commission_base ?? sale.order_total)}
+                        </p>
+                        <p className="text-[#8A938E] text-[10px]">
+                          Pedido {formatCurrency(sale.order_total)}
+                        </p>
+                      </div>
+                      <SaleStatusBadge status={sale.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </SectionCard>
             <SectionCard icon={DollarSign} title="Comissões">
-              <EmptyState message="Nenhuma comissão gerada ainda." />
+              {details.sales.length === 0 ? (
+                <EmptyState message="Nenhuma comissão ainda." />
+              ) : (
+                <div className="space-y-2">
+                  {details.sales.map((sale) => (
+                    <div
+                      key={sale.id}
+                      className="flex items-center justify-between gap-3 bg-[#F9F7F3] px-4 py-3 text-sm"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[#0F3A3E] font-medium truncate">
+                          #{sale.order_number ?? "—"}
+                        </p>
+                        <p className="text-[#8A938E] text-xs">
+                          {(sale.commission_rate * 100).toFixed(0)}% da base
+                        </p>
+                      </div>
+                      <p className="text-emerald-600 font-medium shrink-0">
+                        {formatCurrency(sale.commission_amount)}
+                      </p>
+                      <SaleStatusBadge status={sale.status} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </SectionCard>
             <SectionCard icon={CreditCard} title="Pagamentos">
               <EmptyState message="Nenhum pagamento realizado ainda." />
@@ -283,6 +334,22 @@ function EmptyState({ message }: { message: string }) {
     <div className="py-6 text-center">
       <p className="text-sm text-[#8A938E]">{message}</p>
     </div>
+  );
+}
+
+const SALE_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
+  pending: { label: "Pendente", color: "bg-gray-100 text-gray-600" },
+  confirmed: { label: "Confirmado", color: "bg-amber-100 text-amber-700" },
+  paid: { label: "Pago", color: "bg-emerald-100 text-emerald-700" },
+  cancelled: { label: "Cancelado", color: "bg-red-100 text-red-700" },
+};
+
+function SaleStatusBadge({ status }: { status: string }) {
+  const cfg = SALE_STATUS_CONFIG[status] ?? { label: status, color: "bg-gray-100 text-gray-600" };
+  return (
+    <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0", cfg.color)}>
+      {cfg.label}
+    </span>
   );
 }
 
