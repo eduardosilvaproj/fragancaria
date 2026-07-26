@@ -16,6 +16,7 @@ import { useAffiliateStore } from "@/stores/affiliateStore";
 import { linkService } from "@/lib/supabase";
 import { useProducts } from "@/hooks/useProducts";
 import type { Product } from "@/data/products";
+import { PrintableQRCard } from "@/components/afiliado/PrintableQRCard";
 
 export const Route = createFileRoute("/afiliado/dashboard/links")({
   component: LinksPage,
@@ -118,6 +119,14 @@ function LinksPage() {
           </div>
         </div>
       </div>
+
+      {/* QR code + arte para impressão */}
+      {affiliate?.affiliate_code && (
+        <PrintableQRCard
+          affiliateCode={affiliate.affiliate_code}
+          defaultEstablishment={affiliate.full_name ?? ""}
+        />
+      )}
 
       {/* Links Table */}
       <div className="bg-white border border-[#E9E1D2]">
