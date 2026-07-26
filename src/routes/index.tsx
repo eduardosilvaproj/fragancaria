@@ -4,7 +4,7 @@ import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
 import type { Product } from "@/data/products";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Link2 } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
 
@@ -248,6 +248,33 @@ function IndexEditorial() {
                 </StaggerItem>
               ))}
             </StaggerContainer>
+          </div>
+        </section>
+
+        {/* ===== CARD AFILIADO (discreto) ===== */}
+        <section className="px-6 md:px-14 pb-4 bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto">
+            <Link
+              to="/seja-afiliado"
+              className="group flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-5 border border-[#D8D0BD] hover:border-[#B4862C] transition-colors"
+              style={{ backgroundColor: "#F5F1E8", borderWidth: "0.5px", borderRadius: "12px", padding: "22px 26px" }}
+            >
+              <span className="flex-shrink-0 w-11 h-11 rounded-full bg-[#0E3B32] flex items-center justify-center">
+                <Link2 className="h-5 w-5 text-[#B4862C]" />
+              </span>
+              <div className="flex-1 min-w-0">
+                <p className="font-serif text-[18px] md:text-[20px] text-[#123F35] leading-tight">
+                  Trabalha com cabelo? Ganhe indicando.
+                </p>
+                <p className="text-[13px] md:text-[14px] text-[#6B6B63] mt-1">
+                  Comissão de 8% a 15% em produtos profissionais.
+                </p>
+              </div>
+              <span className="flex items-center gap-1.5 text-[13px] tracking-[0.02em] font-medium text-[#8A6413] group-hover:gap-2.5 transition-all self-start sm:self-auto flex-shrink-0">
+                Saiba mais
+                <ArrowRight className="h-4 w-4" />
+              </span>
+            </Link>
           </div>
         </section>
 

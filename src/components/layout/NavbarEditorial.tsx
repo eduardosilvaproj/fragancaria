@@ -497,6 +497,16 @@ export const NavbarEditorial = () => {
 
                   <li>
                     <Link
+                      to="/afiliado/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center gap-3 font-serif text-2xl text-[#0F3A3E]"
+                    >
+                      Área do afiliado
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link
                       to="/favoritos"
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="flex items-center gap-3 font-serif text-2xl text-[#0F3A3E]"

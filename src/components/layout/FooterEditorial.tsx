@@ -13,6 +13,10 @@ const FOOTER_LINKS = {
     { label: "Termos de Uso", href: "/termos" },
     { label: "Contato", href: "/contato" },
   ],
+  partners: [
+    { label: "Seja um afiliado", href: "/seja-afiliado" },
+    { label: "Área do afiliado", href: "/afiliado/login" },
+  ],
 };
 
 const TRUST_BADGES = [
@@ -76,7 +80,7 @@ export function FooterEditorial() {
 
       {/* Main Footer Content */}
       <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-16">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-10 md:gap-16">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-10 md:gap-16">
           {/* Logo & Description */}
           <div className="col-span-2 md:col-span-1">
             <img
@@ -119,6 +123,25 @@ export function FooterEditorial() {
             </h4>
             <ul className="space-y-3">
               {FOOTER_LINKS.support.map((link) => (
+                <li key={link.label}>
+                  <Link
+                    to={link.href}
+                    className="text-white/60 hover:text-white text-sm transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {/* Partners */}
+          <div>
+            <h4 className="text-[11px] uppercase tracking-[0.16em] font-semibold text-[#E8C25A] mb-6">
+              Parceiros
+            </h4>
+            <ul className="space-y-3">
+              {FOOTER_LINKS.partners.map((link) => (
                 <li key={link.label}>
                   <Link
                     to={link.href}
