@@ -16,6 +16,8 @@ type Payment = {
   payment_method_id?: string | null;
   payer?: { email?: string | null } | null;
   transaction_amount?: number | null;
+  /** Data de aprovação no Mercado Pago. Marca o início da contagem do prazo de liberação. */
+  date_approved?: string | null;
 };
 
 export type WebhookOrder = PaymentSnapshotOrder & {
@@ -57,6 +59,8 @@ export type MpWebhookDependencies = {
     orderTotal: number;
     commissionRate: number;
     commissionBase: number;
+    /** Momento da aprovação do pagamento. Base da contagem do prazo de liberação. */
+    confirmedAt: string;
   }) => Promise<void>;
   now?: () => string;
   log?: Pick<Console, "log" | "error">;
@@ -206,6 +210,12 @@ export async function handleMpWebhookRequest(
     if (nextStatus === "paid" && existing.affiliate_id && deps.createAffiliateSale) {
       const commissionBase = Math.max(0, (existing.subtotal ?? 0) - (existing.discount ?? 0));
       const rate = existing.affiliate_commission_rate ?? 0.08;
+      // A comissão nasce devida (confirmed). confirmed_at é a data de aprovação
+      // do MP quando ela vem no payload; senão o instante deste webhook.
+      // É desta data que o prazo de liberação conta.
+      const confirmedAt = payment.date_approved
+        ? new Date(payment.date_approved).toISOString()
+        : now;
       deps.createAffiliateSale({
         orderId: existing.id,
         affiliateId: existing.affiliate_id,
@@ -213,6 +223,7 @@ export async function handleMpWebhookRequest(
         orderTotal: existing.total ?? 0,
         commissionRate: rate,
         commissionBase,
+        confirmedAt,
       }).catch((err) => {
         log.error("[mp-webhook] falha ao criar affiliate_sale (ignorada)", { orderId: existing.id, err });
       });

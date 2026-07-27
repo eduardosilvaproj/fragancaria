@@ -20,6 +20,12 @@ export interface AffiliateSettings {
   min_payout_amount: number;
   auto_approve_affiliates: boolean;
   payout_day: number;
+  /**
+   * Dias corridos após a aprovação do pagamento para a comissão ficar
+   * disponível para repasse. Adicionada em 20260727c. Não confundir com
+   * payout_day (dia do mês), que segue sem uso.
+   */
+  release_delay_days: number;
   terms_url?: string;
   support_email: string;
   created_at: string;

@@ -1,5 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { toast } from "sonner";
 import {
   Users,
   Search,
@@ -21,10 +24,18 @@ import {
   Calendar,
   Hash,
   Copy,
+  Wallet,
+  Send,
+  AlertCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { listAffiliates, type AdminAffiliateRow } from "@/lib/affiliates-admin.functions";
 import type { AffiliateFullDetails } from "@/lib/affiliates-admin.functions";
+import {
+  getAffiliatePayoutOverview,
+  closeAffiliatePayout,
+  closeAllAffiliatePayouts,
+} from "@/lib/affiliate-payouts-admin.functions";
 
 export const Route = createFileRoute("/admin/afiliados")({
   loader: async () => {
@@ -337,11 +348,15 @@ function EmptyState({ message }: { message: string }) {
   );
 }
 
+// Os 5 status aceitos pelo CHECK affiliate_sales_status_check (20260727c).
+// 'refunded' entrou com o ciclo de repasse; sem ele o badge cairia no
+// fallback e mostraria a string crua "refunded" para o admin.
 const SALE_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   pending: { label: "Pendente", color: "bg-gray-100 text-gray-600" },
   confirmed: { label: "Confirmado", color: "bg-amber-100 text-amber-700" },
   paid: { label: "Pago", color: "bg-emerald-100 text-emerald-700" },
   cancelled: { label: "Cancelado", color: "bg-red-100 text-red-700" },
+  refunded: { label: "Estornado", color: "bg-rose-100 text-rose-700" },
 };
 
 function SaleStatusBadge({ status }: { status: string }) {
@@ -350,6 +365,276 @@ function SaleStatusBadge({ status }: { status: string }) {
     <span className={cn("inline-block px-2 py-0.5 rounded-full text-[10px] font-medium shrink-0", cfg.color)}>
       {cfg.label}
     </span>
+  );
+}
+
+// =====================================================
+// PAINEL DE REPASSE
+//
+// Mostra Pendente/Disponível/Pago por afiliado e dispara o fechamento.
+// Os números vêm de getAffiliatePayoutOverview, que usa a MESMA função
+// pura (summarizeCommissions) que a função transacional do banco usa
+// para montar o lote — não há segunda regra de disponibilidade aqui.
+// =====================================================
+
+function PayoutPanel() {
+  const queryClient = useQueryClient();
+  const overviewFn = useServerFn(getAffiliatePayoutOverview);
+  const closeOneFn = useServerFn(closeAffiliatePayout);
+  const closeAllFn = useServerFn(closeAllAffiliatePayouts);
+
+  const { data: result, isLoading } = useQuery({
+    queryKey: ["affiliate-payout-overview"],
+    queryFn: () => overviewFn({}),
+  });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["affiliate-payout-overview"] });
+  };
+
+  const closeOne = useMutation({
+    mutationFn: async (affiliateId: string) => closeOneFn({ data: { affiliateId } }),
+    onSuccess: (res) => {
+      if (!res.success) {
+        toast.error(res.error || "Erro ao fechar repasse");
+        return;
+      }
+      if (res.data.payoutId) {
+        toast.success(
+          `Repasse fechado: ${formatCurrency(res.data.amount)} em ${res.data.salesCount} ${
+            res.data.salesCount === 1 ? "comissão" : "comissões"
+          }.`,
+        );
+      } else {
+        // Não é erro: a função recusou por regra (sem disponível ou abaixo do mínimo).
+        toast.info(`Nada a fechar: ${res.data.skippedReason ?? "sem comissões disponíveis"}.`);
+      }
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao fechar repasse"),
+  });
+
+  const closeAll = useMutation({
+    mutationFn: async () => closeAllFn({ data: {} }),
+    onSuccess: (res) => {
+      if (!res.success) {
+        toast.error(res.error || "Erro ao fechar repasses");
+        return;
+      }
+      const { closed, skipped, failed } = res.data;
+      const total = closed.reduce((sum, c) => sum + c.amount, 0);
+
+      if (closed.length > 0) {
+        toast.success(
+          `${closed.length} ${closed.length === 1 ? "repasse" : "repasses"} fechados, ${formatCurrency(total)} no total.`,
+        );
+      } else {
+        toast.info("Nenhum afiliado elegível para fechamento agora.");
+      }
+      // Falhas nunca ficam caladas: cada afiliado é uma transação própria,
+      // então parte pode ter fechado e parte não.
+      if (failed.length > 0) {
+        toast.error(
+          `${failed.length} ${failed.length === 1 ? "afiliado falhou" : "afiliados falharam"}: ${failed[0].error}`,
+        );
+      }
+      if (skipped.length > 0) {
+        toast.info(
+          `${skipped.length} ${skipped.length === 1 ? "afiliado ficou" : "afiliados ficaram"} de fora (abaixo do mínimo).`,
+        );
+      }
+      invalidate();
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao fechar repasses"),
+  });
+
+  const busy = closeOne.isPending || closeAll.isPending;
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-[#E9E1D2] p-6 mb-8">
+        <div className="h-5 w-48 bg-[#F5F3EE] animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  if (result && !result.success) {
+    return (
+      <div className="bg-white border border-[#E9E1D2] p-6 mb-8">
+        <div className="flex items-start gap-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>Não foi possível carregar o painel de repasse: {result.error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!result?.success) return null;
+
+  const { affiliates: rows, releaseDelayDays, minPayoutAmount } = result.data;
+  const eligible = rows.filter((r) => r.canClose);
+  const totalAvailable = rows.reduce((sum, r) => sum + r.availableTotal, 0);
+
+  return (
+    <div className="bg-white border border-[#E9E1D2] mb-8">
+      <div className="p-4 md:p-6 border-b border-[#E9E1D2] flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-[#B07B1E]" />
+            <h2 className="font-serif text-lg text-[#0F3A3E]">Repasse de Comissões</h2>
+          </div>
+          <p className="text-sm text-[#8A938E] mt-1">
+            Liberação em {releaseDelayDays} dias corridos após a aprovação do pagamento. Mínimo
+            de {formatCurrency(minPayoutAmount)} por repasse.
+          </p>
+        </div>
+
+        <button
+          onClick={() => {
+            if (
+              !confirm(
+                `Fechar repasse de ${eligible.length} ${eligible.length === 1 ? "afiliado" : "afiliados"}? As comissões do lote passam a Pago e o Pix deve ser feito em seguida.`,
+              )
+            )
+              return;
+            closeAll.mutate();
+          }}
+          disabled={busy || eligible.length === 0}
+          className="flex items-center gap-2 px-5 py-2.5 bg-[#0F3A3E] text-white text-sm rounded-lg hover:bg-[#16504F] disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
+          title={
+            eligible.length === 0
+              ? "Nenhum afiliado alcançou o valor mínimo"
+              : "Fechar todos os elegíveis"
+          }
+        >
+          {closeAll.isPending ? (
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+          Fechar elegíveis ({eligible.length})
+        </button>
+      </div>
+
+      {rows.length === 0 ? (
+        <div className="p-12 text-center">
+          <Wallet className="h-12 w-12 text-[#E9E1D2] mx-auto mb-4" />
+          <p className="text-[#0F3A3E] font-medium">Nenhum afiliado ativo</p>
+          <p className="text-sm text-[#8A938E] mt-1">
+            Afiliados aprovados aparecem aqui com suas comissões.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#E9E1D2] bg-[#F9F7F3]">
+                  <th className="text-left p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
+                    Afiliado
+                  </th>
+                  <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
+                    Pendente
+                  </th>
+                  <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
+                    Disponível
+                  </th>
+                  <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium hidden lg:table-cell">
+                    Pago
+                  </th>
+                  <th className="text-left p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium hidden md:table-cell">
+                    Chave Pix
+                  </th>
+                  <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
+                    Ação
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr
+                    key={row.affiliateId}
+                    className="border-b border-[#E9E1D2] last:border-b-0 hover:bg-[#F9F7F3] transition-colors"
+                  >
+                    <td className="p-4">
+                      <p className="font-medium text-[#0F3A3E]">{row.fullName || "—"}</p>
+                      <p className="text-sm text-[#8A938E]">{row.email}</p>
+                    </td>
+                    <td className="p-4 text-right">
+                      <p className="text-[#B07B1E] font-medium">
+                        {formatCurrency(row.pendingTotal)}
+                      </p>
+                      {row.nextReleaseAt && (
+                        <p className="text-[10px] text-[#8A938E] mt-0.5">
+                          libera {formatDate(row.nextReleaseAt).split(",")[0]}
+                        </p>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      <p
+                        className={cn(
+                          "font-medium",
+                          row.canClose ? "text-emerald-600" : "text-[#51635F]",
+                        )}
+                      >
+                        {formatCurrency(row.availableTotal)}
+                      </p>
+                      {row.availableCount > 0 && !row.canClose && (
+                        <p className="text-[10px] text-[#8A938E] mt-0.5">abaixo do mínimo</p>
+                      )}
+                    </td>
+                    <td className="p-4 text-right hidden lg:table-cell">
+                      <span className="text-[#51635F]">{formatCurrency(row.paidTotal)}</span>
+                    </td>
+                    <td className="p-4 hidden md:table-cell">
+                      {row.pixKey ? (
+                        <span className="text-sm text-[#51635F]">
+                          {row.pixKeyType ? `${row.pixKeyType}: ` : ""}
+                          {row.pixKey}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-amber-700">sem chave cadastrada</span>
+                      )}
+                    </td>
+                    <td className="p-4 text-right">
+                      <button
+                        onClick={() => {
+                          if (
+                            !confirm(
+                              `Fechar repasse de ${formatCurrency(row.availableTotal)} para ${row.fullName || row.email}?`,
+                            )
+                          )
+                            return;
+                          closeOne.mutate(row.affiliateId);
+                        }}
+                        disabled={busy || !row.canClose}
+                        className="px-4 py-2 text-sm rounded-lg border border-[#0F3A3E] text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#0F3A3E] transition-colors"
+                        title={
+                          row.canClose
+                            ? "Fechar repasse deste afiliado"
+                            : "Disponível não alcança o valor mínimo"
+                        }
+                      >
+                        Fechar
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="p-4 border-t border-[#E9E1D2] bg-[#F9F7F3] flex flex-wrap items-center gap-x-6 gap-y-1 text-sm text-[#51635F]">
+            <span>
+              Disponível total: <strong>{formatCurrency(totalAvailable)}</strong>
+            </span>
+            <span>
+              Elegíveis: <strong>{eligible.length}</strong> de {rows.length}
+            </span>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -533,6 +818,9 @@ function AdminAfiliados() {
           <p className="font-serif text-2xl text-[#0F3A3E]">{formatCurrency(totalCommissions)}</p>
         </div>
       </div>
+
+      {/* Painel de repasse */}
+      <PayoutPanel />
 
       {/* Filters */}
       <div className="bg-white border border-[#E9E1D2] p-4 mb-6">

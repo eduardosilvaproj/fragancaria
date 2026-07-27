@@ -24,6 +24,7 @@ import {
   AlertCircle,
   CheckCircle,
   Upload,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -39,6 +40,10 @@ import {
   type NfeSettings,
   type NfeEndereco,
 } from "@/lib/nfe.functions";
+import {
+  getAffiliateSettings,
+  saveAffiliateSettings,
+} from "@/lib/affiliate-settings.functions";
 
 export const Route = createFileRoute("/admin/configuracoes")({
   component: AdminConfiguracoes,
@@ -117,6 +122,7 @@ function AdminConfiguracoes() {
     { id: "integracoes", label: "Integrações", icon: Globe },
     { id: "vitrine", label: "Vitrine da Home", icon: LayoutGrid },
     { id: "nfe", label: "Nota Fiscal", icon: FileText },
+    { id: "afiliados", label: "Afiliados", icon: Users },
   ];
 
   return (
@@ -931,6 +937,8 @@ function AdminConfiguracoes() {
           {activeSection === "vitrine" && <VitrineManager />}
 
           {activeSection === "nfe" && <NfeSection />}
+
+          {activeSection === "afiliados" && <AfiliadosSection />}
         </div>
       </div>
     </div>
@@ -1422,6 +1430,168 @@ function NfeSection() {
             className="flex items-center gap-2 px-6 py-2.5 bg-[#0F3A3E] text-white text-sm rounded-lg hover:bg-[#16504F] disabled:opacity-50"
           >
             {updateMutation.isPending ? (
+              <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+            ) : (
+              <Save className="h-4 w-4" />
+            )}
+            Salvar Configurações
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+// =====================================================
+// AFILIADOS SECTION
+// =====================================================
+
+function AfiliadosSection() {
+  const queryClient = useQueryClient();
+
+  const getFn = useServerFn(getAffiliateSettings);
+  const saveFn = useServerFn(saveAffiliateSettings);
+
+  const { data: result, isLoading } = useQuery({
+    queryKey: ["affiliate-settings"],
+    queryFn: () => getFn({}),
+  });
+
+  const settings = result?.success ? result.data : null;
+
+  const [form, setForm] = useState({ releaseDelayDays: "15", minPayoutAmount: "50" });
+
+  useEffect(() => {
+    if (settings) {
+      setForm({
+        releaseDelayDays: String(settings.releaseDelayDays),
+        minPayoutAmount: String(settings.minPayoutAmount),
+      });
+    }
+  }, [settings]);
+
+  const saveMutation = useMutation({
+    mutationFn: async (payload: { releaseDelayDays: number; minPayoutAmount: number }) =>
+      saveFn({ data: payload }),
+    onSuccess: (res) => {
+      if (res.success) {
+        toast.success("Configurações de afiliados salvas!");
+        queryClient.invalidateQueries({ queryKey: ["affiliate-settings"] });
+      } else {
+        toast.error(res.error || "Erro ao salvar");
+      }
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const dias = Number(form.releaseDelayDays);
+    const minimo = Number(form.minPayoutAmount);
+
+    if (!Number.isInteger(dias) || dias < 0 || dias > 365) {
+      toast.error("Prazo de liberação deve ser um número inteiro entre 0 e 365 dias");
+      return;
+    }
+    if (!Number.isFinite(minimo) || minimo < 0) {
+      toast.error("Valor mínimo de repasse inválido");
+      return;
+    }
+
+    saveMutation.mutate({ releaseDelayDays: dias, minPayoutAmount: minimo });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-[#E9E1D2] p-6">
+        <div className="h-5 w-40 bg-[#F5F3EE] animate-pulse rounded" />
+      </div>
+    );
+  }
+
+  if (result && !result.success) {
+    return (
+      <div className="bg-white border border-[#E9E1D2] p-6">
+        <div className="flex items-start gap-3 text-sm text-red-700">
+          <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
+          <span>Não foi possível carregar as configurações: {result.error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-[#E9E1D2] p-6">
+      <h3 className="font-serif text-lg text-[#0F3A3E] mb-1">Repasse de Comissões</h3>
+      <p className="text-sm text-[#8A938E] mb-6">
+        Define quando a comissão de um afiliado fica disponível e qual o valor mínimo para
+        gerar um repasse.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid md:grid-cols-2 gap-6">
+          <div>
+            <label
+              htmlFor="release-delay-days"
+              className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2"
+            >
+              Prazo de liberação (dias corridos após a aprovação do pagamento)
+            </label>
+            <div className="flex items-center gap-3">
+              <input
+                id="release-delay-days"
+                type="number"
+                min={0}
+                max={365}
+                step={1}
+                value={form.releaseDelayDays}
+                onChange={(e) => setForm((f) => ({ ...f, releaseDelayDays: e.target.value }))}
+                className="w-28 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+              />
+              <span className="text-sm text-[#51635F]">dias corridos</span>
+            </div>
+            <p className="mt-2 text-xs text-[#8A938E]">
+              Contados a partir da data em que o pagamento do pedido foi aprovado. Antes
+              disso a comissão aparece como <strong>Pendente</strong>; depois, como{" "}
+              <strong>Disponível</strong>. Não confunde com o campo{" "}
+              <code className="bg-[#F5F3EE] px-1 rounded">payout_day</code> (dia do mês), que
+              existe no banco mas segue sem uso.
+            </p>
+          </div>
+
+          <div>
+            <label
+              htmlFor="min-payout-amount"
+              className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2"
+            >
+              Valor mínimo para repasse
+            </label>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-[#51635F]">R$</span>
+              <input
+                id="min-payout-amount"
+                type="number"
+                min={0}
+                step="0.01"
+                value={form.minPayoutAmount}
+                onChange={(e) => setForm((f) => ({ ...f, minPayoutAmount: e.target.value }))}
+                className="w-32 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#8A938E]">
+              O fechamento só gera repasse para o afiliado cuja soma de comissões disponíveis
+              alcança este valor. Abaixo dele, as comissões seguem acumulando.
+            </p>
+          </div>
+        </div>
+
+        <div className="border-t border-[#E9E1D2] pt-6 flex justify-end">
+          <button
+            type="submit"
+            disabled={saveMutation.isPending}
+            className="flex items-center gap-2 px-6 py-2.5 bg-[#0F3A3E] text-white text-sm rounded-lg hover:bg-[#16504F] disabled:opacity-50"
+          >
+            {saveMutation.isPending ? (
               <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             ) : (
               <Save className="h-4 w-4" />

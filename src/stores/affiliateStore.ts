@@ -19,6 +19,11 @@ import {
   settingsService,
   onAuthStateChange,
 } from '@/lib/supabase';
+import {
+  AFFILIATE_PAYOUT_SETTINGS_FALLBACK,
+  type AffiliatePayoutSettings,
+  type CommissionRow,
+} from '@/lib/affiliate-payout';
 
 // =============================================
 // INTERFACE DO STORE
@@ -41,6 +46,12 @@ interface AffiliateState {
   notifications: AffiliateNotification[];
   tiers: AffiliateTier[];
 
+  // Ciclo de repasse: linhas cruas (SEM paginação) + prazo/mínimo.
+  // Pendente/Disponível/Pago são derivados destas duas coisas por
+  // summarizeCommissions, nunca lidos de uma coluna.
+  commissionRows: CommissionRow[];
+  payoutSettings: AffiliatePayoutSettings;
+
   // Contadores
   unreadNotificationsCount: number;
 
@@ -56,6 +67,8 @@ interface AffiliateState {
   loadPayouts: (page?: number) => Promise<void>;
   loadNotifications: () => Promise<void>;
   loadTiers: () => Promise<void>;
+  /** Carrega as linhas cruas + prazo/mínimo para os três números. */
+  loadCommissions: () => Promise<void>;
 
   // Actions - Links
   createLink: (productId?: string, productName?: string, productImage?: string, productPrice?: number) => Promise<AffiliateLink>;
@@ -90,6 +103,8 @@ export const useAffiliateStore = create<AffiliateState>()(
       payouts: [],
       notifications: [],
       tiers: [],
+      commissionRows: [],
+      payoutSettings: AFFILIATE_PAYOUT_SETTINGS_FALLBACK,
       unreadNotificationsCount: 0,
 
       // =============================================
@@ -229,6 +244,27 @@ export const useAffiliateStore = create<AffiliateState>()(
         }
       },
 
+      loadCommissions: async () => {
+        // As duas leituras são independentes: um erro em uma não pode
+        // zerar a outra. getPayoutSettings já cai no fallback sozinho.
+        const [rowsResult, settingsResult] = await Promise.allSettled([
+          saleService.getCommissionRows(),
+          settingsService.getPayoutSettings(),
+        ]);
+
+        if (rowsResult.status === 'fulfilled') {
+          set({ commissionRows: rowsResult.value });
+        } else {
+          console.error('Erro ao carregar comissões:', rowsResult.reason);
+        }
+
+        if (settingsResult.status === 'fulfilled') {
+          set({ payoutSettings: settingsResult.value });
+        } else {
+          console.error('Erro ao carregar prazo de repasse:', settingsResult.reason);
+        }
+      },
+
       // =============================================
       // LINKS
       // =============================================
@@ -315,6 +351,9 @@ export const useAffiliateStore = create<AffiliateState>()(
           sales: [],
           payouts: [],
           notifications: [],
+          // Dados por afiliado: sem isto, as comissões de quem saiu
+          // ficariam visíveis para o próximo login.
+          commissionRows: [],
           unreadNotificationsCount: 0,
         }),
     }),

@@ -10,6 +10,8 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  RotateCcw,
+  type LucideIcon,
 } from "lucide-react";
 import { useAffiliateStore } from "@/stores/affiliateStore";
 
@@ -17,24 +19,35 @@ export const Route = createFileRoute("/afiliado/dashboard/vendas")({
   component: VendasPage,
 });
 
-type SaleStatus = "pending" | "confirmed" | "paid" | "cancelled";
+// Os 5 status aceitos pelo CHECK affiliate_sales_status_check (migration
+// 20260727c). 'refunded' entrou junto com o ciclo de repasse: sem ele aqui,
+// uma venda estornada faria STATUS_CONFIG[status] virar undefined e o acesso
+// a .icon quebrar em runtime — o vite build não pega isso.
+type SaleStatus = "pending" | "confirmed" | "paid" | "cancelled" | "refunded";
 
-const STATUS_CONFIG: Record<SaleStatus, { label: string; color: string; icon: any }> = {
+const STATUS_CONFIG: Record<SaleStatus, { label: string; color: string; icon: LucideIcon }> = {
   pending: { label: "Pendente", color: "#75827E", icon: Clock },
   confirmed: { label: "Confirmado", color: "#B07B1E", icon: CheckCircle },
   paid: { label: "Pago", color: "#1C6B4A", icon: CheckCircle },
   cancelled: { label: "Cancelado", color: "#C4433A", icon: XCircle },
+  refunded: { label: "Estornado", color: "#C4433A", icon: RotateCcw },
 };
 
 function VendasPage() {
-  const { sales, loadSales, dashboardSummary } = useAffiliateStore();
+  const { sales, loadSales, dashboardSummary, payoutSettings, loadCommissions } =
+    useAffiliateStore();
   const [statusFilter, setStatusFilter] = useState<SaleStatus | "all">("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
 
+  // O prazo vem das settings (nunca hardcoded) — a legenda de status
+  // precisa dele para explicar quando a comissão libera.
+  const releaseDelayDays = payoutSettings.releaseDelayDays;
+
   useEffect(() => {
     loadSales(1);
-  }, [loadSales]);
+    loadCommissions();
+  }, [loadSales, loadCommissions]);
 
   const filteredSales = sales.filter((sale) => {
     if (statusFilter !== "all" && sale.status !== statusFilter) return false;
@@ -119,6 +132,7 @@ function VendasPage() {
               <option value="confirmed">Confirmado</option>
               <option value="paid">Pago</option>
               <option value="cancelled">Cancelado</option>
+              <option value="refunded">Estornado</option>
             </select>
 
             {/* Date Filters */}
@@ -252,10 +266,11 @@ function VendasPage() {
         <div>
           <p className="text-[13px] text-[#0F3A3E] font-medium">Sobre os status</p>
           <ul className="text-[12px] text-[#75827E] mt-2 space-y-1">
-            <li><strong>Pendente:</strong> Pedido realizado, aguardando confirmação de pagamento.</li>
-            <li><strong>Confirmado:</strong> Pagamento confirmado, comissão será paga no próximo ciclo.</li>
-            <li><strong>Pago:</strong> Comissão já creditada na sua conta.</li>
-            <li><strong>Cancelado:</strong> Pedido cancelado ou devolvido, comissão não será paga.</li>
+            <li><strong>Confirmado:</strong> Pagamento aprovado, comissão devida. Fica disponível para repasse {releaseDelayDays} dias depois da aprovação.</li>
+            <li><strong>Pago:</strong> Comissão fechada em um repasse. Acompanhe o envio em Pagamentos.</li>
+            <li><strong>Cancelado:</strong> Pedido cancelado, comissão não será paga.</li>
+            <li><strong>Estornado:</strong> Pagamento devolvido ao cliente, comissão sai das contas.</li>
+            <li><strong>Pendente:</strong> Status antigo, anterior ao ciclo de repasse. Não é mais gerado.</li>
           </ul>
         </div>
       </div>

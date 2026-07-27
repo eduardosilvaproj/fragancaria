@@ -15,6 +15,11 @@ import type {
   PayoutFilters,
   PaginatedResponse,
 } from '@/types/affiliate';
+import {
+  AFFILIATE_PAYOUT_SETTINGS_FALLBACK,
+  type AffiliatePayoutSettings,
+  type CommissionRow,
+} from '@/lib/affiliate-payout';
 
 // =============================================
 // CONFIGURAÇÃO DO CLIENTE SUPABASE
@@ -405,6 +410,27 @@ export const saleService = {
       total_pages: Math.ceil((count || 0) / perPage),
     };
   },
+
+  /**
+   * Linhas cruas para o cálculo de Pendente/Disponível/Pago.
+   *
+   * SEM paginação de propósito: getSales() traz 20 por página, e somar
+   * uma página daria um total silenciosamente errado a partir da 21ª
+   * venda. Aqui só vêm as 5 colunas que summarizeCommissions() usa,
+   * então a linha é pequena mesmo com muitas vendas.
+   */
+  async getCommissionRows(): Promise<CommissionRow[]> {
+    const affiliate = await affiliateService.getCurrentAffiliate();
+    if (!affiliate) throw new Error('Não autenticado');
+
+    const { data, error } = await supabase
+      .from('affiliate_sales')
+      .select('id, status, confirmed_at, commission_amount, payout_id')
+      .eq('affiliate_id', affiliate.id);
+
+    if (error) throw error;
+    return (data || []) as CommissionRow[];
+  },
 };
 
 // =============================================
@@ -546,6 +572,36 @@ export const settingsService = {
 
     if (error && error.code !== 'PGRST116') throw error;
     return data;
+  },
+
+  /**
+   * Prazo de liberação e valor mínimo de repasse.
+   *
+   * Lido pelo client anônimo: a policy "Anyone can view settings" da
+   * migration 001 permite SELECT público em affiliate_settings, e nenhum
+   * dos dois campos é sensível. Nunca lança — sem settings legíveis, cai
+   * no fallback (15 dias / R$50), o mesmo que o servidor usa.
+   */
+  async getPayoutSettings(): Promise<AffiliatePayoutSettings> {
+    try {
+      const { data, error } = await supabase
+        .from('affiliate_settings')
+        .select('release_delay_days, min_payout_amount')
+        .limit(1)
+        .maybeSingle();
+
+      if (error || !data) return AFFILIATE_PAYOUT_SETTINGS_FALLBACK;
+
+      return {
+        releaseDelayDays:
+          data.release_delay_days ?? AFFILIATE_PAYOUT_SETTINGS_FALLBACK.releaseDelayDays,
+        minPayoutAmount: Number(
+          data.min_payout_amount ?? AFFILIATE_PAYOUT_SETTINGS_FALLBACK.minPayoutAmount,
+        ),
+      };
+    } catch {
+      return AFFILIATE_PAYOUT_SETTINGS_FALLBACK;
+    }
   },
 
   /**
