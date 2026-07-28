@@ -129,6 +129,10 @@ const COMPRA_INPUT: MelhorEnvioCompraInput = {
     { id: "produto-1", name: "Produto", quantity: 1, unitary_value: 99.9 },
   ],
   volumes: [{ height: 5, width: 10, length: 15, weight: 0.25 }],
+  // Valor segurado do envio. Obrigatorio desde 2026-07-28: sem ele a API
+  // responde 422 "O valor segurado deve ser o mesmo da nota fiscal (se
+  // houver) e superior ou igual a R$ 1,00".
+  options: { insurance_value: 99.9 },
 };
 
 const ORIGINAL_FETCH = globalThis.fetch;

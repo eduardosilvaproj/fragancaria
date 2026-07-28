@@ -114,6 +114,32 @@ function isValidVolume(volume: MelhorEnvioVolume): boolean {
   return volume.weight > 0 && volume.width > 0 && volume.height > 0 && volume.length > 0;
 }
 
+/**
+ * Valor segurado do envio (options.insurance_value do POST /me/cart).
+ *
+ * A fonte e a MESMA lista que vai no payload (cartProducts), nao subtotal nem
+ * total do pedido: a API exige que o valor segurado corresponda ao conteudo
+ * declarado. `total` inclui frete — usa-lo inflaria o seguro e pode gerar
+ * cobranca extra; `subtotal` pode divergir dos produtos montados (preco de
+ * catalogo mudou, item invalido filtrado) e o valor nao bateria com o conteudo.
+ *
+ * Piso de R$ 1,00: a API responde 422 "O valor segurado deve ser o mesmo da
+ * nota fiscal (se houver) e superior ou igual a R$ 1,00" abaixo disso.
+ *
+ * Soma em centavos porque 0.1 + 0.2 !== 0.3 — acumular em reais desviaria o
+ * valor declarado do total real dos itens.
+ */
+export function buildInsuranceValue(products: MelhorEnvioCartProduct[]): number {
+  const cents = products.reduce((acc, product) => {
+    const unit = Number(product.unitary_value);
+    const qty = Number(product.quantity);
+    if (!Number.isFinite(unit) || !Number.isFinite(qty)) return acc;
+    return acc + Math.round(unit * 100) * qty;
+  }, 0);
+
+  return Math.max(1, cents / 100);
+}
+
 function buildContatoFromSender(sender: SenderInfo): MelhorEnvioContato | null {
   const address = sender.address;
   const senderDigits = String(sender.document ?? "").replace(/\D/g, "");
@@ -141,6 +167,11 @@ function buildContatoFromSender(sender: SenderInfo): MelhorEnvioContato | null {
     email: sender.email,
     document: isCnpj ? undefined : senderDigits,
     company_document: isCnpj ? senderDigits : undefined,
+    // Remetente PJ sem NF-e: a doc do Melhor Envio manda deixar
+    // state_register vazio ou "ISENTO" quando o envio nao e comercial (e
+    // omitir options.invoice, ver MelhorEnvioCompraOptions). Sem isso a API
+    // cobra inscricao estadual do CNPJ e devolve 422. Nao se aplica a PF.
+    state_register: isCnpj ? "ISENTO" : undefined,
     address: address.street,
     number: address.number,
     complement: address.complement || undefined,
@@ -306,6 +337,8 @@ export function prepareGenerateOrderLabelPurchase(params: {
     };
   });
 
+  const insuranceValue = buildInsuranceValue(cartProducts);
+
   const shipmentDisplay = resolveShipmentDisplay(order.shipping_service_name, order.shipping_service_id);
   const recipientPostalCode = recipient.postal_code;
   const recipientAddress = (order.shipping_address ?? {}) as Record<string, string>;
@@ -327,6 +360,7 @@ export function prepareGenerateOrderLabelPurchase(params: {
       to: recipient,
       products: cartProducts,
       volumes: [volume],
+      options: { insurance_value: insuranceValue },
     },
   };
 }

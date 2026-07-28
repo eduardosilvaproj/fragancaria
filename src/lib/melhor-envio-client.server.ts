@@ -64,6 +64,30 @@ export type MelhorEnvioVolume = {
   weight: number;
 };
 
+// `options` do POST /me/cart — "informacoes complementares do envio".
+//
+// insurance_value e campo do ENVIO (nivel do pedido) e NAO existe por produto:
+// a API espera o total declarado do conteudo. Ausente, ela responde 422 "O
+// valor segurado deve ser o mesmo da nota fiscal (se houver) e superior ou
+// igual a R$ 1,00" (confirmado em producao no pedido 876F3D56, 2026-07-28).
+//
+// `invoice` (chave + XML da NF-e) fica FORA de proposito: nao emitimos NF-e
+// neste fluxo — nenhum pedido tem nfe_key — e a doc manda omitir o campo em
+// envio nao comercial. Adicionar sem nota real trocaria um 422 por outro.
+export type MelhorEnvioCompraOptions = {
+  /** Total segurado do envio, em REAIS. Minimo R$ 1,00. */
+  insurance_value: number;
+  receipt?: boolean;
+  own_hand?: boolean;
+  reverse?: boolean;
+  platform?: string;
+  reminder?: string;
+};
+
+// `options` e obrigatorio de proposito: era opcional (`options?:
+// Record<string, unknown>`), e por isso a compra mandava `{}` desde que o
+// modulo nasceu (2026-07-18) sem o compilador reclamar. Exigir o campo faz
+// qualquer chamador novo ter de decidir o insurance_value.
 export type MelhorEnvioCompraInput = {
   serviceId: number;
   agencyId?: number | null;
@@ -71,7 +95,7 @@ export type MelhorEnvioCompraInput = {
   to: MelhorEnvioContato;
   products: MelhorEnvioCartProduct[];
   volumes: MelhorEnvioVolume[];
-  options?: Record<string, unknown>;
+  options: MelhorEnvioCompraOptions;
 };
 
 export type MelhorEnvioCompraResult =
@@ -259,7 +283,7 @@ export async function comprarEtiqueta(
         to: input.to,
         products: input.products,
         volumes: input.volumes,
-        options: input.options ?? {},
+        options: input.options,
       }),
     });
 

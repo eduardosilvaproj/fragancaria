@@ -58,6 +58,19 @@ const PRODUTOS_CARRINHO = [
 
 const VOLUMES = [{ height: 5, width: 10, length: 15, weight: 0.25 }];
 
+// Valor segurado do envio (options.insurance_value). Obrigatório: sem ele a API
+// responde 422 "O valor segurado deve ser o mesmo da nota fiscal (se houver) e
+// superior ou igual a R$ 1,00". Soma de unitary_value × quantity dos produtos
+// do carrinho, com piso de R$ 1,00 — mesma regra de buildInsuranceValue() em
+// src/lib/generate-order-label-core.ts.
+const INSURANCE_VALUE = Math.max(
+  1,
+  PRODUTOS_CARRINHO.reduce(
+    (total, produto) => total + Math.round(produto.unitary_value * 100) * produto.quantity,
+    0,
+  ) / 100,
+);
+
 function parseArgs(argv) {
   const parsed = {};
 
@@ -296,6 +309,7 @@ export async function main(argv = process.argv.slice(2)) {
       to: DESTINO,
       products: PRODUTOS_CARRINHO,
       volumes: VOLUMES,
+      options: { insurance_value: INSURANCE_VALUE },
     });
 
     console.log("\n[resultado final]");
