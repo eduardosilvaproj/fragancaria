@@ -1,6 +1,12 @@
 // Cliente para a API do Melhor Envio.
-// - Cotação do checkout usa credenciais/URL de produção.
-// - Compra/geração de etiqueta usa SOMENTE credenciais/URL de sandbox.
+// - Cotação do checkout e compra/geração de etiqueta usam AMBAS as
+//   credenciais/URL de PRODUÇÃO (MELHOR_ENVIO_BASE_URL/TOKEN).
+// - A compra apontava para sandbox por segurança enquanto a conta de produção
+//   não tinha saldo. Passou para produção em 2026-07-27, quando passou a ter.
+//   Consequência: comprarEtiqueta() DEBITA SALDO REAL a cada chamada.
+// - Manter cotação e compra no MESMO ambiente é requisito, não detalhe: o
+//   servicoId vem da cotação, e id de um ambiente não existe no outro (sandbox
+//   só tem 1-4), o que quebrava a compra com 422.
 // Nenhuma exception pode vazar de cotar() ou comprarEtiqueta() — quem chama recebe
 // um resultado estruturado e decide o que fazer.
 
@@ -115,45 +121,11 @@ async function melhorEnvioRequest<T>(path: string, options: RequestInit = {}): P
       ...options,
       signal: controller.signal,
       headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "User-Agent": userAgent,
-        ...options.headers,
-      },
-    });
-
-    if (!response.ok) {
-      const errorBody = await response.text().catch(() => "");
-      const error = new Error(`API Melhor Envio respondeu ${response.status}: ${errorBody}`.trim());
-      (error as Error & { status?: number }).status = response.status;
-      throw error;
-    }
-
-    return response.json();
-  } finally {
-    clearTimeout(timeout);
-  }
-}
-
-async function melhorEnvioSandboxRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const baseUrl = process.env.MELHOR_ENVIO_SANDBOX_URL;
-  const token = process.env.MELHOR_ENVIO_SANDBOX_TOKEN;
-  const userAgent = process.env.MELHOR_ENVIO_USER_AGENT;
-
-  if (!baseUrl || !token || !userAgent) {
-    throw new Error(
-      "Melhor Envio sandbox nao configurado (MELHOR_ENVIO_SANDBOX_URL/TOKEN/USER_AGENT)",
-    );
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 8000);
-
-  try {
-    const response = await fetch(`${baseUrl}${path}`, {
-      ...options,
-      signal: controller.signal,
-      headers: {
+        // Accept explicito: sem ele a API pode responder erro em HTML e o
+        // response.json() abaixo estoura com SyntaxError em vez do status
+        // real. O caminho de compra sempre mandou este header (vinha da
+        // funcao de sandbox removida em 2026-07-27); mantido para nao
+        // regredir agora que a compra roda aqui.
         Accept: "application/json",
         "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
@@ -164,9 +136,7 @@ async function melhorEnvioSandboxRequest<T>(path: string, options: RequestInit =
 
     if (!response.ok) {
       const errorBody = await response.text().catch(() => "");
-      const error = new Error(
-        `API Melhor Envio sandbox respondeu ${response.status}: ${errorBody}`.trim(),
-      );
+      const error = new Error(`API Melhor Envio respondeu ${response.status}: ${errorBody}`.trim());
       (error as Error & { status?: number }).status = response.status;
       throw error;
     }
@@ -280,7 +250,7 @@ export async function comprarEtiqueta(
   input: MelhorEnvioCompraInput,
 ): Promise<MelhorEnvioCompraResult> {
   try {
-    const cart = await melhorEnvioSandboxRequest<MelhorEnvioCartResponse>("/api/v2/me/cart", {
+    const cart = await melhorEnvioRequest<MelhorEnvioCartResponse>("/api/v2/me/cart", {
       method: "POST",
       body: JSON.stringify({
         service: input.serviceId,
@@ -295,10 +265,13 @@ export async function comprarEtiqueta(
 
     const shipmentIdExternal = cart.id != null ? String(cart.id) : "";
     if (!shipmentIdExternal) {
-      return { ok: false, erro: "Melhor Envio sandbox nao retornou id da etiqueta." };
+      return { ok: false, erro: "Melhor Envio nao retornou id da etiqueta." };
     }
 
-    const checkout = await melhorEnvioSandboxRequest<MelhorEnvioCheckoutResponse>(
+    // Primeiro passo que DEBITA SALDO REAL. A idempotencia que impede a
+    // segunda compra do mesmo pedido roda antes daqui, em
+    // prepareGenerateOrderLabelPurchase (generate-order-label-core.ts).
+    const checkout = await melhorEnvioRequest<MelhorEnvioCheckoutResponse>(
       "/api/v2/me/shipment/checkout",
       {
         method: "POST",
@@ -306,10 +279,10 @@ export async function comprarEtiqueta(
       },
     );
     if (checkout.purchase?.status && checkout.purchase.status !== "paid") {
-      return { ok: false, erro: `Checkout sandbox nao confirmou pagamento (${checkout.purchase.status}).` };
+      return { ok: false, erro: `Checkout nao confirmou pagamento (${checkout.purchase.status}).` };
     }
 
-    const generated = await melhorEnvioSandboxRequest<MelhorEnvioGenerateResponse>(
+    const generated = await melhorEnvioRequest<MelhorEnvioGenerateResponse>(
       "/api/v2/me/shipment/generate",
       {
         method: "POST",
@@ -321,7 +294,7 @@ export async function comprarEtiqueta(
       return { ok: false, erro: generateFailure };
     }
 
-    const preview = await melhorEnvioSandboxRequest<MelhorEnvioPreviewResponse>(
+    const preview = await melhorEnvioRequest<MelhorEnvioPreviewResponse>(
       "/api/v2/me/shipment/preview",
       {
         method: "POST",
@@ -330,13 +303,13 @@ export async function comprarEtiqueta(
     );
     const labelUrl = typeof preview.url === "string" && preview.url ? preview.url : null;
     if (!labelUrl) {
-      return { ok: false, erro: "Melhor Envio sandbox nao retornou URL da etiqueta." };
+      return { ok: false, erro: "Melhor Envio nao retornou URL da etiqueta." };
     }
 
     let trackingCode: string | null = null;
 
     try {
-      const order = await melhorEnvioSandboxRequest<MelhorEnvioOrderResponse>(
+      const order = await melhorEnvioRequest<MelhorEnvioOrderResponse>(
         `/api/v2/me/orders/${shipmentIdExternal}`,
         { method: "GET" },
       );
@@ -354,6 +327,6 @@ export async function comprarEtiqueta(
       trackingCode,
     };
   } catch (e) {
-    return { ok: false, erro: e instanceof Error ? e.message : "Erro desconhecido no Melhor Envio sandbox." };
+    return { ok: false, erro: e instanceof Error ? e.message : "Erro desconhecido no Melhor Envio." };
   }
 }

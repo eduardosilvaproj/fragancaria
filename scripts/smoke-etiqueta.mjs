@@ -86,14 +86,18 @@ function tryParseJson(text) {
   }
 }
 
-async function sandboxRequest(path, options = {}) {
-  const baseUrl = process.env.MELHOR_ENVIO_SANDBOX_URL;
-  const token = process.env.MELHOR_ENVIO_SANDBOX_TOKEN;
+// PRODUCAO, nao sandbox. comprarEtiqueta() passou a usar as credenciais de
+// producao em 2026-07-27, e a cotacao daqui precisa vir do MESMO ambiente: o
+// serviceId da cotacao alimenta a compra, e id de um ambiente nao existe no
+// outro (sandbox so tem 1-4), o que quebrava a compra com 422.
+async function apiRequest(path, options = {}) {
+  const baseUrl = process.env.MELHOR_ENVIO_BASE_URL;
+  const token = process.env.MELHOR_ENVIO_TOKEN;
   const userAgent = process.env.MELHOR_ENVIO_USER_AGENT;
 
   if (!baseUrl || !token || !userAgent) {
     throw new Error(
-      "Defina MELHOR_ENVIO_SANDBOX_URL, MELHOR_ENVIO_SANDBOX_TOKEN e MELHOR_ENVIO_USER_AGENT no ambiente.",
+      "Defina MELHOR_ENVIO_BASE_URL, MELHOR_ENVIO_TOKEN e MELHOR_ENVIO_USER_AGENT no ambiente.",
     );
   }
 
@@ -117,7 +121,7 @@ async function sandboxRequest(path, options = {}) {
     const json = tryParseJson(text);
 
     if (!response.ok) {
-      throw new Error(`Sandbox ${response.status} em ${path}: ${text}`.trim());
+      throw new Error(`Melhor Envio ${response.status} em ${path}: ${text}`.trim());
     }
 
     return json;
@@ -132,8 +136,8 @@ async function resolverServiceId(serviceIdArg) {
     return serviceIdArg;
   }
 
-  console.log("[serviceId] cotando no sandbox para descobrir id válido...");
-  const quote = await sandboxRequest("/api/v2/me/shipment/calculate", {
+  console.log("[serviceId] cotando em produção para descobrir id válido...");
+  const quote = await apiRequest("/api/v2/me/shipment/calculate", {
     method: "POST",
     body: JSON.stringify({
       from: { postal_code: ORIGEM.postal_code },
@@ -143,12 +147,12 @@ async function resolverServiceId(serviceIdArg) {
   });
 
   if (!Array.isArray(quote) || quote.length === 0) {
-    throw new Error("Sandbox não retornou opções na cotação.");
+    throw new Error("Melhor Envio não retornou opções na cotação.");
   }
 
   const opcoes = quote.filter((item) => !item?.error && item?.id != null);
   if (opcoes.length === 0) {
-    throw new Error(`Sandbox retornou cotação sem serviceId válido: ${JSON.stringify(quote)}`);
+    throw new Error(`Melhor Envio retornou cotação sem serviceId válido: ${JSON.stringify(quote)}`);
   }
 
   console.log("[serviceId] opções encontradas:");
@@ -230,7 +234,7 @@ async function sondarEndpointsTracking(shipmentIdExternal) {
   console.log("\n[sondagem tracking] consultando endpoints candidatos:");
   for (const path of endpoints) {
     try {
-      const json = await sandboxRequest(path, { method: "GET" });
+      const json = await apiRequest(path, { method: "GET" });
       console.log(
         `  ${path} -> ${JSON.stringify({
           status: json?.status ?? null,
@@ -247,8 +251,21 @@ async function sondarEndpointsTracking(shipmentIdExternal) {
 export async function main(argv = process.argv.slice(2)) {
   const { serviceId: serviceIdArg } = parseArgs(argv);
 
-  if (!process.env.MELHOR_ENVIO_SANDBOX_URL || !process.env.MELHOR_ENVIO_SANDBOX_TOKEN) {
-    throw new Error("Sandbox não configurado. Rode com .env carregado.");
+  if (!process.env.MELHOR_ENVIO_BASE_URL || !process.env.MELHOR_ENVIO_TOKEN) {
+    throw new Error(
+      "Melhor Envio não configurado (MELHOR_ENVIO_BASE_URL/TOKEN). Rode com .env carregado.",
+    );
+  }
+
+  // Este script COMPRA de verdade e DEBITA SALDO REAL desde 2026-07-27, quando
+  // comprarEtiqueta() passou de sandbox para produção. Antes o pior caso era
+  // gastar saldo de sandbox (sem valor); agora é dinheiro. Exige opt-in
+  // explícito para ninguém rodar por reflexo de muscle memory.
+  if (process.env.MELHOR_ENVIO_CONFIRMO_GASTO_REAL !== "sim") {
+    throw new Error(
+      "ABORTADO: este smoke compra etiqueta em PRODUÇÃO e debita saldo real.\n" +
+        "Se é isso que você quer, rode com MELHOR_ENVIO_CONFIRMO_GASTO_REAL=sim",
+    );
   }
 
   const serviceId = await resolverServiceId(serviceIdArg);

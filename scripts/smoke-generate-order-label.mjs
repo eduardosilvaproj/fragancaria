@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 // Smoke REAL do PR B + fix de documento PJ.
 // Prova que o remetente PJ real (CNPJ em company_document, via
-// buildContatoFromSender roteando por tamanho) é aceito pela API sandbox —
-// o 422 "from.document deve ter um CPF válido" tem que sumir.
+// buildContatoFromSender roteando por tamanho) é aceito pela API do Melhor
+// Envio — o 422 "from.document deve ter um CPF válido" tem que sumir.
 //
 // Chama o MESMO núcleo compartilhado que o server function usa em produção
 // (runGenerateOrderLabelCore), com o sender_info REAL do banco (sem override).
 //
-// UMA RODADA SÓ — cuidado com saldo sandbox.
+// UMA RODADA SÓ — desde 2026-07-27 isso DEBITA SALDO REAL (produção).
 //
 // Uso: npx tsx --env-file=.env scripts/smoke-generate-order-label.mjs
 
@@ -21,8 +21,19 @@ if (!url || !key) {
   console.error("Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no .env");
   process.exit(1);
 }
-if (!process.env.MELHOR_ENVIO_SANDBOX_URL || !process.env.MELHOR_ENVIO_SANDBOX_TOKEN) {
-  console.error("Sandbox não configurado (MELHOR_ENVIO_SANDBOX_URL/TOKEN).");
+if (!process.env.MELHOR_ENVIO_BASE_URL || !process.env.MELHOR_ENVIO_TOKEN) {
+  console.error("Melhor Envio não configurado (MELHOR_ENVIO_BASE_URL/TOKEN).");
+  process.exit(1);
+}
+
+// Desde 2026-07-27 comprarEtiqueta() compra em PRODUÇÃO e debita saldo real.
+// Antes o pior caso era gastar saldo de sandbox (sem valor); agora é dinheiro.
+// Exige opt-in explícito.
+if (process.env.MELHOR_ENVIO_CONFIRMO_GASTO_REAL !== "sim") {
+  console.error(
+    "ABORTADO: este smoke compra etiqueta em PRODUÇÃO e debita saldo real.\n" +
+      "Se é isso que você quer, rode com MELHOR_ENVIO_CONFIRMO_GASTO_REAL=sim",
+  );
   process.exit(1);
 }
 
@@ -37,7 +48,7 @@ const comprarInstrumentado = async (input) => {
   const doc = input.from?.document ? "document(CPF)" : "";
   const cnpj = input.from?.company_document ? "company_document(CNPJ)" : "";
   console.log(
-    `\n[comprar] CHAMADA #${debitCount} — debita saldo sandbox (serviceId=${input.serviceId}, from usa: ${[doc, cnpj].filter(Boolean).join("+") || "nenhum"})`,
+    `\n[comprar] CHAMADA #${debitCount} — DEBITA SALDO REAL (serviceId=${input.serviceId}, from usa: ${[doc, cnpj].filter(Boolean).join("+") || "nenhum"})`,
   );
   return comprarEtiqueta(input);
 };
