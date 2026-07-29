@@ -5,8 +5,16 @@ import { Mail, MapPin, Clock } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { LojaFisicaSection } from "@/components/store/LojaFisicaSection";
+import { getPublicStoreConfig, type StoreConfig } from "@/lib/store-settings.functions";
 
 export const Route = createFileRoute("/contato")({
+  loader: async () => {
+    // .catch: a pagina de Contato nao pode cair se a config da loja falhar
+    // (migration nao aplicada, server fn fora do ar). null => secao ausente.
+    const loja = await getPublicStoreConfig({}).catch(() => null);
+    return { storeConfig: (loja?.success ? loja.data : null) as StoreConfig | null };
+  },
   head: () => ({
     meta: [
       { title: "Contato | Fragranciaria" },
@@ -17,6 +25,15 @@ export const Route = createFileRoute("/contato")({
 });
 
 function ContatoPage() {
+  const { storeConfig } = Route.useLoaderData();
+  // Cidade/UF vêm do mesmo endereço que a LojaFisicaSection usa. Antes era
+  // "São Paulo - SP" hardcoded, que está errado: a empresa é de Araraquara.
+  // Vazio (config indisponível) => o card não renderiza.
+  const localizacao = storeConfig
+    ? [storeConfig.endereco.cidade, storeConfig.endereco.uf].filter(Boolean).join(" - ")
+    : "";
+  // Horários da store_settings. Antes era "Segunda a Sexta: 9h às 18h" fixo.
+  const horarios = storeConfig?.horarios;
   const [formData, setFormData] = useState({
     nome: "",
     email: "",
@@ -65,21 +82,35 @@ function ContatoPage() {
                 </p>
               </div>
 
-              <div className="bg-[#F8F6F2] p-8">
-                <Clock className="h-6 w-6 text-[#B07B1E] mb-4" />
-                <h3 className="font-serif text-lg text-[#1C302E] mb-2">Horário</h3>
-                <p className="text-sm text-[#1C302E]/60">
-                  Segunda a Sexta: 9h às 18h
-                </p>
-              </div>
+              {/* Horário de atendimento, da store_settings. Sem gate em
+                  loja_aberta: é o horário em que a equipe responde, que existe
+                  mesmo com a loja física ainda fechada. */}
+              {(horarios?.semana || horarios?.sabado) && (
+                <div className="bg-[#F8F6F2] p-8">
+                  <Clock className="h-6 w-6 text-[#B07B1E] mb-4" />
+                  <h3 className="font-serif text-lg text-[#1C302E] mb-2">Horário</h3>
+                  {horarios.semana && (
+                    <p className="text-sm text-[#1C302E]/60">
+                      Segunda a Sexta: {horarios.semana}
+                    </p>
+                  )}
+                  {horarios.sabado && (
+                    <p className="text-sm text-[#1C302E]/60 mt-1">
+                      Sábado: {horarios.sabado}
+                    </p>
+                  )}
+                </div>
+              )}
 
-              <div className="bg-[#F8F6F2] p-8">
-                <MapPin className="h-6 w-6 text-[#B07B1E] mb-4" />
-                <h3 className="font-serif text-lg text-[#1C302E] mb-2">Localização</h3>
-                <p className="text-sm text-[#1C302E]/60">
-                  São Paulo - SP
-                </p>
-              </div>
+              {localizacao && (
+                <div className="bg-[#F8F6F2] p-8">
+                  <MapPin className="h-6 w-6 text-[#B07B1E] mb-4" />
+                  <h3 className="font-serif text-lg text-[#1C302E] mb-2">Localização</h3>
+                  <p className="text-sm text-[#1C302E]/60">
+                    {localizacao}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Form */}
@@ -153,6 +184,14 @@ function ContatoPage() {
                 </Button>
               </form>
             </div>
+          </div>
+        </div>
+
+        {/* ===== LOJA FÍSICA ===== */}
+        {/* Mesmo bloco da home. Não renderiza se storeConfig for null. */}
+        <div className="mt-20 md:mt-24 border-t border-[#D8D0BD] pt-16 md:pt-20">
+          <div className="container mx-auto px-4 md:px-12 max-w-6xl">
+            <LojaFisicaSection config={storeConfig} comoSecao={false} />
           </div>
         </div>
       </main>

@@ -4,6 +4,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useFranChatStore, type FranChatMessage } from "@/stores/franChatStore";
 import { chatWithFran } from "@/lib/agent/fran-chat.functions";
 import { pollWebMessages } from "@/lib/whatsapp.functions";
+import { useStoreConfig } from "@/lib/use-store-config";
+import { whatsappLink } from "@/lib/store-contact";
 
 const MotionDiv = motion.div as any;
 const MotionButton = motion.button as any;
@@ -57,6 +59,13 @@ export function FranChatWidget() {
     setRepliedBy, setLastPollTimestamp, lastPollTimestamp, sessionId,
     loadHistory,
   } = useFranChatStore();
+  const storeConfig = useStoreConfig();
+  // Número vem da store_settings (antes era o hardcode 5516997150373, hoje
+  // desativado). null = vazio/carregando; nesse caso o link não aparece.
+  const waLink = whatsappLink(
+    storeConfig?.contato.whatsapp,
+    "Olá! Preciso de ajuda com produtos capilares.",
+  );
   const [input, setInput] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [hasUsedPrefill, setHasUsedPrefill] = useState(false);
@@ -320,18 +329,26 @@ export function FranChatWidget() {
             {sessionExhausted && (
               <div className="px-4 py-3 bg-[#FFF8E1] border-t border-[#E0D8C7] text-sm text-[#0F3A3E]">
                 <p className="font-medium text-xs uppercase tracking-wider mb-1">Limite de mensagens atingido</p>
-                <p className="text-xs">
-                  Fale com nossa equipe no{" "}
-                  <a
-                    href="https://wa.me/5516997150373?text=Olá! Preciso de ajuda com produtos capilares."
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[#25D366] font-semibold underline"
-                  >
-                    WhatsApp
-                  </a>{" "}
-                  para atendimento personalizado.
-                </p>
+                {waLink ? (
+                  <p className="text-xs">
+                    Fale com nossa equipe no{" "}
+                    <a
+                      href={waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[#25D366] font-semibold underline"
+                    >
+                      WhatsApp
+                    </a>{" "}
+                    para atendimento personalizado.
+                  </p>
+                ) : (
+                  // Sem número configurado: mantém o aviso do limite, mas não
+                  // oferece um canal que não existe.
+                  <p className="text-xs">
+                    Volte mais tarde para continuar a conversa.
+                  </p>
+                )}
               </div>
             )}
 

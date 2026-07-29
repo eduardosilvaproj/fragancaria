@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import { useStoreConfig } from "@/lib/use-store-config";
+import { whatsappLink, formatPhoneBR } from "@/lib/store-contact";
 
 const FOOTER_LINKS = {
   shop: [
@@ -27,6 +29,13 @@ const TRUST_BADGES = [
 ];
 
 export function FooterEditorial() {
+  const config = useStoreConfig();
+  const contato = config?.contato;
+  const horarios = config?.horarios;
+  // null enquanto carrega ou se o número estiver vazio/inválido — nos dois
+  // casos o link não renderiza, em vez de apontar para um wa.me quebrado.
+  const waLink = whatsappLink(contato?.whatsapp);
+
   return (
     <footer className="bg-[#0F3A3E] text-white">
       {/* Trust Badges Strip */}
@@ -91,9 +100,11 @@ export function FooterEditorial() {
             <p className="text-white/50 text-sm leading-relaxed mb-6">
               Curadoria profissional dos melhores cosméticos para cabelos.
             </p>
-            <p className="text-white/30 text-xs">
-              CNPJ 20.590.412/0001-36
-            </p>
+            {contato?.cnpj && (
+              <p className="text-white/30 text-xs">
+                CNPJ {contato.cnpj}
+              </p>
+            )}
           </div>
 
           {/* Shop Links */}
@@ -160,26 +171,36 @@ export function FooterEditorial() {
               Atendimento
             </h4>
             <ul className="space-y-3 text-sm text-white/60">
-              <li>Segunda a Sexta</li>
-              <li>9h às 18h</li>
-              <li className="pt-2">
-                <a
-                  href="mailto:contato@fragranciaria.com.br"
-                  className="hover:text-white transition-colors"
-                >
-                  contato@fragranciaria.com.br
-                </a>
-              </li>
-              <li>
-                <a
-                  href="https://wa.me/5511999999999"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="hover:text-white transition-colors"
-                >
-                  WhatsApp: (11) 99999-9999
-                </a>
-              </li>
+              {/* Horários vêm da store_settings. NÃO são condicionados a
+                  loja_aberta: aqui é horário de ATENDIMENTO, que existe com a
+                  loja física fechada. Gatear em loja_aberta esvaziaria este
+                  bloco hoje (loja_aberta = false) e o site perderia info que
+                  já publica. Quem esconde horário com a loja fechada é a
+                  LojaFisicaSection, onde o sentido é "venha à porta". */}
+              {horarios?.semana && <li>Segunda a Sexta: {horarios.semana}</li>}
+              {horarios?.sabado && <li>Sábado: {horarios.sabado}</li>}
+              {contato?.email && (
+                <li className="pt-2">
+                  <a
+                    href={`mailto:${contato.email}`}
+                    className="hover:text-white transition-colors"
+                  >
+                    {contato.email}
+                  </a>
+                </li>
+              )}
+              {waLink && (
+                <li>
+                  <a
+                    href={waLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-white transition-colors"
+                  >
+                    WhatsApp: {formatPhoneBR(contato?.whatsapp)}
+                  </a>
+                </li>
+              )}
             </ul>
           </div>
         </div>

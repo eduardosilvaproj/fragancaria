@@ -1,21 +1,25 @@
 import { MessageCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect } from "react";
+import { useStoreConfig } from "@/lib/use-store-config";
+import { whatsappLink } from "@/lib/store-contact";
 
 const MotionDiv = motion.div as any;
 const MotionA = motion.a as any;
 
 interface WhatsAppButtonProps {
+  /** Sobrepõe o número da store_settings. Sem isso, usa o do banco. */
   phoneNumber?: string;
   message?: string;
 }
 
 export const WhatsAppButton = ({
-  phoneNumber = "5516997150373",
+  phoneNumber,
   message = "Olá! Gostaria de saber mais sobre os produtos da Fragranciaria."
 }: WhatsAppButtonProps) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const config = useStoreConfig();
 
   useEffect(() => {
     // Mostra o botão após 2 segundos
@@ -23,11 +27,15 @@ export const WhatsAppButton = ({
     return () => clearTimeout(timer);
   }, []);
 
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+  // O número vem da store_settings (antes era o hardcode 5516997150373, que
+  // está desativado). null enquanto carrega ou se o campo estiver vazio.
+  const whatsappUrl = whatsappLink(phoneNumber ?? config?.contato.whatsapp, message);
 
   return (
     <AnimatePresence>
-      {isVisible && (
+      {/* whatsappUrl null = número vazio/inválido ou config ainda carregando.
+          Nesses casos o botão não aparece, em vez de abrir um link quebrado. */}
+      {isVisible && whatsappUrl && (
         <MotionDiv
           initial={{ opacity: 0, scale: 0.8, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}

@@ -7,16 +7,22 @@ import type { Product } from "@/data/products";
 import { ArrowRight, Link2 } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
+import { LojaFisicaSection } from "@/components/store/LojaFisicaSection";
+import { getPublicStoreConfig, type StoreConfig } from "@/lib/store-settings.functions";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    // 4 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
+    // 5 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
     // a home ainda renderiza — os carrosseis sao independentes.
-    const [best, novo, promo, kit] = await Promise.all([
+    const [best, novo, promo, kit, loja] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
       listFeatured({ data: "new_arrivals" }),
       listFeatured({ data: "on_sale" }),
       listFeatured({ data: "kits" }),
+      // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
+      // (rede, server fn fora do ar) a home nao pode cair por causa da secao
+      // da loja fisica. null => a secao nao renderiza.
+      getPublicStoreConfig({}).catch(() => null),
     ]);
     return {
       slots: {
@@ -25,6 +31,7 @@ export const Route = createFileRoute("/")({
         on_sale: promo.data ?? [],
         kits: kit.data ?? [],
       } as Partial<Record<Slot, Product[]>>,
+      storeConfig: (loja?.success ? loja.data : null) as StoreConfig | null,
     };
   },
   head: () => ({
@@ -79,7 +86,7 @@ const NEEDS = [
 ];
 
 function IndexEditorial() {
-  const { slots } = Route.useLoaderData();
+  const { slots, storeConfig } = Route.useLoaderData();
 
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans overflow-x-hidden">
@@ -250,6 +257,13 @@ function IndexEditorial() {
             </StaggerContainer>
           </div>
         </section>
+
+        {/* ===== LOJA FÍSICA ===== */}
+        {/* Não renderiza se storeConfig for null (migration não aplicada ou
+            query falhou) — a home segue de pé sem esta seção. */}
+        <ScrollReveal>
+          <LojaFisicaSection config={storeConfig} />
+        </ScrollReveal>
 
         {/* ===== CARD AFILIADO (discreto) ===== */}
         <section className="px-6 md:px-14 pb-4 bg-[#F3EEE3]">
