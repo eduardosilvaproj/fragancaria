@@ -125,7 +125,15 @@ function parseCsv(text: string): Record<string, unknown>[] {
   if (rows.length === 0) return [];
 
   const headers = rows[0].map((h) => h.trim());
-  const numberFields = new Set(["price", "original_price", "quantity"]);
+  const numberFields = new Set([
+    "price",
+    "original_price",
+    "quantity",
+    "weight_grams",
+    "height_cm",
+    "width_cm",
+    "length_cm",
+  ]);
   const boolFields = new Set(["in_stock", "is_active", "featured", "is_new"]);
   const arrayFields = new Set(["images", "tags"]);
   const colToKey: Record<string, string> = {
@@ -133,7 +141,29 @@ function parseCsv(text: string): Record<string, unknown>[] {
     in_stock: "inStock",
     is_active: "isActive",
     is_new: "isNew",
+    // Sem estes, uma coluna weight_grams no CSV virava a chave weight_grams,
+    // que o schema (camelCase) descarta em silêncio — o peso não era gravado.
+    weight_grams: "weightGrams",
+    height_cm: "heightCm",
+    width_cm: "widthCm",
+    length_cm: "lengthCm",
+    ean_barcode: "eanBarcode",
   };
+  // Colunas do banco que NÃO são campo de entrada: vêm de um export completo e
+  // seriam descartadas pelo schema de todo jeito. Ignorar aqui evita, por
+  // exemplo, `variations` vazio virar null e derrubar a linha inteira com
+  // "Expected array, received null".
+  const ignorar = new Set([
+    "id",
+    "slug",
+    "brand_slug",
+    "category_slug",
+    "external_ids",
+    "variations",
+    "created_at",
+    "updated_at",
+    "stock_status",
+  ]);
 
   const out: Record<string, unknown>[] = [];
   for (const cells of rows.slice(1)) {
@@ -141,7 +171,8 @@ function parseCsv(text: string): Record<string, unknown>[] {
     headers.forEach((h, idx) => {
       const raw = (cells[idx] ?? "").trim();
       const key = colToKey[h] ?? h;
-      if (h === "id") return; // id é derivado do sku no import, não faz parte de productInput
+      // id é derivado do sku no import; o resto não faz parte de productInput.
+      if (ignorar.has(h)) return;
       if (numberFields.has(h)) {
         record[key] = raw === "" ? undefined : Number(raw);
       } else if (boolFields.has(h)) {
@@ -152,7 +183,10 @@ function parseCsv(text: string): Record<string, unknown>[] {
         record[key] = raw === "" ? null : raw;
       }
     });
-    if (!record.name) continue; // linha sem nome é inválida, ignora
+    // Precisa de sku (para casar com produto existente) OU name (para criar).
+    // Antes exigia name, o que descartava TODA linha de um CSV de sku+price —
+    // o import respondia "CSV vazio ou inválido".
+    if (!record.sku && !record.name) continue;
     out.push(record);
   }
   return out;
@@ -424,10 +458,27 @@ function AdminProdutos() {
       }
       const res = await importFn({ data: { rows } });
       if (!res.success) {
-        toast.error("Erro ao importar", { description: res.error });
+        toast.error("Erro ao importar", { description: res.error, duration: 30000 });
         return;
       }
-      toast.success(`${res.imported} produto(s) importado(s)`);
+
+      const partes = [
+        res.atualizados > 0 ? `${res.atualizados} atualizado(s)` : null,
+        res.criados > 0 ? `${res.criados} criado(s)` : null,
+        res.semMudanca > 0 ? `${res.semMudanca} sem coluna para alterar` : null,
+      ].filter(Boolean);
+      const resumo = partes.length > 0 ? partes.join(", ") : "nada a fazer";
+
+      // Erros por linha não abortam o lote: o resto foi gravado, e o operador
+      // precisa ver o que ficou de fora em vez de um "importado" liso.
+      if (res.erros.length > 0) {
+        toast.error(`Importado com ressalvas: ${resumo}`, {
+          description: res.erros.slice(0, 5).join(" | "),
+          duration: 30000,
+        });
+      } else {
+        toast.success(`Importação concluída: ${resumo}`);
+      }
       refetch();
     } catch (err: any) {
       toast.error("Erro ao ler CSV", { description: err?.message });

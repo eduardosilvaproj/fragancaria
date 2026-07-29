@@ -52,6 +52,45 @@ const productInput = z.object({
 
 type ProductInput = z.infer<typeof productInput>;
 
+// Mapeia SÓ as chaves presentes no input para colunas do banco (snake_case).
+//
+// Diferença de inputToRow: aqui chave ausente NÃO entra no objeto, então não
+// vira `null`/`[]` num UPDATE. É o que permite ao import ser merge — ver
+// importProducts. `updateProduct` tem a própria cópia dessa lógica, escrita
+// antes desta função e sem os campos de dimensão/fiscais.
+function inputToPatch(data: Partial<ProductInput>): Record<string, unknown> {
+  const patch: Record<string, unknown> = {};
+  if (data.name !== undefined) patch.name = data.name;
+  if (data.brand !== undefined) {
+    patch.brand = data.brand;
+    patch.brand_slug = data.brand ? slugify(data.brand) : null;
+  }
+  if (data.price !== undefined) patch.price = data.price;
+  if (data.originalPrice !== undefined) patch.original_price = data.originalPrice;
+  if (data.description !== undefined) patch.description = data.description;
+  if (data.category !== undefined) {
+    patch.category = data.category;
+    patch.category_slug = data.category;
+  }
+  if (data.subcategory !== undefined) patch.subcategory = data.subcategory;
+  if (data.images !== undefined) patch.images = data.images;
+  if (data.tags !== undefined) patch.tags = data.tags;
+  if (data.inStock !== undefined) patch.in_stock = data.inStock;
+  if (data.quantity !== undefined) patch.quantity = data.quantity;
+  if (data.sku !== undefined) patch.sku = data.sku;
+  if (data.featured !== undefined) patch.featured = data.featured;
+  if (data.isNew !== undefined) patch.is_new = data.isNew;
+  if (data.isActive !== undefined) patch.is_active = data.isActive;
+  if (data.weightGrams !== undefined) patch.weight_grams = data.weightGrams;
+  if (data.heightCm !== undefined) patch.height_cm = data.heightCm;
+  if (data.widthCm !== undefined) patch.width_cm = data.widthCm;
+  if (data.lengthCm !== undefined) patch.length_cm = data.lengthCm;
+  if (data.ncm !== undefined) patch.ncm = data.ncm;
+  if (data.eanBarcode !== undefined) patch.ean_barcode = data.eanBarcode;
+  if (data.variations !== undefined) patch.variations = data.variations;
+  return patch;
+}
+
 // Mapeia o input (camelCase da UI) para a row do banco (snake_case).
 function inputToRow(data: ProductInput) {
   const brandSlug = data.brand ? slugify(data.brand) : null;
@@ -262,11 +301,24 @@ export const setProductsActive = createServerFn({ method: "POST" })
     }
   });
 
-// Importa lote de linhas (CSV parseado no cliente). Idempotente por id:
-// id = sku (se houver) senão gerado. Re-importar o mesmo CSV atualiza.
+// Importa lote de linhas (CSV parseado no cliente). Casa por id (= sku, ou
+// gerado quando não há sku), então re-importar o mesmo arquivo atualiza.
+//
+// MERGE, não sobrescrita: só as colunas presentes no CSV são gravadas. Antes
+// isso passava por inputToRow, que preenchia TODA coluna com `?? null`/`?? []`
+// — um import de duas colunas para corrigir preço zerava images, tags,
+// weight_grams/height_cm/width_cm/length_cm (o que a cotação do Melhor Envio
+// consome), ncm, ean_barcode, variations e external_ids do produto existente.
+//
+// Produto que já existe passa por inputToPatch (só chaves presentes); produto
+// novo continua por inputToRow, porque aí os defaults SÃO o comportamento certo
+// e name/slug precisam existir.
 export const importProducts = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
-    z.object({ rows: z.array(productInput).min(1).max(2000) }).parse(d),
+    // .partial(): um CSV de `sku,price` é entrada válida. O que cada linha
+    // precisa de fato depende de já existir ou não, e isso é decidido no
+    // handler, contra o banco.
+    z.object({ rows: z.array(productInput.partial()).min(1).max(2000) }).parse(d),
   )
   .handler(async ({ data }) => {
     try {
@@ -275,18 +327,124 @@ export const importProducts = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { randomUUID } = await import("node:crypto");
 
-      const rows = data.rows.map((r) => {
-        const id = r.sku?.trim() || `FRAG-${randomUUID().slice(0, 12)}`;
+      // linha+2: a linha 1 do arquivo é o cabeçalho, e o índice começa em 0.
+      const linhas = data.rows.map((input, i) => ({
+        linha: i + 2,
+        input,
+        sku: input.sku?.trim() || null,
+      }));
+
+      // SKU repetido no mesmo arquivo faz o Postgres abortar TUDO com
+      // "ON CONFLICT DO UPDATE command cannot affect row a second time".
+      // Falhar é o certo (não há como saber qual linha vale), mas o operador
+      // precisa saber QUAIS skus corrigir — não o erro cru do banco.
+      const porSku = new Map<string, number[]>();
+      for (const l of linhas) {
+        if (!l.sku) continue;
+        porSku.set(l.sku, [...(porSku.get(l.sku) ?? []), l.linha]);
+      }
+      const duplicados = [...porSku.entries()].filter(([, ls]) => ls.length > 1);
+      if (duplicados.length > 0) {
+        const detalhe = duplicados
+          .slice(0, 10)
+          .map(([sku, ls]) => `${sku} (linhas ${ls.join(", ")})`)
+          .join("; ");
+        const resto = duplicados.length > 10 ? ` e outros ${duplicados.length - 10}` : "";
         return {
-          ...inputToRow(r),
-          id,
-          slug: `${slugify(r.name)}-${id.toLowerCase()}`.slice(0, 200),
-          external_ids: {},
+          success: false as const,
+          error: `SKU repetido no arquivo: ${detalhe}${resto}. Cada SKU pode aparecer uma vez só — nada foi importado.`,
         };
-      });
-      const { error } = await supabaseAdmin.from("products").upsert(rows as any, { onConflict: "id" });
-      if (error) return { success: false as const, error: error.message };
-      return { success: true as const, imported: rows.length };
+      }
+
+      const ids = linhas.map((l) => l.sku ?? `FRAG-${randomUUID().slice(0, 12)}`);
+
+      // Quais desses ids já existem: decide merge (update) x criação (insert).
+      // Traz `name` junto porque ele é reinjetado no payload — ver abaixo.
+      const { data: achados, error: erroSelect } = await supabaseAdmin
+        .from("products")
+        .select("id, name")
+        .in("id", ids);
+      if (erroSelect) return { success: false as const, error: erroSelect.message };
+      const nomeAtual = new Map<string, string>(
+        (achados ?? []).map((r) => [r.id as string, r.name as string]),
+      );
+      const existentes = new Set(nomeAtual.keys());
+
+      const erros: string[] = [];
+      let atualizados = 0;
+      let criados = 0;
+      let semMudanca = 0;
+
+      // ---- produtos existentes: grava só as colunas do CSV ----
+      // O PostgREST exige que todos os objetos de um bulk tenham as MESMAS
+      // chaves, então agrupa por assinatura. Na prática dá um grupo só (as
+      // linhas vêm do mesmo cabeçalho), mas agrupar evita erro se o CSV tiver
+      // células vazias que virem chave ausente em algumas linhas.
+      const grupos = new Map<string, Record<string, unknown>[]>();
+      for (let i = 0; i < linhas.length; i++) {
+        const id = ids[i];
+        if (!existentes.has(id)) continue;
+        const patch = inputToPatch(linhas[i].input);
+        if (Object.keys(patch).length === 0) {
+          semMudanca++;
+          continue;
+        }
+        // `name` reinjetado com o valor que já está no banco. Não é enfeite:
+        // upsert do PostgREST é INSERT ... ON CONFLICT, e o Postgres valida
+        // NOT NULL na tentativa de INSERT ANTES de resolver o conflito. Sem
+        // isso, um CSV de `sku,price` falha com "null value in column name
+        // violates not-null constraint" mesmo com o produto existindo. `name`
+        // é a única coluna NOT NULL sem default (as outras têm), então é a
+        // única que precisa disso. O ON CONFLICT só atualiza as colunas
+        // enviadas, e aqui name recebe o mesmo valor: no-op.
+        const payload = { ...patch, id, name: patch.name ?? nomeAtual.get(id) };
+        const assinatura = Object.keys(payload).sort().join(",");
+        grupos.set(assinatura, [...(grupos.get(assinatura) ?? []), payload]);
+      }
+      for (const payloads of grupos.values()) {
+        const { error } = await supabaseAdmin
+          .from("products")
+          .upsert(payloads as any, { onConflict: "id" });
+        if (error) erros.push(`Atualização de ${payloads.length} produto(s): ${error.message}`);
+        else atualizados += payloads.length;
+      }
+
+      // ---- produtos novos: linha completa, com defaults ----
+      const novos: Record<string, unknown>[] = [];
+      for (let i = 0; i < linhas.length; i++) {
+        const id = ids[i];
+        if (existentes.has(id)) continue;
+        const { input, linha, sku } = linhas[i];
+        // name é NOT NULL sem default: um CSV de `sku,price` só serve para
+        // atualizar. Sem name, e sem o produto existir, a linha não dá insert.
+        if (!input.name) {
+          erros.push(
+            `Linha ${linha}: ${sku ? `SKU ${sku} não existe no catálogo e a linha` : "linha"} não tem a coluna name, necessária para criar produto.`,
+          );
+          continue;
+        }
+        novos.push({
+          ...inputToRow(input as ProductInput),
+          id,
+          slug: `${slugify(input.name)}-${id.toLowerCase()}`.slice(0, 200),
+          external_ids: {},
+        });
+      }
+      if (novos.length > 0) {
+        const { error } = await supabaseAdmin.from("products").insert(novos as any);
+        if (error) erros.push(`Criação de ${novos.length} produto(s): ${error.message}`);
+        else criados = novos.length;
+      }
+
+      return {
+        success: true as const,
+        atualizados,
+        criados,
+        semMudanca,
+        erros,
+        // Mantido para quem já lia `imported`.
+        imported: atualizados + criados,
+      };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
     }
