@@ -96,6 +96,35 @@ CREATE TRIGGER shipping_quotes_updated_at
 -- =====================================================
 -- RLS: Politicas de acesso
 -- =====================================================
+--
+-- #############################################################
+-- #  SUPERSEDED — este bloco NAO descreve o estado de prod.   #
+-- #############################################################
+--
+-- As duas policies abaixo usam USING (auth.role() = 'authenticated'), que
+-- libera para QUALQUER usuario logado (inclusive cliente comum da loja), nao
+-- para admin. Elas foram REVOGADAS em producao em 2026-07-17, fora deste
+-- arquivo, junto com as de nfe_settings — as duas tabelas estavam vazias na
+-- epoca, entao o conserto teve dano zero.
+--
+-- Confirmado em 2026-07-29: uma consulta a pg_policies filtrando por policies
+-- que mencionam `authenticated` (em roles ou no predicado) NAO retornou
+-- shipping_quotes. Leitura e escrita acontecem por server fn com service role
+-- (supabaseAdmin), que bypassa RLS.
+--
+-- NAO tome este arquivo como referencia de seguranca: para saber o que existe
+-- de fato, rode no SQL Editor
+--   select tablename, policyname, cmd, roles::text, qual
+--   from pg_policies where schemaname = 'public' order by tablename;
+-- Mantido intacto por ser historico da criacao da tabela.
+-- Ver 20260729_lockdown_payment_shipping_settings.sql e
+--     20260729b_lockdown_shipping_tags.sql para o padrao atual.
+--
+-- ATENCAO tambem a view shipping_stats, criada no fim deste arquivo: view sem
+-- `security_invoker` roda com a permissao do DONO, entao a RLS da tabela base
+-- e avaliada contra ele e nao contra quem consulta. Se algum dia esta tabela
+-- for trancada, revogar o GRANT da view tambem (foi o que 20260729b fez com
+-- shipping_tags_stats). O estado do GRANT de shipping_stats nao foi auditado.
 
 ALTER TABLE public.shipping_quotes ENABLE ROW LEVEL SECURITY;
 

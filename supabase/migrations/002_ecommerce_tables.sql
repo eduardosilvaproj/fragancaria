@@ -380,6 +380,34 @@ CREATE INDEX IF NOT EXISTS idx_stock_movements_created_at ON stock_movements(cre
 -- ============================================
 -- RLS (Row Level Security)
 -- ============================================
+--
+-- #############################################################
+-- #  SUPERSEDED — este bloco NAO descreve o estado de prod.   #
+-- #############################################################
+--
+-- As policies "Admin pode gerenciar ..." abaixo usam
+-- USING (auth.role() = 'authenticated'), que libera para QUALQUER usuario
+-- logado (inclusive cliente comum da loja), nao para admin. Elas foram
+-- substituidas em producao FORA deste arquivo.
+--
+-- Estado real lido de pg_policies em 2026-07-29 (a consulta filtrou por
+-- policies que mencionam `authenticated` em roles ou no predicado):
+--   products -> so `products_select_public` (SELECT, is_active = true)
+--   orders   -> so `orders_select_auth` (SELECT por dono: auth_user_id =
+--               auth.uid() OR e-mail do pedido = e-mail do usuario logado)
+--   coupons  -> nao apareceu, ou seja nenhuma policy envolvendo authenticated
+-- Nenhuma das tres tem mais policy de ESCRITA para authenticated. Escrita
+-- acontece por server fn com service role (supabaseAdmin), que bypassa RLS.
+-- (A consulta nao lista policies restritas a anon, entao pode haver policy de
+-- leitura publica nao mostrada acima — o ponto aqui e a escrita.)
+--
+-- NAO tome este arquivo como referencia de seguranca: para saber o que existe
+-- de fato, rode no SQL Editor
+--   select tablename, policyname, cmd, roles::text, qual
+--   from pg_policies where schemaname = 'public' order by tablename;
+-- Mantido intacto por ser historico da criacao das tabelas.
+-- Ver 20260729_lockdown_payment_shipping_settings.sql e
+--     20260729b_lockdown_shipping_tags.sql para o padrao atual.
 
 -- Habilitar RLS
 ALTER TABLE products ENABLE ROW LEVEL SECURITY;
