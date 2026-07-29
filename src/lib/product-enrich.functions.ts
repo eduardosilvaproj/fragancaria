@@ -560,7 +560,13 @@ const EnrichBatchSchema = z.object({
 
 export const enrichProductsBatch = createServerFn({ method: "POST" })
   .validator((d: unknown) => EnrichBatchSchema.parse(d))
-  .handler(async ({ data }): Promise<{ success: boolean; processed: number; updated: number; errors: string[] }> => {
+  .handler(async ({ data }): Promise<{
+    success: boolean;
+    processed: number;
+    updated: number;
+    errors: string[];
+    imagens: { pedidas: number; escritas: number };
+  }> => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
       await requireAdmin();
@@ -570,6 +576,12 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
       let processed = 0;
       let updated = 0;
       const errors: string[] = [];
+      // Contados separadamente de `updated`: um produto que recebeu só tags e
+      // dimensões conta como atualizado, e antes isso fazia o lote terminar
+      // verde mesmo sem escrever UMA imagem — o sintoma que motivou este
+      // rastreamento.
+      let imagensPedidas = 0;
+      let imagensEscritas = 0;
 
       for (const id of data.ids) {
         processed++;
@@ -598,6 +610,8 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
               tags: product.tags || [],
             });
           }
+
+          if (data.fields.includes("images")) imagensPedidas++;
 
           // Buscar dados do ML
           if (data.fields.includes("images") || data.fields.includes("dimensions")) {
@@ -632,6 +646,7 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
               const combined = [...currentImages, ...newImages].slice(0, 5);
               if (combined.length > currentImages.length) {
                 updates.images = combined;
+                imagensEscritas++;
               }
             }
 
@@ -672,13 +687,28 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
         }
       }
 
-      return { success: true, processed, updated, errors };
+      // Imagem pedida e nenhuma escrita: não é sucesso silencioso. A API do ML
+      // hoje responde 403 (PolicyAgent) para item de terceiro e 403 na busca
+      // pública, e os ids com sufixo _variacao dão 404 — medido em 2026-07-29.
+      // Sem isso, o lote terminava verde tendo escrito só tags e dimensões
+      // estimadas.
+      if (imagensPedidas > 0 && imagensEscritas === 0) {
+        errors.push(
+          `Nenhuma imagem foi obtida para os ${imagensPedidas} produto(s) processados. ` +
+            `A API do Mercado Livre só entrega anúncios da própria conta: item de terceiro ` +
+            `responde 403 e a busca pública também. Use "Buscar imagem" no editor do produto ` +
+            `(busca por texto, via Serper) ou envie a foto manualmente.`,
+        );
+      }
+
+      return { success: true, processed, updated, errors, imagens: { pedidas: imagensPedidas, escritas: imagensEscritas } };
     } catch (e: any) {
+      const vazio = { pedidas: 0, escritas: 0 };
       if (e?.status === 401 || e?.status === 403) {
-        return { success: false, processed: 0, updated: 0, errors: ["Não autorizado"] };
+        return { success: false, processed: 0, updated: 0, errors: ["Não autorizado"], imagens: vazio };
       }
       console.error("[enrich] enrichProductsBatch error:", e);
-      return { success: false, processed: 0, updated: 0, errors: [e?.message || "Erro desconhecido"] };
+      return { success: false, processed: 0, updated: 0, errors: [e?.message || "Erro desconhecido"], imagens: vazio };
     }
   });
 

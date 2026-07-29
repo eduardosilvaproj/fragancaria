@@ -1080,6 +1080,11 @@ function EnrichmentModal({
     blocosOk: number;
     blocosTotal: number;
     interrompido: string | null;
+    // Contado à parte de `updated`: produto que recebeu só tags e dimensões
+    // conta como atualizado, e isso fazia o lote parecer bem-sucedido mesmo
+    // sem escrever uma única imagem.
+    imagensPedidas: number;
+    imagensEscritas: number;
   } | null>(null);
 
   // Importar server fn fora do handler
@@ -1116,6 +1121,8 @@ function EnrichmentModal({
     let processed = 0;
     let updated = 0;
     let blocosOk = 0;
+    let imagensPedidas = 0;
+    let imagensEscritas = 0;
     const errors: string[] = [];
     let interrompido: string | null = null;
 
@@ -1130,6 +1137,8 @@ function EnrichmentModal({
         if (res?.success) {
           processed += res.processed;
           updated += res.updated;
+          imagensPedidas += res.imagens?.pedidas ?? 0;
+          imagensEscritas += res.imagens?.escritas ?? 0;
           if (res.errors?.length) errors.push(...res.errors);
           blocosOk++;
         } else {
@@ -1147,7 +1156,16 @@ function EnrichmentModal({
       }
     }
 
-    setResult({ processed, updated, errors, blocosOk, blocosTotal: blocos.length, interrompido });
+    setResult({
+      processed,
+      updated,
+      errors,
+      blocosOk,
+      blocosTotal: blocos.length,
+      interrompido,
+      imagensPedidas,
+      imagensEscritas,
+    });
     setEnriching(false);
     setProgress(null);
 
@@ -1157,6 +1175,13 @@ function EnrichmentModal({
           `${updated} produto(s) atualizado(s) antes da falha foram mantidos.`,
         { description: interrompido, duration: 30000 },
       );
+    } else if (imagensPedidas > 0 && imagensEscritas === 0) {
+      // Não anuncia sucesso quando o que o operador queria (imagem) não veio.
+      toast.error(`Nenhuma imagem obtida em ${imagensPedidas} produto(s)`, {
+        description:
+          "A API do Mercado Livre não entrega anúncio de terceiro. Use \"Buscar imagem\" no editor do produto.",
+        duration: 30000,
+      });
     } else {
       toast.success(`Processados ${processed} produtos, ${updated} atualizados`);
     }
@@ -1217,6 +1242,41 @@ function EnrichmentModal({
                     {result.blocosTotal > 1 && ` (${result.blocosTotal} blocos)`}
                   </p>
                 </>
+              )}
+
+              {/* Imagem tem contador próprio porque é o campo que o operador
+                  vem buscar. "N atualizados" pode ser só tags e dimensões
+                  estimadas — foi exatamente o que fez o lote parecer bem
+                  sucedido sem trazer foto nenhuma. */}
+              {result.imagensPedidas > 0 && (
+                <div
+                  className={cn(
+                    "mt-4 rounded p-3 border",
+                    result.imagensEscritas === 0
+                      ? "bg-red-50 border-red-200"
+                      : "bg-[#F3EEE3] border-[#E9E1D2]",
+                  )}
+                >
+                  <p
+                    className={cn(
+                      "text-xs",
+                      result.imagensEscritas === 0 ? "text-red-800" : "text-[#51635F]",
+                    )}
+                  >
+                    <strong>
+                      Imagens: {result.imagensEscritas} de {result.imagensPedidas}
+                    </strong>
+                    {result.imagensEscritas === 0 && (
+                      <>
+                        {" "}
+                        — a API do Mercado Livre só entrega anúncio da própria conta; item de
+                        terceiro responde 403. Para estes produtos, use{" "}
+                        <strong>Buscar imagem</strong> no editor do produto (busca por texto) ou
+                        envie a foto manualmente.
+                      </>
+                    )}
+                  </p>
+                </div>
               )}
 
               {/* Erros por produto: o lote pode terminar "com sucesso" e ainda
