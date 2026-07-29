@@ -87,6 +87,36 @@ export function FooterEditorial() {
         </div>
       </div>
 
+      {/* Faixa de confiança — Mercado Pago.
+          Elemento de marca FIXO: não passa por store_settings/use-store-config
+          de propósito. O gateway não é dado editável, e um logo de terceiro que
+          pisca junto com uma query seria pior que um estático.
+          Fundo levemente mais escuro que o #0F3A3E do rodapé, sem bandeiras de
+          cartão ao lado: o objetivo é o reconhecimento específico do Mercado
+          Pago, não parecer checkout genérico. */}
+      <div className="bg-[#0C2F32] border-y border-white/10">
+        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-4">
+          {/* Sem flex-wrap: no mobile o texto quebra em 2 linhas mas o logo
+              continua À ESQUERDA dele, em vez de empilhar acima. */}
+          <div className="flex items-center justify-center gap-3">
+            <img
+              src="/images/mercadopago-logo.png"
+              // Decorativo: o texto ao lado já diz "Mercado Pago", então um alt
+              // com o nome da marca faria o leitor de tela repetir.
+              alt=""
+              aria-hidden="true"
+              className="h-5 w-auto shrink-0"
+              width={284}
+              height={74}
+              loading="lazy"
+            />
+            <p className="text-[13px] text-white/70 text-center">
+              Pagamento 100% seguro via Mercado Pago · Pix, cartão e boleto
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Main Footer Content */}
       <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-16">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 md:gap-16">
