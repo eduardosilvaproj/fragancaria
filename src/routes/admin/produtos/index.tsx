@@ -161,6 +161,20 @@ function parseCsv(text: string): Record<string, unknown>[] {
 // Número de produtos por página
 const ITEMS_PER_PAGE = 20;
 
+// Limite de ids por chamada de enrichProductsBatch. Precisa casar com o
+// max() do EnrichBatchSchema em product-enrich.functions.ts — passar disso
+// derruba a chamada inteira no validator ("Array must contain at most 500
+// element(s)"), sem enriquecer nada.
+const ENRICH_CHUNK_SIZE = 500;
+
+function fatiar<T>(itens: T[], tamanho: number): T[][] {
+  const blocos: T[][] = [];
+  for (let i = 0; i < itens.length; i += tamanho) {
+    blocos.push(itens.slice(i, i + tamanho));
+  }
+  return blocos;
+}
+
 function AdminProdutos() {
   const navigate = useNavigate();
   const listFn = useServerFn(listProductsForAdmin);
@@ -1006,8 +1020,16 @@ function EnrichmentModal({
 }) {
   const [enrichFields, setEnrichFields] = useState<("images" | "tags" | "dimensions")[]>(["tags", "dimensions"]);
   const [enriching, setEnriching] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [result, setResult] = useState<{ processed: number; updated: number } | null>(null);
+  // Bloco atual / total, para o usuário ver que está andando num lote grande.
+  const [progress, setProgress] = useState<{ bloco: number; total: number } | null>(null);
+  const [result, setResult] = useState<{
+    processed: number;
+    updated: number;
+    errors: string[];
+    blocosOk: number;
+    blocosTotal: number;
+    interrompido: string | null;
+  } | null>(null);
 
   // Importar server fn fora do handler
   const enrichBatchFn = useServerFn(enrichProductsBatch);
@@ -1026,27 +1048,66 @@ function EnrichmentModal({
       return;
     }
 
+    // Fatia em blocos de ENRICH_CHUNK_SIZE: o validator da server fn recusa
+    // arrays maiores, e uma lista de 660 ids derrubava a ação inteira sem
+    // enriquecer nada. Cada bloco é uma chamada independente.
+    const blocos = fatiar(
+      productsNeedingEnrichment.map((p) => p.id),
+      ENRICH_CHUNK_SIZE,
+    );
+
     setEnriching(true);
-    setProgress(0);
+    setProgress({ bloco: 1, total: blocos.length });
+    setResult(null);
 
-    try {
-      const res = await enrichBatchFn({
-        data: {
-          ids: productsNeedingEnrichment.map((p) => p.id),
-          fields: enrichFields,
-        },
-      });
+    // Acumuladores fora do try: o que já passou é preservado mesmo se um
+    // bloco posterior falhar.
+    let processed = 0;
+    let updated = 0;
+    let blocosOk = 0;
+    const errors: string[] = [];
+    let interrompido: string | null = null;
 
-      if (res?.success) {
-        setResult({ processed: res.processed, updated: res.updated });
-        toast.success(`Processados ${res.processed} produtos, ${res.updated} atualizados`);
-      } else {
-        toast.error("Erro ao enriquecer", { description: res?.error || "Erro desconhecido" });
+    for (let i = 0; i < blocos.length; i++) {
+      setProgress({ bloco: i + 1, total: blocos.length });
+
+      try {
+        const res = await enrichBatchFn({
+          data: { ids: blocos[i], fields: enrichFields },
+        });
+
+        if (res?.success) {
+          processed += res.processed;
+          updated += res.updated;
+          if (res.errors?.length) errors.push(...res.errors);
+          blocosOk++;
+        } else {
+          // A server fn devolve os erros em `errors`, não em `error`.
+          const motivo = res?.errors?.join("; ") || "Erro desconhecido";
+          errors.push(`Bloco ${i + 1}: ${motivo}`);
+          interrompido = motivo;
+          break;
+        }
+      } catch (e: any) {
+        const motivo = e?.message || "Erro desconhecido";
+        errors.push(`Bloco ${i + 1}: ${motivo}`);
+        interrompido = motivo;
+        break;
       }
-    } catch (e: any) {
-      toast.error("Erro ao enriquecer", { description: e?.message });
-    } finally {
-      setEnriching(false);
+    }
+
+    setResult({ processed, updated, errors, blocosOk, blocosTotal: blocos.length, interrompido });
+    setEnriching(false);
+    setProgress(null);
+
+    if (interrompido) {
+      toast.error(
+        `Interrompido no bloco ${blocosOk + 1} de ${blocos.length}. ` +
+          `${updated} produto(s) atualizado(s) antes da falha foram mantidos.`,
+        { description: interrompido, duration: 30000 },
+      );
+    } else {
+      toast.success(`Processados ${processed} produtos, ${updated} atualizados`);
     }
   };
 
@@ -1075,18 +1136,68 @@ function EnrichmentModal({
         {/* Content */}
         <div className="p-6">
           {result ? (
-            <div className="text-center py-4">
-              <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
-              <p className="text-lg font-medium text-[#0F3A3E] mb-2">Concluído!</p>
-              <p className="text-sm text-[#51635F]">
-                {result.updated} de {result.processed} produtos atualizados
-              </p>
-              <button
-                onClick={onComplete}
-                className="mt-6 px-6 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
-              >
-                Fechar
-              </button>
+            <div className="py-4">
+              {result.interrompido ? (
+                <>
+                  {/* Interrompido no meio: o que já foi gravado NÃO é perdido,
+                      e o aviso diz exatamente onde parou para o operador poder
+                      rodar de novo sabendo o que falta. */}
+                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">
+                    Interrompido
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center">
+                    Falhou no bloco {result.blocosOk + 1} de {result.blocosTotal}.
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center mt-1">
+                    <strong>{result.updated}</strong> de {result.processed} produtos
+                    processados foram atualizados e <strong>não</strong> se perderam.
+                  </p>
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
+                    <p className="text-xs text-red-800 break-words">{result.interrompido}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">Concluído!</p>
+                  <p className="text-sm text-[#51635F] text-center">
+                    {result.updated} de {result.processed} produtos atualizados
+                    {result.blocosTotal > 1 && ` (${result.blocosTotal} blocos)`}
+                  </p>
+                </>
+              )}
+
+              {/* Erros por produto: o lote pode terminar "com sucesso" e ainda
+                  ter itens que falharam individualmente. */}
+              {result.errors.length > 0 && (
+                <details className="mt-4">
+                  <summary className="text-xs text-[#8A938E] cursor-pointer">
+                    {result.errors.length} aviso(s) por produto
+                  </summary>
+                  <div className="mt-2 max-h-40 overflow-y-auto bg-[#F3EEE3] rounded p-2">
+                    {result.errors.slice(0, 50).map((err, i) => (
+                      <p key={i} className="text-[11px] text-[#51635F] break-words">
+                        {err}
+                      </p>
+                    ))}
+                    {result.errors.length > 50 && (
+                      <p className="text-[11px] text-[#8A938E] mt-1">
+                        ...e outros {result.errors.length - 50}
+                      </p>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              <div className="flex justify-center">
+                <button
+                  onClick={onComplete}
+                  className="mt-6 px-6 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
             </div>
           ) : (
             <>
@@ -1136,9 +1247,22 @@ function EnrichmentModal({
               {enriching && (
                 <div className="mb-4">
                   <div className="h-2 bg-[#E9E1D2] rounded overflow-hidden">
-                    <div className="h-full bg-[#B07B1E] transition-all" style={{ width: "50%" }} />
+                    {/* Largura real do progresso. Antes era 50% fixo, o que
+                        fazia um lote de 660 produtos parecer travado. */}
+                    <div
+                      className="h-full bg-[#B07B1E] transition-all"
+                      style={{
+                        width: progress
+                          ? `${Math.round(((progress.bloco - 1) / progress.total) * 100)}%`
+                          : "0%",
+                      }}
+                    />
                   </div>
-                  <p className="text-xs text-[#8A938E] mt-2 text-center">Processando...</p>
+                  <p className="text-xs text-[#8A938E] mt-2 text-center">
+                    {progress && progress.total > 1
+                      ? `Processando bloco ${progress.bloco} de ${progress.total}...`
+                      : "Processando..."}
+                  </p>
                 </div>
               )}
 

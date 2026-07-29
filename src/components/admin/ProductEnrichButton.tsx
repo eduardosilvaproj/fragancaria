@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { enrichProduct } from "@/lib/product-enrich.functions";
 
 interface ProductEnrichButtonProps {
   productId: string;
@@ -24,12 +25,14 @@ export function ProductEnrichButton({
 }: ProductEnrichButtonProps) {
   const [loading, setLoading] = useState<"tags" | "image" | null>(null);
 
+  // useServerFn é hook: precisa ser chamado no corpo do componente. Estava
+  // dentro do mutationFn (callback async), o que estourava "Invalid hook call"
+  // em todo clique nos botões abaixo.
+  const enrichFn = useServerFn(enrichProduct);
+
   const enrichMutation = useMutation({
-    mutationFn: async (fields: ("images" | "tags")[]) => {
-      const { enrichProduct } = await import("@/lib/product-enrich.functions");
-      const fn = useServerFn(enrichProduct);
-      return fn({ data: { id: productId, fields } });
-    },
+    mutationFn: async (fields: ("images" | "tags")[]) =>
+      enrichFn({ data: { id: productId, fields } }),
     onSuccess: (result, fields) => {
       if (result?.success) {
         if (fields.includes("tags") && result.tags) {
