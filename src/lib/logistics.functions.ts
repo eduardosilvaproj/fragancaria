@@ -42,6 +42,12 @@ export type Shipment = {
   shipped_at: string | null;
   delivered_at: string | null;
   label_url: string | null;
+  /**
+   * ID do envio no Melhor Envio. Presente => existe etiqueta comprada e o PDF
+   * pode ser buscado em /api/admin/etiqueta. Ausente => só o fallback de
+   * etiqueta local (modal), que não tem PDF na origem.
+   */
+  shipment_id_external: string | null;
   label_printed_at: string | null;
   declaration_printed_at: string | null;
   created_at: string;
@@ -174,6 +180,7 @@ export const listShipments = createServerFn({ method: "GET" })
           shipped_at: q?.shipped_at ?? null,
           delivered_at: q?.delivered_at ?? null,
           label_url: q?.label_url ?? null,
+          shipment_id_external: q?.shipment_id_external ?? null,
           label_printed_at: q?.label_printed_at ?? null,
           declaration_printed_at: q?.declaration_printed_at ?? null,
           created_at: o.created_at,
@@ -628,6 +635,110 @@ export const getShipmentLabel = createServerFn({ method: "GET" })
           logoUrl: senderInfo.logoUrl || "/images/logo-dark.png",
           tagline: senderInfo.tagline || null,
           date: new Date().toISOString(),
+        },
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+// =====================================================
+// IMPRIMIR ETIQUETAS 10x15 (Melhor Envio, formato da conta)
+// =====================================================
+
+/**
+ * Devolve a URL da página de impressão do Melhor Envio para os envios pedidos.
+ *
+ * Esse é o caminho da Zebra: a página respeita as preferências salvas na conta
+ * ("Tamanho cartão postal" + só "Imprimir etiquetas"), então sai 10x15 sem
+ * comprovante e sem declaração. O caminho A4 (/api/admin/etiqueta, que junta
+ * vários PDFs num só) continua valendo para lote em papel comum — são casos de
+ * uso diferentes.
+ *
+ * A URL é pública por token e não pode ser servida por proxy (a página manda
+ * `frame-ancestors` no CSP e renderiza via JS), por isso ela chega ao navegador
+ * e é aberta em aba. Não é persistida.
+ */
+export const printShipmentLabels = createServerFn({ method: "POST" })
+  .validator((d: unknown) => {
+    return z.object({ ids: z.array(z.string().uuid()).min(1).max(50) }).parse(d);
+  })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const { data: rows, error } = await db
+        .from("shipping_quotes")
+        .select("id, order_number, order_id, shipment_id_external")
+        .in("id", data.ids);
+
+      if (error) return { success: false as const, error: error.message };
+
+      const byId = new Map<string, any>((rows ?? []).map((r: any) => [String(r.id), r]));
+
+      // Rótulo legível para o aviso de falha, no mesmo formato da rota A4.
+      const rotulo = (id: string, row: any) =>
+        row?.order_number
+          ? `#${row.order_number}`
+          : row?.order_id
+            ? `#${String(row.order_id).slice(0, 8).toUpperCase()}`
+            : `envio ${id.slice(0, 8)}`;
+
+      const externos: string[] = [];
+      const semEtiqueta: Array<{ label: string; erro: string }> = [];
+
+      // Preserva a ordem pedida: a pilha impressa sai na sequência da tela.
+      for (const id of data.ids) {
+        const row = byId.get(id);
+        if (!row) {
+          semEtiqueta.push({ label: rotulo(id, row), erro: "Envio não encontrado." });
+        } else if (!row.shipment_id_external) {
+          semEtiqueta.push({
+            label: rotulo(id, row),
+            erro: "Envio sem etiqueta comprada no Melhor Envio.",
+          });
+        } else {
+          externos.push(String(row.shipment_id_external));
+        }
+      }
+
+      if (externos.length === 0) {
+        return {
+          success: false as const,
+          error: "Nenhum envio com etiqueta comprada no Melhor Envio.",
+          failed: semEtiqueta,
+        };
+      }
+
+      const { imprimirEtiquetas } = await import("@/lib/melhor-envio-client.server");
+      const resultado = await imprimirEtiquetas(externos);
+
+      if (!resultado.ok) {
+        return { success: false as const, error: resultado.erro, failed: semEtiqueta };
+      }
+
+      // Marca impressão só do que foi de fato enviado para a página.
+      const impressos = data.ids.filter((id) => byId.get(id)?.shipment_id_external);
+      if (impressos.length > 0) {
+        await db
+          .from("shipping_quotes")
+          .update({ label_printed_at: new Date().toISOString() })
+          .in("id", impressos)
+          .is("label_printed_at", null);
+      }
+
+      return {
+        success: true as const,
+        data: {
+          url: resultado.url,
+          included: externos.length,
+          total: data.ids.length,
+          failed: semEtiqueta,
         },
       };
     } catch (e: any) {
@@ -1165,6 +1276,12 @@ export const listSigepLabels = createServerFn({ method: "GET" })
           service: l.service,
           status: l.status,
           created_at: l.created_at,
+          // PDF da etiqueta SIGEP. Hoje SEMPRE null: nenhum código escreve
+          // nesta coluna (grep em src/ e scripts/ não acha um único write) e a
+          // tabela shipping_tags está vazia em prod. Exposto para a tela poder
+          // desabilitar o botão de imprimir com honestidade em vez de chamar
+          // window.print() e imprimir a página do admin.
+          label_pdf_url: (l as { label_pdf_url?: string | null }).label_pdf_url ?? null,
         })) || [],
       };
     } catch (e: any) {

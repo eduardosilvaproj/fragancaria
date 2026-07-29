@@ -111,6 +111,14 @@ export type ResolverPrecoCotacaoResult =
   | { ok: true; precoReais: number }
   | { ok: false; erro: "nao_encontrada" | "expirada" | "opcao_invalida" };
 
+export type BuscarPdfEtiquetaResult =
+  | { ok: true; pdf: Uint8Array }
+  | { ok: false; erro: string };
+
+export type ImprimirEtiquetasResult =
+  | { ok: true; url: string }
+  | { ok: false; erro: string };
+
 // Le uma linha ja gravada de shipping_rate_quotes.options (jsonb) e resolve o
 // preco em REAIS da opcao escolhida. options grava precoExibidoCentavos (o
 // preco JA com a regra de frete gratis aplicada), por isso divide por 100 aqui
@@ -352,5 +360,138 @@ export async function comprarEtiqueta(
     };
   } catch (e) {
     return { ok: false, erro: e instanceof Error ? e.message : "Erro desconhecido no Melhor Envio." };
+  }
+}
+
+/**
+ * Devolve a URL da pagina de impressao do Melhor Envio para uma ou mais
+ * etiquetas ja compradas. Nao compra, nao gera: e leitura, nao debita saldo.
+ *
+ * POR QUE ESTE CAMINHO E NAO buscarPdfEtiqueta():
+ * medido em 2026-07-28, a MESMA etiqueta sai em dois formatos diferentes
+ * dependendo do endpoint:
+ *   - POST /me/shipment/print -> {"url": ".../imprimir/<token>"}, e essa pagina
+ *     RESPEITA as preferencias da conta. Com "Tamanho cartao postal" + so
+ *     "Imprimir etiquetas" marcados, sai 10x15 sem comprovante e sem
+ *     declaracao de conteudo — pronto para Ctrl+P na Zebra.
+ *   - GET /me/imprimir/pdf/{id} -> SEMPRE A4 (203.7x286.8mm), ignora as
+ *     preferencias da conta e todo parametro de query.
+ * Nao e cache: com as preferencias salvas, o /imprimir/pdf continuou devolvendo
+ * arquivo byte-identico enquanto a pagina do token ja saia em cartao postal.
+ *
+ * O formato vem da CONTA, nao do corpo da requisicao: `mode` e campo validado
+ * com enum, mas "postcard" responde 422 (so "private" foi aceito). Por isso o
+ * corpo manda apenas `orders`.
+ *
+ * A URL retornada e publica por token — quem tiver o link imprime a etiqueta
+ * sem login. Ela vai para o navegador do admin porque nao ha alternativa: a
+ * pagina renderiza via JS e manda `frame-ancestors` no CSP, entao nao da para
+ * embutir em iframe nem servir por proxy. Por isso esta funcao exige admin em
+ * quem chama e a URL nunca e persistida.
+ *
+ * Nao lanca — devolve resultado estruturado, igual ao resto do modulo.
+ */
+export async function imprimirEtiquetas(
+  shipmentIdsExternal: string[],
+): Promise<ImprimirEtiquetasResult> {
+  const ids = shipmentIdsExternal.filter((id) => typeof id === "string" && id.trim().length > 0);
+  if (ids.length === 0) {
+    return { ok: false, erro: "Nenhum envio com etiqueta comprada no Melhor Envio." };
+  }
+
+  try {
+    const resposta = await melhorEnvioRequest<unknown>("/api/v2/me/shipment/print", {
+      method: "POST",
+      body: JSON.stringify({ orders: ids }),
+    });
+
+    const url =
+      typeof (resposta as { url?: unknown })?.url === "string"
+        ? (resposta as { url: string }).url
+        : null;
+
+    if (!url) {
+      return { ok: false, erro: "Melhor Envio nao retornou a URL de impressao." };
+    }
+
+    return { ok: true, url };
+  } catch (e) {
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro desconhecido ao abrir impressao das etiquetas.",
+    };
+  }
+}
+
+/**
+ * Baixa o PDF de UMA etiqueta ja comprada. Nao compra, nao gera: e leitura, nao
+ * debita saldo.
+ *
+ * Este e o caminho A4: serve para juntar varias etiquetas num PDF unico e
+ * imprimir lote em papel comum. Para 10x15 na Zebra, use imprimirEtiquetas().
+ *
+ * Sao dois passos, confirmados por chamada real em 2026-07-28:
+ *   1. GET /api/v2/me/imprimir/pdf/{id} -> ["<url pre-assinada do S3>"]
+ *      (array de uma posicao, NAO um objeto com .url; o {id} e o
+ *      shipment_id_external que gravamos em shipping_quotes)
+ *   2. GET nessa url -> application/pdf, ~80 KB, 1 pagina
+ *
+ * A url do S3 vem assinada e expira em 1800s, e quem tiver o link baixa a
+ * etiqueta sem autenticacao nenhuma. Por isso ela NUNCA vai para o navegador:
+ * o download acontece aqui e o admin recebe so os bytes, pelo nosso dominio.
+ *
+ * Nao lanca — devolve resultado estruturado, igual ao resto do modulo.
+ */
+export async function buscarPdfEtiqueta(
+  shipmentIdExternal: string,
+): Promise<BuscarPdfEtiquetaResult> {
+  if (!shipmentIdExternal) {
+    return { ok: false, erro: "Envio sem id externo do Melhor Envio." };
+  }
+
+  try {
+    const urls = await melhorEnvioRequest<unknown>(
+      `/api/v2/me/imprimir/pdf/${encodeURIComponent(shipmentIdExternal)}`,
+      { method: "GET" },
+    );
+
+    // A rota devolve array de urls. Aceita objeto com .url tambem, por
+    // seguranca: se a API mudar de forma, isso degrada em erro claro em vez
+    // de TypeError.
+    const url = Array.isArray(urls)
+      ? urls.find((item): item is string => typeof item === "string" && item.length > 0)
+      : typeof (urls as { url?: unknown })?.url === "string"
+        ? ((urls as { url: string }).url)
+        : undefined;
+
+    if (!url) {
+      return { ok: false, erro: "Melhor Envio nao retornou URL do PDF da etiqueta." };
+    }
+
+    // Sem Authorization de proposito: a url ja e pre-assinada, e mandar o
+    // Bearer para o S3 pode fazer a AWS recusar a assinatura.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        return {
+          ok: false,
+          erro: `Download do PDF da etiqueta respondeu ${response.status}.`,
+        };
+      }
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      if (bytes.length === 0) {
+        return { ok: false, erro: "PDF da etiqueta veio vazio." };
+      }
+      return { ok: true, pdf: bytes };
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro desconhecido ao buscar PDF da etiqueta.",
+    };
   }
 }

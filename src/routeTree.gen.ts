@@ -70,6 +70,7 @@ import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/
 import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
+import { Route as ApiAdminEtiquetaRouteImport } from './routes/api/admin/etiqueta'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
 import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
@@ -390,6 +391,11 @@ const ApiDebugFeaturedRoute = ApiDebugFeaturedRouteImport.update({
   path: '/api/debug/featured',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminEtiquetaRoute = ApiAdminEtiquetaRouteImport.update({
+  id: '/api/admin/etiqueta',
+  path: '/api/admin/etiqueta',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AfiliadoDashboardVendasRoute = AfiliadoDashboardVendasRouteImport.update({
   id: '/vendas',
   path: '/vendas',
@@ -475,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -540,6 +547,7 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -610,6 +618,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
+  '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
@@ -681,6 +690,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/admin/etiqueta'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
@@ -746,6 +756,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/admin/etiqueta'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
@@ -815,6 +826,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/links'
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
+    | '/api/admin/etiqueta'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
     | '/api/public/whatsapp-webhook'
@@ -861,6 +873,7 @@ export interface RootRouteChildren {
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
   PedidoTokenRoute: typeof PedidoTokenRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  ApiAdminEtiquetaRoute: typeof ApiAdminEtiquetaRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
@@ -1296,6 +1309,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiDebugFeaturedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/etiqueta': {
+      id: '/api/admin/etiqueta'
+      path: '/api/admin/etiqueta'
+      fullPath: '/api/admin/etiqueta'
+      preLoaderRoute: typeof ApiAdminEtiquetaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/afiliado/dashboard/vendas': {
       id: '/afiliado/dashboard/vendas'
       path: '/vendas'
@@ -1478,6 +1498,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
   PedidoTokenRoute: PedidoTokenRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  ApiAdminEtiquetaRoute: ApiAdminEtiquetaRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,

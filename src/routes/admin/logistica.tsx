@@ -34,6 +34,7 @@ import {
   updateShipmentStatus,
   getShipmentLabel,
   getShipmentDeclaration,
+  printShipmentLabels,
   startPicking,
   finishPicking,
   buildTrackingUrl,
@@ -47,6 +48,7 @@ import {
   listSigepLabels,
   type SigepCredentials,
 } from "@/lib/logistics.functions";
+import { printShippingLabels } from "@/lib/print-shipping-labels";
 
 export const Route = createFileRoute("/admin/logistica")({
   component: AdminLogistica,
@@ -59,6 +61,13 @@ function AdminLogistica() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [activeTab, setActiveTab] = useState<"envios" | "etiquetas">("envios");
   const [showSigepModal, setShowSigepModal] = useState(false);
+  // Aviso de impressão. Fica FIXO na tela (não é toast) porque falha parcial
+  // num lote precisa ser impossível de não ver antes de despachar.
+  const [labelWarning, setLabelWarning] = useState<{
+    tipo: "parcial" | "erro";
+    texto: string;
+    falhas: Array<{ label: string; erro: string }>;
+  } | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -154,6 +163,123 @@ function AdminLogistica() {
       } else {
         toast.error(result?.error || "Erro ao atualizar status");
       }
+    },
+  });
+
+  // Imprimir etiqueta(s) do Melhor Envio: busca o PDF em /api/admin/etiqueta
+  // (proxy no nosso domínio) e abre numa aba própria. Aceita lista desde o
+  // início — imprimir 1 é o caso N=1 do mesmo caminho.
+  const printLabelsMutation = useMutation({
+    mutationFn: async (ids: string[]) => printShippingLabels(ids),
+    onSuccess: (outcome) => {
+      if (!outcome.ok) {
+        setLabelWarning({ tipo: "erro", texto: outcome.erro, falhas: outcome.falhas });
+        toast.error(outcome.erro);
+        return;
+      }
+
+      // Falha parcial NÃO passa em silêncio: o aviso fica fixo na tela até o
+      // operador fechar. Um PDF com 7 de 10 etiquetas, entregue sem alarme,
+      // faria despachar 10 pedidos achando que todos foram impressos.
+      if (outcome.aviso) {
+        setLabelWarning({ tipo: "parcial", texto: outcome.aviso, falhas: outcome.falhas });
+        toast.error(outcome.aviso, { duration: 30000 });
+      } else {
+        setLabelWarning(null);
+        toast.success(
+          outcome.included === 1
+            ? "Etiqueta aberta em nova aba"
+            : `${outcome.included} etiquetas em um PDF (${outcome.paginas} páginas)`,
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+    },
+    onError: (e: any) => {
+      const texto = e?.message || "Erro ao gerar etiquetas";
+      setLabelWarning({ tipo: "erro", texto, falhas: [] });
+      toast.error(texto);
+    },
+  });
+
+  // Imprimir etiqueta(s) 10x15 na Zebra. Pede a URL da página de impressão do
+  // Melhor Envio — que respeita "Tamanho cartão postal" + só "Imprimir
+  // etiquetas" salvos na conta — e abre em aba, pronta pro Ctrl+P.
+  //
+  // A aba é aberta ANTES do await: navegador bloqueia window.open que perdeu o
+  // gesto do usuário. Ela mostra um "abrindo..." e recebe a URL quando chega.
+  const printPostcardFn = useServerFn(printShipmentLabels);
+  const printPostcardMutation = useMutation({
+    mutationFn: async (
+      ids: string[],
+    ): Promise<
+      | { ok: true; included: number; total: number; failed: Array<{ label: string; erro: string }> }
+      | { ok: false; erro: string; failed: Array<{ label: string; erro: string }> }
+    > => {
+      const aba = window.open("", "_blank");
+      if (aba) {
+        aba.document.write(
+          `<!DOCTYPE html><html lang="pt-br"><head><meta charset="utf-8">` +
+            `<title>Etiquetas</title></head>` +
+            `<body style="font-family:system-ui,sans-serif;padding:32px;color:#0F3A3E">` +
+            `Abrindo ${ids.length} etiqueta(s)...</body></html>`,
+        );
+        aba.document.close();
+      }
+
+      try {
+        const result: any = await printPostcardFn({ data: { ids } });
+        if (!result?.success) {
+          aba?.close();
+          return {
+            ok: false,
+            erro: result?.error || "Erro ao abrir impressão das etiquetas",
+            failed: result?.failed ?? [],
+          };
+        }
+        if (aba) aba.location.replace(result.data.url);
+        else window.open(result.data.url, "_blank");
+        return {
+          ok: true,
+          included: result.data.included,
+          total: result.data.total,
+          failed: result.data.failed ?? [],
+        };
+      } catch (e) {
+        aba?.close();
+        throw e;
+      }
+    },
+    onSuccess: (outcome) => {
+      if (!outcome.ok) {
+        setLabelWarning({ tipo: "erro", texto: outcome.erro, falhas: outcome.failed });
+        toast.error(outcome.erro);
+        return;
+      }
+
+      // Falha parcial não passa em silêncio: se 3 de 10 envios não tinham
+      // etiqueta comprada, a página abre com 7 e o operador precisa saber
+      // quais faltaram antes de despachar.
+      if (outcome.failed.length > 0) {
+        const nomes = outcome.failed.map((f) => f.label).join(", ");
+        const texto =
+          `ATENÇÃO: abriram ${outcome.included} de ${outcome.total} etiquetas. ` +
+          `NÃO despache estes ${outcome.failed.length} pedido(s), a etiqueta não saiu: ${nomes}`;
+        setLabelWarning({ tipo: "parcial", texto, falhas: outcome.failed });
+        toast.error(texto, { duration: 30000 });
+      } else {
+        setLabelWarning(null);
+        toast.success(
+          outcome.included === 1
+            ? "Etiqueta aberta em nova aba (10x15)"
+            : `${outcome.included} etiquetas abertas em nova aba (10x15)`,
+        );
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+    },
+    onError: (e: any) => {
+      const texto = e?.message || "Erro ao abrir impressão das etiquetas";
+      setLabelWarning({ tipo: "erro", texto, falhas: [] });
+      toast.error(texto);
     },
   });
 
@@ -368,19 +494,45 @@ function AdminLogistica() {
     refreshMutation.mutate(undefined);
   };
 
-  const handlePrintLabels = () => {
-    // Selecionar todos os pendentes/enviados que tem tracking
-    const toPrint = shipments.filter(s =>
-      (s.status === "pending" || s.status === "paid") && s.id
-    );
+  // Envios com etiqueta comprada no Melhor Envio que ainda não foram
+  // despachados. É essa a lista que o botão de lote manda: despachar 10 pedidos
+  // numa manhã tem de ser UMA impressão.
+  //
+  // O critério é "ainda não despachado", NÃO "nunca impresso": filtrar por
+  // label_printed_at deixaria o botão morto justamente quando o operador
+  // precisa reimprimir (papel enroscado, impressora errada, folha perdida).
+  // Quais já saíram uma vez, o "Etiqueta ✓" de cada linha mostra.
+  const pendentesDeImpressao: Shipment[] = useMemo(
+    () =>
+      (shipments as Shipment[]).filter(
+        (s) =>
+          s.shipment_id &&
+          s.shipment_id_external &&
+          !["shipped", "delivered", "cancelled", "refunded"].includes(s.status),
+      ),
+    [shipments],
+  );
 
-    if (toPrint.length === 0) {
-      toast.warning("Nenhum envio pendente para imprimir");
+  // Zebra 10x15: abre a página do Melhor Envio, que sai no formato salvo na
+  // conta (cartão postal, só etiqueta). Caminho padrão de despacho.
+  const handlePrintLabels = () => {
+    if (pendentesDeImpressao.length === 0) {
+      toast.warning("Nenhuma etiqueta comprada aguardando impressão");
       return;
     }
+    setLabelWarning(null);
+    printPostcardMutation.mutate(pendentesDeImpressao.map((s) => s.shipment_id!));
+  };
 
-    toast.info(`Imprimindo ${toPrint.length} etiquetas...`);
-    // TODO: Implementar impressão em batch via API do Envio Fácil
+  // Papel comum: junta as etiquetas num PDF A4 único. Caso de uso diferente do
+  // de cima — serve quando a Zebra não está disponível.
+  const handlePrintLabelsA4 = () => {
+    if (pendentesDeImpressao.length === 0) {
+      toast.warning("Nenhuma etiqueta comprada aguardando impressão");
+      return;
+    }
+    setLabelWarning(null);
+    printLabelsMutation.mutate(pendentesDeImpressao.map((s) => s.shipment_id!));
   };
 
   const handleStatusChange = (id: string, newStatus: string) => {
@@ -468,12 +620,42 @@ function AdminLogistica() {
             )}
             Atualizar Rastreios
           </button>
+          {/* Zebra 10x15 — caminho padrão de despacho. */}
           <button
             onClick={handlePrintLabels}
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
+            disabled={printPostcardMutation.isPending || pendentesDeImpressao.length === 0}
+            title={
+              pendentesDeImpressao.length === 0
+                ? "Nenhuma etiqueta comprada aguardando impressão"
+                : `Abre ${pendentesDeImpressao.length} etiqueta(s) em 10x15 para a Zebra`
+            }
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Printer className="h-4 w-4" />
+            {printPostcardMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Printer className="h-4 w-4" />
+            )}
             Imprimir Etiquetas
+            {pendentesDeImpressao.length > 0 && ` (${pendentesDeImpressao.length})`}
+          </button>
+          {/* Papel comum — PDF A4 com várias etiquetas por folha. */}
+          <button
+            onClick={handlePrintLabelsA4}
+            disabled={printLabelsMutation.isPending || pendentesDeImpressao.length === 0}
+            title={
+              pendentesDeImpressao.length === 0
+                ? "Nenhuma etiqueta comprada aguardando impressão"
+                : `Gera um PDF A4 único com ${pendentesDeImpressao.length} etiqueta(s), para papel comum`
+            }
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {printLabelsMutation.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4" />
+            )}
+            A4
           </button>
         </div>
       </div>
@@ -514,6 +696,60 @@ function AdminLogistica() {
           </div>
         </button>
       </div>
+
+      {/* Aviso de impressão. FIXO na tela, não toast: falha parcial num lote
+          tem de ser vista antes de despachar. Só o operador fecha. */}
+      {labelWarning && (
+        <div
+          role="alert"
+          className={cn(
+            "mb-6 border-2 p-4 md:p-5",
+            labelWarning.tipo === "parcial"
+              ? "border-red-400 bg-red-50"
+              : "border-amber-400 bg-amber-50",
+          )}
+        >
+          <div className="flex items-start gap-3">
+            <AlertCircle
+              className={cn(
+                "h-5 w-5 flex-shrink-0 mt-0.5",
+                labelWarning.tipo === "parcial" ? "text-red-600" : "text-amber-600",
+              )}
+            />
+            <div className="flex-1">
+              <p
+                className={cn(
+                  "text-sm font-semibold",
+                  labelWarning.tipo === "parcial" ? "text-red-900" : "text-amber-900",
+                )}
+              >
+                {labelWarning.texto}
+              </p>
+              {labelWarning.falhas.length > 0 && (
+                <ul className="mt-2 space-y-1">
+                  {labelWarning.falhas.map((falha, i) => (
+                    <li
+                      key={`${falha.label}-${i}`}
+                      className={cn(
+                        "text-xs",
+                        labelWarning.tipo === "parcial" ? "text-red-800" : "text-amber-800",
+                      )}
+                    >
+                      <strong>{falha.label}</strong>: {falha.erro}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              onClick={() => setLabelWarning(null)}
+              className="text-xs underline flex-shrink-0 text-[#51635F] hover:text-[#0F3A3E]"
+            >
+              Fechar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Tab Content */}
       {activeTab === "etiquetas" ? (
@@ -788,11 +1024,23 @@ function AdminLogistica() {
                     </button>
                   )}
 
-                  {/* Imprimir Etiqueta: envio existe (com ou sem rastreio — getShipmentLabel tem fallback local) */}
+                  {/* Imprimir Etiqueta. Com etiqueta comprada no Melhor Envio
+                      (shipment_id_external), abre a página de impressão em
+                      10x15 (formato salvo na conta). Sem ela, cai no fallback
+                      de etiqueta local (modal). */}
                   {shipment.shipment_id && (
                     <button
-                      onClick={() => getLabelMutation.mutate(shipment.shipment_id!)}
-                      disabled={getLabelMutation.isPending}
+                      onClick={() =>
+                        shipment.shipment_id_external
+                          ? printPostcardMutation.mutate([shipment.shipment_id!])
+                          : getLabelMutation.mutate(shipment.shipment_id!)
+                      }
+                      disabled={printPostcardMutation.isPending || getLabelMutation.isPending}
+                      title={
+                        shipment.shipment_id_external
+                          ? "Abre a etiqueta em 10x15 para a Zebra"
+                          : "Sem etiqueta do Melhor Envio — gera etiqueta local"
+                      }
                       className={cn(
                         "px-4 py-2 text-xs border transition-colors flex items-center gap-1",
                         shipment.label_printed_at
@@ -800,7 +1048,7 @@ function AdminLogistica() {
                           : "border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100"
                       )}
                     >
-                      {getLabelMutation.isPending ? (
+                      {printPostcardMutation.isPending || getLabelMutation.isPending ? (
                         <Loader2 className="h-3 w-3 animate-spin" />
                       ) : (
                         <Printer className="h-3 w-3" />
@@ -1300,7 +1548,14 @@ function CreateShipmentModal({
 // COMPONENTE: Etiquetas SIGEP
 // =====================================================
 
-type Label = { id: string; codigo: string; service: string; status: string };
+type Label = {
+  id: string;
+  codigo: string;
+  service: string;
+  status: string;
+  /** PDF da etiqueta SIGEP. Sempre null hoje — nada escreve nessa coluna. */
+  label_pdf_url?: string | null;
+};
 
 function EtiquetasSIGEP({
   labels,
@@ -1446,10 +1701,25 @@ function EtiquetasSIGEP({
                       </span>
                     </td>
                     <td className="py-3 px-2 text-right">
+                      {/* Antes chamava window.print() puro, que imprimia a
+                          PÁGINA DO ADMIN inteira, não a etiqueta. A fonte de
+                          PDF aqui é shipping_tags.label_pdf_url, que nada no
+                          projeto preenche — então abrir o PDF só é possível
+                          quando ela existir. Sem URL, o botão fica desabilitado
+                          e diz o motivo, em vez de imprimir a coisa errada. */}
                       <button
-                        onClick={() => window.print()}
-                        className="p-2 hover:bg-[#F3EEE3] transition-colors"
-                        title="Imprimir etiqueta"
+                        onClick={() => {
+                          if (label.label_pdf_url) {
+                            window.open(label.label_pdf_url, "_blank");
+                          }
+                        }}
+                        disabled={!label.label_pdf_url}
+                        className="p-2 hover:bg-[#F3EEE3] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title={
+                          label.label_pdf_url
+                            ? "Abrir PDF da etiqueta em nova aba"
+                            : "PDF indisponível para esta etiqueta SIGEP"
+                        }
                       >
                         <Printer className="h-4 w-4" />
                       </button>
