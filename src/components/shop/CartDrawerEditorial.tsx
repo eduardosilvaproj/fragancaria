@@ -1,6 +1,7 @@
 import { useCartStore } from "@/stores/cartStore";
 import { Link } from "@tanstack/react-router";
 import { ShoppingBag, Minus, Plus, Trash2, X } from "lucide-react";
+import { CartComplements } from "./CartComplements";
 
 // O drawer é um preview do carrinho: mostra itens e subtotal, mas NÃO calcula
 // frete nem desconto. Frete e cupom são decididos no checkout.
@@ -128,6 +129,12 @@ export const CartDrawerEditorial = () => {
                 </div>
               ))}
 
+              {/* "Leve junto": complemento por regra determinística. Fica aqui,
+                  e não no checkout, porque este drawer É o carrinho na prática:
+                  nada no site linka /carrinho e o CTA daqui vai direto pro
+                  /checkout. Não renderiza nada quando nenhuma regra casa. */}
+              <CartComplements variant="drawer" />
+
               {/* Resumo: subtotal + aviso de que frete/desconto vêm do checkout */}
               <div className="mt-2 pt-5 border-t border-[#E0D8C7]">
                 <div className="flex items-center justify-between mb-2">
@@ -179,6 +186,15 @@ export const CartDrawerEditorial = () => {
               className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors"
             >
               Finalizar Compra
+            </Link>
+            {/* Única entrada para /carrinho no site inteiro. A página tem o que
+                este drawer não calcula: cupom, frete e total. */}
+            <Link
+              to="/carrinho"
+              onClick={() => setIsOpen(false)}
+              className="block w-full mt-3 text-center text-[12px] text-[#51635F] underline decoration-[#C4BBA8] underline-offset-4 hover:text-[#0F3A3E] transition-colors"
+            >
+              Ver carrinho completo
             </Link>
           </div>
         )}
