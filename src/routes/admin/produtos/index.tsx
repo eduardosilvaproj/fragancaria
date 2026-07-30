@@ -30,6 +30,7 @@ import {
   exportProducts,
 } from "@/lib/products-admin.functions";
 import { enrichProductsBatch } from "@/lib/product-enrich.functions";
+import { suggestProductImagesBatch } from "@/lib/product-image-suggestions.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { ProductEnrichButton } from "@/components/admin/ProductEnrichButton";
 import { toast } from "sonner";
@@ -228,6 +229,7 @@ function AdminProdutos() {
   const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null);
   const [importing, setImporting] = useState(false);
   const [showEnrichModal, setShowEnrichModal] = useState(false);
+  const [showSuggestModal, setShowSuggestModal] = useState(false);
   const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
   const [enriching, setEnriching] = useState(false);
 
@@ -666,6 +668,19 @@ function AdminProdutos() {
             <Sparkles className="h-4 w-4" />
             Enriquecer
           </button>
+          <button
+            onClick={() => setShowSuggestModal(true)}
+            className="flex items-center gap-2 px-4 py-2 text-sm border border-[#B07B1E] text-[#B07B1E] hover:bg-amber-50 transition-colors"
+          >
+            <Image className="h-4 w-4" />
+            Buscar imagens
+          </button>
+          <Link
+            to="/admin/produtos/imagens"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-[#51635F] hover:text-[#0F3A3E] underline transition-colors"
+          >
+            Revisar imagens
+          </Link>
         </div>
       </div>
 
@@ -1056,6 +1071,14 @@ function AdminProdutos() {
           }}
         />
       )}
+
+      {/* Modal de Busca de Imagens em Lote (Serper) */}
+      {showSuggestModal && (
+        <SuggestImagesModal
+          allProducts={allProducts}
+          onClose={() => setShowSuggestModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -1385,6 +1408,268 @@ function EnrichmentModal({
                 >
                   {enriching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   Enriquecer {productsNeedingEnrichment.length} produtos
+                </button>
+                <button
+                  onClick={onClose}
+                  className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SuggestImagesModal({
+  allProducts,
+  onClose,
+}: {
+  allProducts: AdminProduct[];
+  onClose: () => void;
+}) {
+  const [running, setRunning] = useState(false);
+  const [progress, setProgress] = useState<{ bloco: number; total: number } | null>(null);
+  const [result, setResult] = useState<{
+    processed: number;
+    comCandidatas: number;
+    semCandidatas: number;
+    candidatasInseridas: number;
+    errors: string[];
+    blocosOk: number;
+    blocosTotal: number;
+    interrompido: string | null;
+  } | null>(null);
+
+  const suggestFn = useServerFn(suggestProductImagesBatch);
+
+  // Alvo: produtos sem foto. É a fila que a busca em lote existe para atender —
+  // os ~1210 importados por CSV que ficaram sem imagem porque a API do ML não
+  // entrega anúncio de terceiro.
+  const productsWithoutImage = useMemo(
+    () => allProducts.filter((p) => !p.image),
+    [allProducts],
+  );
+
+  const handleSuggest = async () => {
+    if (productsWithoutImage.length === 0) {
+      toast.info("Nenhum produto sem imagem");
+      return;
+    }
+
+    // Mesmo fatiamento do enriquecimento: o validator recusa arrays > 500.
+    const blocos = fatiar(
+      productsWithoutImage.map((p) => p.id),
+      ENRICH_CHUNK_SIZE,
+    );
+
+    setRunning(true);
+    setProgress({ bloco: 1, total: blocos.length });
+    setResult(null);
+
+    // Acumuladores fora do try: blocos que já passaram não se perdem se um
+    // posterior falhar.
+    let processed = 0;
+    let comCandidatas = 0;
+    let semCandidatas = 0;
+    let candidatasInseridas = 0;
+    let blocosOk = 0;
+    const errors: string[] = [];
+    let interrompido: string | null = null;
+
+    for (let i = 0; i < blocos.length; i++) {
+      setProgress({ bloco: i + 1, total: blocos.length });
+      try {
+        const res = await suggestFn({ data: { ids: blocos[i] } });
+        if (res?.success) {
+          processed += res.processed;
+          comCandidatas += res.comCandidatas;
+          semCandidatas += res.semCandidatas;
+          candidatasInseridas += res.candidatasInseridas;
+          if (res.errors?.length) errors.push(...res.errors);
+          blocosOk++;
+        } else {
+          const motivo = res?.errors?.join("; ") || "Erro desconhecido";
+          errors.push(`Bloco ${i + 1}: ${motivo}`);
+          interrompido = motivo;
+          break;
+        }
+      } catch (e: any) {
+        const motivo = e?.message || "Erro desconhecido";
+        errors.push(`Bloco ${i + 1}: ${motivo}`);
+        interrompido = motivo;
+        break;
+      }
+    }
+
+    setResult({
+      processed,
+      comCandidatas,
+      semCandidatas,
+      candidatasInseridas,
+      errors,
+      blocosOk,
+      blocosTotal: blocos.length,
+      interrompido,
+    });
+    setRunning(false);
+    setProgress(null);
+
+    if (interrompido) {
+      toast.error(
+        `Interrompido no bloco ${blocosOk + 1} de ${blocos.length}. ` +
+          `As candidatas dos ${comCandidatas} produto(s) já processados foram salvas.`,
+        { description: interrompido, duration: 30000 },
+      );
+    } else if (candidatasInseridas === 0) {
+      toast.error("Nenhuma candidata encontrada", {
+        description: "A busca não retornou imagens para os produtos selecionados.",
+        duration: 20000,
+      });
+    } else {
+      toast.success(
+        `${candidatasInseridas} candidata(s) para ${comCandidatas} produto(s). Revise em "Revisar imagens".`,
+      );
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white max-w-md w-full rounded-lg shadow-xl">
+        <div className="flex items-center justify-between p-4 border-b border-[#E9E1D2]">
+          <div className="flex items-center gap-2">
+            <Image className="h-5 w-5 text-[#B07B1E]" />
+            <h2 className="font-serif text-lg text-[#0F3A3E]">Buscar imagens em lote</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-[#F3EEE3] rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          {result ? (
+            <div className="py-4">
+              {result.interrompido ? (
+                <>
+                  <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">
+                    Interrompido
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center">
+                    Falhou no bloco {result.blocosOk + 1} de {result.blocosTotal}.
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center mt-1">
+                    As candidatas dos <strong>{result.comCandidatas}</strong> produtos já
+                    processados foram salvas e <strong>não</strong> se perderam.
+                  </p>
+                  <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
+                    <p className="text-xs text-red-800 break-words">{result.interrompido}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">
+                    Busca concluída
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center">
+                    {result.candidatasInseridas} candidata(s) salva(s) para{" "}
+                    {result.comCandidatas} de {result.processed} produtos.
+                  </p>
+                  {result.semCandidatas > 0 && (
+                    <p className="text-xs text-[#8A938E] text-center mt-1">
+                      {result.semCandidatas} produto(s) sem candidata (a busca não retornou
+                      imagem).
+                    </p>
+                  )}
+                </>
+              )}
+
+              {result.errors.length > 0 && (
+                <details className="mt-4">
+                  <summary className="text-xs text-[#8A938E] cursor-pointer">
+                    {result.errors.length} aviso(s)
+                  </summary>
+                  <div className="mt-2 max-h-40 overflow-y-auto bg-[#F3EEE3] rounded p-2">
+                    {result.errors.slice(0, 50).map((err, i) => (
+                      <p key={i} className="text-[11px] text-[#51635F] break-words">
+                        {err}
+                      </p>
+                    ))}
+                    {result.errors.length > 50 && (
+                      <p className="text-[11px] text-[#8A938E] mt-1">
+                        ...e outros {result.errors.length - 50}
+                      </p>
+                    )}
+                  </div>
+                </details>
+              )}
+
+              <div className="flex justify-center gap-3 mt-6">
+                {result.candidatasInseridas > 0 && (
+                  <Link
+                    to="/admin/produtos/imagens"
+                    className="px-6 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors"
+                  >
+                    Revisar agora
+                  </Link>
+                )}
+                <button
+                  onClick={onClose}
+                  className="px-6 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
+                >
+                  Fechar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-[#51635F] mb-4">
+                Busca fotos na web (por nome + marca) para{" "}
+                <strong>{productsWithoutImage.length}</strong> produtos sem imagem. Nada é
+                gravado direto: as candidatas ficam para revisão manual em{" "}
+                <strong>Revisar imagens</strong>.
+              </p>
+
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 mb-4">
+                <p className="text-xs text-amber-800">
+                  A busca automática erra com frequência (tamanho, embalagem antiga, marca
+                  parecida). Por isso a imagem só entra no produto depois que você aprovar a
+                  candidata correta na tela de revisão.
+                </p>
+              </div>
+
+              {running && (
+                <div className="mb-4">
+                  <div className="h-2 bg-[#E9E1D2] rounded overflow-hidden">
+                    <div
+                      className="h-full bg-[#B07B1E] transition-all"
+                      style={{
+                        width: progress
+                          ? `${Math.round(((progress.bloco - 1) / progress.total) * 100)}%`
+                          : "0%",
+                      }}
+                    />
+                  </div>
+                  <p className="text-xs text-[#8A938E] mt-2 text-center">
+                    {progress && progress.total > 1
+                      ? `Buscando bloco ${progress.bloco} de ${progress.total}...`
+                      : "Buscando..."}
+                  </p>
+                </div>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleSuggest}
+                  disabled={running || productsWithoutImage.length === 0}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-[#B07B1E] text-white hover:bg-[#9A6A1A] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {running ? <Loader2 className="h-4 w-4 animate-spin" /> : <Image className="h-4 w-4" />}
+                  Buscar para {productsWithoutImage.length} produtos
                 </button>
                 <button
                   onClick={onClose}

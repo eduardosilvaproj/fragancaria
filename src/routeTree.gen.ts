@@ -76,6 +76,7 @@ import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afilia
 import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/dashboard/links'
 import { Route as AfiliadoDashboardConfiguracoesRouteImport } from './routes/afiliado/dashboard/configuracoes'
 import { Route as AdminProdutosNovoRouteImport } from './routes/admin/produtos/novo'
+import { Route as AdminProdutosImagensRouteImport } from './routes/admin/produtos/imagens'
 import { Route as AdminProdutosIdEditarRouteImport } from './routes/admin/produtos/$id/editar'
 
 const TrocasRoute = TrocasRouteImport.update({
@@ -423,6 +424,11 @@ const AdminProdutosNovoRoute = AdminProdutosNovoRouteImport.update({
   path: '/novo',
   getParentRoute: () => AdminProdutosRoute,
 } as any)
+const AdminProdutosImagensRoute = AdminProdutosImagensRouteImport.update({
+  id: '/imagens',
+  path: '/imagens',
+  getParentRoute: () => AdminProdutosRoute,
+} as any)
 const AdminProdutosIdEditarRoute = AdminProdutosIdEditarRouteImport.update({
   id: '/$id/editar',
   path: '/$id/editar',
@@ -476,6 +482,7 @@ export interface FileRoutesByFullPath {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
+  '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -542,6 +549,7 @@ export interface FileRoutesByTo {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
   '/minha-conta': typeof MinhaContaIndexRoute
+  '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -613,6 +621,7 @@ export interface FileRoutesById {
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
+  '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
   '/afiliado/dashboard/configuracoes': typeof AfiliadoDashboardConfiguracoesRoute
   '/afiliado/dashboard/links': typeof AfiliadoDashboardLinksRoute
@@ -685,6 +694,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
+    | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -751,6 +761,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin'
     | '/minha-conta'
+    | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -821,6 +832,7 @@ export interface FileRouteTypes {
     | '/produto/$id'
     | '/admin/'
     | '/minha-conta/'
+    | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
     | '/afiliado/dashboard/configuracoes'
     | '/afiliado/dashboard/links'
@@ -1351,6 +1363,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProdutosNovoRouteImport
       parentRoute: typeof AdminProdutosRoute
     }
+    '/admin/produtos/imagens': {
+      id: '/admin/produtos/imagens'
+      path: '/imagens'
+      fullPath: '/admin/produtos/imagens'
+      preLoaderRoute: typeof AdminProdutosImagensRouteImport
+      parentRoute: typeof AdminProdutosRoute
+    }
     '/admin/produtos/$id/editar': {
       id: '/admin/produtos/$id/editar'
       path: '/$id/editar'
@@ -1362,12 +1381,14 @@ declare module '@tanstack/react-router' {
 }
 
 interface AdminProdutosRouteChildren {
+  AdminProdutosImagensRoute: typeof AdminProdutosImagensRoute
   AdminProdutosNovoRoute: typeof AdminProdutosNovoRoute
   AdminProdutosIndexRoute: typeof AdminProdutosIndexRoute
   AdminProdutosIdEditarRoute: typeof AdminProdutosIdEditarRoute
 }
 
 const AdminProdutosRouteChildren: AdminProdutosRouteChildren = {
+  AdminProdutosImagensRoute: AdminProdutosImagensRoute,
   AdminProdutosNovoRoute: AdminProdutosNovoRoute,
   AdminProdutosIndexRoute: AdminProdutosIndexRoute,
   AdminProdutosIdEditarRoute: AdminProdutosIdEditarRoute,
