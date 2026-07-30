@@ -202,6 +202,19 @@ const ITEMS_PER_PAGE = 20;
 // element(s)"), sem enriquecer nada.
 const ENRICH_CHUNK_SIZE = 500;
 
+// Limite de ids por chamada de suggestProductImagesBatch. Deliberadamente MUITO
+// menor que o do enriquecimento, e por isso é uma constante separada: o custo
+// por item é outro. No enriquecimento o gargalo é o banco; na busca de imagem
+// cada produto é uma requisição HTTP ao Serper (~1,25s medido em prod, ~2,9s
+// somando as idas ao Supabase).
+//
+// Com 500 ids o bloco levava ~25min e o proxy do Railway cortava a conexão
+// ("upstream error") enquanto a server fn seguia rodando — o cliente reportava
+// 0 processados e o banco tinha 2964 candidatas gravadas. 12 ids dão ~35s por
+// chamada: cabe no proxy com folga, o progresso avança a cada bloco e uma falha
+// custa no máximo 12 produtos. Muitos blocos pequenos > poucos blocos grandes.
+const IMAGE_CHUNK_SIZE = 12;
+
 function fatiar<T>(itens: T[], tamanho: number): T[][] {
   const blocos: T[][] = [];
   for (let i = 0; i < itens.length; i += tamanho) {
@@ -1432,16 +1445,25 @@ function SuggestImagesModal({
   onClose: () => void;
 }) {
   const [running, setRunning] = useState(false);
-  const [progress, setProgress] = useState<{ bloco: number; total: number } | null>(null);
+  const [progress, setProgress] = useState<{
+    bloco: number;
+    total: number;
+    candidatas: number;
+  } | null>(null);
+  // Pedido de parada do operador. Ref, não state: o loop lê o valor a cada
+  // volta e um state novo não chegaria à closure já em execução.
+  const pararRef = useRef(false);
   const [result, setResult] = useState<{
     processed: number;
     comCandidatas: number;
     semCandidatas: number;
     candidatasInseridas: number;
+    pulados: number;
     errors: string[];
     blocosOk: number;
     blocosTotal: number;
     interrompido: string | null;
+    parado: boolean;
   } | null>(null);
 
   const suggestFn = useServerFn(suggestProductImagesBatch);
@@ -1460,14 +1482,17 @@ function SuggestImagesModal({
       return;
     }
 
-    // Mesmo fatiamento do enriquecimento: o validator recusa arrays > 500.
+    // Blocos pequenos (IMAGE_CHUNK_SIZE), não os 500 do enriquecimento: aqui
+    // cada produto é uma chamada HTTP ao Serper e um bloco grande estoura o
+    // timeout do proxy antes de responder.
     const blocos = fatiar(
       productsWithoutImage.map((p) => p.id),
-      ENRICH_CHUNK_SIZE,
+      IMAGE_CHUNK_SIZE,
     );
 
+    pararRef.current = false;
     setRunning(true);
-    setProgress({ bloco: 1, total: blocos.length });
+    setProgress({ bloco: 1, total: blocos.length, candidatas: 0 });
     setResult(null);
 
     // Acumuladores fora do try: blocos que já passaram não se perdem se um
@@ -1476,12 +1501,18 @@ function SuggestImagesModal({
     let comCandidatas = 0;
     let semCandidatas = 0;
     let candidatasInseridas = 0;
+    let pulados = 0;
     let blocosOk = 0;
     const errors: string[] = [];
     let interrompido: string | null = null;
+    let parado = false;
 
     for (let i = 0; i < blocos.length; i++) {
-      setProgress({ bloco: i + 1, total: blocos.length });
+      if (pararRef.current) {
+        parado = true;
+        break;
+      }
+      setProgress({ bloco: i + 1, total: blocos.length, candidatas: candidatasInseridas });
       try {
         const res = await suggestFn({ data: { ids: blocos[i] } });
         if (res?.success) {
@@ -1489,6 +1520,7 @@ function SuggestImagesModal({
           comCandidatas += res.comCandidatas;
           semCandidatas += res.semCandidatas;
           candidatasInseridas += res.candidatasInseridas;
+          pulados += res.pulados ?? 0;
           if (res.errors?.length) errors.push(...res.errors);
           blocosOk++;
         } else {
@@ -1510,19 +1542,33 @@ function SuggestImagesModal({
       comCandidatas,
       semCandidatas,
       candidatasInseridas,
+      pulados,
       errors,
       blocosOk,
       blocosTotal: blocos.length,
       interrompido,
+      parado,
     });
     setRunning(false);
     setProgress(null);
+    pararRef.current = false;
 
     if (interrompido) {
       toast.error(
         `Interrompido no bloco ${blocosOk + 1} de ${blocos.length}. ` +
           `As candidatas dos ${comCandidatas} produto(s) já processados foram salvas.`,
         { description: interrompido, duration: 30000 },
+      );
+    } else if (parado) {
+      toast.info(
+        `Parado a pedido. ${candidatasInseridas} candidata(s) de ${comCandidatas} produto(s) ` +
+          `já estão salvas. Rodar de novo continua de onde parou.`,
+        { duration: 15000 },
+      );
+    } else if (candidatasInseridas === 0 && pulados > 0) {
+      toast.info(
+        `Nada novo: os ${pulados} produto(s) já tinham candidata esperando revisão.`,
+        { duration: 15000 },
       );
     } else if (candidatasInseridas === 0) {
       toast.error("Nenhuma candidata encontrada", {
@@ -1563,11 +1609,28 @@ function SuggestImagesModal({
                   </p>
                   <p className="text-sm text-[#51635F] text-center mt-1">
                     As candidatas dos <strong>{result.comCandidatas}</strong> produtos já
-                    processados foram salvas e <strong>não</strong> se perderam.
+                    processados foram salvas e <strong>não</strong> se perderam. Rodar de novo
+                    continua de onde parou.
                   </p>
                   <div className="mt-4 bg-red-50 border border-red-200 rounded p-3">
                     <p className="text-xs text-red-800 break-words">{result.interrompido}</p>
                   </div>
+                </>
+              ) : result.parado ? (
+                <>
+                  <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
+                  <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">
+                    Parado
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center">
+                    {result.blocosOk} de {result.blocosTotal} blocos concluídos.{" "}
+                    {result.candidatasInseridas} candidata(s) salva(s) para{" "}
+                    {result.comCandidatas} produto(s).
+                  </p>
+                  <p className="text-sm text-[#51635F] text-center mt-1">
+                    Rodar de novo continua de onde parou: produto que já tem candidata
+                    pendente é pulado.
+                  </p>
                 </>
               ) : (
                 <>
@@ -1586,6 +1649,13 @@ function SuggestImagesModal({
                     </p>
                   )}
                 </>
+              )}
+
+              {result.pulados > 0 && (
+                <p className="text-xs text-[#8A938E] text-center mt-2">
+                  {result.pulados} produto(s) pulado(s): já tinham candidata esperando
+                  revisão (sem gastar busca nova).
+                </p>
               )}
 
               {result.errors.length > 0 && (
@@ -1655,10 +1725,24 @@ function SuggestImagesModal({
                     />
                   </div>
                   <p className="text-xs text-[#8A938E] mt-2 text-center">
-                    {progress && progress.total > 1
-                      ? `Buscando bloco ${progress.bloco} de ${progress.total}...`
+                    {progress
+                      ? `Bloco ${progress.bloco} de ${progress.total} · ${progress.candidatas} candidata(s) já salva(s)`
                       : "Buscando..."}
                   </p>
+                  {/* Lote longo (~35s por bloco, ~1210 produtos = 101 blocos). Parar
+                      é seguro: o que já entrou no banco fica, e rodar de novo pula
+                      quem já tem candidata pendente. */}
+                  <div className="flex justify-center mt-2">
+                    <button
+                      onClick={() => {
+                        pararRef.current = true;
+                        toast.info("Vai parar depois do bloco atual...");
+                      }}
+                      className="text-xs text-[#51635F] underline hover:text-[#0F3A3E]"
+                    >
+                      Parar depois deste bloco
+                    </button>
+                  </div>
                 </div>
               )}
 

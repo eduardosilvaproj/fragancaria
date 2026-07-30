@@ -16,22 +16,57 @@ import { z } from "zod";
 
 const SUGGEST_PER_PRODUCT = 6;
 
-// Casa com o limite de ids que o cliente fatia por chamada (ENRICH_CHUNK_SIZE
-// em admin/produtos/index.tsx). Mantido igual para o mesmo fatiamento servir os
-// dois lotes.
+// Teto de ids por chamada. NAO reaproveita o 500 do enriquecimento: la o lote
+// e uma consulta por produto ao ML e o gargalo e o banco; aqui cada produto e
+// uma requisicao HTTP ao Serper.
+//
+// Medido em prod (2026-07-30): Serper responde em ~1,25s de media (pior caso
+// 1,5s) e o custo total por produto fica em ~2,9s contando select + delete +
+// insert no Supabase. Um bloco de 500 leva ~25min e o proxy do Railway corta
+// muito antes — a chamada volta "upstream error" enquanto a server fn continua
+// rodando no servidor. Foi exatamente isso que aconteceu: o cliente exibiu
+// "0 processados" e o banco tinha 2964 candidatas em 494 produtos, gravadas ao
+// longo de ~8min depois de o cliente ja ter desistido.
+//
+// 50 ids = ~2,5min de pior caso, dentro do limite do proxy com folga. O cliente
+// fatia em blocos ainda menores (IMAGE_CHUNK_SIZE em admin/produtos/index.tsx)
+// para o progresso avancar visivelmente; este max e so o teto defensivo.
+const SUGGEST_MAX_IDS = 50;
+
+// Sem timeout, uma unica busca pendurada consome o orcamento do bloco inteiro
+// e derruba tudo no proxy. 15s e ~10x a media medida: corta o caso patologico
+// sem cortar a busca so lenta.
+const SERPER_TIMEOUT_MS = 15_000;
+
 const SuggestBatchSchema = z.object({
-  ids: z.array(z.string().min(1)).min(1).max(500),
+  ids: z.array(z.string().min(1)).min(1).max(SUGGEST_MAX_IDS),
+  // Pular produto que ja tem candidata pending. Ligado por padrao: com ~1210
+  // produtos na fila e 2500 creditos de Serper no plano, reexecutar depois de
+  // uma interrupcao nao pode regastar credito no que ja foi buscado. Passe
+  // false para forcar nova busca e substituir as candidatas.
+  skipComPendentes: z.boolean().optional().default(true),
 });
 
 async function searchSerperImages(query: string, num: number): Promise<string[]> {
   const apiKey = process.env.SERPER_API_KEY;
   if (!apiKey) throw new Error("SERPER_API_KEY não configurada");
 
-  const resp = await fetch("https://google.serper.dev/images", {
-    method: "POST",
-    headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ q: query, gl: "br", hl: "pt", num }),
-  });
+  let resp: Response;
+  try {
+    resp = await fetch("https://google.serper.dev/images", {
+      method: "POST",
+      headers: { "X-API-KEY": apiKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ q: query, gl: "br", hl: "pt", num }),
+      signal: AbortSignal.timeout(SERPER_TIMEOUT_MS),
+    });
+  } catch (e: any) {
+    // TimeoutError/AbortError viram mensagem legivel: o erro cru do undici
+    // ("The operation was aborted due to timeout") nao diz que foi o Serper.
+    if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+      throw new Error(`Serper não respondeu em ${SERPER_TIMEOUT_MS / 1000}s`);
+    }
+    throw e;
+  }
 
   if (!resp.ok) {
     throw new Error(`Serper respondeu ${resp.status}`);
@@ -57,6 +92,7 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
     comCandidatas: number;
     semCandidatas: number;
     candidatasInseridas: number;
+    pulados: number;
     errors: string[];
   }> => {
     try {
@@ -73,6 +109,7 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
       let comCandidatas = 0;
       let semCandidatas = 0;
       let candidatasInseridas = 0;
+      let pulados = 0;
       const errors: string[] = [];
 
       for (const id of data.ids) {
@@ -87,6 +124,23 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
           if (!product) {
             errors.push(`ID ${id}: não encontrado`);
             continue;
+          }
+
+          // Ja tem candidata esperando revisao: nao regasta credito do Serper.
+          // Importa depois de uma interrupcao — o cliente reenvia os ids que
+          // nao sabe se foram processados, e sem isso a rodada seguinte pagaria
+          // de novo pelo que ja estava no banco.
+          if (data.skipComPendentes) {
+            const { count } = await db
+              .from("product_image_suggestions")
+              .select("id", { count: "exact", head: true })
+              .eq("product_id", id)
+              .eq("status", "pending");
+
+            if ((count ?? 0) > 0) {
+              pulados++;
+              continue;
+            }
           }
 
           const query = [product.brand, product.name]
@@ -139,9 +193,23 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
         }
       }
 
-      return { success: true, processed, comCandidatas, semCandidatas, candidatasInseridas, errors };
+      return {
+        success: true,
+        processed,
+        comCandidatas,
+        semCandidatas,
+        candidatasInseridas,
+        pulados,
+        errors,
+      };
     } catch (e: any) {
-      const vazio = { processed: 0, comCandidatas: 0, semCandidatas: 0, candidatasInseridas: 0 };
+      const vazio = {
+        processed: 0,
+        comCandidatas: 0,
+        semCandidatas: 0,
+        candidatasInseridas: 0,
+        pulados: 0,
+      };
       if (e?.status === 401 || e?.status === 403) {
         return { success: false, ...vazio, errors: ["Não autorizado"] };
       }
@@ -154,7 +222,12 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
 // Agrupa no servidor para a tela renderizar "um produto por linha".
 export const listPendingImageSuggestions = createServerFn({ method: "GET" })
   .validator((d: unknown) =>
-    z.object({ limit: z.number().int().positive().max(200).optional() }).parse(d ?? {}),
+    // max 150 produtos, nao 200: o PostgREST tem max-rows=1000 no servidor e
+    // ignora .limit() acima disso (medido: .limit(5000) devolve 1000). Como
+    // pedimos limite x SUGGEST_PER_PRODUCT linhas, 150 x 6 = 900 cabe; 200 x 6
+    // seria cortado em 1000 e a tela mostraria menos produtos do que pediu,
+    // sem avisar.
+    z.object({ limit: z.number().int().positive().max(150).optional() }).parse(d ?? {}),
   )
   .handler(async ({ data }): Promise<{
     success: boolean;
@@ -174,11 +247,19 @@ export const listPendingImageSuggestions = createServerFn({ method: "GET" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const db = supabaseAdmin as any;
 
+      const limiteProdutos = data.limit ?? 100;
+
+      // .limit() explicito: sem ele o PostgREST corta em 1000 linhas por conta
+      // propria e a tela mostraria "so isso tem pendente" silenciosamente. Com
+      // ~1210 produtos x 6 candidatas a fila passa de 7000 linhas. Pedimos
+      // exatamente o teto de produtos x candidatas por produto, ordenado por
+      // created_at — os mais antigos da fila primeiro.
       const { data: suggestions, error } = await db
         .from("product_image_suggestions")
         .select("id, product_id, image_url, created_at")
         .eq("status", "pending")
-        .order("created_at", { ascending: true });
+        .order("created_at", { ascending: true })
+        .limit(limiteProdutos * SUGGEST_PER_PRODUCT);
 
       if (error) {
         return { success: false, produtos: [], error: error.message };
