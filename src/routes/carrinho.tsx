@@ -2,6 +2,7 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
+import { CartComplements } from "@/components/shop/CartComplements";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useProducts } from "@/hooks/useProducts";
@@ -209,6 +210,12 @@ function CarrinhoPage() {
                   Limpar Carrinho
                 </button>
               </div>
+
+              {/* "Leve junto": complemento por regra determinística. Fica aqui,
+                  abaixo dos itens, e não no checkout — interromper na etapa de
+                  pagamento custa conversão. Não renderiza nada quando nenhuma
+                  regra casa com o carrinho. */}
+              <CartComplements />
             </div>
 
             {/* Summary */}
