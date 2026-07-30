@@ -38,6 +38,16 @@ const SUGGEST_MAX_IDS = 50;
 // sem cortar a busca so lenta.
 const SERPER_TIMEOUT_MS = 15_000;
 
+// Mesmo raciocinio para o download da imagem candidata na aprovacao.
+const DOWNLOAD_TIMEOUT_MS = 15_000;
+
+// Teto de decisoes por chamada de syncImageDecisions, e nao 100+: aprovar custa
+// fetch da imagem de terceiro + upload pro Storage, ~1-2s por produto. 100 numa
+// chamada dariam ~200s e o proxy do Railway corta muito antes, devolvendo
+// "upstream error" enquanto o servidor segue gravando — foi o que aconteceu no
+// lote do Serper. 15 = ~30s de pior caso.
+const SYNC_MAX_DECISOES = 15;
+
 const SuggestBatchSchema = z.object({
   ids: z.array(z.string().min(1)).min(1).max(SUGGEST_MAX_IDS),
   // Pular produto que ja tem candidata pending. Ligado por padrao: com ~1210
@@ -311,6 +321,127 @@ export const listPendingImageSuggestions = createServerFn({ method: "GET" })
 // Baixa a imagem candidata, re-hospeda no Storage e grava a URL publica em
 // products.images (na frente das existentes, virando capa). Marca a candidata
 // aprovada e derruba as outras pending do mesmo produto (o operador ja escolheu).
+//
+// Helper compartilhado por approveImageSuggestion (um produto) e
+// syncImageDecisions (lote). Retorna 'ja-feito' quando a sugestao ja esta
+// approved: isso e o que faz o reenvio de um bloco ser barato depois de uma
+// interrupcao — nao rebaixa a imagem nem sobe de novo pro Storage.
+type ResultadoAprovacao =
+  | { ok: true; jaFeito: boolean; imageUrl?: string }
+  | { ok: false; error: string };
+
+async function aprovarSugestao(
+  supabaseAdmin: any,
+  db: any,
+  suggestionId: string,
+): Promise<ResultadoAprovacao> {
+  const { data: suggestion } = (await db
+    .from("product_image_suggestions")
+    .select("id, product_id, image_url, status")
+    .eq("id", suggestionId)
+    .maybeSingle()) as {
+    data: { id: string; product_id: string; image_url: string; status: string } | null;
+  };
+
+  if (!suggestion) {
+    return { ok: false, error: "Sugestão não encontrada" };
+  }
+  // Idempotente: bloco reenviado depois de "upstream error" nao reprocessa.
+  if (suggestion.status === "approved") {
+    return { ok: true, jaFeito: true };
+  }
+  if (suggestion.status !== "pending") {
+    return { ok: false, error: "Sugestão já resolvida" };
+  }
+
+  // Baixa a imagem da URL de terceiro. Timeout explicito: sem ele uma URL
+  // pendurada consome o orcamento do bloco inteiro e derruba tudo no proxy.
+  let resp: Response;
+  try {
+    resp = await fetch(suggestion.image_url, {
+      signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS),
+    });
+  } catch (e: any) {
+    if (e?.name === "TimeoutError" || e?.name === "AbortError") {
+      return {
+        ok: false,
+        error: `Imagem não respondeu em ${DOWNLOAD_TIMEOUT_MS / 1000}s`,
+      };
+    }
+    return { ok: false, error: e?.message || "Falha ao baixar imagem" };
+  }
+
+  if (!resp.ok) {
+    return { ok: false, error: `Falha ao baixar imagem (${resp.status})` };
+  }
+  const contentType = resp.headers.get("content-type") || "";
+  if (!contentType.startsWith("image/")) {
+    return { ok: false, error: `URL não é imagem (${contentType || "sem tipo"})` };
+  }
+  const buffer = Buffer.from(await resp.arrayBuffer());
+  if (buffer.length === 0) {
+    return { ok: false, error: "Imagem vazia" };
+  }
+  if (buffer.length > 10 * 1024 * 1024) {
+    return { ok: false, error: "Imagem maior que 10MB" };
+  }
+
+  const extByType: Record<string, string> = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif",
+  };
+  const ext = extByType[contentType.split(";")[0].trim()] || "jpg";
+  const rand = Math.random().toString(36).substring(2, 8);
+  const filename = `products/${Date.now()}-${rand}-${suggestion.product_id}.${ext}`;
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from("product-images")
+    .upload(filename, buffer, { contentType, upsert: false });
+
+  if (uploadError) {
+    return { ok: false, error: `Upload falhou: ${uploadError.message}` };
+  }
+
+  const { data: urlData } = supabaseAdmin.storage
+    .from("product-images")
+    .getPublicUrl(filename);
+  const publicUrl = urlData.publicUrl;
+
+  // Le as imagens atuais e coloca a nova na frente (capa), sem duplicar.
+  const { data: product } = await supabaseAdmin
+    .from("products")
+    .select("images")
+    .eq("id", suggestion.product_id)
+    .single();
+
+  const current: string[] = Array.isArray(product?.images) ? product!.images : [];
+  const combined = [publicUrl, ...current.filter((u: string) => u !== publicUrl)].slice(0, 5);
+
+  const { error: updateError } = await supabaseAdmin
+    .from("products")
+    .update({ images: combined })
+    .eq("id", suggestion.product_id);
+
+  if (updateError) {
+    return { ok: false, error: `Falha ao gravar no produto: ${updateError.message}` };
+  }
+
+  // Marca a aprovada e derruba as outras pending do produto (superadas).
+  await db
+    .from("product_image_suggestions")
+    .update({ status: "approved" })
+    .eq("id", suggestion.id);
+  await db
+    .from("product_image_suggestions")
+    .update({ status: "rejected" })
+    .eq("product_id", suggestion.product_id)
+    .eq("status", "pending");
+
+  return { ok: true, jaFeito: false, imageUrl: publicUrl };
+}
+
 const ApproveSchema = z.object({ suggestionId: z.string().uuid() });
 
 export const approveImageSuggestion = createServerFn({ method: "POST" })
@@ -323,98 +454,111 @@ export const approveImageSuggestion = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const db = supabaseAdmin as any;
 
-      const { data: suggestion } = (await db
-        .from("product_image_suggestions")
-        .select("id, product_id, image_url, status")
-        .eq("id", data.suggestionId)
-        .single()) as {
-        data: { id: string; product_id: string; image_url: string; status: string } | null;
-      };
-
-      if (!suggestion) {
-        return { success: false, error: "Sugestão não encontrada" };
+      const res = await aprovarSugestao(supabaseAdmin, db, data.suggestionId);
+      if (!res.ok) {
+        return { success: false, error: res.error };
       }
-      if (suggestion.status !== "pending") {
-        return { success: false, error: "Sugestão já resolvida" };
-      }
-
-      // Baixa a imagem da URL de terceiro.
-      const resp = await fetch(suggestion.image_url);
-      if (!resp.ok) {
-        return { success: false, error: `Falha ao baixar imagem (${resp.status})` };
-      }
-      const contentType = resp.headers.get("content-type") || "";
-      if (!contentType.startsWith("image/")) {
-        return { success: false, error: `URL não é imagem (${contentType || "sem tipo"})` };
-      }
-      const buffer = Buffer.from(await resp.arrayBuffer());
-      if (buffer.length === 0) {
-        return { success: false, error: "Imagem vazia" };
-      }
-      if (buffer.length > 10 * 1024 * 1024) {
-        return { success: false, error: "Imagem maior que 10MB" };
-      }
-
-      const extByType: Record<string, string> = {
-        "image/jpeg": "jpg",
-        "image/png": "png",
-        "image/webp": "webp",
-        "image/gif": "gif",
-      };
-      const ext = extByType[contentType.split(";")[0].trim()] || "jpg";
-      const rand = Math.random().toString(36).substring(2, 8);
-      const filename = `products/${Date.now()}-${rand}-${suggestion.product_id}.${ext}`;
-
-      const { error: uploadError } = await supabaseAdmin.storage
-        .from("product-images")
-        .upload(filename, buffer, { contentType, upsert: false });
-
-      if (uploadError) {
-        return { success: false, error: `Upload falhou: ${uploadError.message}` };
-      }
-
-      const { data: urlData } = supabaseAdmin.storage
-        .from("product-images")
-        .getPublicUrl(filename);
-      const publicUrl = urlData.publicUrl;
-
-      // Le as imagens atuais e coloca a nova na frente (capa), sem duplicar.
-      const { data: product } = await supabaseAdmin
-        .from("products")
-        .select("images")
-        .eq("id", suggestion.product_id)
-        .single();
-
-      const current: string[] = Array.isArray(product?.images) ? product!.images : [];
-      const combined = [publicUrl, ...current.filter((u) => u !== publicUrl)].slice(0, 5);
-
-      const { error: updateError } = await supabaseAdmin
-        .from("products")
-        .update({ images: combined })
-        .eq("id", suggestion.product_id);
-
-      if (updateError) {
-        return { success: false, error: `Falha ao gravar no produto: ${updateError.message}` };
-      }
-
-      // Marca a aprovada e derruba as outras pending do produto (superadas).
-      await db
-        .from("product_image_suggestions")
-        .update({ status: "approved" })
-        .eq("id", suggestion.id);
-      await db
-        .from("product_image_suggestions")
-        .update({ status: "rejected" })
-        .eq("product_id", suggestion.product_id)
-        .eq("status", "pending");
-
-      return { success: true, imageUrl: publicUrl };
+      return { success: true, imageUrl: res.imageUrl };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) {
         return { success: false, error: "Não autorizado" };
       }
       console.error("[suggest] approveImageSuggestion error:", e);
       return { success: false, error: e?.message || "Erro desconhecido" };
+    }
+  });
+
+// Sincroniza as decisoes marcadas na tela de revisao: suggestionId preenchido
+// aprova aquela candidata; null e "nenhuma serve" (rejeita as pending do
+// produto). Teto por chamada: SYNC_MAX_DECISOES (ver o porque no topo).
+const SyncSchema = z.object({
+  decisoes: z
+    .array(
+      z.object({
+        productId: z.string().min(1),
+        // null = "nenhuma serve"
+        suggestionId: z.string().uuid().nullable(),
+      }),
+    )
+    .min(1)
+    .max(SYNC_MAX_DECISOES),
+});
+
+export const syncImageDecisions = createServerFn({ method: "POST" })
+  .validator((d: unknown) => SyncSchema.parse(d))
+  .handler(async ({ data }): Promise<{
+    success: boolean;
+    aprovados: number;
+    rejeitados: number;
+    jaFeitos: number;
+    errors: string[];
+  }> => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const db = supabaseAdmin as any;
+
+      let aprovados = 0;
+      let rejeitados = 0;
+      let jaFeitos = 0;
+      const errors: string[] = [];
+
+      // Sequencial de proposito: cada aprovacao baixa e sobe um arquivo, e
+      // paralelizar aqui multiplicaria o pico de memoria e de banda do
+      // servidor sem reduzir o risco de timeout (o bloco e pequeno).
+      for (const decisao of data.decisoes) {
+        try {
+          if (decisao.suggestionId) {
+            const res = await aprovarSugestao(supabaseAdmin, db, decisao.suggestionId);
+            if (!res.ok) {
+              errors.push(`${decisao.productId}: ${res.error}`);
+            } else if (res.jaFeito) {
+              jaFeitos++;
+            } else {
+              aprovados++;
+            }
+            continue;
+          }
+
+          // "Nenhuma serve". Idempotente: se nao ha mais pending, o bloco ja
+          // rodou antes (reenvio depois de interrupcao) e nao conta de novo.
+          const { count } = await db
+            .from("product_image_suggestions")
+            .select("id", { count: "exact", head: true })
+            .eq("product_id", decisao.productId)
+            .eq("status", "pending");
+
+          if ((count ?? 0) === 0) {
+            jaFeitos++;
+            continue;
+          }
+
+          const { error } = await db
+            .from("product_image_suggestions")
+            .update({ status: "rejected" })
+            .eq("product_id", decisao.productId)
+            .eq("status", "pending");
+
+          if (error) {
+            errors.push(`${decisao.productId}: ${error.message}`);
+          } else {
+            rejeitados++;
+          }
+        } catch (e: any) {
+          errors.push(`${decisao.productId}: ${e?.message || "erro"}`);
+        }
+      }
+
+      return { success: true, aprovados, rejeitados, jaFeitos, errors };
+    } catch (e: any) {
+      const vazio = { aprovados: 0, rejeitados: 0, jaFeitos: 0 };
+      if (e?.status === 401 || e?.status === 403) {
+        return { success: false, ...vazio, errors: ["Não autorizado"] };
+      }
+      console.error("[suggest] syncImageDecisions error:", e);
+      return { success: false, ...vazio, errors: [e?.message || "Erro desconhecido"] };
     }
   });
 
