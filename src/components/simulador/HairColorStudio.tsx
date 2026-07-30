@@ -560,7 +560,7 @@ export function HairColorStudio() {
         <div className="mt-auto pt-8 space-y-3">
           <Link
             to="/produtos"
-            search={{ productType: "coloracao" }}
+            search={{ productType: "Coloração" }}
             className="flex items-center justify-center gap-2 bg-[#0F3A3E] hover:bg-[#B07B1E] text-white h-14 px-8 rounded-none text-[10px] uppercase tracking-[0.3em] font-bold transition-colors"
           >
             <ShoppingBag className="h-4 w-4" />

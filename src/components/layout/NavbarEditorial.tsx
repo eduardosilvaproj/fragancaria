@@ -11,23 +11,32 @@ import { useWishlistStore } from "@/stores/wishlistStore";
 import { useProducts } from "@/hooks/useProducts";
 import type { Product } from "@/data/products";
 
-// IMPORTANTE: productType deve bater com `category` em public.products (slug em
-// lowercase) para que o filtro em /produtos (p.category === selectedCategory) funcione.
-function countByCategory(products: Product[], slug: string): number {
-  return products.filter((p) => p.category === slug).length;
+// IMPORTANTE: productType tem que ser o valor EXATO de `category` em
+// public.products, porque o filtro em /produtos é igualdade de string
+// (p.category === selectedCategory) — sensível a acento e a caixa.
+//
+// Os valores reais são Title Case com acento ("Coloração", "Máscara"), NÃO
+// slug em lowercase. O comentário anterior dizia o contrário e por isso 5 das
+// 10 entradas apontavam para categoria inexistente e abriam listagem vazia
+// (medido em prod 2026-07-30: "kits" 0 produtos, "Kits" 146).
+function countByCategory(products: Product[], category: string): number {
+  return products.filter((p) => p.category === category).length;
 }
 
+// Ordem por volume: o mobile mostra a lista inteira, mas no desktop as
+// primeiras são as mais vistas. Contagens de 2026-07-30 (produtos ativos).
 const CATEGORIES: Array<{ label: string; productType: string }> = [
-  { label: "Shampoo", productType: "shampoos" },
-  { label: "Condicionador", productType: "condicionadores" },
-  { label: "Máscara", productType: "mascaras" },
-  { label: "Coloração", productType: "coloracao" },
-  { label: "Finalizador", productType: "finalizadores" },
-  { label: "Óleo", productType: "oleos" },
-  { label: "Leave-in", productType: "leave-in" },
-  { label: "Maquiagem", productType: "maquiagem" },
-  { label: "Kits", productType: "kits" },
-  { label: "Tratamentos", productType: "tratamentos" },
+  { label: "Coloração", productType: "Coloração" },
+  { label: "Kits", productType: "Kits" },
+  { label: "Finalizador", productType: "Finalizador" },
+  { label: "Máscara", productType: "Máscara" },
+  { label: "Shampoo", productType: "Shampoo" },
+  { label: "Condicionador", productType: "Condicionador" },
+  { label: "Variedades", productType: "Variedades" },
+  { label: "Tratamentos", productType: "Tratamentos" },
+  { label: "Óleo", productType: "Óleo" },
+  { label: "Leave-in", productType: "Leave-in" },
+  { label: "Maquiagem", productType: "Maquiagem" },
 ];
 
 const BRANDS = [
@@ -171,12 +180,12 @@ export const NavbarEditorial = () => {
                       </Link>
                     </li>
                     <li>
-                      <Link to="/produtos" search={{ productType: "coloracao" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                      <Link to="/produtos" search={{ productType: "Coloração" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
                         Coloração Profissional
                       </Link>
                     </li>
                     <li>
-                      <Link to="/produtos" search={{ productType: "kits" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
+                      <Link to="/produtos" search={{ productType: "Kits" }} className="text-[14px] text-[#0F3A3E] hover:text-[#B07B1E]">
                         Kits Promocionais
                       </Link>
                     </li>
@@ -229,7 +238,7 @@ export const NavbarEditorial = () => {
 
           <Link
             to="/produtos"
-            search={{ productType: "maquiagem" }}
+            search={{ productType: "Maquiagem" }}
             className="text-[13px] tracking-[0.18em] uppercase font-medium text-[#2B413F] hover:text-[#0F3A3E] transition-colors"
           >
             Maquiagem
@@ -392,7 +401,11 @@ export const NavbarEditorial = () => {
                                 Categorias
                               </p>
                             </li>
-                            {CATEGORIES.slice(0, 6).map((cat) => (
+                            {/* Lista inteira, sem slice(0, 6): com o array
+                                ordenado por volume, cortar em 6 esconderia
+                                Variedades e as outras 4 no celular. O submenu
+                                já abre fechado, então 11 linhas cabem. */}
+                            {CATEGORIES.map((cat) => (
                               <li key={cat.label}>
                                 <Link
                                   to="/produtos"
@@ -456,7 +469,7 @@ export const NavbarEditorial = () => {
                   <li>
                     <Link
                       to="/produtos"
-                      search={{ productType: "maquiagem" }}
+                      search={{ productType: "Maquiagem" }}
                       onClick={() => setIsMobileMenuOpen(false)}
                       className="block font-serif text-2xl text-[#0F3A3E]"
                     >

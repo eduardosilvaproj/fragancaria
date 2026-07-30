@@ -10,19 +10,23 @@ import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// Labels amigáveis para os chips de categoria (slug -> label).
-// Mantem-se em sincronia com o `category` em data/products.ts.
+// Chips de categoria. productType tem que ser o valor EXATO de
+// products.category, porque o filtro abaixo é igualdade de string
+// (p.category === selectedCategory) — sensível a acento e caixa.
+// Espelha CATEGORIES em components/layout/NavbarEditorial.tsx, na mesma
+// ordem (por volume de produtos ativos).
 const CATEGORY_CHIPS: Array<{ label: string; productType: string }> = [
-  { label: "Shampoo", productType: "shampoos" },
-  { label: "Condicionador", productType: "condicionadores" },
-  { label: "Mascara", productType: "mascaras" },
-  { label: "Coloracao", productType: "coloracao" },
-  { label: "Finalizador", productType: "finalizadores" },
-  { label: "Oleo", productType: "oleos" },
-  { label: "Leave-in", productType: "leave-in" },
-  { label: "Maquiagem", productType: "maquiagem" },
-  { label: "Kits", productType: "kits" },
-  { label: "Tratamentos", productType: "tratamentos" },
+  { label: "Coloração", productType: "Coloração" },
+  { label: "Kits", productType: "Kits" },
+  { label: "Finalizador", productType: "Finalizador" },
+  { label: "Máscara", productType: "Máscara" },
+  { label: "Shampoo", productType: "Shampoo" },
+  { label: "Condicionador", productType: "Condicionador" },
+  { label: "Variedades", productType: "Variedades" },
+  { label: "Tratamentos", productType: "Tratamentos" },
+  { label: "Óleo", productType: "Óleo" },
+  { label: "Leave-in", productType: "Leave-in" },
+  { label: "Maquiagem", productType: "Maquiagem" },
 ];
 
 const PRODUCTS_PER_PAGE = 12;

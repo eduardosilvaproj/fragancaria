@@ -4,9 +4,12 @@ import { whatsappLink, formatPhoneBR } from "@/lib/store-contact";
 
 const FOOTER_LINKS = {
   shop: [
-    { label: "Tratamentos", href: "/produtos", search: { productType: "Tratamento" } },
+    // productType = valor EXATO de products.category (o filtro em /produtos é
+    // igualdade de string). "Tratamento" e "Kit" no singular não existem no
+    // banco e abriam listagem vazia; o real é plural.
+    { label: "Tratamentos", href: "/produtos", search: { productType: "Tratamentos" } },
     { label: "Coloração", href: "/produtos", search: { productType: "Coloração" } },
-    { label: "Kits", href: "/produtos", search: { productType: "Kit" } },
+    { label: "Kits", href: "/produtos", search: { productType: "Kits" } },
     { label: "Marcas", href: "/produtos" },
   ],
   support: [
