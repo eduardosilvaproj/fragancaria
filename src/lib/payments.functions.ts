@@ -12,6 +12,7 @@ import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
 import {
   cotar,
   resolverPrecoCotacao,
+  produtoParaMelhorEnvio,
   type MelhorEnvioProduto,
   type MelhorEnvioOpcao,
 } from "@/lib/melhor-envio-client.server";
@@ -656,15 +657,12 @@ export const cotarFrete = createServerFn({ method: "POST" })
       if (!p || !p.is_active) {
         return { ok: false, erro: "sem_cobertura" };
       }
-      produtos.push({
-        id: pid,
-        weight: Number(p.weight_grams ?? 0) / 1000,
-        width: Number(p.width_cm ?? 0),
-        height: Number(p.height_cm ?? 0),
-        length: Number(p.length_cm ?? 0),
-        insurance_value: Number(p.price),
-        quantity: item.quantity,
-      });
+      produtos.push(
+        produtoParaMelhorEnvio(
+          { id: pid, ...p },
+          item.quantity,
+        ),
+      );
     }
 
     const cotacao = await cotar(cepDestino, produtos);

@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { produtoParaMelhorEnvio, buscarProdutosParaCotacao } from "./quote-shipping";
+import { produtoParaMelhorEnvio } from "@/lib/melhor-envio-client.server";
+import { buscarProdutosParaCotacao } from "./quote-shipping";
 
 // ─── produtoParaMelhorEnvio ────────────────────────────────────────
 

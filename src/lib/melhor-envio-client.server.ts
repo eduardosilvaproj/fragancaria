@@ -119,6 +119,58 @@ export type ImprimirEtiquetasResult =
   | { ok: true; url: string }
   | { ok: false; erro: string };
 
+// Fallback para produtos sem peso/dimensão cadastrados. 774 de 1000 produtos
+// ativos estão nessa situação (2026-07-31). Enviar 0 para a API do Melhor
+// Envio faz a cotação usar mínimos internos por item, o que num carrinho de
+// vários itens subcota o frete em 20-45% em relação ao peso real somado.
+// Deliberadamente acima da média para errar para cima: melhor cobrar um frete
+// um pouco maior do que pagar a diferença do próprio bolso em cada venda.
+export const MELHOR_ENVIO_FALLBACK_DIMENSIONS = {
+  weightGrams: 250,
+  widthCm: 20,
+  heightCm: 15,
+  lengthCm: 10,
+};
+
+// Converte produto do formato do banco para o formato da Melhor Envio.
+// weight_grams → kg, dimensões em cm, insurance_value em reais.
+// Produtos sem peso/dimensão cadastrados recebem fallback acima da média para
+// evitar subcotar o frete (ver MELHOR_ENVIO_FALLBACK_DIMENSIONS).
+// Loga no console.warn quando o fallback é usado, para permitir medir quantas
+// cotações estão sendo estimadas.
+export function produtoParaMelhorEnvio(
+  p: {
+    id?: string;
+    weight_grams: number | null;
+    price: number;
+    width_cm: number | null;
+    height_cm: number | null;
+    length_cm: number | null;
+  },
+  quantity: number,
+): MelhorEnvioProduto {
+  const productId = p.id ?? "produto-consulta";
+  function resolve(campo: string, valor: number | null | undefined, fallback: number): number {
+    const num = Number(valor ?? 0);
+    if (!num) {
+      // eslint-disable-next-line no-console
+      console.warn(`[cotacao-frete] fallback usado: produto=${productId} campo=${campo} valor=${valor}`);
+      return fallback;
+    }
+    return num;
+  }
+  return {
+    id: productId,
+    weight:
+      resolve("weight_grams", p.weight_grams, MELHOR_ENVIO_FALLBACK_DIMENSIONS.weightGrams) / 1000,
+    width: resolve("width_cm", p.width_cm, MELHOR_ENVIO_FALLBACK_DIMENSIONS.widthCm),
+    height: resolve("height_cm", p.height_cm, MELHOR_ENVIO_FALLBACK_DIMENSIONS.heightCm),
+    length: resolve("length_cm", p.length_cm, MELHOR_ENVIO_FALLBACK_DIMENSIONS.lengthCm),
+    insurance_value: Number(p.price),
+    quantity,
+  };
+}
+
 // Le uma linha ja gravada de shipping_rate_quotes.options (jsonb) e resolve o
 // preco em REAIS da opcao escolhida. options grava precoExibidoCentavos (o
 // preco JA com a regra de frete gratis aplicada), por isso divide por 100 aqui

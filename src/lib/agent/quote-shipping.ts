@@ -3,7 +3,11 @@
 // NÃO persiste nada — é só consulta. O checkout recota.
 // Mesmo padrão de product-search.ts: sem dependência de @tanstack/react-start.
 
-import type { MelhorEnvioProduto, CotarResult } from "../melhor-envio-client.server";
+import {
+  produtoParaMelhorEnvio,
+  type MelhorEnvioProduto,
+  type CotarResult,
+} from "@/lib/melhor-envio-client.server";
 
 export type AgentShippingQuote = {
   servicoId: number;
@@ -16,23 +20,6 @@ export type AgentShippingQuote = {
 export type AgentShippingResult =
   | { ok: true; opcoes: AgentShippingQuote[] }
   | { ok: false; erro: string };
-
-// Converte produto do formato do banco para o formato da Melhor Envio.
-// weight_grams → kg, dimensões em cm, insurance_value em reais.
-export function produtoParaMelhorEnvio(
-  p: { weight_grams: number; price: number; width_cm: number; height_cm: number; length_cm: number },
-  quantity: number,
-): MelhorEnvioProduto {
-  return {
-    id: "produto-consulta",
-    weight: Number(p.weight_grams) / 1000,
-    width: Number(p.width_cm),
-    height: Number(p.height_cm),
-    length: Number(p.length_cm),
-    insurance_value: Number(p.price),
-    quantity,
-  };
-}
 
 // Busca produtos do catálogo pelo Supabase para montar o payload de cotação.
 // Retorna array vazio se nenhum produto for encontrado.
@@ -58,7 +45,14 @@ export async function buscarProdutosParaCotacao(
       const row = map.get(p.id);
       if (!row) return null;
       return produtoParaMelhorEnvio(
-        row as { weight_grams: number; price: number; width_cm: number; height_cm: number; length_cm: number },
+        row as {
+          id: string;
+          weight_grams: number | null;
+          price: number;
+          width_cm: number | null;
+          height_cm: number | null;
+          length_cm: number | null;
+        },
         p.quantity,
       );
     })
