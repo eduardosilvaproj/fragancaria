@@ -12,6 +12,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
 import { useFranChatStore } from "@/stores/franChatStore";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 import { toast } from "sonner";
 import {
   Star,
@@ -362,8 +363,10 @@ function ProductPage() {
                     {formatPrice(p.price)}
                   </span>
                 </div>
+                {/* "a partir de": total/N e estimativa; o valor final com
+                    eventual juro vem do Mercado Pago no checkout. */}
                 <p className="text-[14px] text-[#75827E] mt-2">
-                  ou <strong className="text-[#0F3A3E]">10x de {formatPrice(p.price / 10)}</strong> sem juros
+                  em até <strong className="text-[#0F3A3E]">{MAX_INSTALLMENTS}x</strong> no cartão, a partir de {formatPrice(p.price / MAX_INSTALLMENTS)}/mês
                 </p>
                 <p className="text-[13px] text-[#1c6b4a] mt-1">
                   ✦ {formatPrice(p.price * 0.95)} no PIX (5% off)
@@ -474,10 +477,13 @@ function ProductPage() {
                     Produto<br />100% original
                   </p>
                 </div>
+                {/* 7 dias e o prazo real de arrependimento da politica
+                    (/trocas). Os 30 dias que este selo prometia valem so
+                    para defeito de fabricacao, nao para troca em geral. */}
                 <div className="text-center">
                   <RotateCcw className="h-5 w-5 text-[#B07B1E] mx-auto mb-2" />
                   <p className="text-[11px] text-[#51635F] leading-tight">
-                    Troca fácil<br />em 30 dias
+                    Troca fácil<br />em 7 dias
                   </p>
                 </div>
               </div>

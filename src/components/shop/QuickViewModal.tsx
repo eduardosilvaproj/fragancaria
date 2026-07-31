@@ -7,6 +7,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { toast } from "sonner";
 import { useProducts } from "@/hooks/useProducts";
+import { MAX_INSTALLMENTS, INSTALLMENTS_LABEL } from "@/config/mercadopago";
 
 const MotionDiv = motion.div as any;
 
@@ -217,7 +218,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
 
                 {/* Installments */}
                 <p className="text-[13px] text-[#75827E] mt-1">
-                  ou 10x de {formatPrice(product.price / 10)} sem juros
+                  em até {MAX_INSTALLMENTS}x no cartão
                 </p>
 
                 {/* Description */}
@@ -301,7 +302,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-[#51635F]">
                     <span className="text-[#B07B1E]">✓</span>
-                    Até 10x sem juros
+                    {INSTALLMENTS_LABEL}
                   </div>
                   <div className="flex items-center gap-2 text-[11px] text-[#51635F]">
                     <span className="text-[#B07B1E]">✓</span>

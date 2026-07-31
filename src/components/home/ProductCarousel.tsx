@@ -8,7 +8,10 @@ import { ProductCardEditorial } from "@/components/shop/ProductCardEditorial";
 interface ProductCarouselProps {
   title: string;
   subtitle?: string;
-  viewAllHref?: string;
+  /** Rota do "Ver todos". Precisa existir em `src/routes/`. */
+  viewAllTo?: string;
+  /** Search params do "Ver todos", validados por `validateSearch` da rota. */
+  viewAllSearch?: Record<string, unknown>;
   products: Product[];
 }
 
@@ -19,7 +22,8 @@ interface ProductCarouselProps {
 export function ProductCarousel({
   title,
   subtitle,
-  viewAllHref,
+  viewAllTo,
+  viewAllSearch,
   products,
 }: ProductCarouselProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -69,9 +73,10 @@ export function ProductCarousel({
           </div>
 
           <div className="flex items-center gap-3">
-            {viewAllHref && (
+            {viewAllTo && (
               <Link
-                to={viewAllHref}
+                to={viewAllTo}
+                search={viewAllSearch}
                 className="hidden md:inline-block text-[12px] tracking-[0.2em] uppercase text-[#0F3A3E] hover:text-[#B07B1E] transition-colors"
               >
                 Ver todos
@@ -123,6 +128,10 @@ export function ProductCarousel({
               key={p.id}
               className="flex-shrink-0 w-[180px] md:w-[220px] snap-start scroll-ml-6 md:scroll-ml-0"
             >
+              {/* Sem `badge`: o card ja calcula o selo de desconto a partir de
+                  originalPrice/price. O badge que era passado aqui so existia
+                  quando havia desconto — e nesse caso o card ignora o recebido
+                  (`badge && !discount`), entao nunca aparecia. */}
               <ProductCardEditorial
                 id={p.id}
                 title={p.name}
@@ -130,11 +139,6 @@ export function ProductCarousel({
                 price={p.price}
                 originalPrice={p.originalPrice}
                 image={p.images[0] ?? ""}
-                badge={
-                  p.originalPrice && p.originalPrice > p.price
-                    ? `-${Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100)}%`
-                    : undefined
-                }
               />
             </div>
           ))}

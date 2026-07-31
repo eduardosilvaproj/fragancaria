@@ -3,10 +3,13 @@
  * Faixa de anúncios com scroll infinito horizontal
  */
 
+import { INSTALLMENTS_LABEL } from "@/config/mercadopago";
+
 const ANNOUNCEMENTS = [
   "Frete grátis acima de R$199",
   "Cupom BEMVINDO10 · 10% OFF",
-  "Até 10x sem juros",
+  // Sem "sem juros": ver o comentario em config/mercadopago.ts.
+  INSTALLMENTS_LABEL,
   "Produtos 100% originais c/ NF-e",
 ];
 

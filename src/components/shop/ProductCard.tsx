@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef, useEffect } from "react";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 interface ProductCardProps {
   product: ShopifyProduct;
@@ -196,7 +197,7 @@ export const ProductCard = ({ product, index = 0 }: ProductCardProps) => {
             {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price * 0.95)} no PIX
           </div>
           <div className="text-[9px] text-[#1C302E]/40 uppercase tracking-[0.2em] font-bold">
-            ou 10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: currencyCode }).format(price / 10)} sem juros
+            em até {MAX_INSTALLMENTS}x no cartão
           </div>
         </div>
       </div>

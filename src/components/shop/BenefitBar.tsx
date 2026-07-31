@@ -1,12 +1,14 @@
 import { motion } from "framer-motion";
 import { Truck, ShieldCheck, CreditCard, Lock } from "lucide-react";
+import { INSTALLMENTS_LABEL } from "@/config/mercadopago";
 
 const MotionDiv = motion.div as any;
 
 const BENEFITS = [
   { icon: Lock, text: "Compra Segura", detail: "Site protegido SSL" },
   { icon: ShieldCheck, text: "Produtos Autênticos", detail: "Garantia de Procedência" },
-  { icon: CreditCard, text: "Até 10x sem juros", detail: "Cartão de Crédito" },
+  // Sem "sem juros": ver o comentario em config/mercadopago.ts.
+  { icon: CreditCard, text: INSTALLMENTS_LABEL, detail: "Cartão de Crédito" },
   { icon: Truck, text: "Frete Rastreável", detail: "Entrega para todo Brasil" },
 ];
 

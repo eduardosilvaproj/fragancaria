@@ -1,8 +1,13 @@
 import { motion } from "framer-motion";
 import { ShieldCheck, Truck, CreditCard, RotateCcw, FileText, Award } from "lucide-react";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 const MotionDiv = motion.div as any;
 
+// Cada selo aqui tem que ser verdade verificavel. "7 dias para trocar" bate
+// com a politica em /trocas (arrependimento); os 30 dias de lá valem so para
+// defeito de fabricacao, entao nao entram como promessa generica. O selo de
+// parcelamento nao afirma juro zero — ver config/mercadopago.ts.
 const TRUST_BADGES = [
   {
     icon: ShieldCheck,
@@ -16,8 +21,8 @@ const TRUST_BADGES = [
   },
   {
     icon: CreditCard,
-    title: "Mercado Pago",
-    description: "Pagamento seguro",
+    title: `Até ${MAX_INSTALLMENTS}x no cartão`,
+    description: "Via Mercado Pago",
   },
   {
     icon: RotateCcw,
@@ -31,14 +36,14 @@ const TRUST_BADGES = [
   },
   {
     icon: Truck,
-    title: "Entrega Rápida",
+    title: "Frete Rastreável",
     description: "Para todo Brasil",
   },
 ];
 
 export const TrustBadges = () => {
   return (
-    <section className="bg-[#F3EEE3] py-12 border-y border-black/5">
+    <section className="bg-[#F3EEE3] py-12 md:py-16 border-y border-[#D8D0BD]">
       <div className="container mx-auto px-4">
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-4">
           {TRUST_BADGES.map((badge, i) => (
@@ -50,13 +55,13 @@ export const TrustBadges = () => {
               transition={{ delay: i * 0.05 }}
               className="flex flex-col items-center text-center group"
             >
-              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md transition-shadow border border-[#B07B1E]/20">
+              <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center mb-3 shadow-sm group-hover:shadow-md group-hover:-translate-y-0.5 transition-all duration-300 border border-[#B07B1E]/20">
                 <badge.icon className="h-5 w-5 text-[#B07B1E]" />
               </div>
-              <h4 className="text-[11px] uppercase tracking-[0.15em] font-bold text-[#1C302E] mb-1">
+              <h4 className="text-[11px] uppercase tracking-[0.15em] font-semibold text-[#0F3A3E] mb-1">
                 {badge.title}
               </h4>
-              <p className="text-[10px] text-[#1C302E]/50">
+              <p className="text-[11px] text-[#75827E]">
                 {badge.description}
               </p>
             </MotionDiv>

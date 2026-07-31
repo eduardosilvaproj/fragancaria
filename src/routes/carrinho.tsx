@@ -17,6 +17,7 @@ import {
   getCoupon,
   qualifiesForFreeShipping,
 } from "@/lib/commerce-config";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 export const Route = createFileRoute("/carrinho")({
   head: () => ({
@@ -300,7 +301,7 @@ function CarrinhoPage() {
                 </button>
 
                 <p className="text-[11px] text-[#9AA39F] text-center">
-                  ou 10x de {formatPrice(total / 10)} sem juros
+                  em até {MAX_INSTALLMENTS}x no cartão
                 </p>
 
                 {/* Benefits */}

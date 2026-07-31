@@ -25,10 +25,13 @@ export const SLOTS = [
 ] as const;
 export type Slot = (typeof SLOTS)[number];
 
+// Rotulos visiveis (titulo do carrossel na home e abas do VitrineManager),
+// entao acentuados. Os 4 slots continuam existindo para o admin curar, mesmo
+// que a home hoje exiba apenas `bestsellers` e `on_sale` — ver HomeCarousels.
 export const SLOT_LABELS: Record<Slot, string> = {
   bestsellers: "Mais Vendidos",
   new_arrivals: "Novidades",
-  on_sale: "Em Promocao",
+  on_sale: "Em Promoção",
   kits: "Kits",
 };
 
@@ -116,7 +119,7 @@ export const listProductsForAdmin = createServerFn({ method: "GET" }).handler(
       image: p.images[0] ?? "",
       isNew: Boolean(p.isNew),
       isOnSale: Boolean(p.originalPrice && p.originalPrice > p.price),
-      isKit: p.category === "kits",
+      isKit: p.category === "Kits",
     }));
     return { success: true, data };
   },
@@ -271,10 +274,17 @@ export const resetFeatured = createServerFn({ method: "POST" })
 function filterBySlot(products: Product[], slot: Slot): Product[] {
   switch (slot) {
     case "bestsellers":
-      // Sem metrica real de vendas, usa "tem desconto OU featured OU kit"
-      return products.filter(
-        (p) => p.featured || (p.originalPrice && p.originalPrice > p.price),
-      );
+      // Sem metrica real de vendas (medido 2026-07-31: 26 pedidos, 7 pagos,
+      // 2 produtos distintos vendidos), "mais vendido" nao e derivavel do
+      // banco.
+      // So `featured` — a curadoria explicita do admin — conta aqui.
+      //
+      // Nao usa "tem desconto" como proxy de propósito: esse era o filtro do
+      // slot `on_sale`, e com `featured` = 0 em prod os dois slots resolviam
+      // para o mesmo pool, repetindo 8 de 12 produtos entre as prateleiras.
+      // Sem featured marcado, este slot cai no aleatorio estavel — que ao
+      // menos nao e uma copia de "Em Promocao".
+      return products.filter((p) => p.featured);
     case "new_arrivals":
       return products.filter((p) => p.isNew);
     case "on_sale":
@@ -282,7 +292,11 @@ function filterBySlot(products: Product[], slot: Slot): Product[] {
         (p) => p.originalPrice != null && p.originalPrice > p.price,
       );
     case "kits":
-      return products.filter((p) => p.category === "kits");
+      // "Kits" em Title Case: e o valor real de `products.category` em prod
+      // (medido 2026-07-31: "Kits" 146 produtos, "kits" 0). Comparar com
+      // minusculo nao casava nada, entao o slot caia inteiro no fallback
+      // aleatorio e o carrossel "Kits" mostrava produtos que nao eram kits.
+      return products.filter((p) => p.category === "Kits");
   }
 }
 

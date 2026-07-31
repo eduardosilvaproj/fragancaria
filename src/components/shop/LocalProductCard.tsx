@@ -6,6 +6,7 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { useState } from "react";
 import { useCartStore } from "@/stores/cartStore";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 interface LocalProductCardProps {
   product: Product;
@@ -119,7 +120,7 @@ export const LocalProductCard = ({ product }: LocalProductCardProps) => {
             </span>
           </div>
           <p className="text-[11px] text-[#8A938E] mb-4">
-            ou <strong className="text-[#0F3A3E]">10x de {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(product.price / 10)}</strong> sem juros
+            em até <strong className="text-[#0F3A3E]">{MAX_INSTALLMENTS}x</strong> no cartão
           </p>
 
           {/* Add to cart button */}

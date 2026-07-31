@@ -6,6 +6,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { X, ShoppingBag, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 export const Route = createFileRoute("/comparar")({
   head: () => ({
@@ -80,7 +81,7 @@ function ComparePage() {
       }
       return "—";
     }},
-    { label: "Parcelamento", getValue: (item: typeof items[0]) => `10x de ${formatPrice(item.price / 10)}` },
+    { label: "Parcelamento", getValue: () => `em até ${MAX_INSTALLMENTS}x no cartão` },
   ];
 
   return (

@@ -81,7 +81,7 @@ const MOCK_FAQS: FAQ[] = [
   {
     id: "3",
     question: "Quais formas de pagamento vocês aceitam?",
-    answer: "Aceitamos cartões de crédito (Visa, Mastercard, Elo, Amex), Pix, boleto bancário e parcelamento em até 10x sem juros.",
+    answer: "Aceitamos cartões de crédito (Visa, Mastercard, Elo, Amex), Pix, boleto bancário e parcelamento com melhores condições do mercado.",
     category: "Pagamento",
     hits: 189,
     active: true,

@@ -8,6 +8,7 @@ import { useCompareStore } from "@/stores/compareStore";
 import { useState } from "react";
 import { toast } from "sonner";
 import { trackAddToCart } from "@/lib/analytics";
+import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 import type { ProductVariation } from "@/data/products";
 
 export interface ProductCardEditorialProps {
@@ -143,10 +144,14 @@ export function ProductCardEditorial({
     <Link
       to="/produto/$id"
       params={{ id }}
-      className={cn("block group", className)}
+      className={cn("block h-full group", className)}
     >
+      {/* h-full + flex-col: sem o min-h no titulo, cards de titulo curto e
+          longo teriam alturas diferentes e o botao "Adicionar" ficaria
+          desalinhado na fileira. Aqui o card ocupa a altura da fileira e o
+          bloco de preco/botao e empurrado para a base (mt-auto abaixo). */}
       <article
-        className="bg-white border border-[#E9E1D2] transition-all duration-[250ms] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,58,62,0.10)]"
+        className="h-full flex flex-col bg-white border border-[#E9E1D2] transition-all duration-[250ms] hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(15,58,62,0.10)]"
       >
         {/* Image Container */}
         <div className="relative bg-white p-4 md:p-8">
@@ -212,14 +217,17 @@ export function ProductCardEditorial({
         </div>
 
         {/* Product Info */}
-        <div className="p-4 md:p-[22px]">
+        <div className="flex flex-col flex-1 p-4 md:p-[22px]">
           {/* Vendor */}
           <p className="text-[10px] md:text-[11px] uppercase tracking-[0.14em] md:tracking-[0.18em] text-[#B07B1E] font-medium">
             {vendor}
           </p>
 
           {/* Title */}
-          <h3 className="font-serif text-[16px] md:text-[20px] text-[#0F3A3E] leading-[1.2] md:leading-[1.25] mt-1.5 md:mt-2 min-h-[40px] md:min-h-[50px] line-clamp-2">
+          {/* line-clamp-2 sem min-h: a altura vem do texto (1 ou 2 linhas) em
+              vez de um piso fixo que sobrava em titulo curto. O alinhamento
+              entre cards vizinhos e responsabilidade do grid/carrossel. */}
+          <h3 className="font-serif text-[16px] md:text-[20px] text-[#0F3A3E] leading-[1.2] md:leading-[1.25] mt-1.5 md:mt-2 line-clamp-2">
             {title}
           </h3>
 
@@ -247,8 +255,10 @@ export function ProductCardEditorial({
             </div>
           )}
 
-          {/* Price */}
-          <div className="flex items-baseline gap-1.5 md:gap-2.5 mt-2 md:mt-3">
+          {/* Price — mt-auto cola este bloco na base do card, para que preco e
+              botao fiquem alinhados entre cards de titulos de tamanhos
+              diferentes na mesma fileira. */}
+          <div className="flex items-baseline gap-1.5 md:gap-2.5 mt-auto pt-2 md:pt-3">
             {originalPrice && originalPrice > price && (
               <span className="text-[11px] md:text-[13px] text-[#b0a98f] line-through">
                 {formatPrice(originalPrice)}
@@ -259,9 +269,9 @@ export function ProductCardEditorial({
             </span>
           </div>
 
-          {/* Installments */}
+          {/* Parcelas — estimativa, sem afirmar juro zero. Ver MAX_INSTALLMENTS. */}
           <p className="text-[10px] md:text-[12px] text-[#75827E] mt-1">
-            ou 3x de {formatPrice(price / 3)} sem juros
+            em até {MAX_INSTALLMENTS}x no cartão
           </p>
 
           {/* Add to Cart Button */}

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { INSTALLMENTS_LABEL } from "@/config/mercadopago";
 
 interface AnnouncementMarqueeProps {
   messages?: string[];
@@ -7,7 +8,8 @@ interface AnnouncementMarqueeProps {
 const DEFAULT_MESSAGES = [
   "Frete grátis acima de R$199",
   "Cupom BEMVINDO10 · 10% OFF",
-  "Até 10x sem juros",
+  // Sem "sem juros": ver o comentario em config/mercadopago.ts.
+  INSTALLMENTS_LABEL,
   "Produtos 100% originais c/ NF-e",
 ];
 

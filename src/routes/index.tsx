@@ -9,16 +9,20 @@ import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/Scr
 import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
 import { LojaFisicaSection } from "@/components/store/LojaFisicaSection";
 import { getPublicStoreConfig, type StoreConfig } from "@/lib/store-settings.functions";
+import { TrustBadges } from "@/components/shop/TrustBadges";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    // 5 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
+    // 3 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
     // a home ainda renderiza — os carrosseis sao independentes.
-    const [best, novo, promo, kit, loja] = await Promise.all([
+    //
+    // Busca so os 2 slots que a home exibe. `new_arrivals` e `kits` seguem
+    // existindo para o admin curar no VitrineManager, mas sairam da home
+    // (ver HomeCarousels), entao buscar os 4 era varrer o catalogo 2x sem
+    // ninguem consumir o resultado.
+    const [best, promo, loja] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
-      listFeatured({ data: "new_arrivals" }),
       listFeatured({ data: "on_sale" }),
-      listFeatured({ data: "kits" }),
       // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
       // (rede, server fn fora do ar) a home nao pode cair por causa da secao
       // da loja fisica. null => a secao nao renderiza.
@@ -27,9 +31,7 @@ export const Route = createFileRoute("/")({
     return {
       slots: {
         bestsellers: best.data ?? [],
-        new_arrivals: novo.data ?? [],
         on_sale: promo.data ?? [],
-        kits: kit.data ?? [],
       } as Partial<Record<Slot, Product[]>>,
       storeConfig: (loja?.success ? loja.data : null) as StoreConfig | null,
     };
@@ -199,6 +201,100 @@ function IndexEditorial() {
           </div>
         </section>
 
+        {/* ===== SIMULADOR DE COR =====
+            Versão discreta (2026-07-31). A anterior era um bloco verde-escuro
+            de largura cheia com botão dourado sólido e 12 círculos de cor —
+            competia com o hero e pesava no meio da home. Aqui o cartão é
+            claro, com filete no lugar de fundo cheio, CTA como link
+            sublinhado e uma fita fina de tons. O verde forte fica reservado
+            para o hero e o CTA final. */}
+        <section className="py-10 md:py-14 px-6 md:px-14 bg-[#F3EEE3]">
+          <div className="max-w-[1280px] mx-auto">
+            <Link
+              to="/simulador"
+              className="group block bg-[#F8F4EA] border border-[#E0D8C7] hover:border-[#C6A362] transition-colors duration-300"
+              style={{ borderRadius: "12px" }}
+            >
+              <div className="grid md:grid-cols-[1.15fr_1fr] gap-0 min-w-0 items-center">
+                {/* Texto */}
+                <div className="p-7 md:p-11 lg:p-14 min-w-0">
+                  <span className="text-[10px] md:text-[11px] tracking-[0.28em] uppercase text-[#B07B1E]">
+                    Exclusivo Fragranciaria
+                  </span>
+                  <h2 className="font-serif font-medium text-[24px] md:text-[34px] text-[#0F3A3E] leading-[1.15] mt-3">
+                    Encontre o tom <em className="italic text-[#B07B1E]">perfeito</em> para você
+                  </h2>
+                  <p className="text-[13px] md:text-[14px] text-[#51635F] mt-3 md:mt-4 leading-[1.7] max-w-[420px]">
+                    Experimente cores na sua própria foto antes de comprar. A imagem
+                    não sai do seu navegador.
+                  </p>
+
+                  {/* Passos como texto corrido, com separador em vez de círculos
+                      numerados: mesma informação, menos peso visual. */}
+                  <p className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 mt-5 md:mt-7 text-[12px] md:text-[13px] text-[#75827E]">
+                    <span>Envie sua foto</span>
+                    <span aria-hidden="true" className="text-[#C6A362]">·</span>
+                    <span>Escolha a cor</span>
+                    <span aria-hidden="true" className="text-[#C6A362]">·</span>
+                    <span>Veja o resultado</span>
+                  </p>
+
+                  <span className="inline-flex items-center gap-2 mt-6 md:mt-8 text-[12px] md:text-[13px] tracking-[0.16em] uppercase text-[#0F3A3E] border-b border-[#B07B1E] pb-[5px] group-hover:text-[#B07B1E] transition-colors">
+                    Experimentar agora
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
+
+                {/* PENDENTE — par Antes/Depois: o Edu tem as duas fotos, mas
+                    elas ainda não estão no repo (verificado 2026-07-31: nada
+                    novo em public/images). Quando entrarem, este bloco vira
+                    duas imagens lado a lado. Não usar `need-coloracao.png`
+                    aqui: ela já ilustra o card "Coloração" na grade abaixo, e
+                    repetiu na mesma home enquanto esteve neste banner.
+                    Até então, uma fita fina de tons — sugere "escolha a cor"
+                    sem simular um resultado que não temos como mostrar. */}
+                <div className="min-w-0 px-7 pb-8 md:px-0 md:pb-0 md:pr-11 lg:pr-14">
+                  {/* Tons reais da paleta do simulador (Igora Royal /
+                      Schwarzkopf). Fonte de verdade: PALETTE em
+                      components/simulador/HairColorStudio.tsx — copiados, não
+                      importados, para o componente de 611 linhas de canvas não
+                      entrar no bundle da home. São 8 dos 24 tons; o rótulo cita
+                      o total real. Se a paleta mudar, os dois acompanham. */}
+                  <div
+                    role="img"
+                    aria-label="Amostra dos tons do simulador: 24 cores, do preto natural ao louro claríssimo, incluindo cobres, vermelhos e acinzentados."
+                    className="flex items-center gap-2 md:gap-2.5"
+                  >
+                    {[
+                      { hex: "#2c2019", label: "Castanho Escuro" },
+                      { hex: "#574029", label: "Castanho Claro" },
+                      { hex: "#8a6741", label: "Louro Médio" },
+                      { hex: "#a8814f", label: "Louro Claro" },
+                      { hex: "#c39d66", label: "Louro Extra Claro" },
+                      { hex: "#a34e20", label: "Louro Médio Cobre Extra" },
+                      { hex: "#7e3023", label: "Louro Escuro Vermelho Extra" },
+                      { hex: "#d5b985", label: "Louro Claríssimo" },
+                    ].map((tom) => (
+                      <span
+                        key={tom.hex}
+                        // Decorativo: quem anuncia a fita é o aria-label do
+                        // container (role=img) acima.
+                        aria-hidden="true"
+                        title={tom.label}
+                        className="h-8 w-8 md:h-9 md:w-9 flex-1 max-w-[38px] rounded-full border border-black/5"
+                        style={{ backgroundColor: tom.hex }}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-[11px] md:text-[12px] text-[#8A938E] mt-4">
+                    24 tons profissionais
+                  </p>
+                </div>
+              </div>
+            </Link>
+          </div>
+        </section>
+
         {/* ===== CARROSSÉIS DA VITRINE (bestsellers + novidades + promo + kits) ===== */}
         <HomeCarousels data={slots} />
 
@@ -240,14 +336,11 @@ function IndexEditorial() {
                       className="w-full h-[120px] md:h-[180px] object-cover transition-transform duration-500 group-hover:scale-105"
                       loading="lazy"
                     />
-                    <div className="p-4 md:p-7">
-                      <div className="font-serif text-[12px] md:text-[14px] text-[#B07B1E]">
-                        {need.num}
-                      </div>
-                      <div className="font-serif text-[18px] md:text-[26px] text-[#0F3A3E] mt-2 md:mt-3">
+                    <div className="p-4 md:p-6">
+                      <div className="font-serif text-[18px] md:text-[24px] text-[#0F3A3E] leading-tight">
                         {need.title}
                       </div>
-                      <div className="text-[11px] md:text-[12px] text-[#75827E] mt-1 md:mt-2 leading-[1.4] md:leading-[1.5] hidden sm:block">
+                      <div className="text-[11px] md:text-[13px] text-[#75827E] mt-1 md:mt-2 leading-[1.45] md:leading-[1.55]">
                         {need.desc}
                       </div>
                     </div>
@@ -257,6 +350,9 @@ function IndexEditorial() {
             </StaggerContainer>
           </div>
         </section>
+
+        {/* ===== TRUST BADGES ===== */}
+        <TrustBadges />
 
         {/* ===== LOJA FÍSICA ===== */}
         {/* Não renderiza se storeConfig for null (migration não aplicada ou
@@ -293,18 +389,18 @@ function IndexEditorial() {
         </section>
 
         {/* ===== CTA FINAL ===== */}
-        <section className="py-16 md:py-24 px-6 md:px-14 bg-[#F3EEE3]">
+        <section className="py-16 md:py-24 px-6 md:px-14 bg-[#0F3A3E]">
           <div className="max-w-[1280px] mx-auto text-center">
             <ScrollReveal>
-              <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+              <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#E8C25A] uppercase">
                 Fragranciaria
               </span>
-              <h2 className="font-serif font-medium text-[28px] md:text-[42px] text-[#0F3A3E] mt-3 max-w-[640px] mx-auto leading-tight">
+              <h2 className="font-serif font-medium text-[28px] md:text-[42px] text-white mt-3 max-w-[640px] mx-auto leading-tight">
                 A curadoria que o seu salão confia, agora na sua casa.
               </h2>
               <Link
                 to="/produtos"
-                className="inline-flex items-center gap-2 mt-8 bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-10 py-4 text-[12px] md:text-[13px] tracking-[0.18em] uppercase font-medium transition-colors"
+                className="inline-flex items-center gap-2 mt-8 bg-[#E8C25A] hover:bg-[#D4B04A] text-[#0F3A3E] px-8 md:px-10 py-4 text-[12px] md:text-[13px] tracking-[0.18em] uppercase font-medium transition-colors"
               >
                 Ver todos os produtos
                 <ArrowRight className="h-4 w-4" />

@@ -24,13 +24,6 @@ const FOOTER_LINKS = {
   ],
 };
 
-const TRUST_BADGES = [
-  { icon: "⛉", label: "Compra Segura" },
-  { icon: "✶", label: "Produtos Autênticos" },
-  { icon: "◈", label: "Até 10x sem juros" },
-  { icon: "➟", label: "Frete Rastreável" },
-];
-
 export function FooterEditorial() {
   const config = useStoreConfig();
   const contato = config?.contato;
@@ -41,21 +34,13 @@ export function FooterEditorial() {
 
   return (
     <footer className="bg-[#0F3A3E] text-white">
-      {/* Trust Badges Strip */}
-      <div className="border-b border-white/10">
-        <div className="max-w-[1280px] mx-auto px-6 md:px-14 py-10">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {TRUST_BADGES.map((badge) => (
-              <div key={badge.label} className="flex items-center gap-3">
-                <span className="text-[#E8C25A] text-lg">{badge.icon}</span>
-                <span className="text-[12px] uppercase tracking-[0.12em] text-white/80 font-medium">
-                  {badge.label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      {/* Nao ha faixa de selos aqui de proposito.
+          Havia uma strip de 4 selos (Compra Segura / Produtos Autenticos /
+          parcelamento / Frete Rastreavel) neste ponto, redundante com o
+          <TrustBadges /> de 6 selos da home — que fica logo acima do rodape e
+          diz as mesmas coisas com mais detalhe. Duas faixas parecidas
+          empilhadas enfraquecem as duas. A faixa do Mercado Pago abaixo fica:
+          ela nao repete selo, comunica o gateway. */}
 
       {/* Newsletter Section */}
       <div className="border-b border-white/10">

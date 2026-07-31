@@ -680,10 +680,15 @@ function CardForm({
           >
             {INSTALLMENTS_OPTIONS.map((o) => (
               <option key={o.installments} value={o.installments}>
-                {o.installments}x de {formatBRL(total / o.installments)} sem juros
+                {o.installments}x de {formatBRL(total / o.installments)}
               </option>
             ))}
           </select>
+          {/* total/N e estimativa. Juros, quando houver, sao definidos pela
+              conta do Mercado Pago e aplicados por ele na cobranca. */}
+          <p className="mt-1 text-[11px] text-[#8A938E]">
+            Valor estimado. O total com juros, se houver, é confirmado pelo Mercado Pago.
+          </p>
         </Field>
 
         <Field label="CPF do Titular" full error={touched.cpf ? errors.cpf : undefined}>
