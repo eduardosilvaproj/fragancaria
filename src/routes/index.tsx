@@ -245,49 +245,50 @@ function IndexEditorial() {
                   </span>
                 </div>
 
-                {/* PENDENTE — par Antes/Depois: o Edu tem as duas fotos, mas
-                    elas ainda não estão no repo (verificado 2026-07-31: nada
-                    novo em public/images). Quando entrarem, este bloco vira
-                    duas imagens lado a lado. Não usar `need-coloracao.png`
-                    aqui: ela já ilustra o card "Coloração" na grade abaixo, e
-                    repetiu na mesma home enquanto esteve neste banner.
-                    Até então, uma fita fina de tons — sugere "escolha a cor"
-                    sem simular um resultado que não temos como mostrar. */}
+                {/* Par Antes/Depois. Mesma modelo, mesma pose, mesmo fundo e
+                    enquadramento (501x648 e 502x661) — a unica diferenca que o
+                    olho pega e a cor do cabelo, que e exatamente o que o
+                    simulador faz. Um par com fotos diferentes prometeria um
+                    resultado que nao vem da ferramenta.
+                    WebP em vez dos PNG originais: 988 KB -> 53 KB (-95%) sem
+                    perda visivel, gerado com sharp em q82. Os PNG nao ficaram
+                    no repo: 1 MB de imagem na home penaliza conexao movel sem
+                    ganho visivel. O par entra abaixo da dobra (depois do hero
+                    e do marquee), por isso o `loading="lazy"` abaixo.
+                    Nao usar `need-coloracao.png` aqui: ela ilustra o card
+                    "Coloracao" na grade abaixo e repetiria na mesma home. */}
                 <div className="min-w-0 px-7 pb-8 md:px-0 md:pb-0 md:pr-11 lg:pr-14">
-                  {/* Tons reais da paleta do simulador (Igora Royal /
-                      Schwarzkopf). Fonte de verdade: PALETTE em
-                      components/simulador/HairColorStudio.tsx — copiados, não
-                      importados, para o componente de 611 linhas de canvas não
-                      entrar no bundle da home. São 8 dos 24 tons; o rótulo cita
-                      o total real. Se a paleta mudar, os dois acompanham. */}
-                  <div
-                    role="img"
-                    aria-label="Amostra dos tons do simulador: 24 cores, do preto natural ao louro claríssimo, incluindo cobres, vermelhos e acinzentados."
-                    className="flex items-center gap-2 md:gap-2.5"
-                  >
+                  <div className="flex items-stretch gap-3 md:gap-4">
                     {[
-                      { hex: "#2c2019", label: "Castanho Escuro" },
-                      { hex: "#574029", label: "Castanho Claro" },
-                      { hex: "#8a6741", label: "Louro Médio" },
-                      { hex: "#a8814f", label: "Louro Claro" },
-                      { hex: "#c39d66", label: "Louro Extra Claro" },
-                      { hex: "#a34e20", label: "Louro Médio Cobre Extra" },
-                      { hex: "#7e3023", label: "Louro Escuro Vermelho Extra" },
-                      { hex: "#d5b985", label: "Louro Claríssimo" },
-                    ].map((tom) => (
-                      <span
-                        key={tom.hex}
-                        // Decorativo: quem anuncia a fita é o aria-label do
-                        // container (role=img) acima.
-                        aria-hidden="true"
-                        title={tom.label}
-                        className="h-8 w-8 md:h-9 md:w-9 flex-1 max-w-[38px] rounded-full border border-black/5"
-                        style={{ backgroundColor: tom.hex }}
-                      />
+                      {
+                        src: "/images/simulador-antes.webp",
+                        etiqueta: "Antes",
+                        alt: "Mulher de cabelo castanho escuro, antes da simulação de cor.",
+                      },
+                      {
+                        src: "/images/simulador-depois.webp",
+                        etiqueta: "Depois",
+                        alt: "A mesma mulher, na mesma pose, com o cabelo em tom louro iluminado — resultado da simulação.",
+                      },
+                    ].map((foto) => (
+                      // min-w-0 em cada metade: sem isso a imagem define a
+                      // largura minima e o par estoura a coluna do grid.
+                      <figure key={foto.src} className="relative min-w-0 flex-1">
+                        <img
+                          src={foto.src}
+                          alt={foto.alt}
+                          className="w-full h-full aspect-[3/4] object-cover rounded-lg"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                        <figcaption className="absolute bottom-2 left-2 md:bottom-2.5 md:left-2.5 bg-white/85 backdrop-blur-sm text-[#0F3A3E] text-[9px] md:text-[10px] tracking-[0.14em] uppercase font-semibold px-2 py-1 rounded">
+                          {foto.etiqueta}
+                        </figcaption>
+                      </figure>
                     ))}
                   </div>
                   <p className="text-[11px] md:text-[12px] text-[#8A938E] mt-4">
-                    24 tons profissionais
+                    24 tons profissionais para experimentar
                   </p>
                 </div>
               </div>
