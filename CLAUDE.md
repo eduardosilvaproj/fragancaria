@@ -20,6 +20,7 @@ puro nesta conversa e estao marcadas para rotacao.
 | `SUPABASE_ANON_KEY` | sim | nao | browser; storefront so |
 | `SUPABASE_SERVICE_ROLE_KEY` | sim (`SECRETA`) | sim | bypassa RLS. Rotacionar ASAP |
 | `MP_ACCESS_TOKEN` | sim (`SECRETA`) | nao | Mercado Pago. Rotacionar ASAP |
+| `MP_WEBHOOK_SECRET` | sim | nao | valida assinatura do webhook do MP. Sem ele, em prod o webhook rejeita tudo com 401 e a confirmacao de PIX/boleto nunca sai |
 | `VITE_MERCADOPAGO_PUBLIC_KEY` | sim | nao | publica (browser) |
 | `VITE_MP_PUBLIC_KEY` | sim | nao | alias da acima |
 | `ZAPI_WEBHOOK_SECRET` | sim | nao | webhook verify |

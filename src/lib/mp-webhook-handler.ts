@@ -62,6 +62,15 @@ export type MpWebhookDependencies = {
     /** Momento da aprovação do pagamento. Base da contagem do prazo de liberação. */
     confirmedAt: string;
   }) => Promise<void>;
+  /**
+   * Envia "Pedido Confirmado" quando o pagamento é aprovado. Opcional: se não
+   * vier, o webhook segue funcionando sem e-mail (é o que os testes fazem).
+   *
+   * Existe porque PIX e boleto são aprovados DEPOIS do checkout: o
+   * createPayment manda "pedido recebido, falta pagar" e este webhook é o
+   * único ponto que sabe da aprovação real.
+   */
+  sendPaymentConfirmedEmail?: (orderId: string) => Promise<void>;
   now?: () => string;
   log?: Pick<Console, "log" | "error">;
 };
@@ -226,6 +235,28 @@ export async function handleMpWebhookRequest(
         confirmedAt,
       }).catch((err) => {
         log.error("[mp-webhook] falha ao criar affiliate_sale (ignorada)", { orderId: existing.id, err });
+      });
+    }
+
+    // "Pedido Confirmado" no momento da aprovação real — é aqui que PIX e
+    // boleto viram pagamento de fato (o createPayment só mandou "recebido").
+    //
+    // Guarda de idempotência: exige que o pedido AINDA NÃO estivesse aprovado.
+    // A dedup do topo cobre reentrega do mesmo status, mas não o caso de vir
+    // um segundo evento com status_detail diferente sobre um pedido já pago —
+    // aí `nextStatus` continua "paid" e o e-mail sairia de novo. Comissão pode
+    // confiar no UNIQUE(order_id); e-mail não tem rede equivalente.
+    const acabouDeSerAprovado =
+      mapped.paymentStatus === "approved" &&
+      !paymentConfirmedWithoutSnapshot &&
+      existing.payment_status !== "approved";
+
+    if (acabouDeSerAprovado && deps.sendPaymentConfirmedEmail) {
+      deps.sendPaymentConfirmedEmail(existing.id).catch((err) => {
+        log.error("[mp-webhook] falha ao enviar e-mail de confirmação (ignorada)", {
+          orderId: existing.id,
+          err,
+        });
       });
     }
 

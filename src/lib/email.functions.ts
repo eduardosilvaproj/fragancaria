@@ -26,6 +26,95 @@ type RefundEmailInput = {
   kind: "cancelled" | "refunded";
 };
 
+type OrderReceivedEmailInput = {
+  orderId: string;
+  customerName: string;
+  customerEmail: string;
+  total: number;
+  trackingTokenFormatted: string;
+  /** Define a instrução de como finalizar. PIX e boleto pagam depois. */
+  paymentMethod: "pix" | "boleto";
+};
+
+// E-mail de "pedido recebido, pagamento PENDENTE". Chamada server-side a partir
+// de createPayment quando o MP devolve status != approved (PIX e boleto sempre
+// caem aqui: o pagamento acontece depois).
+//
+// Por que existe separado de sendOrderConfirmationEmail: até 2026-07-31 o
+// checkout mandava "Pedido Confirmado!" no instante em que o pedido nascia,
+// inclusive no PIX — ou seja, o cliente recebia confirmação de pagamento antes
+// de pagar, e nada chegava quando ele realmente pagava. Quem afirma "pagamento
+// confirmado" é o webhook do MP, que é a única fonte que sabe da aprovação.
+export async function sendOrderReceivedEmail(
+  input: OrderReceivedEmailInput,
+): Promise<{ success: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY ausente — e-mail de pedido recebido nao enviado", {
+      orderId: input.orderId,
+    });
+    return { success: false, error: "RESEND_API_KEY ausente" };
+  }
+  try {
+    const resend = new Resend(apiKey);
+    const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
+    const orderUrl = `${base}/pedido/${input.trackingTokenFormatted.replace(/-/g, "")}`;
+    const firstName = input.customerName.split(" ")[0] || "cliente";
+    const shortId = input.orderId.slice(0, 8).toUpperCase();
+    const isPix = input.paymentMethod === "pix";
+    const instrucao = isPix
+      ? "Seu pedido está reservado e aguarda o pagamento via PIX. Assim que o PIX cair, enviamos a confirmação e começamos a separar seus produtos."
+      : "Seu pedido está reservado e aguarda o pagamento do boleto. A confirmação pode levar até 3 dias úteis após o pagamento — assim que cair, avisamos por e-mail.";
+
+    const { error } = await resend.emails.send({
+      from: "Fragranciaria <naoresponda@fragranciaria.com>",
+      to: [input.customerEmail],
+      subject: `Pedido recebido #${shortId} — falta o pagamento`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
+  <div style="max-width:600px;margin:0 auto;padding:20px;">
+    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">Recebemos seu pedido</h1>
+      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${firstName}.</p>
+      <p style="margin:0 0 20px;color:#51635f;font-size:15px;line-height:1.5;">${instrucao}</p>
+
+      <div style="background:#fdf6e3;border:1px solid #e8c25a;border-radius:6px;padding:16px;margin:0 0 24px;">
+        <div style="font-size:13px;color:#8a6413;line-height:1.5;">
+          <strong>Pagamento ainda não confirmado.</strong><br>
+          Este e-mail confirma que o pedido chegou, não que o pagamento foi aprovado.
+        </div>
+      </div>
+
+      <div style="background:#f3eee3;border-radius:6px;padding:16px;margin:0 0 24px;">
+        <div style="font-size:12px;color:#51635f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Código de rastreio</div>
+        <div style="font-family:monospace;font-size:18px;letter-spacing:1px;color:#0f3a3e;">${input.trackingTokenFormatted}</div>
+        <a href="${orderUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">Acompanhar Pedido</a>
+      </div>
+
+      <p style="margin:0;color:#51635f;font-size:14px;">Pedido <strong>#${shortId}</strong> · Total ${formatBRL(input.total)}</p>
+      <p style="margin:24px 0 0;color:#51635f;font-size:14px;">Dúvidas? <a href="mailto:sac@fragranciaria.com" style="color:#b07b1e;">sac@fragranciaria.com</a></p>
+    </div>
+  </div>
+</body></html>`,
+    });
+    if (error) {
+      console.error("[email] Falha ao enviar pedido recebido", {
+        orderId: input.orderId,
+        error: error.message,
+      });
+      return { success: false, error: error.message };
+    }
+    console.log("[email] E-mail de pedido recebido enviado", { orderId: input.orderId });
+    return { success: true };
+  } catch (err: any) {
+    console.error("[email] Erro inesperado (pedido recebido)", {
+      orderId: input.orderId,
+      error: err?.message,
+    });
+    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+  }
+}
+
 // E-mail de cancelamento/estorno. Chamada só server-side (approveRefund).
 // Não quebra o fluxo se o envio falhar — o estorno no MP já foi processado.
 export async function sendRefundEmail(

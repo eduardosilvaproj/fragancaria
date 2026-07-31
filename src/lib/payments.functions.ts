@@ -33,7 +33,10 @@ function generateTrackingToken(): string {
   }
   return out.length === 16 ? out : generateTrackingToken();
 }
-function formatToken(t: string): string {
+// Exportado para o webhook do MP formatar o mesmo token no e-mail de
+// confirmação de PIX/boleto — duplicar o slice em dois lugares deixaria os
+// formatos divergirem na primeira mudança.
+export function formatToken(t: string): string {
   return `${t.slice(0, 4)}-${t.slice(4, 8)}-${t.slice(8, 12)}-${t.slice(12, 16)}`;
 }
 const cpfSchema = z
@@ -531,11 +534,23 @@ export const createPayment = createServerFn({ method: "POST" })
         });
       }
 
-      // Dispara e-mail de confirmação com token de rastreio (se Resend estiver configurado).
+      // Dispara e-mail com token de rastreio (se Resend estiver configurado).
       // Não quebra o fluxo se o envio falhar — o token continua no frontend.
+      //
+      // QUAL e-mail depende do status que o MP devolveu:
+      //   approved  -> "Pedido Confirmado" (cartão aprovado na hora)
+      //   qualquer  -> "Pedido recebido, falta o pagamento" (PIX/boleto, ou
+      //   outro        cartão em análise)
+      //
+      // Antes de 2026-07-31 saía "Pedido Confirmado" em TODOS os casos, então
+      // quem pagava por PIX recebia confirmação de pagamento antes de pagar. A
+      // confirmação real de PIX/boleto sai do webhook do MP (mp-webhook.ts),
+      // que é quem sabe da aprovação.
       if (orderId && data.payer?.email) {
         try {
-          const { sendOrderConfirmationEmail } = await import("@/lib/email.functions");
+          const { sendOrderConfirmationEmail, sendOrderReceivedEmail } = await import(
+            "@/lib/email.functions"
+          );
           const orderRes = await admin
             .from("orders")
             .select("tracking_token, total, items")
@@ -547,16 +562,30 @@ export const createPayment = createServerFn({ method: "POST" })
             items?: unknown;
           } | null;
           if (order?.tracking_token) {
-            await sendOrderConfirmationEmail({
+            const onEmailError = (err: unknown) => {
+              console.warn("[email] Falha ao enviar (não quebra checkout)", { err });
+            };
+            const comum = {
               orderId,
               customerName: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
               customerEmail: data.payer.email,
               total: Number(order.total ?? serverAmount),
               trackingTokenFormatted: formatToken(order.tracking_token),
-              items: Array.isArray(order.items) ? (order.items as any[]) : (data.items ?? []),
-            }).catch((err) => {
-              console.warn("[email] Falha ao enviar (não quebra checkout)", { err });
-            });
+            };
+            if (status === "approved") {
+              await sendOrderConfirmationEmail({
+                ...comum,
+                items: Array.isArray(order.items) ? (order.items as any[]) : (data.items ?? []),
+              }).catch(onEmailError);
+            } else {
+              await sendOrderReceivedEmail({
+                ...comum,
+                // `data.method` é validado pelo inputSchema em pix|boleto|credit_card.
+                // Cartão não-aprovado cai aqui também (em análise); usa o texto de
+                // boleto, que fala de prazo de confirmação sem prometer PIX.
+                paymentMethod: data.method === "pix" ? "pix" : "boleto",
+              }).catch(onEmailError);
+            }
           }
         } catch (emailErr) {
           console.warn("[email] Erro ao preparar envio", { emailErr });

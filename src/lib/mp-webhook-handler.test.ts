@@ -27,6 +27,8 @@ const completeSnapshot = {
 
 function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) {
   const updates: Array<{ orderId: string; patch: any }> = [];
+  // Ids dos pedidos para os quais o "Pedido Confirmado" foi disparado.
+  const emails: string[] = [];
   const deps = {
     webhookSecret: undefined,
     isDevelopment: true,
@@ -38,8 +40,11 @@ function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) 
     updateOrder: async (orderId: string, patch: any) => {
       updates.push({ orderId, patch });
     },
+    sendPaymentConfirmedEmail: async (orderId: string) => {
+      emails.push(orderId);
+    },
   };
-  return { deps, updates };
+  return { deps, updates, emails };
 }
 
 test("aprovado com snapshot completo vira paid", async () => {
@@ -117,6 +122,120 @@ test("evento duplicado não reprocessa", async () => {
 
   assert.equal(json.deduplicated, true);
   assert.equal(updates.length, 0);
+});
+
+test("PIX aprovado dispara e-mail de confirmação", async () => {
+  const order: WebhookOrder = {
+    id: "order-pix",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "111",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, updates, emails } = makeDeps(order, {
+    id: 111,
+    status: "approved",
+    payment_method_id: "pix",
+    external_reference: "order-pix",
+  });
+
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 111 } }), deps);
+
+  assert.equal(updates[0].patch.status, "paid");
+  assert.deepEqual(emails, ["order-pix"]);
+});
+
+test("pedido já aprovado NÃO reenvia e-mail (status_detail novo)", async () => {
+  // Reentrega com status_detail diferente escapa da dedup do topo (que compara
+  // só payment_id + status), então sem a guarda de payment_status o e-mail
+  // sairia duas vezes para o mesmo pagamento.
+  const order: WebhookOrder = {
+    id: "order-pago",
+    status: "paid",
+    payment_status: "approved",
+    payment_id: "222",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, emails } = makeDeps(order, {
+    id: 222,
+    status: "approved",
+    status_detail: "accredited_late",
+    external_reference: "order-pago",
+  });
+
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 222 } }), deps);
+
+  assert.deepEqual(emails, []);
+});
+
+test("aprovado sem snapshot NÃO envia e-mail", async () => {
+  // Pagamento aprovado mas pedido incompleto: não virou paid, então prometer
+  // "Pedido Confirmado" seria mentira — o pedido ainda não pode ser separado.
+  const order: WebhookOrder = {
+    id: "order-sem-snap",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "333",
+    status_history: [],
+    ...completeSnapshot,
+    customer_cpf: null,
+  };
+  const { deps, emails } = makeDeps(order, {
+    id: 333,
+    status: "approved",
+    external_reference: "order-sem-snap",
+  });
+
+  const res = await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 333 } }), deps);
+  const json = await res.json();
+
+  assert.equal(json.pendingSnapshot, true);
+  assert.deepEqual(emails, []);
+});
+
+test("pagamento rejeitado NÃO envia e-mail de confirmação", async () => {
+  const order: WebhookOrder = {
+    id: "order-rej",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "444",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, emails } = makeDeps(order, {
+    id: 444,
+    status: "rejected",
+    external_reference: "order-rej",
+  });
+
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 444 } }), deps);
+
+  assert.deepEqual(emails, []);
+});
+
+test("webhook funciona sem sendPaymentConfirmedEmail configurado", async () => {
+  const order: WebhookOrder = {
+    id: "order-noemail",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "555",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, updates } = makeDeps(order, {
+    id: 555,
+    status: "approved",
+    external_reference: "order-noemail",
+  });
+  // @ts-expect-error remove a dep opcional de propósito
+  delete deps.sendPaymentConfirmedEmail;
+
+  const res = await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 555 } }), deps);
+
+  assert.equal(res.status, 200);
+  assert.equal(updates[0].patch.status, "paid");
 });
 
 test("evento não-payment é logado e responde 200", async () => {
