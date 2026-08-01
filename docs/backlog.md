@@ -47,7 +47,8 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 | C6 | **Rate limit no rastreio de pedido** — TODO marcado P1 pelo próprio código. Token de 77,5 bits (brute force inviável), mas token vazado vale para sempre. Falta contador por IP. | pendente | `order-tracking.functions.ts:19` |
 | C7 | **Troca de senha no dashboard do afiliado** — TODO, não implementado. | pendente | `afiliado/dashboard/configuracoes.tsx:115` |
 | C8 | **Formulário de contato sem backend** — TODO, não integrado. | pendente | `routes/contato.tsx:49` |
-| C9 | **`whatsapp_settings` e `order_status_history` não existem em prod** — as duas retornam erro de tabela ausente. Código que as referencie vai falhar. | investigar | — |
+| C9 | **`whatsapp_settings` e `order_status_history` não existem em prod — mas são MORTAS, não bug.** Correção do que escrevi antes ("código que as referencie vai falhar"): não há referência a nenhuma das duas. `order_status_history` só aparece num comentário em `account.functions.ts:236` que diz que a tabela não existe — o histórico vive na coluna JSON `orders.status_history`. `whatsapp_settings` tem zero ocorrências no código, em qualquer grafia. Nada quebra, nada a criar nem remover. | resolvido (nada a fazer) | — |
+| C14 | **Cupom criado no admin não vale no checkout** — a tabela `coupons` (criada 2026-08-01, migration `20260801c`) alimenta só o admin. O checkout lê o mapa **hardcoded** `COUPONS` em `commerce-config.ts:22` (só `BEMVINDO10`) via `getCoupon()`. Ligar os dois exige suportar os **três tipos** de desconto — hoje o checkout só entende `discountPercent`. Ver "Escopo C14" abaixo. | pendente | `commerce-config.ts:22`, `coupons.functions.ts` |
 | ~~C10~~ | ~~**Busca da storefront não normaliza acento nem apóstrofo**~~ — **FEITO 2026-08-01.** `normalizeSearchText`/`tokenizeSearchQuery`/`matchesAllTokens` em `lib/search-normalize.ts`, fonte única dos três pontos de busca. Os 4 termos convergem em **209** nos dois filtros (antes: 71/47/191/118 na listagem). 10 testes novos. | **feito** | `lib/search-normalize.ts` |
 | C11 | **Busca carrega os 1234 ativos no navegador para filtrar em JS** — dívida conhecida de escala, não tarefa imediata. Ver "Dívida de escala" abaixo. | dívida aceita | `produtos.tsx:265-297` |
 | C12 | **`brand_slug` divergente de `slugify(brand)` em 1209 produtos, 15 marcas com slug compartilhado** — resíduo do SQL de marcas de 29/07, que corrigiu `brand` e não tocou em `brand_slug`. **Dado morto:** nenhuma rota `/marcas/$slug`, nenhuma query filtra por slug, nenhum componente lê. As 6 ocorrências no código são todas de *escrita* (`products-admin.functions.ts:66,96,100,235`), mais a lista de colunas ignoradas no import e dois seeds antigos. A `search_vector` que consumiria o slug (`20260707_canonical_products.sql:71`) **não existe em prod** — migration nunca aplicada. Correção futura: um `UPDATE brand_slug = slugify(brand)` de uma vez. Seguro, não urgente. | pendente | `products.brand_slug` |
@@ -162,6 +163,37 @@ O risco é na migração: quando virar busca no servidor (catálogo maior, pagin
 real), a normalização **precisa existir no Postgres** — `unaccent` + índice, e o
 apóstrofo tratado do mesmo modo. Senão a migração reintroduz exatamente o bug
 descrito acima, com o dado já corrigido e nenhum campo cru para salvar a busca.
+
+### Escopo C14 — ligar `coupons` ao checkout (os três tipos)
+
+A migration `20260801c_create_coupons.sql` (aplicada em prod 2026-08-01) destravou
+a tela do admin, mas deixou uma promessa que o checkout não cumpre: o cupom criado
+lá **não vale na compra**. São dois mundos separados hoje.
+
+- **Admin** escreve/lê `public.coupons`, com `discount_type` ∈ {`percentage`,
+  `fixed_amount`, `free_shipping`} + `discount_value`.
+- **Checkout** (`CheckoutSummary.tsx`, `carrinho.tsx`) chama `getCoupon()` de
+  `commerce-config.ts:22`, um mapa **hardcoded** com um único cupom (`BEMVINDO10`,
+  10%). O tipo `CheckoutCoupon` só tem `discountPercent`.
+
+Ligar os dois **não é trocar a fonte de `getCoupon`** — é ampliar o modelo, porque
+o checkout só sabe desconto percentual. Escopo mínimo para não voltar a prometer o
+que não cumpre:
+
+1. `getCoupon`/`calculateDiscount` (`commerce-config.ts`) passam a ler `coupons` e
+   a tratar os três tipos: `percentage` (existe), `fixed_amount` (subtrair R$ do
+   subtotal, respeitando o teto `MAX_DISCOUNT_PERCENT`) e `free_shipping` (zerar o
+   frete, não o subtotal — interage com `calculateShipping`).
+2. `CheckoutCoupon` (`checkoutStore.ts`) deixa de ser só `discountPercent`.
+3. Validação server-side em `payments.functions.ts` (`calculateDiscount` na
+   autoridade do server) tem que aceitar os três — senão um `fixed_amount` válido
+   no client é recusado no server, ou pior, o inverso.
+4. Respeitar as restrições que a tabela já modela e o checkout ignora:
+   `minimum_order_value`, `expires_at`, `usage_limit`, `first_purchase_only`.
+
+Sem o item 1 completo, criar no admin um cupom de R$ 20 (`fixed_amount`) ou de
+frete grátis (`free_shipping`) gera uma tela que promete um desconto que a compra
+não aplica.
 
 ---
 
