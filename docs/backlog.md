@@ -40,7 +40,7 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 | # | Item | Estado | Onde |
 |---|---|---|---|
 | C1 | **970 ativos sem peso E dimensão** caindo no fallback de 250g / 20x15x15. **DIVERGE:** são 970, não 774. Dos 264 que têm peso, só **7 valores distintos** e **8 combinações de dimensão** — ou seja, vieram de estimativa por categoria, não de medição (confirma o item 4 da lista do Edu). Correção final é SQL por faixa, depende de E3. | pendente | `melhor-envio-client.server.ts:128` |
-| C2 | **Grafia da marca L'Oréal** — ver seção "Escopo corrigido" abaixo. `brand` está **majoritariamente certo**; o problema real está em `name`. | pendente | `products.brand`, `products.name` |
+| C2 | **Grafia da marca L'Oréal** — ver seção "Escopo corrigido" abaixo. `brand` está **majoritariamente certo**; o problema real está em `name`. **ORDEM INVERTIDA:** normalizar a busca ANTES de corrigir o dado, senão é regressão silenciosa. Ver "Ordem obrigatória" abaixo. | bloqueado por C10 | `products.brand`, `products.name` |
 | C3 | **NF-e com valores chumbados** — `aliquotaIcms: 18`, `aliquotaPis: 1.65`, `aliquotaCofins: 7.6`, `ncm` de fallback `33049990`, `cfop 5102`, `cst 00`. **CORREÇÃO DE LINHA:** estão em `nfe.functions.ts:294-304`, não 288-306. | pendente | `nfe.functions.ts:294-304` |
 | C4 | **`modalidadeFrete: 1` (FOB) com frete CIF** — o valor está fixo. **CORREÇÃO DE LINHA:** linha **362**, não 288-306 (é outro trecho do arquivo). | pendente | `nfe.functions.ts:362` |
 | C5 | **`store_settings` fora do padrão de GRANT** — é a única das 5 tabelas de config que mantém GRANT para `anon`/`authenticated`. Não é buraco ativo (a RLS filtra e devolve 0 linhas), mas divergente das outras quatro. **Nota:** nenhuma migration do repo contém `revoke` para essas tabelas — os lockdowns foram aplicados direto no SQL Editor, então o repo não reflete o estado real. | pendente | `20260730b_lockdown_nfe_settings.sql:23` |
@@ -48,6 +48,8 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 | C7 | **Troca de senha no dashboard do afiliado** — TODO, não implementado. | pendente | `afiliado/dashboard/configuracoes.tsx:115` |
 | C8 | **Formulário de contato sem backend** — TODO, não integrado. | pendente | `routes/contato.tsx:49` |
 | C9 | **`whatsapp_settings` e `order_status_history` não existem em prod** — as duas retornam erro de tabela ausente. Código que as referencie vai falhar. | investigar | — |
+| C10 | **Busca da storefront não normaliza acento nem apóstrofo** — bloqueia C2. Levar a `normalize()` do agente para os dois filtros client-side, aplicando nos dois lados e removendo o apóstrofo. Ver "Ordem obrigatória" abaixo. | pendente | `produtos.tsx:273-279`, `SearchAutocomplete.tsx:99-105` |
+| C11 | **Busca carrega os 1234 ativos no navegador para filtrar em JS** — dívida conhecida de escala, não tarefa imediata. Ver "Dívida de escala" abaixo. | dívida aceita | `produtos.tsx:265-297` |
 
 ## Itens da lista do Edu que já estão FEITOS
 
@@ -87,6 +89,60 @@ Escopo real da correção, então, são **dois SQL distintos**:
 2. `name`: 191 títulos. **Mais delicado** — `name` alimenta busca, exibição e a
    descrição do item na NF-e. Vale decidir se a correção é no dado ou se o título
    fica como o fornecedor manda e a marca canônica é sempre lida de `brand`.
+
+### Ordem obrigatória: normalizar a busca ANTES de corrigir o dado
+
+**Hoje a busca funciona por acidente.** O dado "errado" (`Loreal`, sem acento e sem
+apóstrofo) é exatamente o que o usuário digita. Corrigir o dado primeiro derruba a
+busca por "loreal" sem que ninguém reclame — as vendas de L'Oréal só caem. É
+regressão silenciosa, o pior tipo.
+
+Medido em 2026-07-31 replicando o filtro exato da storefront contra os 1234 ativos:
+
+| Termo digitado | Hoje | Depois de corrigir `name` |
+|---|---|---|
+| `loreal` | 71 | **17** |
+| `l'oreal` | 47 | **1** |
+| `l'oréal` | 191 | 209 |
+| `oreal` | 118 | **18** |
+
+E se os 42 resíduos de `brand` também forem corrigidos, `loreal` vai a **zero**: não
+sobra nenhum campo com a grafia crua para o `includes` casar.
+
+**Por que quebra.** A busca é inteiramente client-side, com
+`.toLowerCase().includes()` — nada de ILIKE ou full-text do Postgres:
+
+- `src/routes/produtos.tsx:273-279` — `name`, `brand`, `category`
+- `src/components/shop/SearchAutocomplete.tsx:99-105` — os mesmos, mais `tags`
+
+No banco **não há `tsvector`, `pg_trgm` nem `unaccent`**. O único índice GIN é em
+`tags` (`002_ecommerce_schema.sql:513`).
+
+**A prova de que o problema é a query, não o dado:** a busca do agente
+(`src/lib/agent/product-search.ts:46`) acha **209 em todas as variações** testadas,
+porque normaliza os dois lados com NFD antes de comparar. Mesmo dado, resultado
+correto — o que falta é a normalização nos filtros da storefront.
+
+**Ordem correta:**
+
+1. **Primeiro** levar a `normalize()` do `product-search.ts` para os dois filtros da
+   storefront, aplicando **nos dois lados** (query e campo). Precisa também remover
+   o apóstrofo — o NFD decompõe acento, mas **não trata `'`**, então `l'oréal` e
+   `loreal` só se encontram se o apóstrofo sair da comparação.
+2. **Só então** rodar os SQL de `brand` e `name`. Com a normalização no lugar, as
+   variações convergem para o mesmo resultado e a correção do dado fica neutra
+   para quem busca.
+
+### Dívida de escala (C11) — busca client-side
+
+A busca carrega os **1234 produtos ativos no navegador** e filtra em JS
+(`produtos.tsx:265-297`). Funciona hoje e normalizar aí é barato, sem precisar de
+índice. **Não é tarefa imediata** — está registrado como dívida aceita.
+
+O risco é na migração: quando virar busca no servidor (catálogo maior, paginação
+real), a normalização **precisa existir no Postgres** — `unaccent` + índice, e o
+apóstrofo tratado do mesmo modo. Senão a migração reintroduz exatamente o bug
+descrito acima, com o dado já corrigido e nenhum campo cru para salvar a busca.
 
 ---
 
