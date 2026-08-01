@@ -5,6 +5,8 @@
 // A consultora usa searchProducts pra indicar produtos reais e getProduct pra
 // detalhar um item antes de recomendar.
 
+import { normalizeSearchText } from "@/lib/search-normalize";
+
 export type AgentProduct = {
   id: string;
   name: string;
@@ -43,13 +45,11 @@ const SEARCH_FIELDS: Array<{ weight: number; get: (p: AgentProduct) => string }>
   { weight: 1, get: (p) => p.description },
 ];
 
-function normalize(value: string | null | undefined): string {
-  return String(value ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .trim();
-}
+// Reexporta com o nome local para não trocar as chamadas de scoreProduct.
+// A implementação virou fonte única em lib/search-normalize.ts, compartilhada
+// com os dois filtros da storefront — ela ganhou remoção de apóstrofo, que
+// esta versão não tinha.
+const normalize = normalizeSearchText;
 
 function rowToAgentProduct(r: ProductRow): AgentProduct {
   return {

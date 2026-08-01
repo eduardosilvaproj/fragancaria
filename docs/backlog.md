@@ -40,7 +40,7 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 | # | Item | Estado | Onde |
 |---|---|---|---|
 | C1 | **970 ativos sem peso E dimensão** caindo no fallback de 250g / 20x15x15. **DIVERGE:** são 970, não 774. Dos 264 que têm peso, só **7 valores distintos** e **8 combinações de dimensão** — ou seja, vieram de estimativa por categoria, não de medição (confirma o item 4 da lista do Edu). Correção final é SQL por faixa, depende de E3. | pendente | `melhor-envio-client.server.ts:128` |
-| C2 | **Grafia da marca L'Oréal** — ver seção "Escopo corrigido" abaixo. `brand` está **majoritariamente certo**; o problema real está em `name`. **ORDEM INVERTIDA:** normalizar a busca ANTES de corrigir o dado, senão é regressão silenciosa. Ver "Ordem obrigatória" abaixo. | bloqueado por C10 | `products.brand`, `products.name` |
+| C2 | **Grafia da marca L'Oréal** — ver seção "Escopo corrigido" abaixo. `brand` está **majoritariamente certo**; o problema real está em `name`. **DESBLOQUEADO 2026-08-01** (C10 feito): a busca já normaliza os dois lados, então os SQL de `brand` (42 resíduos) e `name` (191 títulos) ficam neutros para quem busca. Rodar nessa ordem. | liberado | `products.brand`, `products.name` |
 | C3 | **NF-e com valores chumbados** — `aliquotaIcms: 18`, `aliquotaPis: 1.65`, `aliquotaCofins: 7.6`, `ncm` de fallback `33049990`, `cfop 5102`, `cst 00`. **CORREÇÃO DE LINHA:** estão em `nfe.functions.ts:294-304`, não 288-306. | pendente | `nfe.functions.ts:294-304` |
 | C4 | **`modalidadeFrete: 1` (FOB) com frete CIF** — o valor está fixo. **CORREÇÃO DE LINHA:** linha **362**, não 288-306 (é outro trecho do arquivo). | pendente | `nfe.functions.ts:362` |
 | C5 | **`store_settings` fora do padrão de GRANT** — é a única das 5 tabelas de config que mantém GRANT para `anon`/`authenticated`. Não é buraco ativo (a RLS filtra e devolve 0 linhas), mas divergente das outras quatro. **Nota:** nenhuma migration do repo contém `revoke` para essas tabelas — os lockdowns foram aplicados direto no SQL Editor, então o repo não reflete o estado real. | pendente | `20260730b_lockdown_nfe_settings.sql:23` |
@@ -48,7 +48,7 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 | C7 | **Troca de senha no dashboard do afiliado** — TODO, não implementado. | pendente | `afiliado/dashboard/configuracoes.tsx:115` |
 | C8 | **Formulário de contato sem backend** — TODO, não integrado. | pendente | `routes/contato.tsx:49` |
 | C9 | **`whatsapp_settings` e `order_status_history` não existem em prod** — as duas retornam erro de tabela ausente. Código que as referencie vai falhar. | investigar | — |
-| C10 | **Busca da storefront não normaliza acento nem apóstrofo** — bloqueia C2. Levar a `normalize()` do agente para os dois filtros client-side, aplicando nos dois lados e removendo o apóstrofo. Ver "Ordem obrigatória" abaixo. | pendente | `produtos.tsx:273-279`, `SearchAutocomplete.tsx:99-105` |
+| ~~C10~~ | ~~**Busca da storefront não normaliza acento nem apóstrofo**~~ — **FEITO 2026-08-01.** `normalizeSearchText`/`tokenizeSearchQuery`/`matchesAllTokens` em `lib/search-normalize.ts`, fonte única dos três pontos de busca. Os 4 termos convergem em **209** nos dois filtros (antes: 71/47/191/118 na listagem). 10 testes novos. | **feito** | `lib/search-normalize.ts` |
 | C11 | **Busca carrega os 1234 ativos no navegador para filtrar em JS** — dívida conhecida de escala, não tarefa imediata. Ver "Dívida de escala" abaixo. | dívida aceita | `produtos.tsx:265-297` |
 
 ## Itens da lista do Edu que já estão FEITOS
@@ -125,13 +125,30 @@ correto — o que falta é a normalização nos filtros da storefront.
 
 **Ordem correta:**
 
-1. **Primeiro** levar a `normalize()` do `product-search.ts` para os dois filtros da
-   storefront, aplicando **nos dois lados** (query e campo). Precisa também remover
-   o apóstrofo — o NFD decompõe acento, mas **não trata `'`**, então `l'oréal` e
-   `loreal` só se encontram se o apóstrofo sair da comparação.
-2. **Só então** rodar os SQL de `brand` e `name`. Com a normalização no lugar, as
-   variações convergem para o mesmo resultado e a correção do dado fica neutra
-   para quem busca.
+1. ~~Levar a `normalize()` para os dois filtros da storefront.~~ **FEITO em
+   2026-08-01.** A lógica virou fonte única em `src/lib/search-normalize.ts`
+   (`normalizeSearchText`, `tokenizeSearchQuery`, `matchesAllTokens`), importada
+   pelos três pontos de busca: `produtos.tsx`, `SearchAutocomplete.tsx` e
+   `agent/product-search.ts` (que perdeu a cópia local e ganhou a remoção de
+   apóstrofo que não tinha).
+2. **Liberado:** rodar os SQL de `brand` (42 resíduos) e depois `name` (191
+   títulos).
+
+Medição depois da normalização, contra os 1234 ativos:
+
+| Termo | Listagem antes | Listagem depois | Autocomplete antes | Autocomplete depois |
+|---|---|---|---|---|
+| `loreal` | 71 | **209** | 105 | **209** |
+| `l'oreal` | 47 | **209** | 93 | **209** |
+| `l'oréal` | 191 | **209** | 208 | **209** |
+| `oreal` | 118 | **209** | 118 | **209** |
+
+Os quatro convergem em 209 nos dois filtros. Decisões de implementação que valem
+saber: o **hífen é preservado** (1146 dos 1234 nomes usam como separador real, e
+colapsá-lo juntaria palavras que o usuário digita separadas); o apóstrofo **curvo
+(’)** também é removido, mesmo não existindo em prod, porque teclado de celular
+insere sozinho; e `matchesAllTokens` casa cada token em **campo diferente**, então
+"loreal inoa" acha o produto cuja marca é L'Oréal e o nome tem Inoa (71 resultados).
 
 ### Dívida de escala (C11) — busca client-side
 

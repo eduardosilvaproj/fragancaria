@@ -9,6 +9,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, ChevronDown, X, SlidersHorizontal, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { tokenizeSearchQuery, matchesAllTokens } from "@/lib/search-normalize";
 
 // Chips de categoria. productType tem que ser o valor EXATO de
 // products.category, porque o filtro abaixo é igualdade de string
@@ -271,12 +272,12 @@ function ProdutosPage() {
     }
 
     if (searchTerm) {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(p =>
-        p.name.toLowerCase().includes(term) ||
-        p.brand?.toLowerCase().includes(term) ||
-        p.category?.toLowerCase().includes(term)
-      );
+      // Normaliza os dois lados (termo e campo) via lib/search-normalize:
+      // sem acento e sem apóstrofo, então "loreal", "l'oreal" e "l'oréal"
+      // convergem para o mesmo resultado. Antes era `.toLowerCase().includes()`
+      // cru, que só achava L'Oréal porque o dado ainda estava sem acento.
+      const tokens = tokenizeSearchQuery(searchTerm);
+      filtered = filtered.filter(p => matchesAllTokens(tokens, [p.name, p.brand, p.category]));
     }
 
     if (selectedCategory) {

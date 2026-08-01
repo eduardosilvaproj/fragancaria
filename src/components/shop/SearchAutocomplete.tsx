@@ -4,6 +4,7 @@ import { Search, Clock, TrendingUp, X } from "lucide-react";
 import { useProducts } from "@/hooks/useProducts";
 import { cn } from "@/lib/utils";
 import { trackSearch } from "@/lib/analytics";
+import { tokenizeSearchQuery, matchesAllTokens } from "@/lib/search-normalize";
 
 interface SearchResult {
   id: string;
@@ -96,13 +97,13 @@ export function SearchAutocomplete({
 
     // Search products from DB
     setTimeout(() => {
-      const normalizedQuery = searchQuery.toLowerCase().trim();
-      const filtered = products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(normalizedQuery) ||
-          p.brand.toLowerCase().includes(normalizedQuery) ||
-          p.category?.toLowerCase().includes(normalizedQuery) ||
-          p.tags?.some((t) => t.toLowerCase().includes(normalizedQuery))
+      // Mesma normalização da listagem (lib/search-normalize), para o
+      // autocomplete não sugerir um conjunto e a página de resultados mostrar
+      // outro. `tags` entra aqui e não na listagem — é a diferença histórica
+      // entre os dois filtros, mantida de propósito.
+      const tokens = tokenizeSearchQuery(searchQuery);
+      const filtered = products.filter((p) =>
+        matchesAllTokens(tokens, [p.name, p.brand, p.category, p.tags?.join(" ")])
       )
         .slice(0, 6)
         .map((p) => ({
