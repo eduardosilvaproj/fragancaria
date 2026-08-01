@@ -23,6 +23,19 @@ function countByCategory(products: Product[], category: string): number {
   return products.filter((p) => p.category === category).length;
 }
 
+// Mesma ideia para marca. Antes cada entrada de BRANDS carregava um `count`
+// fixo, escrito à mão numa medição de 2026-07-30 — e nasceu errado: dizia 87
+// para L'Oréal quando havia 217 produtos com a grafia canônica. Ninguém
+// percebeu a defasagem de 130. Contador hardcoded erra de novo no próximo
+// import, então a contagem passa a sair do catálogo que a página já carrega.
+//
+// Compara `brand` cru por igualdade, igual ao filtro de /produtos
+// (`p.brand === selectedBrand`), que é o destino do link. Se comparasse de
+// outro jeito, o número no menu não bateria com a lista que abre.
+function countByBrand(products: Product[], brand: string): number {
+  return products.filter((p) => p.brand === brand).length;
+}
+
 // Ordem por volume: o mobile mostra a lista inteira, mas no desktop as
 // primeiras são as mais vistas. Contagens de 2026-07-30 (produtos ativos).
 const CATEGORIES: Array<{ label: string; productType: string }> = [
@@ -39,15 +52,18 @@ const CATEGORIES: Array<{ label: string; productType: string }> = [
   { label: "Maquiagem", productType: "Maquiagem" },
 ];
 
-const BRANDS = [
-  { label: "Wella", vendor: "Wella", count: 122 },
-  { label: "L'Oréal", vendor: "L'Oréal", count: 87 },
-  { label: "Keune", vendor: "Keune", count: 49 },
-  { label: "Itallian", vendor: "Itallian", count: 30 },
-  { label: "Truss", vendor: "Truss", count: 22 },
-  { label: "Lowell", vendor: "Lowell", count: 19 },
-  { label: "Alfaparf", vendor: "Alfaparf", count: 18 },
-  { label: "Schwarzkopf", vendor: "Schwarzkopf", count: 18 },
+// Sem `count` fixo — a contagem vem de countByBrand(products, vendor).
+// `vendor` tem que ser o valor EXATO de products.brand, porque o filtro de
+// /produtos compara por igualdade sensível a acento.
+const BRANDS: Array<{ label: string; vendor: string }> = [
+  { label: "Wella", vendor: "Wella" },
+  { label: "L'Oréal", vendor: "L'Oréal" },
+  { label: "Keune", vendor: "Keune" },
+  { label: "Itallian", vendor: "Itallian" },
+  { label: "Truss", vendor: "Truss" },
+  { label: "Lowell", vendor: "Lowell" },
+  { label: "Alfaparf", vendor: "Alfaparf" },
+  { label: "Schwarzkopf", vendor: "Schwarzkopf" },
 ];
 
 const MotionDiv = motion.div as any;
@@ -161,7 +177,7 @@ export const NavbarEditorial = () => {
                           className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
                           <span>{brand.label}</span>
-                          <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                          <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
                         </Link>
                       </li>
                     ))}
@@ -221,7 +237,7 @@ export const NavbarEditorial = () => {
                         className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                       >
                         <span>{brand.label}</span>
-                        <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                        <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
                       </Link>
                     </li>
                   ))}
@@ -456,7 +472,7 @@ export const NavbarEditorial = () => {
                                   className="flex justify-between text-[14px] text-[#51635F]"
                                 >
                                   <span>{brand.label}</span>
-                                  <span className="text-[12px] text-[#9AA39F]">({brand.count})</span>
+                                  <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
                                 </Link>
                               </li>
                             ))}
