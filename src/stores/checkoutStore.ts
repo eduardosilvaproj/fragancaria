@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { PaymentMethodId, ShippingMethodId } from "@/config/mercadopago";
+import type { CouponType } from "@/lib/commerce-config";
 
 export type CheckoutStep = "cart" | "shipping" | "payment" | "confirmation";
 
@@ -47,9 +48,15 @@ export interface PaymentData {
   trackingTokenFormatted?: string;
 }
 
+// Cupom aplicado no checkout, já resolvido pela server fn resolveCoupon.
+// Guarda tipo + valor (os três tipos) em vez de só percentual. O desconto em
+// reais nunca é guardado aqui — é recalculado por couponDiscountAmount a
+// partir do subtotal atual, e o servidor o recalcula de novo no pagamento.
 export interface CheckoutCoupon {
   code: string;
-  discountPercent: number;
+  type: CouponType;
+  value: number;
+  label: string;
 }
 
 interface CheckoutState {

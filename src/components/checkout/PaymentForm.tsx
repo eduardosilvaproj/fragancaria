@@ -15,7 +15,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
-import { calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
+import { calculateDiscount, calculateOrderTotal, applyCouponToShipping } from "@/lib/commerce-config";
 import { useServerFn } from "@tanstack/react-start";
 import { createPayment } from "@/lib/payments.functions";
 import { getAffiliateCode } from "@/lib/affiliateTracking";
@@ -144,11 +144,8 @@ export function PaymentForm() {
   } = useCheckoutStore();
 
   const subtotal = getTotalPrice();
-  const shipping = shippingPrice;
-  const discount = calculateDiscount(subtotal, {
-    couponCode: coupon?.code,
-    paymentMethod,
-  });
+  const shipping = applyCouponToShipping(shippingPrice, coupon);
+  const discount = calculateDiscount(subtotal, { coupon, paymentMethod });
   const total = calculateOrderTotal({ subtotal, shipping, discount });
 
   // Mapear itens do carrinho para o formato esperado

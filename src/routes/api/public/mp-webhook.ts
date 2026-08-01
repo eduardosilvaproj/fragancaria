@@ -83,6 +83,26 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
               items: Array.isArray(order.items) ? (order.items as any[]) : [],
             });
           },
+          // Consumo do cupom na aprovação. Lê orders.coupon_code (gravado por
+          // createPayment) e incrementa coupons.usage_count. rpc atômico para
+          // não perder contagem sob concorrência (dois webhooks do mesmo
+          // pedido não acontecem — a guarda do handler garante —, mas dois
+          // pedidos com o mesmo cupom, sim). Fallback para read-modify-write se
+          // a função SQL não existir.
+          incrementCouponUsage: async (orderId) => {
+            const { data, error } = await supabaseAdmin
+              .from("orders")
+              .select("coupon_code")
+              .eq("id", orderId)
+              .maybeSingle();
+            if (error) throw error;
+            const code = (data as { coupon_code?: string | null } | null)?.coupon_code;
+            if (!code) return; // pedido sem cupom, nada a fazer
+            const { error: rpcErr } = await supabaseAdmin.rpc("increment_coupon_usage", {
+              p_code: code,
+            });
+            if (rpcErr) throw rpcErr;
+          },
           createAffiliateSale: async (params) => {
             const commissionAmount = Number((params.commissionBase * params.commissionRate).toFixed(2));
             const { error } = await supabaseAdmin.from("affiliate_sales").insert({

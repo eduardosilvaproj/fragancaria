@@ -4,9 +4,12 @@ import { z } from "zod";
 import { randomBytes, createHash } from "node:crypto";
 import {
   calculateDiscount,
+  applyCouponToShipping,
   calculateShipping,
   calculateOrderTotal,
+  qualifiesForFreeShipping,
   FREE_SHIPPING_THRESHOLD,
+  type ResolvedCoupon,
 } from "@/lib/commerce-config";
 import { getPublicShippingConfig } from "@/lib/shipping-settings.functions";
 import {
@@ -294,13 +297,56 @@ export const createPayment = createServerFn({ method: "POST" })
           error: "Método de frete inválido. Volte à etapa de entrega e escolha uma opção.",
         };
       }
+
+      // Resolve o cupom pelo CÓDIGO contra a tabela — o servidor nunca confia
+      // no valor de desconto que o cliente manda (data.discount é ignorado de
+      // propósito). Cupom inválido/expirado/abaixo do mínimo simplesmente não
+      // aplica desconto: o pagamento segue pelo valor cheio, o cliente não é
+      // travado no meio da compra por causa do cupom. A UI já validou ao
+      // aplicar; aqui é a autoridade final sobre o valor cobrado.
+      let resolvedCoupon: ResolvedCoupon | null = null;
+      let appliedCouponCode: string | null = null;
+      if (data.couponCode) {
+        try {
+          const { evaluateCoupon } = await import("@/lib/coupon-resolve.functions");
+          const code = data.couponCode.trim().toUpperCase();
+          const { data: row } = await admin
+            .from("coupons")
+            .select(
+              "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at",
+            )
+            .eq("code", code)
+            .maybeSingle();
+          const alreadyFree = qualifiesForFreeShipping(serverSubtotal, freeShippingThreshold);
+          const res = evaluateCoupon(row as any, {
+            subtotal: serverSubtotal,
+            alreadyFreeShipping: alreadyFree,
+          });
+          if (res.valid) {
+            resolvedCoupon = res.coupon;
+            appliedCouponCode = res.coupon.code;
+          } else {
+            console.warn("[createPayment] cupom não aplicado", {
+              code,
+              reason: res.reason,
+            });
+          }
+        } catch (couponErr: any) {
+          console.error("[createPayment] falha ao resolver cupom (segue sem desconto)", {
+            message: couponErr?.message,
+          });
+        }
+      }
+
+      // free_shipping zera o frete; os outros tipos não mexem nele.
+      const chargedShipping = applyCouponToShipping(serverShipping, resolvedCoupon);
       const effectiveDiscount = calculateDiscount(serverSubtotal, {
-        couponCode: data.couponCode,
+        coupon: resolvedCoupon,
         paymentMethod: data.method,
       });
       const serverAmount = calculateOrderTotal({
         subtotal: serverSubtotal,
-        shipping: serverShipping,
+        shipping: chargedShipping,
         discount: effectiveDiscount,
       });
       // Autoridade é o server: o valor cobrado no MP é sempre serverAmount,
@@ -313,7 +359,7 @@ export const createPayment = createServerFn({ method: "POST" })
           clientAmount: data.amount,
           orderContext: {
             subtotal: serverSubtotal,
-            shipping: serverShipping,
+            shipping: chargedShipping,
             discount: effectiveDiscount,
           },
         });
@@ -397,8 +443,14 @@ export const createPayment = createServerFn({ method: "POST" })
             total: serverAmount,
             subtotal: serverSubtotal,
             discount: effectiveDiscount,
-            shipping_price: serverShipping,
+            // chargedShipping, não serverShipping: um cupom free_shipping zera
+            // o frete, e o pedido tem que registrar o que foi cobrado de fato.
+            shipping_price: chargedShipping,
             shipping_method: resolvedShippingMethod,
+            // Código do cupom aplicado (já validado pelo servidor), para o
+            // webhook incrementar usage_count na aprovação. null se não houve
+            // cupom ou se ele foi recusado na validação.
+            coupon_code: appliedCouponCode,
             items: data.items ?? [],
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,

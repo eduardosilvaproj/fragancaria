@@ -29,6 +29,8 @@ function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) 
   const updates: Array<{ orderId: string; patch: any }> = [];
   // Ids dos pedidos para os quais o "Pedido Confirmado" foi disparado.
   const emails: string[] = [];
+  // Ids dos pedidos para os quais o cupom foi incrementado.
+  const couponIncrements: string[] = [];
   const deps = {
     webhookSecret: undefined,
     isDevelopment: true,
@@ -43,8 +45,11 @@ function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) 
     sendPaymentConfirmedEmail: async (orderId: string) => {
       emails.push(orderId);
     },
+    incrementCouponUsage: async (orderId: string) => {
+      couponIncrements.push(orderId);
+    },
   };
-  return { deps, updates, emails };
+  return { deps, updates, emails, couponIncrements };
 }
 
 test("aprovado com snapshot completo vira paid", async () => {
@@ -133,7 +138,7 @@ test("PIX aprovado dispara e-mail de confirmação", async () => {
     status_history: [],
     ...completeSnapshot,
   };
-  const { deps, updates, emails } = makeDeps(order, {
+  const { deps, updates, emails, couponIncrements } = makeDeps(order, {
     id: 111,
     status: "approved",
     payment_method_id: "pix",
@@ -144,6 +149,52 @@ test("PIX aprovado dispara e-mail de confirmação", async () => {
 
   assert.equal(updates[0].patch.status, "paid");
   assert.deepEqual(emails, ["order-pix"]);
+  // Mesma guarda do e-mail: aprovação incrementa o cupom uma vez.
+  assert.deepEqual(couponIncrements, ["order-pix"]);
+});
+
+test("reentrega sobre pedido já aprovado NÃO incrementa cupom de novo", async () => {
+  // Segundo evento com status_detail diferente sobre pedido já pago: escapa da
+  // dedup do topo, mas a guarda payment_status !== approved impede o duplo
+  // incremento. Sem UNIQUE que proteja usage_count, essa guarda é a rede.
+  const order: WebhookOrder = {
+    id: "order-recount",
+    status: "paid",
+    payment_status: "approved",
+    payment_id: "222",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, couponIncrements } = makeDeps(order, {
+    id: 222,
+    status: "approved",
+    status_detail: "accredited_late",
+    external_reference: "order-recount",
+  });
+
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 222 } }), deps);
+
+  assert.deepEqual(couponIncrements, []);
+});
+
+test("pagamento rejeitado NÃO incrementa cupom", async () => {
+  const order: WebhookOrder = {
+    id: "order-rej-coupon",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "333",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, couponIncrements } = makeDeps(order, {
+    id: 333,
+    status: "rejected",
+    external_reference: "order-rej-coupon",
+  });
+
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 333 } }), deps);
+
+  assert.deepEqual(couponIncrements, []);
 });
 
 test("pedido já aprovado NÃO reenvia e-mail (status_detail novo)", async () => {

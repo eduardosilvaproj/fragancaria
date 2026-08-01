@@ -7,6 +7,9 @@ import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useProducts } from "@/hooks/useProducts";
 import { useState, useMemo } from "react";
+import { toast } from "sonner";
+import { resolveCoupon } from "@/lib/coupon-resolve.functions";
+import { couponRejectionMessage } from "@/lib/coupon-messages";
 import { Minus, Plus, Trash2, ShoppingBag, Truck, Shield, Tag } from "lucide-react";
 import {
   DEFAULT_SHIPPING_METHOD,
@@ -14,7 +17,7 @@ import {
   calculateDiscount,
   calculateOrderTotal,
   calculateShipping,
-  getCoupon,
+  applyCouponToShipping,
   qualifiesForFreeShipping,
 } from "@/lib/commerce-config";
 import { MAX_INSTALLMENTS } from "@/config/mercadopago";
@@ -33,6 +36,7 @@ function CarrinhoPage() {
   const { items, updateQuantity, removeItem, clearCart, getTotalPrice } = useCartStore();
   const { coupon, setCoupon } = useCheckoutStore();
   const [couponCode, setCouponCode] = useState("");
+  const [applyingCoupon, setApplyingCoupon] = useState(false);
 
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
@@ -42,15 +46,35 @@ function CarrinhoPage() {
   };
 
   const subtotal = getTotalPrice();
-  const discount = calculateDiscount(subtotal, { couponCode: coupon?.code });
-  const shipping = calculateShipping(subtotal, DEFAULT_SHIPPING_METHOD) ?? 0;
+  const baseShipping = calculateShipping(subtotal, DEFAULT_SHIPPING_METHOD) ?? 0;
+  const shipping = applyCouponToShipping(baseShipping, coupon);
+  const discount = calculateDiscount(subtotal, { coupon });
   const total = calculateOrderTotal({ subtotal, shipping, discount });
 
-  const handleApplyCoupon = () => {
-    const found = getCoupon(couponCode);
-    if (found) {
-      setCoupon({ code: found.code, discountPercent: found.discountPercent });
-      setCouponCode("");
+  const handleApplyCoupon = async () => {
+    const key = couponCode.trim().toUpperCase();
+    if (!key) return;
+    setApplyingCoupon(true);
+    try {
+      const res = await resolveCoupon({
+        data: { code: key, subtotal, alreadyFreeShipping: baseShipping === 0 },
+      });
+      if (res.valid) {
+        setCoupon({
+          code: res.coupon.code,
+          type: res.coupon.type,
+          value: res.coupon.value,
+          label: res.label,
+        });
+        toast.success(`Cupom ${res.coupon.code} aplicado!`);
+        setCouponCode("");
+      } else {
+        toast.error(couponRejectionMessage(res.reason));
+      }
+    } catch {
+      toast.error("Não foi possível validar o cupom. Tente de novo.");
+    } finally {
+      setApplyingCoupon(false);
     }
   };
 
@@ -242,14 +266,14 @@ function CarrinhoPage() {
                     />
                     <button
                       onClick={handleApplyCoupon}
-                      disabled={!!coupon}
-                      className={`px-4 py-3 text-[11px] uppercase tracking-[0.12em] font-semibold transition-colors ${
+                      disabled={!!coupon || applyingCoupon || !couponCode.trim()}
+                      className={`px-4 py-3 text-[11px] uppercase tracking-[0.12em] font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
                         coupon
                           ? "bg-[#1c6b4a] text-white"
                           : "bg-[#0F3A3E] text-white hover:bg-[#16504F]"
                       }`}
                     >
-                      {coupon ? "✓" : "Aplicar"}
+                      {coupon ? "✓" : applyingCoupon ? "..." : "Aplicar"}
                     </button>
                   </div>
                   {coupon && (
@@ -267,7 +291,7 @@ function CarrinhoPage() {
                   </div>
                   {coupon && (
                     <div className="flex justify-between text-[14px]">
-                      <span className="text-[#1c6b4a]">Desconto ({coupon.discountPercent}%)</span>
+                      <span className="text-[#1c6b4a]">Desconto ({coupon.label})</span>
                       <span className="text-[#1c6b4a]">-{formatPrice(discount)}</span>
                     </div>
                   )}

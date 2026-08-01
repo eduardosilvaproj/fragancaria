@@ -71,6 +71,16 @@ export type MpWebhookDependencies = {
    * único ponto que sabe da aprovação real.
    */
   sendPaymentConfirmedEmail?: (orderId: string) => Promise<void>;
+  /**
+   * Incrementa coupons.usage_count quando o pagamento é aprovado. Opcional:
+   * ausente => webhook segue sem tocar cupom (é o que os testes fazem).
+   *
+   * Fica no webhook, e não no createPayment, de propósito: um PIX/boleto
+   * abandonado NÃO pode consumir uso do cupom. Só conta quando o pagamento
+   * confirma de fato. Recebe o orderId; o route lê orders.coupon_code e
+   * aplica o incremento.
+   */
+  incrementCouponUsage?: (orderId: string) => Promise<void>;
   now?: () => string;
   log?: Pick<Console, "log" | "error">;
 };
@@ -254,6 +264,18 @@ export async function handleMpWebhookRequest(
     if (acabouDeSerAprovado && deps.sendPaymentConfirmedEmail) {
       deps.sendPaymentConfirmedEmail(existing.id).catch((err) => {
         log.error("[mp-webhook] falha ao enviar e-mail de confirmação (ignorada)", {
+          orderId: existing.id,
+          err,
+        });
+      });
+    }
+
+    // Consumo do cupom: mesma guarda do e-mail. Só na transição para aprovado,
+    // então reentrega não incrementa duas vezes e PIX abandonado (que nunca
+    // aprova) não consome uso. Falha silenciosa: não pode derrubar o webhook.
+    if (acabouDeSerAprovado && deps.incrementCouponUsage) {
+      deps.incrementCouponUsage(existing.id).catch((err) => {
+        log.error("[mp-webhook] falha ao incrementar usage_count do cupom (ignorada)", {
           orderId: existing.id,
           err,
         });
