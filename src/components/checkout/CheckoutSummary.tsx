@@ -7,12 +7,15 @@ import {
   calculateDiscount,
   calculateOrderTotal,
   applyCouponToShipping,
+  couponDiscountAmount,
+  PIX_DISCOUNT_PERCENT,
 } from "@/lib/commerce-config";
 import { resolveCoupon } from "@/lib/coupon-resolve.functions";
 import { couponRejectionMessage } from "@/lib/coupon-messages";
 import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 
 const formatBRL = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
 export function CheckoutSummary() {
   const { items, getTotalPrice } = useCartStore();
@@ -27,6 +30,11 @@ export function CheckoutSummary() {
   const discount = calculateDiscount(subtotal, { coupon, paymentMethod });
   const total = calculateOrderTotal({ subtotal, shipping, discount });
   const installmentValue = total / MAX_INSTALLMENTS;
+  // Desconto de cupom e de PIX exibidos em linhas separadas. Derivados aqui, do
+  // cupom resolvido e do método; free_shipping tem discountCoupon = 0 (o
+  // benefício dele aparece na linha "Frete: Grátis", não como desconto).
+  const discountCoupon = couponDiscountAmount(subtotal, coupon);
+  const pixDiscount = paymentMethod === "pix" ? round2((subtotal * PIX_DISCOUNT_PERCENT) / 100) : 0;
 
   const applyCoupon = async () => {
     const key = code.trim().toUpperCase();

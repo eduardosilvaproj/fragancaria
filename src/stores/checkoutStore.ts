@@ -155,6 +155,19 @@ export const useCheckoutStore = create<CheckoutState>()(
     {
       name: "fragranciaria-checkout",
       storage: createJSONStorage(() => localStorage),
+      // v2 (C14): o cupom mudou de {code, discountPercent} para
+      // {code, type, value, label}. O migrate descarta o cupom v1 persistido,
+      // preservando o resto do progresso (endereço, frete). Um cupom v1 não
+      // derruba o render (as fns leem coupon?.type e caem no fallback), mas
+      // zeraria o desconto silenciosamente e mostraria label vazia — some com
+      // ele em vez de exibir um cupom meia-boca.
+      version: 2,
+      migrate: (persisted: any) => {
+        if (persisted?.coupon && !("type" in persisted.coupon)) {
+          persisted.coupon = null;
+        }
+        return persisted;
+      },
       partialize: (state) => ({
         customer: state.customer,
         shippingAddress: state.shippingAddress,
