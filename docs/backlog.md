@@ -19,7 +19,7 @@ Base do catálogo na data: **1234 produtos ativos**, 1646 no total (412 inativos
 
 | # | Item | Estado | Onde |
 |---|---|---|---|
-| T1 | **Etiqueta dos Correios (pré-postagem)** — auth funciona, mas o contrato não tem a API 36 habilitada. Despacho hoje sai pelo Melhor Envio. | pendente, sem previsão | — |
+| ~~T1~~ | ~~**Etiqueta dos Correios (pré-postagem)**~~ — **ENCERRADO 2026-08-02 (decisão do Edu).** Etiqueta sai só pelo Melhor Envio; a integração direta com os Correios (SIGEP/API 36) não é mais pendência. O código SIGEP no repo virou órfão — ver "Código de Correios órfão (T1)" abaixo para o inventário; decisão de remover ou deixar parado ainda em aberto. | encerrado | — |
 | T2 | **NCM por regra de categoria** — 1563 de 1646 produtos sem NCM (só 83 têm). Documento enviado ao contador; resposta esperada 2026-08-01. | aguardando contador | `products.ncm` |
 | T3 | **Kits com NCM divergente entre itens** — decisão se desmembra na nota. | aguardando contador | `products.category = 'Kits'` |
 
@@ -163,6 +163,44 @@ O risco é na migração: quando virar busca no servidor (catálogo maior, pagin
 real), a normalização **precisa existir no Postgres** — `unaccent` + índice, e o
 apóstrofo tratado do mesmo modo. Senão a migração reintroduz exatamente o bug
 descrito acima, com o dado já corrigido e nenhum campo cru para salvar a busca.
+
+### Código de Correios órfão (T1)
+
+Levantado em 2026-08-02, depois da decisão de usar só o Melhor Envio. A
+integração direta com os Correios é a **SIGEP / pré-postagem** — não confundir
+com menções a "Correios" como transportadora de rastreio, que ficam (pedidos
+antigos e o próprio Melhor Envio despacham por Correios).
+
+**Núcleo órfão — a integração em si (candidato a remoção):**
+
+- `src/lib/correios-client.server.ts` (181 linhas) — cliente da API de
+  pré-postagem (`criarPrepostagem`, `getServiceCode`). Importado num único
+  ponto: `logistics.functions.ts:1156`.
+- `logistics.functions.ts` — 3 server fns SIGEP: `getSigepInfo`,
+  `saveSigepCredentials`, `requestSigepLabels` (~linhas 1054-1225). São as
+  únicas que tocam o correios-client.
+- `admin/logistica.tsx` (1874 linhas no total) — a UI SIGEP: botão "Config.
+  SIGEP", aba "Etiquetas SIGEP", componente `EtiquetasSIGEP` (~1548-1730) e
+  `SigepConfigModal` (~1739-1830). Nota do próprio código em 1556: o PDF da
+  etiqueta SIGEP "é sempre null — nada escreve nessa coluna". Ou seja, já não
+  produz etiqueta utilizável.
+
+**Fica (NÃO é órfão — só cita "Correios"):**
+
+- `buildTrackingUrl` (`logistics.functions.ts:1016`) — URL de rastreio quando a
+  transportadora é Correios. Vale para pedidos despachados por Correios via ME.
+- `declaração de conteúdo` (`logistics.functions.ts:751,870`) — documento de
+  postagem, não é a API.
+- `carrier || "Correios"` (609, 914) — rótulo de fallback de transportadora.
+- `enviofacil.ts`, `cotar-frete.test.ts`, `ShippingForm.tsx`,
+  `configuracoes.tsx` (avisos de texto), `pedido.$token.tsx`,
+  `LocalLabelModal.tsx` — cotação/rastreio/textos, não a integração SIGEP.
+
+**Decisão pendente:** remover o núcleo (correios-client + 3 server fns + UI
+SIGEP, ~300-400 linhas somadas) ou deixar parado. Risco de deixar: mostra ao
+admin uma aba "Etiquetas SIGEP" que pede credenciais e nunca gera etiqueta
+usável — confunde. Risco de remover: se algum dia o contrato Correios for
+reativado, refaz do zero (mas está no git). Não bloqueia nada hoje.
 
 ### Escopo C14 — ligar `coupons` ao checkout (os três tipos)
 
