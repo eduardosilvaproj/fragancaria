@@ -165,3 +165,24 @@ entao commitar**. Se a mensagem diz "faz X", o diff tem que ter X.
 4. **Nao expor secrets** em logs, respostas ou codigo commitado.
 5. **Nao recriar migrations que ja existem no repo** — listar
    `supabase/migrations/` antes de criar nova.
+
+## Regra permanente: smoke tests e verificacao em tela
+
+1. **Rota nova ou tela alterada ganha smoke.** Se nao ganhar, a suite envelhece
+   e volta a ser decorativa.
+2. **Todo smoke em rota protegida precisa de duas protecoes:**
+   - **Guarda de URL:** comparar a URL final com a rota solicitada;
+   - **Assert positivo de conteudo:** ao menos um elemento exclusivo da pagina
+     precisa estar visivel.
+   Historico real: um smoke reportou 9 de 9 testando a tela de login; quem
+   denunciou foi o tamanho do screenshot, nao o teste.
+3. **Teste nunca e escrito para falhar de proposito.** O certo e passar
+   afirmando o comportamento esperado e falhar quando ele mudar. CI alerta em
+   falha, nao em sucesso.
+4. **Como rodar:**
+   ```bash
+   set -a && source .env.local && set +a && npx playwright test
+   ```
+   Requer `ADMIN_SMOKE_EMAIL` e `ADMIN_SMOKE_PASSWORD` de um admin valido no
+   ambiente de teste. O storage state e gravado em `tmp/` (gitignored) e contem
+   sessao viva — nunca versionar.
