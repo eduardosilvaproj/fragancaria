@@ -86,6 +86,36 @@ test("usage_exceeded quando usage_count atingiu o limite", () => {
   assert.equal(r.valid === false && r.reason, "usage_exceeded");
 });
 
+test("above_ceiling: percentual acima do teto é RECUSADO, não cortado", () => {
+  // O incidente do smoke: cupom de 50% batia 30% silenciosamente. Agora recusa.
+  const r = evaluateCoupon(
+    row({ discount_type: "percentage", discount_value: 50 }),
+    { subtotal: 250, alreadyFreeShipping: false },
+    NOW,
+  );
+  assert.equal(r.valid === false && r.reason, "above_ceiling");
+});
+
+test("percentual no teto exato (30%) é aceito", () => {
+  const r = evaluateCoupon(
+    row({ discount_type: "percentage", discount_value: 30 }),
+    { subtotal: 250, alreadyFreeShipping: false },
+    NOW,
+  );
+  assert.equal(r.valid, true);
+});
+
+test("fixed_amount alto NÃO cai em above_ceiling (teto é só de percentual)", () => {
+  // R$100 fixo num pedido de R$250 é válido; o cap de 30% morde no CÁLCULO
+  // (couponDiscountAmount), não na validação. Aqui só confirma que resolve.
+  const r = evaluateCoupon(
+    row({ discount_type: "fixed_amount", discount_value: 100 }),
+    { subtotal: 250, alreadyFreeShipping: false },
+    NOW,
+  );
+  assert.equal(r.valid, true);
+});
+
 test("free_shipping_redundant quando o pedido já tem frete grátis", () => {
   const r = evaluateCoupon(
     row({ discount_type: "free_shipping", discount_value: 0 }),

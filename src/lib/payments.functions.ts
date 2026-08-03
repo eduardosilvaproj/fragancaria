@@ -300,41 +300,50 @@ export const createPayment = createServerFn({ method: "POST" })
 
       // Resolve o cupom pelo CÓDIGO contra a tabela — o servidor nunca confia
       // no valor de desconto que o cliente manda (data.discount é ignorado de
-      // propósito). Cupom inválido/expirado/abaixo do mínimo simplesmente não
-      // aplica desconto: o pagamento segue pelo valor cheio, o cliente não é
-      // travado no meio da compra por causa do cupom. A UI já validou ao
-      // aplicar; aqui é a autoridade final sobre o valor cobrado.
+      // propósito). Se o cliente enviou couponCode, qualquer recusa (expirado,
+      // desativado, mínimo, limite, teto) ABORTA o pagamento com mensagem
+      // honesta. Nunca some com o cupom e cobra valor cheio: isso seria cobrar
+      // mais do que o cliente viu. A UI valida ao aplicar; aqui é a autoridade
+      // final e revalida caso o estado tenha mudado entre aplicar e pagar.
       let resolvedCoupon: ResolvedCoupon | null = null;
       let appliedCouponCode: string | null = null;
       if (data.couponCode) {
         try {
-          const { evaluateCoupon } = await import("@/lib/coupon-resolve.functions");
+          const [{ evaluateCoupon }, { couponRejectionMessage }] = await Promise.all([
+            import("@/lib/coupon-resolve.functions"),
+            import("@/lib/coupon-messages"),
+          ]);
           const code = data.couponCode.trim().toUpperCase();
-          const { data: row } = await admin
+          const { data: row, error: couponQueryError } = await admin
             .from("coupons")
             .select(
               "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at",
             )
             .eq("code", code)
             .maybeSingle();
+          if (couponQueryError) {
+            console.error("[createPayment] falha ao ler cupom", {
+              code,
+              message: couponQueryError.message,
+            });
+            return { success: false, error: "Não foi possível validar o cupom. Tente de novo." };
+          }
           const alreadyFree = qualifiesForFreeShipping(serverSubtotal, freeShippingThreshold);
           const res = evaluateCoupon(row as any, {
             subtotal: serverSubtotal,
             alreadyFreeShipping: alreadyFree,
           });
-          if (res.valid) {
-            resolvedCoupon = res.coupon;
-            appliedCouponCode = res.coupon.code;
-          } else {
-            console.warn("[createPayment] cupom não aplicado", {
-              code,
-              reason: res.reason,
-            });
+          if (!res.valid) {
+            console.warn("[createPayment] cupom recusado", { code, reason: res.reason });
+            return { success: false, error: couponRejectionMessage(res.reason) };
           }
+          resolvedCoupon = res.coupon;
+          appliedCouponCode = res.coupon.code;
         } catch (couponErr: any) {
-          console.error("[createPayment] falha ao resolver cupom (segue sem desconto)", {
+          console.error("[createPayment] exceção ao resolver cupom", {
             message: couponErr?.message,
           });
+          return { success: false, error: "Não foi possível validar o cupom. Tente de novo." };
         }
       }
 

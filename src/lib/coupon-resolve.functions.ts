@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import {
   FREE_SHIPPING_THRESHOLD,
+  MAX_DISCOUNT_PERCENT,
   qualifiesForFreeShipping,
   type CouponType,
   type CouponRejection,
@@ -101,6 +102,14 @@ export function evaluateCoupon(
   // Frete grátis num pedido que já tem frete grátis por valor não agrega nada.
   // Decisão do Edu (C14): recusar com mensagem, em vez de dizer "aplicado" e
   // não mudar o total.
+  // Teto de desconto percentual: em vez de cortar o valor silenciosamente
+  // (que fez o smoke do 50% "nao bater conta"), recusa com motivo especifico.
+  // fixed_amount e free_shipping nao sao limitados por MAX_DISCOUNT_PERCENT:
+  // o primeiro respeita subtotal e cap, o segundo nem desconta do subtotal.
+  if (type === "percentage" && value > MAX_DISCOUNT_PERCENT) {
+    return { valid: false, reason: "above_ceiling" };
+  }
+
   if (type === "free_shipping" && ctx.alreadyFreeShipping) {
     return { valid: false, reason: "free_shipping_redundant" };
   }

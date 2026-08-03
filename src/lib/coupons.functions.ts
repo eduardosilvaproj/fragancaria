@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { MAX_DISCOUNT_PERCENT } from "@/lib/commerce-config";
 
 // ---------- Tipo (espelha o schema do banco) ----------
 export type Coupon = {
@@ -27,7 +28,7 @@ export type Coupon = {
 };
 
 // ---------- Validadores ----------
-const createInputSchema = z.object({
+const couponInputSchema = z.object({
   code: z.string().min(1).max(50),
   description: z.string().max(255).optional(),
   discountType: z.enum(["percentage", "fixed_amount", "free_shipping"]),
@@ -47,9 +48,28 @@ const createInputSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-const updateInputSchema = createInputSchema.extend({
-  id: z.string().uuid(),
-});
+// Recusa cupom percentual acima do teto que o checkout aplica
+// (MAX_DISCOUNT_PERCENT). Antes o admin deixava criar 50%, o checkout cortava
+// em 30% silenciosamente e a conta "nao batia" — o cliente via 50% e recebia
+// 30% (incidente 2026-08-01). Agora o teto e visivel no ponto de criacao, em
+// vez de escondido no pagamento. Vale so para `percentage`: fixed_amount e
+// free_shipping tem outro teto (min com o subtotal), aplicado no calculo.
+function withDiscountCeiling<T extends z.ZodTypeAny>(schema: T) {
+  return schema.superRefine((d: any, ctx) => {
+    if (d.discountType === "percentage" && d.discountValue > MAX_DISCOUNT_PERCENT) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["discountValue"],
+        message: `Desconto percentual maximo e ${MAX_DISCOUNT_PERCENT}%. O checkout nao aplica acima disso.`,
+      });
+    }
+  });
+}
+
+const createInputSchema = withDiscountCeiling(couponInputSchema);
+const updateInputSchema = withDiscountCeiling(
+  couponInputSchema.extend({ id: z.string().uuid() }),
+);
 
 // ---------- Listar ----------
 export const listCoupons = createServerFn({ method: "GET" })

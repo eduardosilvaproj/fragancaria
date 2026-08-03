@@ -38,7 +38,8 @@ export type CouponRejection =
   | "expired"
   | "below_minimum"
   | "usage_exceeded"
-  | "free_shipping_redundant";
+  | "free_shipping_redundant"
+  | "above_ceiling";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 

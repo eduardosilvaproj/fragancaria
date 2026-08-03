@@ -1,4 +1,4 @@
-import type { CouponRejection } from "./commerce-config";
+import { MAX_DISCOUNT_PERCENT, type CouponRejection } from "./commerce-config";
 
 // Mensagem ao cliente para cada motivo tipado de recusa de cupom. Separado das
 // server fns de propósito: é texto de UI, importado pelo checkout e pelo
@@ -18,5 +18,7 @@ export function couponRejectionMessage(reason: CouponRejection): string {
       return "Este cupom atingiu o limite de usos.";
     case "free_shipping_redundant":
       return "Seu pedido já tem frete grátis.";
+    case "above_ceiling":
+      return `Este cupom excede o desconto máximo permitido (${MAX_DISCOUNT_PERCENT}%).`;
   }
 }
