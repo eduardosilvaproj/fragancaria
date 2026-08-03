@@ -1,3 +1,7 @@
+# Normalização padrão para evitar diffs fantasmas em arquivos gerados quando
+# core.autocrlf estiver ativo no Windows (ex: src/routeTree.gen.ts).
+* text=auto
+
 # Garante que arquivos binários não sejam submetidos a normalização de
 # line endings (CRLF↔LF) e sejam marcados como binary no diff do git.
 # Incluir novos patterns aqui sempre que entrar novo tipo de asset.
@@ -19,6 +23,3 @@ public/**/*.ico binary
 **/*.mp3 binary
 **/*.woff binary
 **/*.woff2 binary
-
-# Padrão geral para qualquer binário (exceto pelos específicos acima)
-# já é coberto pela extensão nas regras
