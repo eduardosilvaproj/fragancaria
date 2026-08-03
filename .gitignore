@@ -1,68 +1,60 @@
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-.output
-.vinxi
-.tanstack/**
-.nitro
-*.local
-
-# Environment / secrets
-.env
-.env.*
 !.env.example
-
-# Wrangler / Cloudflare
-.wrangler/
-.dev.vars
-
-# Editor directories and files
-.vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
-.vercel
-
 # Backup files
+# Certificates — commitar o .pfx é opcional mas necessário para NF-e em produção
+# Claude local config e cache do Supabase CLI (por-dev / tooling)
+# Credential dumps (existem em algum lugar na origem; nunca commitar)
+# Editor directories and files
+# Environment / secrets
+# Logs
+# OS / editor
+# Screenshot dumps at root
+# Wrangler / Cloudflare
 *.BACKUP-*.txt
 *.bak
-frag-backup/
-
-# Screenshot dumps at root
-/imagens/
-
-# OS / editor
-Thumbs.db
-desktop.ini
-
-# Certificates — commitar o .pfx é opcional mas necessário para NF-e em produção
-
-# Credential dumps (existem em algum lugar na origem; nunca commitar)
-_link.txt
-_tok.txt
-
-# Claude local config e cache do Supabase CLI (por-dev / tooling)
-.claude/settings.local.json
-.claude/launch.json
-supabase/.temp/
-test-results/
-.claude/
+*.local
+*.log
+*.njsproj
+*.ntvs*
+*.sln
+*.suo
+*.sw?
+.DS_Store
 .claude-flow/
-.swarm/
+.claude/
+.claude/launch.json
+.claude/settings.local.json
+.dev.vars
+.env
+.env.*
+.idea
 .mcp.json
 .mcp.json.backup
+.nitro
+.output
+.swarm/
+.tanstack/**
+.vercel
+.vinxi
+.vscode/*
+.wrangler/
+/imagens/
+Thumbs.db
+_link.txt
+_tok.txt
+desktop.ini
+dist
+dist-ssr
+frag-backup/
+lerna-debug.log*
+logs
+node_modules
+npm-debug.log*
+pnpm-debug.log*
 ruvector.db
+supabase/.temp/
+test-results/
+tmp/
+yarn-debug.log*
+yarn-error.log*
