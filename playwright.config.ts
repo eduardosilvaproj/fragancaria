@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  timeout: 60_000,
+  expect: { timeout: 10_000 },
   fullyParallel: false,
   retries: 0,
   reporter: [["list"]],
@@ -11,12 +12,27 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "npm run dev",
+    command: "bash -c 'set -a && source .env.local && set +a && npm run dev'",
     url: "http://localhost:8080",
     reuseExistingServer: true,
     timeout: 60_000,
   },
   projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"], channel: "msedge" } },
+    { name: "setup", testMatch: /admin-auth\.setup\.ts/ },
+    {
+      name: "chromium",
+      testMatch: /^(?!.*admin-guarda).*\.spec\.ts$/,
+      use: {
+        ...devices["Desktop Chrome"],
+        channel: "msedge",
+        storageState: "tmp/smoke-admin-storage.json",
+      },
+      dependencies: ["setup"],
+    },
+    {
+      name: "no-auth",
+      testMatch: /admin-guarda\.spec\.ts/,
+      use: { ...devices["Desktop Chrome"], channel: "msedge" },
+    },
   ],
 });

@@ -60,6 +60,7 @@ _tok.txt
 .claude/launch.json
 supabase/.temp/
 test-results/
+tmp/
 .claude/
 .claude-flow/
 .swarm/
