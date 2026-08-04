@@ -2,7 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createZernioPost, deleteZernioPost } from "@/lib/zernio";
 
-// Tipos locais (social_posts não está no database.types.ts)
+// Tipos locais (social_posts não está no types.ts do Supabase)
 export interface SocialPost {
   id: string;
   platform: "instagram" | "facebook" | "twitter";

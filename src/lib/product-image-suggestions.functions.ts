@@ -110,7 +110,7 @@ export const suggestProductImagesBatch = createServerFn({ method: "POST" })
       await requireAdmin();
 
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      // product_image_suggestions ainda nao esta em database.types.ts (tabela
+      // product_image_suggestions ainda nao esta em types.ts do Supabase (tabela
       // nova). Mesmo padrao de store-settings.functions.ts: casta so os acessos
       // a essa tabela; products/storage seguem tipados via supabaseAdmin.
       const db = supabaseAdmin as any;

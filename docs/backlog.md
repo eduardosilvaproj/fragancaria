@@ -304,6 +304,14 @@ types. Sintomas que `tsc --noEmit` já denuncia no repo todo:
 - `refund_requests` table inteira ausente.
 - Tabela `conversations` ok; `messages` (via webhook WhatsApp) pode estar parcial.
 
+**Tabelas perdidas em relação ao antigo `database.types.ts` (arquivo morto, deletado):**
+`customer_addresses`, `customer_notes`, `graphql`, `graphql_public`, `nfe_settings`,
+`payment_settings`, `product_ratings`, `product_reviews`, `return_requests`,
+`shipping_quotes`, `shipping_settings`, `shipping_stats`, `shipping_tags`,
+`shipping_tags_stats`, `store_credits`. O morto conhecia 52 tabelas; o `types.ts`
+atual conhece 36. Essas 15 tabelas ausentes são candidatas a confirmar no banco e
+reintegrar ao Database regenerado.
+
 **Correção quando promover:**
 ```
 supabase gen types typescript --project-id <id> > src/integrations/supabase/types.ts
