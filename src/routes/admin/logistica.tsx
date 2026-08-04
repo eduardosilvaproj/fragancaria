@@ -16,11 +16,8 @@ import {
   RefreshCw,
   Loader2,
   X,
-  Tag,
   Plus,
-  Settings,
   FileText,
-  Save,
   ClipboardList,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -41,13 +38,6 @@ import {
   type Shipment,
   type ShipmentStats,
 } from "@/lib/logistics.functions";
-import {
-  saveSigepCredentials,
-  requestSigepLabels,
-  getSigepInfo,
-  listSigepLabels,
-  type SigepCredentials,
-} from "@/lib/logistics.functions";
 import { printShippingLabels } from "@/lib/print-shipping-labels";
 
 export const Route = createFileRoute("/admin/logistica")({
@@ -59,8 +49,6 @@ function AdminLogistica() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [activeTab, setActiveTab] = useState<"envios" | "etiquetas">("envios");
-  const [showSigepModal, setShowSigepModal] = useState(false);
   // Aviso de impressão. Fica FIXO na tela (não é toast) porque falha parcial
   // num lote precisa ser impossível de não ver antes de despachar.
   const [labelWarning, setLabelWarning] = useState<{
@@ -96,28 +84,6 @@ function AdminLogistica() {
   const stats: ShipmentStats | null = statsQuery.data?.success ? statsQuery.data.data : null;
 
   // =====================================================
-  // SIGEP LABELS QUERIES
-  // =====================================================
-
-  // Info do cliente SIGEP
-  const sigepInfoFn = useServerFn(getSigepInfo);
-  const sigepInfoQuery = useQuery({
-    queryKey: ["sigep-info"],
-    queryFn: () => sigepInfoFn({}),
-    refetchOnWindowFocus: false,
-  });
-
-  // Etiquetas disponíveis
-  const labelsFn = useServerFn(listSigepLabels);
-  const labelsQuery = useQuery({
-    queryKey: ["sigep-labels"],
-    queryFn: () => labelsFn({}),
-    refetchOnWindowFocus: false,
-  });
-  const availableLabels: Array<{ id: string; codigo: string; service: string; status: string }> =
-    labelsQuery.data?.success ? labelsQuery.data.data : [];
-
-  // =====================================================
   // MUTATIONS
   // =====================================================
 
@@ -128,7 +94,6 @@ function AdminLogistica() {
   const getDeclarationFn = useServerFn(getShipmentDeclaration);
   const startPickingFn = useServerFn(startPicking);
   const finishPickingFn = useServerFn(finishPicking);
-  const requestLabelsFn = useServerFn(requestSigepLabels);
 
   // Atualizar rastreios
   const refreshMutation = useMutation({
@@ -419,56 +384,6 @@ function AdminLogistica() {
   const [localLabelData, setLocalLabelData] = useState<any>(null);
 
   // =====================================================
-  // SIGEP MUTATIONS
-  // =====================================================
-
-  // Solicitar etiquetas
-  const requestLabelsMutation = useMutation({
-    mutationFn: async ({ quantidade, servico }: { quantidade: number; servico: string }) => {
-      return requestLabelsFn({ data: { quantidade, servico: servico as "PAC" | "SEDEX" } });
-    },
-    onSuccess: (result) => {
-      if (result?.success) {
-        toast.success(`${result.data.generated} etiquetas geradas!`);
-        queryClient.invalidateQueries({ queryKey: ["sigep-labels"] });
-      } else {
-        toast.error(result?.error || "Erro ao solicitar etiquetas");
-      }
-    },
-    onError: () => {
-      toast.error("Erro ao solicitar etiquetas");
-    },
-  });
-
-  // Salvar credenciais
-  const [isSavingCredentials, setIsSavingCredentials] = useState(false);
-  const saveSigepFn = useServerFn(saveSigepCredentials);
-  const saveCredentialsMutation = useMutation({
-    mutationFn: async (creds: SigepCredentials) => {
-      return saveSigepFn({ data: creds });
-    },
-    onSuccess: (result) => {
-      if (result?.success) {
-        toast.success("Credenciais salvas!");
-        queryClient.invalidateQueries({ queryKey: ["sigep-info"] });
-        setShowSigepModal(false);
-      } else {
-        toast.error(result?.error || "Erro ao salvar credenciais");
-      }
-      setIsSavingCredentials(false);
-    },
-    onError: (error: any) => {
-      toast.error(error?.message || "Erro ao salvar credenciais");
-      setIsSavingCredentials(false);
-    },
-  });
-
-  const handleSaveCredentials = (creds: SigepCredentials) => {
-    setIsSavingCredentials(true);
-    saveCredentialsMutation.mutate(creds);
-  };
-
-  // =====================================================
   // FILTROS
   // =====================================================
 
@@ -602,13 +517,6 @@ function AdminLogistica() {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setShowSigepModal(true)}
-            className="flex items-center gap-2 px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
-          >
-            <Settings className="h-4 w-4" />
-            Config. SIGEP
-          </button>
-          <button
             onClick={handleRefreshTracking}
             disabled={refreshMutation.isPending}
             className="flex items-center gap-2 px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors disabled:opacity-50"
@@ -658,43 +566,6 @@ function AdminLogistica() {
             A4
           </button>
         </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="flex gap-1 mb-6 border-b border-[#E9E1D2]">
-        <button
-          onClick={() => setActiveTab("envios")}
-          className={cn(
-            "px-6 py-3 text-sm font-medium transition-colors",
-            activeTab === "envios"
-              ? "text-[#B07B1E] border-b-2 border-[#B07B1E]"
-              : "text-[#8A938E] hover:text-[#0F3A3E]"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Envios
-          </div>
-        </button>
-        <button
-          onClick={() => setActiveTab("etiquetas")}
-          className={cn(
-            "px-6 py-3 text-sm font-medium transition-colors",
-            activeTab === "etiquetas"
-              ? "text-[#B07B1E] border-b-2 border-[#B07B1E]"
-              : "text-[#8A938E] hover:text-[#0F3A3E]"
-          )}
-        >
-          <div className="flex items-center gap-2">
-            <Tag className="h-4 w-4" />
-            Etiquetas SIGEP
-            {availableLabels.length > 0 && (
-              <span className="bg-[#B07B1E] text-white text-xs px-2 py-0.5 rounded-full">
-                {availableLabels.length}
-              </span>
-            )}
-          </div>
-        </button>
       </div>
 
       {/* Aviso de impressão. FIXO na tela, não toast: falha parcial num lote
@@ -751,20 +622,7 @@ function AdminLogistica() {
         </div>
       )}
 
-      {/* Tab Content */}
-      {activeTab === "etiquetas" ? (
-        <EtiquetasSIGEP
-          labels={availableLabels}
-          isLoading={labelsQuery.isLoading}
-          sigepConfigured={sigepInfoQuery.data?.success && sigepInfoQuery.data?.data?.configured}
-          onRequestLabels={(quantidade, servico) =>
-            requestLabelsMutation.mutate({ quantidade, servico })
-          }
-          isRequesting={requestLabelsMutation.isPending}
-        />
-      ) : (
-        <>
-          {/* Stats */}
+      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-[#E9E1D2] p-4">
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
@@ -1156,17 +1014,6 @@ function AdminLogistica() {
           onGetLabel={(id) => getLabelMutation.mutate(id)}
         />
       )}
-        </>
-      )}
-
-      {/* Modal de configuração SIGEP */}
-      {showSigepModal && (
-        <SigepConfigModal
-          onClose={() => setShowSigepModal(false)}
-          onSave={handleSaveCredentials}
-          isSaving={isSavingCredentials}
-        />
-      )}
 
       {/* Modal de etiqueta local para impressao */}
       {showLocalLabelModal && localLabelData && (
@@ -1534,334 +1381,6 @@ function CreateShipmentModal({
                 <>
                   <Printer className="h-4 w-4" />
                   Gerar Etiqueta
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-  );
-}
-
-// =====================================================
-// COMPONENTE: Etiquetas SIGEP
-// =====================================================
-
-type Label = {
-  id: string;
-  codigo: string;
-  service: string;
-  status: string;
-  /** PDF da etiqueta SIGEP. Sempre null hoje — nada escreve nessa coluna. */
-  label_pdf_url?: string | null;
-};
-
-function EtiquetasSIGEP({
-  labels,
-  isLoading,
-  sigepConfigured,
-  onRequestLabels,
-  isRequesting,
-}: {
-  labels: Label[];
-  isLoading: boolean;
-  sigepConfigured?: boolean;
-  onRequestLabels: (quantidade: number, servico: string) => void;
-  isRequesting: boolean;
-}) {
-  const [quantidade, setQuantidade] = useState(10);
-  const [servico, setServico] = useState("PAC");
-
-  if (!sigepConfigured) {
-    return (
-      <div className="bg-amber-50 border border-amber-200 p-6 text-center">
-        <Tag className="h-12 w-12 text-amber-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-amber-900 mb-2">
-          Credenciais SIGEP não configuradas
-        </h3>
-        <p className="text-sm text-amber-700 mb-4">
-          Clique em "Config. SIGEP" no canto superior para adicionar suas credenciais.
-        </p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Solicitar etiquetas */}
-      <div className="bg-white border border-[#E9E1D2] p-6">
-        <h3 className="font-serif text-lg text-[#0F3A3E] mb-4 flex items-center gap-2">
-          <Plus className="h-5 w-5" />
-          Solicitar Etiquetas ao SIGEP
-        </h3>
-
-        <div className="flex flex-wrap gap-4 items-end">
-          <div>
-            <label className="block text-xs text-[#8A938E] mb-1">Serviço</label>
-            <select
-              value={servico}
-              onChange={(e) => setServico(e.target.value)}
-              className="px-4 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-            >
-              <option value="PAC">PAC</option>
-              <option value="SEDEX">SEDEX</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-xs text-[#8A938E] mb-1">Quantidade</label>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={quantidade}
-              onChange={(e) => setQuantidade(parseInt(e.target.value) || 1)}
-              className="w-24 px-4 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-            />
-          </div>
-
-          <button
-            onClick={() => onRequestLabels(quantidade, servico)}
-            disabled={isRequesting}
-            className="px-6 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors disabled:opacity-50 flex items-center gap-2"
-          >
-            {isRequesting ? (
-              <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Solicitando...
-              </>
-            ) : (
-              <>
-                <Tag className="h-4 w-4" />
-                Solicitar Etiquetas
-              </>
-            )}
-          </button>
-        </div>
-
-        <p className="text-xs text-[#8A938E] mt-4">
-          As etiquetas são geradas em lote e ficam disponíveis para uso.
-          Elas são vinculadas a um pedido no momento da postagem.
-        </p>
-      </div>
-
-      {/* Etiquetas disponíveis */}
-      <div className="bg-white border border-[#E9E1D2] p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-serif text-lg text-[#0F3A3E] flex items-center gap-2">
-            <FileText className="h-5 w-5" />
-            Etiquetas Disponíveis
-          </h3>
-          <span className="text-sm text-[#8A938E]">
-            {labels.length} etiqueta(s)
-          </span>
-        </div>
-
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-[#B07B1E]" />
-          </div>
-        ) : labels.length === 0 ? (
-          <div className="text-center py-12 text-[#8A938E]">
-            <Tag className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma etiqueta disponível.</p>
-            <p className="text-sm mt-1">Solicite etiquetas acima para começar.</p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[#E9E1D2]">
-                  <th className="text-left py-3 px-2 text-[#8A938E] font-medium">Código</th>
-                  <th className="text-left py-3 px-2 text-[#8A938E] font-medium">Serviço</th>
-                  <th className="text-left py-3 px-2 text-[#8A938E] font-medium">Status</th>
-                  <th className="text-right py-3 px-2 text-[#8A938E] font-medium">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {labels.map((label) => (
-                  <tr key={label.id} className="border-b border-[#E9E1D2] hover:bg-[#F9F7F3]">
-                    <td className="py-3 px-2 font-mono text-[#0F3A3E]">
-                      {label.codigo}
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className={cn(
-                        "px-2 py-1 text-xs rounded",
-                        label.service === "SEDEX"
-                          ? "bg-blue-100 text-blue-700"
-                          : "bg-green-100 text-green-700"
-                      )}>
-                        {label.service}
-                      </span>
-                    </td>
-                    <td className="py-3 px-2">
-                      <span className="text-xs text-emerald-600 bg-emerald-50 px-2 py-1 rounded">
-                        Disponível
-                      </span>
-                    </td>
-                    <td className="py-3 px-2 text-right">
-                      {/* Antes chamava window.print() puro, que imprimia a
-                          PÁGINA DO ADMIN inteira, não a etiqueta. A fonte de
-                          PDF aqui é shipping_tags.label_pdf_url, que nada no
-                          projeto preenche — então abrir o PDF só é possível
-                          quando ela existir. Sem URL, o botão fica desabilitado
-                          e diz o motivo, em vez de imprimir a coisa errada. */}
-                      <button
-                        onClick={() => {
-                          if (label.label_pdf_url) {
-                            window.open(label.label_pdf_url, "_blank");
-                          }
-                        }}
-                        disabled={!label.label_pdf_url}
-                        className="p-2 hover:bg-[#F3EEE3] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={
-                          label.label_pdf_url
-                            ? "Abrir PDF da etiqueta em nova aba"
-                            : "PDF indisponível para esta etiqueta SIGEP"
-                        }
-                      >
-                        <Printer className="h-4 w-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// =====================================================
-// MODAL: Configurar SIGEP
-// =====================================================
-
-function SigepConfigModal({
-  onClose,
-  onSave,
-  isSaving,
-}: {
-  onClose: () => void;
-  onSave: (creds: SigepCredentials) => void;
-  isSaving: boolean;
-}) {
-  const [usuario, setUsuario] = useState("");
-  const [codigoAcesso, setCodigoAcesso] = useState("");
-  const [cartaoPostagem, setCartaoPostagem] = useState("");
-  const [cepOrigem, setCepOrigem] = useState("");
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave({
-      usuario,
-      codigoAcesso,
-      cartaoPostagem,
-      cepOrigem,
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-lg w-full p-6 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-serif text-[#0F3A3E] flex items-center gap-2">
-            <Settings className="h-5 w-5" />
-            Configurar SIGEP Web
-          </h2>
-          <button onClick={onClose} className="text-[#8A938E] hover:text-[#0F3A3E]">
-            <X className="h-6 w-6" />
-          </button>
-        </div>
-
-        <div className="bg-amber-50 border border-amber-200 p-4 mb-6 text-sm">
-          <p className="font-medium text-amber-900 mb-1">Credenciais da API dos Correios</p>
-          <p className="text-amber-700">
-            Gere o código de acesso em cws.correios.com.br (Meu Correios → Meus Serviços → API).
-            Não é a senha do site. O cartão de postagem é o número do seu contrato de postagem.
-          </p>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Usuário (CNPJ/contrato)
-            </label>
-            <input
-              type="text"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
-              className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Código de Acesso à API
-            </label>
-            <input
-              type="password"
-              value={codigoAcesso}
-              onChange={(e) => setCodigoAcesso(e.target.value)}
-              placeholder="Gerado em cws.correios.com.br"
-              className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#51635F] mb-1">
-              Cartão de Postagem
-            </label>
-            <input
-              type="text"
-              value={cartaoPostagem}
-              onChange={(e) => setCartaoPostagem(e.target.value)}
-              placeholder="Ex: 0067599451"
-              className="w-full px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-              required
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-[#51635F] mb-1">
-              CEP de Origem (Sua loja)
-            </label>
-            <input
-              type="text"
-              value={cepOrigem}
-              onChange={(e) => setCepOrigem(e.target.value)}
-              placeholder="Ex: 01310100"
-              className="w-40 px-3 py-2 border border-[#E9E1D2] focus:outline-none focus:border-[#B07B1E]"
-              required
-            />
-          </div>
-
-          <div className="flex gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="flex-1 px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              disabled={isSaving}
-              className="flex-1 px-4 py-2 bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Salvar Credenciais
                 </>
               )}
             </button>
