@@ -951,7 +951,7 @@ export const getShipmentDeclaration = createServerFn({ method: "GET" })
 // ATUALIZAR STATUS DO ENVIO (manual)
 // =====================================================
 
-export const updateShipmentStatus = createServerFn({ method: "PATCH" })
+export const updateShipmentStatus = createServerFn({ method: "PATCH" as any })
   .validator((d: unknown) => (d ?? {}) as { id: string; status: string })
   .handler(async ({ data }) => {
     try {

@@ -148,7 +148,7 @@ export const rejectAffiliate = createServerFn({
       .update({
         status: "rejected",
         rejected_at: new Date().toISOString()
-      })
+      } as any)
       .eq("id", affiliateId)
       .select();
 
@@ -183,7 +183,7 @@ export const suspendAffiliate = createServerFn({
       .update({
         status: "suspended",
         suspended_at: new Date().toISOString()
-      })
+      } as any)
       .eq("id", affiliateId)
       .select();
 
