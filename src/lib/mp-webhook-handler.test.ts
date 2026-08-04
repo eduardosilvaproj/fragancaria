@@ -293,8 +293,8 @@ test("evento não-payment é logado e responde 200", async () => {
   const { deps, updates } = makeDeps(null, {});
   const logs: Array<[string, unknown]> = [];
   deps.log = {
-    log: (message: string, context: unknown) => logs.push([message, context]),
-    error: () => {},
+    log: (message: string, context?: unknown): void => { logs.push([message, context]); },
+    error: (): void => {},
   };
 
   const res = await handleMpWebhookRequest(

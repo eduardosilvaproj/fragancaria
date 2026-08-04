@@ -33,7 +33,7 @@ export type WebhookOrder = PaymentSnapshotOrder & {
   total?: number | null;
 };
 
-type WebhookUpdate = {
+export type WebhookUpdate = {
   payment_id: string;
   status: string;
   payment_status: string;
@@ -82,7 +82,10 @@ export type MpWebhookDependencies = {
    */
   incrementCouponUsage?: (orderId: string) => Promise<void>;
   now?: () => string;
-  log?: Pick<Console, "log" | "error">;
+  log?: {
+    log: (message: string, context?: unknown) => void;
+    error: (message: string, context?: unknown) => void;
+  };
 };
 
 function verifySignature(request: Request, dataId: string, deps: MpWebhookDependencies): boolean {
@@ -238,7 +241,7 @@ export async function handleMpWebhookRequest(
       deps.createAffiliateSale({
         orderId: existing.id,
         affiliateId: existing.affiliate_id,
-        linkId: existing.affiliate_link_id,
+        linkId: existing.affiliate_link_id ?? null,
         orderTotal: existing.total ?? 0,
         commissionRate: rate,
         commissionBase,

@@ -5,6 +5,7 @@ import {
   type WebhookOrder,
   type WebhookUpdate,
 } from "@/lib/mp-webhook-handler";
+import type { Database } from "@/integrations/supabase/types";
 
 export const Route = createFileRoute("/api/public/mp-webhook")({
   server: {
@@ -98,9 +99,10 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
             if (error) throw error;
             const code = (data as { coupon_code?: string | null } | null)?.coupon_code;
             if (!code) return; // pedido sem cupom, nada a fazer
-            const { error: rpcErr } = await supabaseAdmin.rpc("increment_coupon_usage", {
-              p_code: code,
-            });
+            const { error: rpcErr } = await supabaseAdmin.rpc(
+              "increment_coupon_usage",
+              { p_code: code } as unknown as Database["public"]["Functions"]["increment_coupon_usage"]["Args"],
+            );
             if (rpcErr) throw rpcErr;
           },
           createAffiliateSale: async (params) => {
