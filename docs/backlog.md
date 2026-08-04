@@ -6,7 +6,7 @@ escopo de um PR atual. Cada item tem: contexto, dono sugerido, e condição para
 > **Este arquivo é a fonte única do backlog.** Consultar aqui para retomar, em vez de
 > refazer o levantamento. Ao fechar um item, marcar aqui no mesmo commit.
 >
-> Última reconciliação: **2026-07-31**, medida contra o repo e o banco de produção
+> Última reconciliação: **2026-08-09**, medida contra o repo e o banco de produção
 > (`gzxlupgdmrtkprwhiutp`). Números abaixo são medidos, não estimados.
 
 ---
@@ -304,20 +304,84 @@ types. Sintomas que `tsc --noEmit` já denuncia no repo todo:
 - `refund_requests` table inteira ausente.
 - Tabela `conversations` ok; `messages` (via webhook WhatsApp) pode estar parcial.
 
-**Tabelas perdidas em relação ao antigo `database.types.ts` (arquivo morto, deletado):**
-`customer_addresses`, `customer_notes`, `graphql`, `graphql_public`, `nfe_settings`,
-`payment_settings`, `product_ratings`, `product_reviews`, `return_requests`,
-`shipping_quotes`, `shipping_settings`, `shipping_stats`, `shipping_tags`,
-`shipping_tags_stats`, `store_credits`. O morto conhecia 52 tabelas; o `types.ts`
-atual conhece 36. Essas 15 tabelas ausentes são candidatas a confirmar no banco e
-reintegrar ao Database regenerado.
+**Tabelas perdidas em relação ao antigo `database.types.ts` (arquivo morto, deletado em `a2740e3`):**
+`customer_addresses`, `customer_notes`, `nfe_settings`, `payment_settings`,
+`product_reviews`, `return_requests`, `shipping_quotes`, `shipping_settings`,
+`shipping_tags`, `store_credits`. O morto conhecia **32 tabelas** em `public.Tables`;
+o `types.ts` atual conhece **22 tabelas**. Essas **10 tabelas ausentes** são candidatas
+a confirmar no banco e reintegrar ao Database regenerado.
+
+**Detalhamento da comparação (git show HEAD~1:src/integrations/supabase/database.types.ts vs. src/integrations/supabase/types.ts):**
+
+- Tabelas no `database.types.ts` deletado (32):
+  `admins`, `affiliate_clicks`, `affiliate_links`, `affiliate_notifications`,
+  `affiliate_payouts`, `affiliate_sales`, `affiliate_settings`,
+  `affiliate_tier_history`, `affiliate_tiers`, `affiliates`, `brands`, `categories`,
+  `conversations`, `customer_addresses`, `customer_notes`, `customers`,
+  `home_featured_manual`, `messages`, `nfe_settings`, `notifications`, `orders`,
+  `payment_settings`, `product_reviews`, `products`, `refund_requests`,
+  `return_requests`, `shipping_quotes`, `shipping_rate_quotes`, `shipping_settings`,
+  `shipping_tags`, `store_credits`, `wishlist`.
+
+- Tabelas no `types.ts` atual (22):
+  `admins`, `affiliate_clicks`, `affiliate_links`, `affiliate_notifications`,
+  `affiliate_payouts`, `affiliate_sales`, `affiliate_settings`,
+  `affiliate_tier_history`, `affiliate_tiers`, `affiliates`, `brands`, `categories`,
+  `conversations`, `customers`, `home_featured_manual`, `messages`, `notifications`,
+  `orders`, `products`, `refund_requests`, `shipping_rate_quotes`, `wishlist`.
+
+- Faltam no `types.ts` atual (10):
+  `customer_addresses`, `customer_notes`, `nfe_settings`, `payment_settings`,
+  `product_reviews`, `return_requests`, `shipping_quotes`, `shipping_settings`,
+  `shipping_tags`, `store_credits`.
+
+**Confirmação no banco de produção (`gzxlupgdmrtkprwhiutp`) — consultado em 2026-08-09:**
+
+| Tabela | Existe? | Linhas |
+|---|---|---|
+| `customer_addresses` | **sim** | **1** |
+| `customer_notes` | **sim** | **0** |
+| `nfe_settings` | **sim** | **1** |
+| `payment_settings` | **sim** | **1** |
+| `product_reviews` | **sim** | **0** |
+| `return_requests` | **sim** | **0** |
+| `shipping_quotes` | **sim** | **8** |
+| `shipping_settings` | **sim** | **5** |
+| `shipping_tags` | **sim** | **0** |
+| `store_credits` | **sim** | **0** |
+
+**Resultado:** as 10 tabelas estão vivas. Nenhuma foi dropada. Todas devem ser
+reintegradas ao `Database` regenerado.
+
+**Observações:**
+- A comparação 32→22 tabelas veio de um **arquivo deletado** (`database.types.ts`,
+  removido em `a2740e3` por estar em UTF-16 morto), não do banco. A próxima sessão
+  deve saber que os números são um diff de arquivos, não uma medida contra `pg_tables`.
+- O arquivo deletado estava em UTF-16 LE (124.796 bytes); convertido para UTF-8 fica
+  62.397 bytes. O `types.ts` atual tem 40.303 bytes.
+- O schema `graphql_public` aparecia no deletado, mas sem tabelas reais (`Tables: { [_ in never]: never }`).
+- Os tamanhos e diffs (incluindo colunas/relationships) explicam parte dos erros de tipo,
+  mas a lista acima só cobre tabelas. Confirmar colunas faltantes separadamente no banco.
+
+> **Hipótese testada em 2026-08-09:** o gerador `gen-supabase-types.mjs` funciona; o
+> problema é a fonte `scripts/.openapi.json`, que está desatualizado. Ao baixar o spec
+> atual do PostgREST de produção (`https://gzxlupgdmrtkprwhiutp.supabase.co/rest/v1/`)
+> e rodar o gerador contra a cópia, o `types.ts` resultante declara **41 tabelas** e
+> inclui todas as 10 faltantes. Portanto a solução é **atualizar o retrato**, não
+> migrar de gerador.
+>
+> **Medida real do ganho:** `tsc --noEmit` com o `types.ts` gerado a partir do spec
+> atual apresenta **37 erros**; o `types.ts` atual apresenta **166 erros**. Atualizar
+> o `.openapi.json` reduz em **129 erros** (≈78%) os problemas de tipo do repo.
+> Os 37 restantes são bugs/casts de domínio, não do Database.
 
 **Correção quando promover:**
-```
-supabase gen types typescript --project-id <id> > src/integrations/supabase/types.ts
-```
-E remover todos os `@ts-expect-error` / `as any` / `as never` que ficaram no projeto
-espalhados por causa do stale.
+1. **Atualizar `scripts/.openapi.json` com o spec OpenAPI atual do PostgREST** (usar
+   `service_role key`; endpoint raiz `/rest/v1/` com `Accept: application/openapi+json`).
+2. Rodar `node scripts/gen-supabase-types.mjs` para regenerar `src/integrations/supabase/types.ts`.
+3. Verificar que `public.Tables` agora tem **41 tabelas** e inclui as 10 faltantes.
+4. Rodar `tsc --noEmit` e confirmar que o repo passa de **166** para **≈37 erros**.
+5. Só então remover os `@ts-expect-error` / `as any` / `as never` que ficaram obsoletos.
 
 **Prioridade:** P2 hoje (afeta DX e type-safety, não bloqueia runtime).
 **Condição de promoção:** PR de B1 fechado, ou PR isolado dedicado.

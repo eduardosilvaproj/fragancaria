@@ -92,11 +92,38 @@ npm start               # roda build de producao
 - `docs/`               — documentacao operacional
 - `agent-service/`      — Railway service SEPARADO (Bloco B, futuro)
 
-## Regra permanente: workflow de migrations
+## Regra permanente: workflow de migrations e schema types
 
 > **Migrations: escritas pelo Code, commitadas no repo, aplicadas pelo Edu
 > apos revisao. Mesmo as aplicadas manualmente via SQL Editor sao
 > commitadas no repo. Nao commitar migrations = quebrar auditoria.**
+
+### Sincronia obrigatória do schema com `src/integrations/supabase/types.ts`
+
+O arquivo `types.ts` é gerado a partir do spec OpenAPI do PostgREST. Se o schema mudar e o types.ts não for regenerado, a diferença se acumula e `tsc --noEmit` denuncia dezenas de erros.
+
+**Sempre que aplicar uma migration (ou alterar colunas/tabelas em produção):**
+
+1. Rodar o fetch do spec atual:
+   ```bash
+   npm run types:fetch
+   ```
+2. Regenerar o types:
+   ```bash
+   npm run types:generate
+   ```
+   Ou os dois de uma vez:
+   ```bash
+   npm run types:refresh
+   ```
+3. Verificar o diff gerado (`git diff src/integrations/supabase/types.ts scripts/.openapi.json`).
+4. Commitar **junto** com a migration — `types.ts` desatualizado é bug de integridade.
+
+Os scripts:
+- `scripts/fetch-openapi.cjs` — busca `scripts/.openapi.json` usando `SUPABASE_URL` + `SUPABASE_SERVICE_ROLE_KEY`.
+- `scripts/gen-supabase-types.mjs` — converte o spec OpenAPI em `src/integrations/supabase/types.ts`.
+
+**Importante:** `scripts/.openapi.json` versionado só contém metadados de schema (nomes de tabelas, colunas, tipos). Ele não contém dados nem segredos — apenas a **forma** do banco. Versão-lo é intencional para auditoria e reprodutibilidade.
 
 Em outras palavras:
 

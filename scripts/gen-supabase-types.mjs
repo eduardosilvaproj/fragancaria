@@ -6,7 +6,10 @@
 
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const spec = JSON.parse(readFileSync('scripts/.openapi.json', 'utf8'));
+const inputFile = process.argv[2] || 'scripts/.openapi.json';
+const outputFile = process.argv[3] || 'src/integrations/supabase/types.ts';
+
+const spec = JSON.parse(readFileSync(inputFile, 'utf8'));
 const defs = spec.definitions || {};
 
 // Separa tabelas/views (definitions com chaves normais) de RPC (prefixo rpc_).
@@ -247,5 +250,5 @@ export type CompositeTypes<
   : never
 `;
 
-writeFileSync('src/integrations/supabase/types.ts', out);
-console.log('wrote', out.length, 'bytes');
+writeFileSync(outputFile, out);
+console.log('wrote', outputFile, out.length, 'bytes');
