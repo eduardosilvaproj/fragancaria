@@ -44,7 +44,7 @@ const ORDER_ROWS = [
 function fakeDb(rows = ORDER_ROWS) {
   return {
     from() {
-      const state = { eqs: [] as Array<[string, unknown]> };
+      const state: { eqs: Array<[string, unknown]>; selectedCols?: string } = { eqs: [] as Array<[string, unknown]> };
       const builder: any = {
         select: (cols?: string) => {
           state.selectedCols = cols;
@@ -111,8 +111,8 @@ test("getOrderByToken lida com pedido sem items e sem status_history", async () 
       payment_status: "refunded",
       tracking_code: null,
       created_at: "2025-03-01T09:00:00Z",
-      items: null,
-      status_history: null,
+      items: null as unknown as { title: string; quantity: number; price: number }[],
+      status_history: null as unknown as { status: string; at: string }[],
       tracking_token: "EMPTY1234ITEMS5678",
       customer_email: "test@test.com",
     },

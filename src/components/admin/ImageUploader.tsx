@@ -35,9 +35,9 @@ export function ImageUploader({
     mutationFn: async (path: string) => {
       return deleteFn({ data: { path } });
     },
-    onSuccess: (result) => {
+    onSuccess: (result: { success: boolean }) => {
       if (result?.success && value) {
-        onChange?.(value.filter((url) => !url.includes("product-images/") || result.data !== getPathFromUrl(url)));
+        onChange?.(value.filter((url) => !url.includes("product-images/")));
       }
     },
     onError: () => {

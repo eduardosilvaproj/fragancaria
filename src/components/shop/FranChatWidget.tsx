@@ -197,7 +197,7 @@ export function FranChatWidget() {
           if (result.error === "human_mode") {
             // Só mostra "assumido" na TRANSIÇÃO fran→human, não a cada envio
             if (prevRepliedByRef.current !== "human") {
-              addMessage({ role: "assistant", content: result.resposta });
+              addMessage({ role: "assistant", content: (result as { error: "human_mode"; resposta: string }).resposta });
             }
             setRepliedBy("human");
           } else {

@@ -47,10 +47,10 @@ test("completedFields reflete só o que faltava antes do patch", () => {
   if (!result.success) return;
   assert.equal(result.patch.status, "paid");
   assert.deepEqual(result.completedFields, ["customer_cpf"]);
-  const last = result.patch.status_history.at(-1);
+  const last = result.patch.status_history.at(-1)!;
   assert.equal(last.status, "snapshot_completed");
-  assert.match(last.detail, /customer_cpf/);
-  assert.doesNotMatch(last.detail, /customer_phone/);
+  assert.match((last as any).detail, /customer_cpf/);
+  assert.doesNotMatch((last as any).detail, /customer_phone/);
 });
 
 test("CPF inválido é bloqueado", () => {

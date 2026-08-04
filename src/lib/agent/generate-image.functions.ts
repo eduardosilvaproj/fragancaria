@@ -124,7 +124,7 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
     let finalPrompt = data.prompt;
     if (data.caption) {
       const product = data.productName
-        ? { name: data.productName, brand: data.productBrand, description: data.productDescription }
+        ? { name: data.productName, brand: data.productBrand ?? "", description: data.productDescription ?? "" }
         : null;
       const artPrompt = buildArtPrompt(product, data.caption, data.modo ?? "produto", data.semPreco);
       finalPrompt = artPrompt;
@@ -160,7 +160,7 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
     const genCall = response.output?.find(
       (item): item is { type: "image_generation_call"; result: string } =>
         item.type === "image_generation_call" && typeof (item as any).result === "string"
-    );
+    ) as { type: "image_generation_call"; result: string } | undefined;
 
     if (!genCall?.result) {
       await supabaseAdmin
