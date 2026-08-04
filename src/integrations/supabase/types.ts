@@ -1982,10 +1982,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      increment_coupon_usage: {
-        Args: { p_code: string };
-        Returns: void;
-      }
+      increment_coupon_usage: { Args: {"p_code":"string"}; Returns: void }
+      search_products_pt: { Args: {"query_text":"string","limit_rows":"number"}; Returns: { id: string; name: string; brand_slug: string; category_slug: string; price: number; stock_quantity: number; images: string[]; is_buyable: boolean; rank: number }[] }
+      close_affiliate_payout: { Args: {"p_affiliate_id":"string","p_cutoff":"string","p_min_amount":"number","p_notes":"string"}; Returns: { out_payout_id: string; out_sales_count: number; out_amount: number; out_period_start: string; out_period_end: string; out_skipped_reason: string | null }[] }
+      sync_orders_to_auth_user: { Args: {}; Returns: void }
     }
     Enums: {
       [_ in never]: never
