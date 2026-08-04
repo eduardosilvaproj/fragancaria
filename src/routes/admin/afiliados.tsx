@@ -845,7 +845,7 @@ function AdminAfiliados() {
             >
               <option value="all">Todos os status</option>
               <option value="pending">Pendentes</option>
-              <option value="active">Ativos</option>
+              <option value="approved">Ativos</option>
               <option value="suspended">Suspensos</option>
               <option value="rejected">Rejeitados</option>
             </select>
@@ -939,7 +939,7 @@ function AdminAfiliados() {
                           </button>
                         </>
                       )}
-                      {affiliate.status === "active" && (
+                      {affiliate.status === "approved" && (
                         <button
                           onClick={() => handleSuspend(affiliate.id)}
                           className="p-2 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"

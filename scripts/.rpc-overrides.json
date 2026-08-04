@@ -1,0 +1,6 @@
+{
+  "increment_coupon_usage": {
+    "Args": { "p_code": "string" },
+    "Returns": "void"
+  }
+}

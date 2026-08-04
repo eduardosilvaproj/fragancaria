@@ -1982,7 +1982,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      increment_coupon_usage: {
+        Args: { p_code: string };
+        Returns: void;
+      }
     }
     Enums: {
       [_ in never]: never

@@ -4,13 +4,20 @@
 //
 // Uso: node scripts/gen-supabase-types.mjs
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 
 const inputFile = process.argv[2] || 'scripts/.openapi.json';
 const outputFile = process.argv[3] || 'src/integrations/supabase/types.ts';
 
 const spec = JSON.parse(readFileSync(inputFile, 'utf8'));
 const defs = spec.definitions || {};
+
+// Carrega overrides de RPC (RPCs que o spec OpenAPI nao expoe mas existem em prod).
+const rpcOverridesFile = 'scripts/.rpc-overrides.json';
+let rpcOverrides = {};
+if (existsSync(rpcOverridesFile)) {
+  rpcOverrides = JSON.parse(readFileSync(rpcOverridesFile, 'utf8'));
+}
 
 // Separa tabelas/views (definitions com chaves normais) de RPC (prefixo rpc_).
 const tableNames = Object.keys(defs).filter((k) => !k.startsWith('rpc_'));
@@ -103,7 +110,17 @@ function rpcBlock(name) {
 
 const tablesBlock = tableNames.map(tableBlock).join('\n');
 const viewsBlock = ''; // Nao temos views no OpenAPI alem de tabelas marcadas.
-const rpcsBlock = rpcNames.length ? rpcNames.map(rpcBlock).join('\n') : '      [_ in never]: never';
+
+// RPCs do spec + overrides manuais (RPCs que o PostgREST nao expoe no spec).
+const rpcFromSpec = rpcNames.map(rpcBlock);
+const rpcFromOverrides = Object.entries(rpcOverrides).map(
+  ([name, def]) =>
+    `      ${name}: { Args: ${JSON.stringify(def.Args)}; Returns: ${def.Returns} }`,
+);
+const allRpcs = [...rpcFromSpec, ...rpcFromOverrides];
+const rpcsBlock = allRpcs.length
+  ? allRpcs.join('\n')
+  : '      [_ in never]: never';
 
 const out = `// Gerado automaticamente por scripts/gen-supabase-types.mjs.
 // Fonte: OpenAPI do projeto (PostgREST). Nao editar manualmente.

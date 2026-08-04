@@ -73,7 +73,7 @@ export const getAffiliatePayoutOverview = createServerFn({ method: "GET" }).hand
         db
           .from("affiliates")
           .select("id, full_name, email, affiliate_code, pix_key, pix_key_type, status")
-          .in("status", ["approved", "active"]),
+          .in("status", ["approved"]),
         db
           .from("affiliate_sales")
           .select("id, affiliate_id, status, confirmed_at, commission_amount, payout_id"),
