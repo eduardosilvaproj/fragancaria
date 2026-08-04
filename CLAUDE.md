@@ -125,6 +125,21 @@ Os scripts:
 
 **Importante:** `scripts/.openapi.json` versionado só contém metadados de schema (nomes de tabelas, colunas, tipos). Ele não contém dados nem segredos — apenas a **forma** do banco. Versão-lo é intencional para auditoria e reprodutibilidade.
 
+### RPCs fora do spec OpenAPI
+
+O spec PostgREST **não expõe** funções que retornam `void` ou `RECORD` sem `RETURNS TABLE`/`SETOF`. Quando o types gerado ficaria `Functions: { [_ in never]: never }`, chamadas a essas RPCs quebram o `tsc --noEmit`.
+
+Para manter o TypeScript alinhado com o banco, o gerador lê `scripts/.rpc-overrides.json` e mescla as assinaturas manuais com as RPCs que o spec expõe.
+
+**Regra obrigatória:** toda vez que uma migration criar, alterar ou remover uma RPC que o PostgREST não expõe, atualize `scripts/.rpc-overrides.json` **antes de commitar**. Se uma RPC for renomeada ou tiver seus parâmetros alterados, o override velho passa a garantir uma assinatura que não existe em produção — o TypeScript passa a mentir.
+
+**Workflow:**
+1. Aplicar a migration (local ou prod).
+2. `npm run types:refresh`.
+3. Conferir `git diff src/integrations/supabase/types.ts` — se a RPC não apareceu no diff (porque não é exposta), adicionar/editar a entrada em `scripts/.rpc-overrides.json`.
+4. Rodar `npx tsc --noEmit` para confirmar que a assinatura casa com a chamada.
+5. Commitar migration + `types.ts` + `scripts/.rpc-overrides.json` + `scripts/.openapi.json` juntos.
+
 Em outras palavras:
 
 1. **Code** escreve a migration em `supabase/migrations/AAAAmmdd_nome.sql`
