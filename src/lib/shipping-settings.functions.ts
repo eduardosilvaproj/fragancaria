@@ -139,8 +139,9 @@ export const updateShippingSetting = createServerFn({ method: "PATCH" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, redactedFieldDiff } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -195,6 +196,15 @@ export const updateShippingSetting = createServerFn({ method: "PATCH" })
         dbValue = (data.value as any) ?? [];
       }
 
+      const { data: before, error: beforeErr } = await db
+        .from("shipping_settings")
+        .select("value")
+        .eq("key", dbKey)
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[updateShippingSetting] falha ao ler before para auditoria", beforeErr.message);
+      }
+
       const { error } = await db
         .from("shipping_settings")
         .upsert({
@@ -204,6 +214,26 @@ export const updateShippingSetting = createServerFn({ method: "PATCH" })
         });
 
       if (error) return { success: false as const, error: error.message };
+
+      if (before) {
+        const beforeVal = (before as any).value ?? {};
+        const afterVal = dbValue;
+        const diff = redactedFieldDiff(
+          typeof beforeVal === "object" ? beforeVal : { value: beforeVal },
+          typeof afterVal === "object" ? afterVal : { value: afterVal },
+        );
+        if (diff) {
+          logAdminAction(
+            admin,
+            "shipping_settings.update",
+            "shipping_settings",
+            dbKey,
+            diff,
+            null,
+            { key: data.key },
+          );
+        }
+      }
 
       return { success: true as const, data: { key: data.key } };
     } catch (e: any) {

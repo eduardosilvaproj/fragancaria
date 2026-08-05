@@ -182,8 +182,9 @@ export const updateStoreSettings = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, diffSnapshots } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -209,6 +210,16 @@ export const updateStoreSettings = createServerFn({ method: "POST" })
         return { success: false as const, error: "Nenhum campo para atualizar." };
       }
 
+      const changedKeys = Object.keys(patch);
+      const { data: before, error: beforeErr } = await db
+        .from("store_settings")
+        .select(changedKeys.join(","))
+        .eq("id", 1)
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[updateStoreSettings] falha ao ler before para auditoria", beforeErr.message);
+      }
+
       const { data: row, error } = await db
         .from("store_settings")
         .update(patch)
@@ -222,6 +233,23 @@ export const updateStoreSettings = createServerFn({ method: "POST" })
           success: false as const,
           error: "store_settings nao tem a linha id=1 (migration aplicada?).",
         };
+      }
+
+      if (before && row) {
+        const diff = diffSnapshots(
+          before as Record<string, unknown>,
+          row as Record<string, unknown>,
+        );
+        if (diff) {
+          logAdminAction(
+            admin,
+            "store_settings.update",
+            "store_settings",
+            "1",
+            diff.before,
+            diff.after,
+          );
+        }
       }
 
       return { success: true as const, data: toStoreConfig(row) };

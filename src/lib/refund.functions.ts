@@ -271,7 +271,8 @@ export const approveRefund = createServerFn({ method: "POST" })
   .validator((d: unknown) => approveSchema.parse(d))
   .handler(async ({ data }): Promise<ApproveRefundResult> => {
     const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const admin = await requireAdmin();
+    const { logAdminAction } = await import("@/lib/admin-audit");
 
     const token = process.env.MP_ACCESS_TOKEN;
     if (!token) return { success: false, error: "MP_ACCESS_TOKEN não configurado" };
@@ -385,6 +386,15 @@ export const approveRefund = createServerFn({ method: "POST" })
       }).catch((err) => console.warn("[approveRefund] e-mail falhou (não bloqueia)", err));
     }
 
+    logAdminAction(
+      admin,
+      "refund.approve",
+      "refund",
+      rr.id,
+      { status: rr.status, order_id: rr.order_id },
+      { status: "approved", order_status: newOrderStatus },
+    );
+
     return { success: true, orderStatus: newOrderStatus };
   });
 
@@ -458,7 +468,8 @@ export const rejectRefund = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
     const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const admin = await requireAdmin();
+    const { logAdminAction } = await import("@/lib/admin-audit");
 
     const { data: rr, error: rrErr } = await supabaseAdmin
       .from("refund_requests")
@@ -478,5 +489,15 @@ export const rejectRefund = createServerFn({ method: "POST" })
       .from("orders")
       .update({ refund_status: "rejected" } as never)
       .eq("id", (rr as any).order_id);
+
+    logAdminAction(
+      admin,
+      "refund.reject",
+      "refund",
+      data.refundRequestId,
+      { status: (rr as any).status, order_id: (rr as any).order_id },
+      { status: "rejected" },
+    );
+
     return { success: true };
   });

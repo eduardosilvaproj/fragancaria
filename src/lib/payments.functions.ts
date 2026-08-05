@@ -993,8 +993,9 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, redactedFieldDiff } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -1007,6 +1008,20 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
       if (data.freeInstallments !== undefined) patch.free_installments = data.freeInstallments;
       if (data.enabledMethods !== undefined) patch.enabled_methods = data.enabledMethods;
 
+      const changedKeys = Object.keys(patch).filter((k) => k !== "updated_at");
+      if (changedKeys.length === 0) {
+        return { success: false as const, error: "Nenhum campo para atualizar." };
+      }
+
+      const { data: before, error: beforeErr } = await db
+        .from("payment_settings")
+        .select(changedKeys.join(","))
+        .eq("id", 1)
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[savePaymentSettings] falha ao ler before para auditoria", beforeErr.message);
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: updated, error } = await db
         .from("payment_settings")
@@ -1016,6 +1031,24 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
         .single();
 
       if (error) return { success: false as const, error: error.message };
+
+      if (before) {
+        const diff = redactedFieldDiff(
+          before as Record<string, unknown>,
+          patch,
+        );
+        if (diff) {
+          logAdminAction(
+            admin,
+            "payment_settings.update",
+            "payment_settings",
+            "1",
+            diff,
+            null,
+          );
+        }
+      }
+
       return { success: true as const, data: updated as unknown as PaymentSettings };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403)

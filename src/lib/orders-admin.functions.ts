@@ -365,11 +365,12 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
     }): Promise<{ success: true } | { success: false; error: string }> => {
       try {
         const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const admin = await requireAdmin();
 
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
         );
+        const { logAdminAction, diffSnapshots } = await import("@/lib/admin-audit");
 
         // Se o admin está mudando o status, valida a transição contra a
         // máquina de estados. Bloqueia saltos impossíveis (ex.: pending ->
@@ -447,11 +448,34 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
           return { success: false, error: "nenhum campo para atualizar" };
         }
 
-        const { error } = await supabaseAdmin
+        // Captura before para auditoria (só campos que vão mudar)
+        const auditChangedKeys = Object.keys(updatePayload);
+        const { data: beforeOrder, error: beforeAuditErr } = await supabaseAdmin
+          .from("orders")
+          .select(auditChangedKeys.join(","))
+          .eq("id", data.orderId)
+          .maybeSingle();
+        if (beforeAuditErr) {
+          console.warn("[updateOrderForAdmin] falha ao ler before para auditoria", beforeAuditErr.message);
+        }
+
+        const { data: afterOrder, error } = await supabaseAdmin
           .from("orders")
           .update(updatePayload as unknown as Record<string, never>)
-          .eq("id", data.orderId);
+          .eq("id", data.orderId)
+          .select(auditChangedKeys.join(","))
+          .maybeSingle();
         if (error) return { success: false, error: error.message };
+
+        if (beforeOrder && afterOrder) {
+          const diff = diffSnapshots(
+            beforeOrder as Record<string, unknown>,
+            afterOrder as Record<string, unknown>,
+          );
+          if (diff) {
+            logAdminAction(admin, "order.update", "order", data.orderId, diff.before, diff.after);
+          }
+        }
 
         // Notifica o cliente por e-mail quando o pedido foi enviado/entregue.
         // Não bloqueia a resposta se o envio falhar.

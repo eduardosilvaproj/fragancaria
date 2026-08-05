@@ -104,8 +104,9 @@ export const createCoupon = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -137,6 +138,12 @@ export const createCoupon = createServerFn({ method: "POST" })
         return { success: false as const, error: error.message };
       }
 
+      logAdminAction(admin, "coupon.create", "coupon", (created as any).id, null, {
+        code: (created as any).code,
+        discount_type: (created as any).discount_type,
+        discount_value: (created as any).discount_value,
+      });
+
       return { success: true as const, data: created as unknown as Coupon };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
@@ -150,8 +157,9 @@ export const updateCoupon = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, diffSnapshots } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -174,12 +182,36 @@ export const updateCoupon = createServerFn({ method: "POST" })
       if (data.expiresAt !== undefined) patch.expires_at = data.expiresAt;
       if (data.isActive !== undefined) patch.is_active = data.isActive;
 
+      const changedKeys = Object.keys(patch).filter((k) => k !== "updated_at");
+      if (changedKeys.length === 0) {
+        return { success: false as const, error: "nenhum campo para atualizar" };
+      }
+
+      const { data: before, error: beforeErr } = await db
+        .from("coupons")
+        .select(changedKeys.join(","))
+        .eq("id", data.id)
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[updateCoupon] falha ao ler before para auditoria", beforeErr.message);
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: updated, error } = await db.from("coupons").update(patch).eq("id", data.id).select().single();
 
       if (error) {
         if (error.code === "23505") return { success: false as const, error: "Código já existe" };
         return { success: false as const, error: error.message };
+      }
+
+      if (before && updated) {
+        const diff = diffSnapshots(
+          before as Record<string, unknown>,
+          updated as Record<string, unknown>,
+        );
+        if (diff) {
+          logAdminAction(admin, "coupon.update", "coupon", data.id, diff.before, diff.after);
+        }
       }
 
       return { success: true as const, data: updated as unknown as Coupon };
@@ -195,15 +227,37 @@ export const deactivateCoupon = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
+
+      const { data: before, error: beforeErr } = await db
+        .from("coupons")
+        .select("is_active, code")
+        .eq("id", data.id)
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[deactivateCoupon] falha ao ler before para auditoria", beforeErr.message);
+      }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { error } = await db.from("coupons").update({ is_active: false, updated_at: new Date().toISOString() }).eq("id", data.id);
 
       if (error) return { success: false as const, error: error.message };
+
+      if (before) {
+        logAdminAction(
+          admin,
+          "coupon.deactivate",
+          "coupon",
+          data.id,
+          { is_active: before.is_active },
+          { is_active: false },
+        );
+      }
+
       return { success: true as const };
     } catch (e: any) {
       if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };

@@ -929,16 +929,19 @@ export type Database = {
           user_id: string
           email: string | null
           created_at: string
+          role: string
         }
         Insert: {
           user_id?: string
           email?: string | null
           created_at?: string
+          role?: string
         }
         Update: {
           user_id?: string | null
           email?: string | null
           created_at?: string | null
+          role?: string | null
         }
         Relationships: []
       }
@@ -1578,6 +1581,42 @@ export type Database = {
           is_default?: boolean | null
           created_at?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      admin_action_logs: {
+        Row: {
+          id: number
+          user_id: string
+          action: string
+          entity_type: string
+          entity_id: string | null
+          before_data: Json | null
+          after_data: Json | null
+          metadata: Json | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          user_id?: string
+          action?: string
+          entity_type?: string
+          entity_id?: string | null
+          before_data?: Json | null
+          after_data?: Json | null
+          metadata?: Json | null
+          created_at?: string
+        }
+        Update: {
+          id?: number | null
+          user_id?: string | null
+          action?: string | null
+          entity_type?: string | null
+          entity_id?: string | null
+          before_data?: Json | null
+          after_data?: Json | null
+          metadata?: Json | null
+          created_at?: string | null
         }
         Relationships: []
       }

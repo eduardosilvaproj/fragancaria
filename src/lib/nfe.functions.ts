@@ -179,8 +179,18 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, redactedFieldDiff } = await import("@/lib/admin-audit");
+
+      const { data: before, error: beforeErr } = await (supabaseAdmin as any)
+        .from("nfe_settings")
+        .select("*")
+        .eq("id", "main")
+        .maybeSingle();
+      if (beforeErr) {
+        console.warn("[saveNfeSettings] falha ao ler before para auditoria", beforeErr.message);
+      }
 
       const { error } = await (supabaseAdmin as any)
         .from("nfe_settings")
@@ -198,6 +208,35 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
         }, { onConflict: "id" });
 
       if (error) return { success: false, error: error.message };
+
+      if (before) {
+        const afterRow = {
+          cnpj: data.cnpj,
+          inscricao_estadual: data.inscricao_estadual,
+          inscricao_municipal: data.inscricao_municipal || null,
+          razao_social: data.razao_social,
+          nome_fantasia: data.nome_fantasia || null,
+          endereco: data.endereco,
+          ambiente_sefaz: data.ambiente_sefaz,
+          estado_uf: data.estado_uf,
+          nfe_serie: data.nfe_serie || 15,
+        };
+        const diff = redactedFieldDiff(
+          before as Record<string, unknown>,
+          afterRow as unknown as Record<string, unknown>,
+        );
+        if (diff) {
+          logAdminAction(
+            admin,
+            "nfe_settings.update",
+            "nfe_settings",
+            "main",
+            diff,
+            null,
+          );
+        }
+      }
+
       return { success: true };
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "erro";

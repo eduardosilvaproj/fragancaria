@@ -207,8 +207,9 @@ export const createProduct = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction } = await import("@/lib/admin-audit");
       const { randomUUID } = await import("node:crypto");
 
       const id = data.sku?.trim() || `FRAG-${randomUUID().slice(0, 12)}`;
@@ -221,9 +222,12 @@ export const createProduct = createServerFn({ method: "POST" })
       const { data: created, error } = await supabaseAdmin
         .from("products")
         .insert(row as any)
-        .select("id")
+        .select("*")
         .single();
       if (error) return { success: false as const, error: error.message };
+
+      logAdminAction(admin, "product.create", "product", created.id, null, created as Record<string, unknown>);
+
       return { success: true as const, id: created.id };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
@@ -235,8 +239,9 @@ export const updateProduct = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminAction, diffSnapshots } = await import("@/lib/admin-audit");
 
       const p = data.patch;
       const patch: Record<string, unknown> = {};
@@ -266,14 +271,41 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.targetMargin !== undefined) patch.target_margin = p.targetMargin;
       if (p.variations !== undefined) patch.variations = p.variations;
 
-      if (Object.keys(patch).length === 0) {
+      const changedKeys = Object.keys(patch);
+      if (changedKeys.length === 0) {
         return { success: false as const, error: "nenhum campo para atualizar" };
       }
-      const { error } = await supabaseAdmin
+
+      const { data: before, error: beforeErr } = await supabaseAdmin
+        .from("products")
+        .select(changedKeys.join(","))
+        .eq("id", data.id)
+        .single();
+      if (beforeErr) return { success: false as const, error: beforeErr.message };
+
+      const action: "product.update" | "product.activate" | "product.deactivate" =
+        changedKeys.length === 1 && patch.is_active !== undefined
+          ? patch.is_active
+            ? "product.activate"
+            : "product.deactivate"
+          : "product.update";
+
+      const { data: after, error: updateErr } = await supabaseAdmin
         .from("products")
         .update(patch as unknown as Record<string, never>)
-        .eq("id", data.id);
-      if (error) return { success: false as const, error: error.message };
+        .eq("id", data.id)
+        .select(changedKeys.join(","))
+        .single();
+      if (updateErr) return { success: false as const, error: updateErr.message };
+
+      const diff = diffSnapshots(
+        before as Record<string, unknown>,
+        after as Record<string, unknown>,
+      );
+      if (diff) {
+        logAdminAction(admin, action, "product", data.id, diff.before, diff.after);
+      }
+
       return { success: true as const };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
@@ -285,10 +317,30 @@ export const deleteProducts = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminActionBatch } = await import("@/lib/admin-audit");
+
+      const { data: beforeRows, error: readErr } = await supabaseAdmin
+        .from("products")
+        .select("id, name, sku")
+        .in("id", data.ids);
+      if (readErr) return { success: false as const, error: readErr.message };
+
       const { error } = await supabaseAdmin.from("products").delete().in("id", data.ids);
       if (error) return { success: false as const, error: error.message };
+
+      logAdminActionBatch(
+        admin,
+        "product.delete",
+        "product",
+        (beforeRows ?? []).map((r) => ({
+          entityId: r.id as string,
+          before: r as Record<string, unknown>,
+          after: null,
+        })),
+      );
+
       return { success: true as const };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
@@ -302,13 +354,40 @@ export const setProductsActive = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { logAdminActionBatch } = await import("@/lib/admin-audit");
+
+      const action = data.isActive ? "product.activate" : "product.deactivate";
+      const { data: beforeRows, error: readErr } = await supabaseAdmin
+        .from("products")
+        .select("id, is_active, name")
+        .in("id", data.ids);
+      if (readErr) return { success: false as const, error: readErr.message };
+
       const { error } = await supabaseAdmin
         .from("products")
         .update({ is_active: data.isActive })
         .in("id", data.ids);
       if (error) return { success: false as const, error: error.message };
+
+      const beforeMap = new Map(
+        (beforeRows ?? []).map((r) => [r.id as string, Boolean(r.is_active)]),
+      );
+      const changedIds = data.ids.filter((id) => beforeMap.get(id) !== data.isActive);
+      const afterValue = { is_active: data.isActive };
+
+      logAdminActionBatch(
+        admin,
+        action,
+        "product",
+        changedIds.map((id) => ({
+          entityId: id,
+          before: { is_active: beforeMap.get(id) ?? null },
+          after: afterValue,
+        })),
+      );
+
       return { success: true as const };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
@@ -330,13 +409,13 @@ export const applyGlobalMargin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const admin = await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       // Busca os produtos selecionados que têm cost
       const { data: rows, error } = await supabaseAdmin
         .from("products")
-        .select("id, name, cost, price")
+        .select("id, name, cost, price, target_margin")
         .in("id", data.ids)
         .not("cost", "is", null);
 
@@ -355,6 +434,7 @@ export const applyGlobalMargin = createServerFn({ method: "POST" })
           cost,
           oldPrice: Number(r.price ?? 0),
           newPrice,
+          oldTargetMargin: r.target_margin != null ? Number(r.target_margin) : null,
         };
       });
 
@@ -378,6 +458,13 @@ export const applyGlobalMargin = createServerFn({ method: "POST" })
 
       // Aplica apenas price e target_margin. UPDATE isolado por id protege as
       // demais colunas (images, weight_grams, dimensões, ncm etc.) do bug de upsert.
+      const { logAdminActionBatch } = await import("@/lib/admin-audit");
+      const auditItems = preview.map((p) => ({
+        entityId: p.id,
+        before: { price: p.oldPrice, target_margin: p.oldTargetMargin },
+        after: { price: p.newPrice, target_margin: margin },
+      }));
+
       for (const p of preview) {
         const { error: updateErr } = await supabaseAdmin
           .from("products")
@@ -385,6 +472,12 @@ export const applyGlobalMargin = createServerFn({ method: "POST" })
           .eq("id", p.id);
         if (updateErr) return { success: false as const, error: updateErr.message };
       }
+
+      logAdminActionBatch(admin, "product.margin.apply", "product", auditItems, {
+        targetMargin: margin,
+        requestedCount: data.ids.length,
+      });
+
       return { success: true as const, dryRun: false as const, atualizados: preview.length };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };

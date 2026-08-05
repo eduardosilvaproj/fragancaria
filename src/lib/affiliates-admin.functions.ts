@@ -93,10 +93,11 @@ export const approveAffiliate = createServerFn({
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
-    await requireAdmin();
+    const admin = await requireAdmin();
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
+    const { logAdminAction } = await import("./admin-audit");
 
     // Aprovar sem tier deixa current_tier_id NULL e o inner join em createPayment
     // descarta a atribuição inteira. Fixa o afiliado no tier base (menor rate).
@@ -106,6 +107,15 @@ export const approveAffiliate = createServerFn({
       .order("commission_rate", { ascending: true })
       .limit(1)
       .maybeSingle();
+
+    const { data: before, error: beforeErr } = await supabaseAdmin
+      .from("affiliates")
+      .select("status")
+      .eq("id", affiliateId)
+      .maybeSingle();
+    if (beforeErr) {
+      console.warn("[approveAffiliate] falha ao ler before para auditoria", beforeErr.message);
+    }
 
     const { data, error } = await supabaseAdmin
       .from("affiliates")
@@ -120,6 +130,17 @@ export const approveAffiliate = createServerFn({
     if (error) {
       console.error("Erro ao aprovar afiliado:", error);
       return { success: false, error: error.message };
+    }
+
+    if (before) {
+      logAdminAction(
+        admin,
+        "affiliate.approve",
+        "affiliate",
+        affiliateId,
+        { status: (before as any).status },
+        { status: "approved" },
+      );
     }
 
     return { success: true, data };
@@ -138,10 +159,20 @@ export const rejectAffiliate = createServerFn({
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
-    await requireAdmin();
+    const admin = await requireAdmin();
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
+    const { logAdminAction } = await import("./admin-audit");
+
+    const { data: before, error: beforeErr } = await supabaseAdmin
+      .from("affiliates")
+      .select("status")
+      .eq("id", affiliateId)
+      .maybeSingle();
+    if (beforeErr) {
+      console.warn("[rejectAffiliate] falha ao ler before para auditoria", beforeErr.message);
+    }
 
     const { data, error } = await supabaseAdmin
       .from("affiliates")
@@ -155,6 +186,17 @@ export const rejectAffiliate = createServerFn({
     if (error) {
       console.error("Erro ao rejeitar afiliado:", error);
       return { success: false, error: error.message };
+    }
+
+    if (before) {
+      logAdminAction(
+        admin,
+        "affiliate.reject",
+        "affiliate",
+        affiliateId,
+        { status: (before as any).status },
+        { status: "rejected" },
+      );
     }
 
     return { success: true, data };
@@ -173,10 +215,20 @@ export const suspendAffiliate = createServerFn({
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
     const { requireAdmin } = await import("./admin-auth");
-    await requireAdmin();
+    const admin = await requireAdmin();
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
+    const { logAdminAction } = await import("./admin-audit");
+
+    const { data: before, error: beforeErr } = await supabaseAdmin
+      .from("affiliates")
+      .select("status")
+      .eq("id", affiliateId)
+      .maybeSingle();
+    if (beforeErr) {
+      console.warn("[suspendAffiliate] falha ao ler before para auditoria", beforeErr.message);
+    }
 
     const { data, error } = await supabaseAdmin
       .from("affiliates")
@@ -190,6 +242,17 @@ export const suspendAffiliate = createServerFn({
     if (error) {
       console.error("Erro ao suspender afiliado:", error);
       return { success: false, error: error.message };
+    }
+
+    if (before) {
+      logAdminAction(
+        admin,
+        "affiliate.suspend",
+        "affiliate",
+        affiliateId,
+        { status: (before as any).status },
+        { status: "suspended" },
+      );
     }
 
     return { success: true, data };
