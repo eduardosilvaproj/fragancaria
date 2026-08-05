@@ -1105,6 +1105,9 @@ export type Database = {
           ncm: string | null
           ean_barcode: string | null
           variations: Json
+          cost: number | null
+          pricing_mode: string
+          target_margin: number | null
         }
         Insert: {
           id?: string
@@ -1136,6 +1139,9 @@ export type Database = {
           ncm?: string | null
           ean_barcode?: string | null
           variations?: Json
+          cost?: number | null
+          pricing_mode?: string
+          target_margin?: number | null
         }
         Update: {
           id?: string | null
@@ -1167,6 +1173,9 @@ export type Database = {
           ncm?: string | null
           ean_barcode?: string | null
           variations?: Json | null
+          cost?: number | null
+          pricing_mode?: string | null
+          target_margin?: number | null
         }
         Relationships: []
       }

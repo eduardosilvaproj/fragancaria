@@ -46,6 +46,10 @@ const productInput = z.object({
   // Dados fiscais
   ncm: z.string().max(10).nullable().optional(),
   eanBarcode: z.string().max(20).nullable().optional(),
+  // Custo e margem
+  cost: z.number().nonnegative().nullable().optional(),
+  pricingMode: z.enum(["manual", "auto"]).optional(),
+  targetMargin: z.number().min(0).max(0.9999).nullable().optional(),
   // Variações (ex.: tons de coloração)
   variations: z.array(variationSchema).max(50).optional(),
 });
@@ -87,6 +91,9 @@ function inputToPatch(data: Partial<ProductInput>): Record<string, unknown> {
   if (data.lengthCm !== undefined) patch.length_cm = data.lengthCm;
   if (data.ncm !== undefined) patch.ncm = data.ncm;
   if (data.eanBarcode !== undefined) patch.ean_barcode = data.eanBarcode;
+  if (data.cost !== undefined) patch.cost = data.cost;
+  if (data.pricingMode !== undefined) patch.pricing_mode = data.pricingMode;
+  if (data.targetMargin !== undefined) patch.target_margin = data.targetMargin;
   if (data.variations !== undefined) patch.variations = data.variations;
   return patch;
 }
@@ -120,6 +127,10 @@ function inputToRow(data: ProductInput) {
     // Dados fiscais
     ncm: data.ncm ?? null,
     ean_barcode: data.eanBarcode ?? null,
+    // Custo e margem
+    cost: data.cost ?? null,
+    pricing_mode: data.pricingMode ?? "manual",
+    target_margin: data.targetMargin ?? null,
     // Variações
     variations: data.variations ?? [],
   };
@@ -250,6 +261,9 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.featured !== undefined) patch.featured = p.featured;
       if (p.isNew !== undefined) patch.is_new = p.isNew;
       if (p.isActive !== undefined) patch.is_active = p.isActive;
+      if (p.cost !== undefined) patch.cost = p.cost;
+      if (p.pricingMode !== undefined) patch.pricing_mode = p.pricingMode;
+      if (p.targetMargin !== undefined) patch.target_margin = p.targetMargin;
       if (p.variations !== undefined) patch.variations = p.variations;
 
       if (Object.keys(patch).length === 0) {
@@ -296,6 +310,82 @@ export const setProductsActive = createServerFn({ method: "POST" })
         .in("id", data.ids);
       if (error) return { success: false as const, error: error.message };
       return { success: true as const };
+    } catch (e: any) {
+      return { success: false as const, error: e?.message || "erro" };
+    }
+  });
+
+// Aplica margem global a um lote de produtos.
+// Se cost for null, o produto é ignorado (não tem custo para recalcular).
+// Se cost existir, price é recalculado: price = cost / (1 - targetMargin).
+// Retorna preview com quantos serão alterados e faixa de preço antes/depois.
+export const applyGlobalMargin = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z.object({
+      targetMargin: z.number().min(0).max(0.9999),
+      ids: z.array(z.string()).min(1).max(2000),
+      dryRun: z.boolean().default(true),
+    }).parse(d),
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      // Busca os produtos selecionados que têm cost
+      const { data: rows, error } = await supabaseAdmin
+        .from("products")
+        .select("id, name, cost, price")
+        .in("id", data.ids)
+        .not("cost", "is", null);
+
+      if (error) return { success: false as const, error: error.message };
+      if (!rows || rows.length === 0) {
+        return { success: false as const, error: "Nenhum produto selecionado tem custo definido." };
+      }
+
+      const margin = data.targetMargin;
+      const preview = rows.map((r) => {
+        const cost = Number(r.cost);
+        const newPrice = Math.round(cost / (1 - margin) * 100) / 100;
+        return {
+          id: r.id,
+          name: r.name,
+          cost,
+          oldPrice: Number(r.price ?? 0),
+          newPrice,
+        };
+      });
+
+      if (data.dryRun) {
+        const afetados = preview.length;
+        const semCusto = data.ids.length - afetados;
+        const minOld = Math.min(...preview.map((p) => p.oldPrice));
+        const maxOld = Math.max(...preview.map((p) => p.oldPrice));
+        const minNew = Math.min(...preview.map((p) => p.newPrice));
+        const maxNew = Math.max(...preview.map((p) => p.newPrice));
+        return {
+          success: true as const,
+          dryRun: true as const,
+          afetados,
+          semCusto,
+          faixaPrecoAntes: `${minOld.toFixed(2)} - ${maxOld.toFixed(2)}`,
+          faixaPrecoDepois: `${minNew.toFixed(2)} - ${maxNew.toFixed(2)}`,
+          preview,
+        };
+      }
+
+      // Aplica apenas price e target_margin. UPDATE isolado por id protege as
+      // demais colunas (images, weight_grams, dimensões, ncm etc.) do bug de upsert.
+      for (const p of preview) {
+        const { error: updateErr } = await supabaseAdmin
+          .from("products")
+          .update({ price: p.newPrice, target_margin: margin })
+          .eq("id", p.id);
+        if (updateErr) return { success: false as const, error: updateErr.message };
+      }
+      return { success: true as const, dryRun: false as const, atualizados: preview.length };
     } catch (e: any) {
       return { success: false as const, error: e?.message || "erro" };
     }
@@ -457,7 +547,7 @@ export const exportProducts = createServerFn({ method: "GET" }).handler(async ()
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: rows, error } = await supabaseAdmin
       .from("products")
-      .select("id, sku, name, brand, category, price, original_price, quantity, in_stock, is_active, featured, is_new, images, tags, description")
+      .select("id, sku, name, brand, category, price, original_price, quantity, in_stock, is_active, featured, is_new, images, tags, description, cost, pricing_mode, target_margin")
       .order("name", { ascending: true });
     if (error) return { success: false as const, error: error.message };
     return { success: true as const, data: rows ?? [] };

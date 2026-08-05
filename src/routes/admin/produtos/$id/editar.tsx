@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ArrowLeft, Loader2, Package } from "lucide-react";
+import { ArrowLeft, Loader2, Package, Calculator } from "lucide-react";
 import { getProductForAdmin, updateProduct } from "@/lib/products-admin.functions";
 import { listCategories } from "@/lib/categories-admin.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
@@ -37,6 +37,10 @@ interface FormState {
   // Dados fiscais
   ncm: string;
   eanBarcode: string;
+  // Custo e margem
+  cost: string;
+  pricingMode: "manual" | "auto";
+  targetMargin: string;
   // Variações
   hasVariations: boolean;
   variations: VariationForm[];
@@ -66,6 +70,10 @@ const EMPTY_FORM: FormState = {
   // Dados fiscais
   ncm: "",
   eanBarcode: "",
+  // Custo e margem
+  cost: "",
+  pricingMode: "manual",
+  targetMargin: "",
   // Variações
   hasVariations: false,
   variations: [],
@@ -127,6 +135,10 @@ function EditarProduto() {
         // Dados fiscais
         ncm: p.ncm ?? "",
         eanBarcode: p.ean_barcode ?? "",
+        // Custo e margem
+        cost: p.cost != null ? String(p.cost) : "",
+        pricingMode: p.pricing_mode === "auto" ? "auto" : "manual",
+        targetMargin: p.target_margin != null ? String(p.target_margin) : "",
         // Variações
         hasVariations: Array.isArray(p.variations) && p.variations.length > 0,
         variations: Array.isArray(p.variations)
@@ -147,6 +159,43 @@ function EditarProduto() {
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) =>
     setForm((f) => ({ ...f, [key]: value }));
+
+  // Recálculo automático entre custo, preço e margem
+  // Fonte da verdade: targetMargin (margem sobre preço de venda).
+  // price = cost / (1 - targetMargin)
+  // targetMargin = 1 - cost / price
+  // cost = price * (1 - targetMargin)
+  const recalc = useCallback(
+    (changed: "cost" | "price" | "margin") => {
+      setForm((f) => {
+        const cost = parseFloat(f.cost);
+        const price = parseFloat(f.price);
+        const margin = parseFloat(f.targetMargin);
+        const hasCost = !isNaN(cost) && cost > 0;
+        const hasPrice = !isNaN(price) && price > 0;
+        const hasMargin = !isNaN(margin) && margin > 0 && margin < 1;
+
+        if (changed === "cost" && hasCost && hasMargin) {
+          // Recalcula price
+          const newPrice = cost / (1 - margin);
+          return { ...f, price: newPrice.toFixed(2) };
+        }
+        if (changed === "margin" && hasCost && hasMargin) {
+          const newPrice = cost / (1 - margin);
+          return { ...f, price: newPrice.toFixed(2) };
+        }
+        if (changed === "price" && hasPrice && hasCost) {
+          // Recalcula margin
+          const newMargin = 1 - cost / price;
+          if (newMargin > 0 && newMargin < 1) {
+            return { ...f, targetMargin: newMargin.toFixed(4) };
+          }
+        }
+        return f;
+      });
+    },
+    [],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,6 +240,10 @@ function EditarProduto() {
             // Dados fiscais
             ncm: form.ncm.trim() || null,
             eanBarcode: form.eanBarcode.trim() || null,
+            // Custo e margem
+            cost: form.cost ? Number(form.cost) : null,
+            pricingMode: form.pricingMode,
+            targetMargin: form.targetMargin ? Number(form.targetMargin) : null,
             // Variações
             variations: form.hasVariations
               ? form.variations
@@ -339,6 +392,123 @@ function EditarProduto() {
               className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
             />
           </div>
+
+          {/* Custo e margem */}
+          <div className="md:col-span-2 border-t border-[#E9E1D2] pt-4 mt-2">
+            <div className="flex items-center gap-2 mb-3">
+              <Calculator className="h-4 w-4 text-[#B07B1E]" />
+              <span className="text-xs uppercase tracking-wider text-[#B07B1E] font-medium">
+                Custo e Margem
+              </span>
+            </div>
+
+            {/* Toggle Manual / Automático */}
+            <div className="flex items-center gap-4 mb-4">
+              <button
+                type="button"
+                onClick={() => set("pricingMode", "manual")}
+                className={`px-4 py-1.5 text-xs font-medium rounded-full transition-colors ${
+                  form.pricingMode === "manual"
+                    ? "bg-[#0F3A3E] text-white"
+                    : "bg-[#F3EEE3] text-[#51635F]"
+                }`}
+              >
+                Manual
+              </button>
+              <button
+                type="button"
+                disabled
+                title="Em breve — integração Stovix"
+                className={`px-4 py-1.5 text-xs font-medium rounded-full cursor-not-allowed opacity-50 ${
+                  form.pricingMode === "auto"
+                    ? "bg-[#0F3A3E] text-white"
+                    : "bg-[#F3EEE3] text-[#51635F]"
+                }`}
+              >
+                Automático (em breve)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">
+                  Custo (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.cost}
+                  onChange={(e) => {
+                    set("cost", e.target.value);
+                    recalc("cost");
+                  }}
+                  disabled={form.pricingMode === "auto"}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">
+                  Preço de venda (R$)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={form.price}
+                  onChange={(e) => {
+                    set("price", e.target.value);
+                    recalc("price");
+                  }}
+                  required
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">
+                  Margem sobre venda (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  max="99.99"
+                  value={
+                    form.targetMargin
+                      ? (parseFloat(form.targetMargin) * 100).toFixed(1)
+                      : ""
+                  }
+                  onChange={(e) => {
+                    const pct = e.target.value;
+                    const decimal = pct ? parseFloat(pct) / 100 : "";
+                    set("targetMargin", decimal !== "" ? String(decimal) : "");
+                    recalc("margin");
+                  }}
+                  disabled={form.pricingMode === "auto"}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+            </div>
+
+            {/* Indicador de markup */}
+            {form.cost && form.price && parseFloat(form.cost) > 0 && parseFloat(form.price) > 0 && (
+              <p className="text-xs text-[#8A938E] mt-2">
+                Markup sobre custo:{" "}
+                <strong>
+                  {((parseFloat(form.price) / parseFloat(form.cost) - 1) * 100).toFixed(1)}%
+                </strong>
+                {" · "}
+                Margem sobre venda:{" "}
+                <strong>
+                  {form.targetMargin
+                    ? (parseFloat(form.targetMargin) * 100).toFixed(1)
+                    : ((1 - parseFloat(form.cost) / parseFloat(form.price)) * 100).toFixed(1)}
+                  %
+                </strong>
+              </p>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs text-[#8A938E] mb-1">Quantidade em estoque</label>
             <input

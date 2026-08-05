@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import {
@@ -20,6 +20,7 @@ import {
   CheckCircle,
   XCircle,
   Power,
+  Calculator,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -28,6 +29,7 @@ import {
   setProductsActive,
   importProducts,
   exportProducts,
+  applyGlobalMargin,
 } from "@/lib/products-admin.functions";
 import { enrichProductsBatch } from "@/lib/product-enrich.functions";
 import { suggestProductImagesBatch } from "@/lib/product-image-suggestions.functions";
@@ -243,6 +245,8 @@ function AdminProdutos() {
   const [importing, setImporting] = useState(false);
   const [showEnrichModal, setShowEnrichModal] = useState(false);
   const [showSuggestModal, setShowSuggestModal] = useState(false);
+  const [showMarginModal, setShowMarginModal] = useState(false);
+  const [marginPreview, setMarginPreview] = useState<any>(null);
   const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
   const [enriching, setEnriching] = useState(false);
 
@@ -852,8 +856,27 @@ function AdminProdutos() {
             >
               Excluir
             </button>
+            <button
+              onClick={() => setShowMarginModal(true)}
+              className="px-3 py-1 text-sm bg-[#B07B1E]/80 hover:bg-[#B07B1E] transition-colors"
+            >
+              Margem
+            </button>
           </div>
         </div>
+      )}
+
+      {/* Modal de margem global */}
+      {showMarginModal && (
+        <MarginModal
+          ids={selectedProducts}
+          onClose={() => { setShowMarginModal(false); setMarginPreview(null); }}
+          onApplied={() => {
+            setShowMarginModal(false);
+            setMarginPreview(null);
+            refetch();
+          }}
+        />
       )}
 
       {/* Products Table */}
@@ -1764,6 +1787,165 @@ function SuggestImagesModal({
               </div>
             </>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal de margem global ──────────────────────────────────────────────────
+function MarginModal({
+  ids,
+  onClose,
+  onApplied,
+}: {
+  ids: string[];
+  onClose: () => void;
+  onApplied: () => void;
+}) {
+  const applyFn = useServerFn(applyGlobalMargin);
+  const [marginPct, setMarginPct] = useState("");
+  const [preview, setPreview] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [applying, setApplying] = useState(false);
+
+  const handlePreview = async () => {
+    const pct = parseFloat(marginPct);
+    if (isNaN(pct) || pct <= 0 || pct >= 100) {
+      toast.error("Margem inválida. Digite um valor entre 0,1% e 99,9%.");
+      return;
+    }
+    setLoading(true);
+    try {
+      const res = await applyFn({
+        data: { targetMargin: pct / 100, ids, dryRun: true },
+      });
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      setPreview(res);
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao calcular preview");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApply = async () => {
+    if (!preview) return;
+    setApplying(true);
+    try {
+      const res = await applyFn({
+        data: { targetMargin: preview.targetMargin, ids, dryRun: false },
+      });
+      if (!res.success) {
+        toast.error(res.error);
+        return;
+      }
+      toast.success(`Margem aplicada em ${res.atualizados} produto(s).`);
+      onApplied();
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao aplicar margem");
+    } finally {
+      setApplying(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white max-w-lg w-full rounded-lg shadow-xl">
+        <div className="flex items-center justify-between p-4 border-b border-[#E9E1D2]">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-5 w-5 text-[#B07B1E]" />
+            <h2 className="font-serif text-lg text-[#0F3A3E]">Margem global</h2>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-[#F3EEE3] rounded">
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="p-6">
+          <p className="text-sm text-[#51635F] mb-4">
+            {ids.length} produto(s) selecionado(s). A margem será aplicada apenas
+            aos que tiverem <strong>custo</strong> definido.
+          </p>
+
+          <label className="block text-xs text-[#8A938E] mb-1">
+            Margem sobre preço de venda (%)
+          </label>
+          <div className="flex gap-2 mb-4">
+            <input
+              type="number"
+              step="0.1"
+              min="0.1"
+              max="99.9"
+              value={marginPct}
+              onChange={(e) => setMarginPct(e.target.value)}
+              placeholder="Ex: 40"
+              className="flex-1 px-3 py-2 border border-[#E9E1D2] text-sm"
+            />
+            <button
+              onClick={handlePreview}
+              disabled={loading}
+              className="px-4 py-2 bg-[#0F3A3E] text-white text-sm hover:bg-[#1A4F54] disabled:opacity-50"
+            >
+              {loading ? "Calculando..." : "Pré-visualizar"}
+            </button>
+          </div>
+
+          {preview && (
+            <div className="bg-[#F8F4EA] border border-[#E9E1D2] p-4 mb-4">
+              <p className="text-sm text-[#0F3A3E] font-medium mb-2">
+                Preview — {preview.afetados} produto(s) com custo
+              </p>
+              {preview.semCusto > 0 && (
+                <p className="text-xs text-[#8A938E] mb-2">
+                  {preview.semCusto} produto(s) ignorado(s) por não terem custo.
+                </p>
+              )}
+              <p className="text-xs text-[#51635F]">
+                Faixa de preço:{" "}
+                <strong>R$ {preview.faixaPrecoAntes}</strong> →{" "}
+                <strong>R$ {preview.faixaPrecoDepois}</strong>
+              </p>
+              {preview.preview && preview.preview.length > 0 && (
+                <div className="mt-3 max-h-40 overflow-y-auto border-t border-[#E9E1D2] pt-2">
+                  {preview.preview.slice(0, 20).map((p: any) => (
+                    <div key={p.id} className="flex justify-between text-xs text-[#51635F] py-1">
+                      <span className="truncate max-w-[200px]">{p.name}</span>
+                      <span>
+                        R$ {p.oldPrice.toFixed(2)} → R$ {p.newPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                  {preview.preview.length > 20 && (
+                    <p className="text-xs text-[#8A938E] mt-1">
+                      ...e mais {preview.preview.length - 20} produto(s)
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={onClose}
+              className="px-4 py-2 border border-[#E9E1D2] hover:bg-[#F3EEE3] transition-colors text-sm"
+            >
+              Cancelar
+            </button>
+            {preview && (
+              <button
+                onClick={handleApply}
+                disabled={applying}
+                className="px-4 py-2 bg-[#B07B1E] text-white text-sm hover:bg-[#8F6418] disabled:opacity-50"
+              >
+                {applying ? "Aplicando..." : `Aplicar margem em ${preview.afetados} produto(s)`}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

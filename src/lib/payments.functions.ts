@@ -74,6 +74,8 @@ const cartItemSchema = z.object({
   price: z.number().positive(),
   image: z.string().optional(),
   variationName: z.string().optional(),
+  cost: z.number().nonnegative().nullable().optional(),
+  targetMargin: z.number().min(0).max(0.9999).nullable().optional(),
 });
 const inputSchema = z.object({
   method: z.enum(["pix", "boleto", "credit_card"]),
@@ -205,11 +207,11 @@ export const createPayment = createServerFn({ method: "POST" })
       const productIds = [...new Set(data.items.map((i) => i.id.split("::")[0]))];
       const { data: prodRows, error: prodErr } = await admin
         .from("products")
-        .select("id, price, is_active")
+        .select("id, price, is_active, cost, target_margin")
         .in("id", productIds);
       if (prodErr) return { success: false, error: "Falha ao validar preços dos produtos." };
       const priceById = new Map(
-        (prodRows ?? []).map((p: any) => [p.id, { price: Number(p.price), active: p.is_active }]),
+        (prodRows ?? []).map((p: any) => [p.id, { price: Number(p.price), active: p.is_active, cost: p.cost != null ? Number(p.cost) : null, targetMargin: p.target_margin != null ? Number(p.target_margin) : null }]),
       );
       let serverSubtotal = 0;
       for (const item of data.items) {
@@ -460,7 +462,18 @@ export const createPayment = createServerFn({ method: "POST" })
             // webhook incrementar usage_count na aprovação. null se não houve
             // cupom ou se ele foi recusado na validação.
             coupon_code: appliedCouponCode,
-            items: data.items ?? [],
+            // Snapshot de custo e margem no momento da venda (F2).
+            // Cada item recebe cost e targetMargin do banco no momento do pedido,
+            // para que o dashboard financeiro (F3) calcule margem real histórica.
+            items: (data.items ?? []).map((item) => {
+              const pid = item.id.split("::")[0];
+              const p = priceById.get(pid);
+              return {
+                ...item,
+                cost: p?.cost ?? null,
+                targetMargin: p?.targetMargin ?? null,
+              };
+            }),
             auth_user_id: data.userId ?? null,
             customer_email: data.payer.email,
             customer_name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
