@@ -428,6 +428,8 @@ async function searchProductByName(
 export const listProductsNeedingEnrichment = createServerFn({ method: "GET" })
   .handler(async (): Promise<{ success: boolean; data: ProductRow[]; count: number }> => {
     try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       const { data, error, count } = await supabaseAdmin
@@ -723,6 +725,8 @@ export const fetchProductImages = createServerFn({ method: "POST" })
   .validator((d: unknown) => FetchImagesSchema.parse(d))
   .handler(async ({ data }): Promise<{ success: boolean; images: string[]; error?: string }> => {
     try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
       const mlData = await fetchMLProductData(data.mlId);
       if (!mlData) {
         return { success: false, images: [], error: "Produto não encontrado no Mercado Livre" };
