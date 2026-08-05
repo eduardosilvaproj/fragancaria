@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 
 // Server fns de CRUD de produtos para o admin. Padrão: requireAdmin() +
 // supabaseAdmin (service role, bypassa RLS). O guard beforeLoad em admin.tsx
@@ -226,7 +227,7 @@ export const createProduct = createServerFn({ method: "POST" })
         .single();
       if (error) return { success: false as const, error: error.message };
 
-      logAdminAction(admin, "product.create", "product", created.id, null, created as Record<string, unknown>);
+      logAdminAction(admin, "product.create", "product", created.id, null, created as unknown as Json);
 
       return { success: true as const, id: created.id };
     } catch (e: any) {
@@ -271,6 +272,24 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.targetMargin !== undefined) patch.target_margin = p.targetMargin;
       if (p.variations !== undefined) patch.variations = p.variations;
 
+      // Recalcular target_margin quando o preço é editado à mão e o admin
+      // não enviou target_margin explicitamente. Sem isso, cost 50 e price 120
+      // convivem com target_margin 0.4 (que corresponde a 83,33, não a 120).
+      const priceChanged = p.price !== undefined;
+      const marginExplicit = p.targetMargin !== undefined;
+      if (priceChanged && !marginExplicit) {
+        // Busca cost do banco para recalcular
+        const { data: current } = await supabaseAdmin
+          .from("products")
+          .select("cost")
+          .eq("id", data.id)
+          .single();
+        const cost = current?.cost != null ? Number(current.cost) : null;
+        if (cost !== null && cost > 0 && Number(p.price) > 0) {
+          patch.target_margin = (Number(p.price) - cost) / Number(p.price);
+        }
+      }
+
       const changedKeys = Object.keys(patch);
       if (changedKeys.length === 0) {
         return { success: false as const, error: "nenhum campo para atualizar" };
@@ -299,8 +318,8 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (updateErr) return { success: false as const, error: updateErr.message };
 
       const diff = diffSnapshots(
-        before as Record<string, unknown>,
-        after as Record<string, unknown>,
+        before as unknown as Record<string, unknown>,
+        after as unknown as Record<string, unknown>,
       );
       if (diff) {
         logAdminAction(admin, action, "product", data.id, diff.before, diff.after);
@@ -336,7 +355,7 @@ export const deleteProducts = createServerFn({ method: "POST" })
         "product",
         (beforeRows ?? []).map((r) => ({
           entityId: r.id as string,
-          before: r as Record<string, unknown>,
+          before: r as unknown as Json,
           after: null,
         })),
       );

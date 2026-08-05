@@ -23,6 +23,7 @@ import {
   CreditCard,
   Layers,
   RotateCcw,
+  History,
   } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -60,6 +61,7 @@ const SIDEBAR_ITEMS = [
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { section: "Sistema" },
+  { label: "Logs", href: "/admin/logs", icon: History },
   { label: "Pagamentos", href: "/admin/pagamentos", icon: CreditCard },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings },
 ];

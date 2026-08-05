@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import { createServerFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import type { AdminUser } from "./admin-auth";
 
@@ -192,17 +193,118 @@ export function diffSnapshots(
     : null;
 }
 
-/**
- * @deprecated Use diffSnapshots(before, after) para gravar só campos que
- * realmente mudaram. pickChangedFields não compara valores e grava tudo.
- */
-export function pickChangedFields(
-  row: Record<string, unknown>,
-  keys: string[],
-): Record<string, unknown> {
-  const picked: Record<string, unknown> = {};
-  for (const key of keys) {
-    picked[key] = row[key] ?? null;
-  }
-  return picked;
-}
+// ---------- Tipos para a tela de logs ----------
+
+export type AuditLogRow = {
+  id: number;
+  user_id: string;
+  admin_email: string | null;
+  action: string;
+  entity_type: string;
+  entity_id: string | null;
+  before_data: Json | null;
+  after_data: Json | null;
+  metadata: Json | null;
+  created_at: string;
+};
+
+export type ListAuditLogsInput = {
+  page: number;
+  pageSize: number;
+  action?: string;
+  dateFrom?: string;
+  dateTo?: string;
+};
+
+export type ListAuditLogsResult = {
+  rows: AuditLogRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+// ---------- Server function: listar logs ----------
+
+export const listAdminActionLogs = createServerFn({ method: "GET" })
+  .validator((d: unknown) => (d ?? {}) as ListAuditLogsInput)
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import(
+        "@/integrations/supabase/client.server"
+      );
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const page = Math.max(1, data.page);
+      const pageSize = Math.min(100, Math.max(1, data.pageSize || 50));
+      const from = (page - 1) * pageSize;
+      const to = from + pageSize - 1;
+
+      // Query base: admin_action_logs
+      let query = db
+        .from("admin_action_logs")
+        .select(
+          "id, user_id, action, entity_type, entity_id, before_data, after_data, metadata, created_at",
+          { count: "exact" },
+        );
+
+      if (data.action) {
+        query = query.eq("action", data.action);
+      }
+      if (data.dateFrom) {
+        query = query.gte("created_at", data.dateFrom);
+      }
+      if (data.dateTo) {
+        // Inclui o dia inteiro
+        query = query.lte("created_at", data.dateTo + "T23:59:59.999Z");
+      }
+
+      const { data: rows, error, count } = await query
+        .order("created_at", { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        return { success: false as const, error: error.message };
+      }
+
+      // Busca emails dos admins envolvidos (lote único)
+      const userIds = [...new Set((rows ?? []).map((r: Record<string, unknown>) => r.user_id as string))];
+      const { data: adminRows } = await db
+        .from("admins")
+        .select("user_id, email")
+        .in("user_id", userIds);
+      const emailMap = new Map(
+        (adminRows ?? []).map((a: Record<string, unknown>) => [a.user_id as string, a.email as string | null]),
+      );
+
+      const mapped: AuditLogRow[] = (rows ?? []).map((r: Record<string, unknown>) => ({
+        id: r.id as number,
+        user_id: r.user_id as string,
+        admin_email: emailMap.get(r.user_id as string) ?? null,
+        action: r.action as string,
+        entity_type: r.entity_type as string,
+        entity_id: r.entity_id as string | null,
+        before_data: r.before_data as Json | null,
+        after_data: r.after_data as Json | null,
+        metadata: r.metadata as Json | null,
+        created_at: r.created_at as string,
+      }));
+
+      return {
+        success: true as const,
+        data: {
+          rows: mapped,
+          total: count ?? 0,
+          page,
+          pageSize,
+        } as ListAuditLogsResult,
+      };
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403)
+        return { success: false as const, error: "Não autorizado" };
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
+

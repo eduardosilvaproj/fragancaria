@@ -16,6 +16,25 @@ import { test, expect } from "@playwright/test";
 test.use({ storageState: "tmp/smoke-admin-storage.json" });
 
 test.describe("Smoke admin protegido (autenticado)", () => {
+  test("/admin/logs carrega com guarda de URL e assert positivo", async ({ page }) => {
+    const requestedPath = "/admin/logs";
+    await page.goto(requestedPath);
+
+    // 1. Guarda de URL final vs rota solicitada.
+    await page.waitForLoadState("networkidle");
+    const finalUrl = page.url();
+    if (!finalUrl.includes(requestedPath)) {
+      throw new Error(
+        `Guarda de URL: rota solicitada ${requestedPath} divergiu para ${finalUrl}`
+      );
+    }
+
+    // 2. Assert positivo obrigatório: elementos que só existem quando a página
+    //    carrega de verdade (não na tela de login).
+    await expect(page.getByRole("heading", { name: "Logs de Auditoria" })).toBeVisible();
+    await expect(page.getByText("Histórico de ações administrativas")).toBeVisible();
+  });
+
   test("/admin/logistica carrega com guarda de URL e assert positivo", async ({ page }) => {
     const requestedPath = "/admin/logistica";
     await page.goto(requestedPath);
