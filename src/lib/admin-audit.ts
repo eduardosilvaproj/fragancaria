@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto";
 import { createServerFn } from "@tanstack/react-start";
 import type { Json } from "@/integrations/supabase/types";
 import type { AdminUser } from "./admin-auth";
@@ -50,7 +49,7 @@ export type AuditLogEntry = {
  * vieram de uma única operação em lote.
  */
 export function newAuditBatchId(): string {
-  return randomUUID();
+  return crypto.randomUUID();
 }
 
 /**

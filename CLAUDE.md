@@ -78,6 +78,18 @@ npm run build           # build de producao (vite + SSR)
 npm start               # roda build de producao
 ```
 
+## Verificacoes obrigatorias antes de commitar
+
+Todo commit deve passar em sequencia localmente:
+
+1. `npx tsc --noEmit`
+2. `npm run test:unit`
+3. `npm run build`
+
+`build` e a etapa final porque detecta problemas de bundle (ex.: import de
+modulo Node no topo de um arquivo consumido pelo cliente) que `tsc --noEmit`
+e os testes unitarios nao pegam.
+
 ## Diretorios chave
 
 - `src/routes/`         — file-based routing (TanStack Router)
