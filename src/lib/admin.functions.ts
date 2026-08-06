@@ -1,11 +1,12 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { AdminRole } from "@/lib/admin-roles";
 
 // Server functions do painel admin. loginAdmin/logoutAdmin/getAdminSession
 // delegam para src/lib/admin-auth.ts (server-only). O cookie httpOnly é a
 // fonte de verdade da sessão — o cliente nunca vê os tokens.
 
-export type AdminSession = { userId: string; email: string } | null;
+export type AdminSession = { userId: string; email: string; role: AdminRole } | null;
 
 export const loginAdmin = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
@@ -33,6 +34,6 @@ export const getAdminSession = createServerFn({ method: "GET" }).handler(
   async (): Promise<AdminSession> => {
     const { resolveAdmin } = await import("./admin-auth");
     const admin = await resolveAdmin();
-    return admin ? { userId: admin.userId, email: admin.email } : null;
+    return admin ? { userId: admin.userId, email: admin.email, role: admin.role } : null;
   },
 );

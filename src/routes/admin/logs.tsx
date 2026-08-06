@@ -13,7 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { listAdminActionLogs, type AuditLogRow, type ListAuditLogsResult, type ListAuditLogsInput } from "@/lib/admin-audit";
+import { listAdminActionLogs, type AuditLogRow, type ListAuditLogsResult } from "@/lib/admin-audit";
 
 export const Route = createFileRoute("/admin/logs")({
   component: AdminLogs,
@@ -250,12 +250,14 @@ function AdminLogs() {
     queryKey: ["admin-audit-logs", page, actionFilter, dateFrom, dateTo],
     queryFn: () =>
       listLogsFn({
-        page,
-        pageSize: 50,
-        action: actionFilter || undefined,
-        dateFrom: dateFrom || undefined,
-        dateTo: dateTo || undefined,
-      } as ListAuditLogsInput),
+        data: {
+          page,
+          pageSize: 50,
+          action: actionFilter || undefined,
+          dateFrom: dateFrom || undefined,
+          dateTo: dateTo || undefined,
+        },
+      }),
     refetchOnWindowFocus: false,
   });
 

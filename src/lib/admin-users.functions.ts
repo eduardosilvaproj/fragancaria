@@ -11,17 +11,13 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import type { AdminRole } from "@/lib/admin-roles";
 import type { AdminUser } from "@/lib/admin-auth";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/integrations/supabase/types";
 
 const ROLES = ["total", "social", "logistica"] as const;
 const ROLE_SCHEMA = z.enum(ROLES);
 
-type AdminDbClient = SupabaseClient<Database, "public", Database["public"]["Tables"]>;
-
-async function getDb(): Promise<AdminDbClient> {
+async function getDb() {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  return supabaseAdmin as AdminDbClient;
+  return supabaseAdmin;
 }
 
 export type AdminUserRow = {

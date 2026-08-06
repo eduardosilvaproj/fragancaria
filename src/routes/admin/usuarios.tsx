@@ -66,7 +66,7 @@ function AdminUsersPage() {
     refetch,
   } = useQuery({
     queryKey: ["admin-users", search],
-    queryFn: () => listFn({ search: search || undefined }),
+    queryFn: () => listFn({ data: { search: search || undefined } }),
     refetchOnWindowFocus: false,
   });
 
@@ -77,7 +77,7 @@ function AdminUsersPage() {
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
-    const res = await createFn({ email: newEmail, role: newRole as AdminRole });
+    const res = await createFn({ data: { email: newEmail, role: newRole as AdminRole } });
     if (res.success) {
       setGeneratedPassword(res.data.tempPassword);
       setNewEmail("");
@@ -88,7 +88,7 @@ function AdminUsersPage() {
   }
 
   async function onRoleChange(userId: string, role: string) {
-    const res = await roleFn({ userId, role: role as AdminRole });
+    const res = await roleFn({ data: { userId, role: role as AdminRole } });
     if (res.success) {
       setEditingRoleUser(null);
       await refetch();
@@ -97,7 +97,7 @@ function AdminUsersPage() {
 
   async function toggleActive(user: AdminUserRow) {
     setActiveBusyId(user.userId);
-    const res = await activeFn({ userId: user.userId, isActive: !user.isActive });
+    const res = await activeFn({ data: { userId: user.userId, isActive: !user.isActive } });
     setActiveBusyId(null);
     if (res.success) {
       await refetch();

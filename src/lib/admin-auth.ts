@@ -90,20 +90,14 @@ async function isAdminUser(userId: string): Promise<AdminUser | null> {
     console.error("isAdminUser error:", error.message);
     return null;
   }
-  const adminRow = data as {
-    user_id: string;
-    email: string | null;
-    role: AdminRole;
-    is_active?: boolean;
-  } | null;
-  if (!adminRow) return null;
+  if (!data) return null;
   // Desativado não entra nem mantém sessão: o login é recusado e o
   // resolveAdmin (chamado a cada server fn) derruba a sessão na hora.
-  if (adminRow.is_active === false) return null;
+  if (data.is_active === false) return null;
   return {
-    userId: adminRow.user_id,
-    email: adminRow.email ?? "",
-    role: adminRow.role ?? "total",
+    userId: data.user_id,
+    email: data.email ?? "",
+    role: data.role as AdminRole,
   };
 }
 
