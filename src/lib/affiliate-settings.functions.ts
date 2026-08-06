@@ -72,8 +72,9 @@ export const getAffiliateSettings = createServerFn({ method: "GET" }).handler(
     { success: true; data: AffiliatePayoutSettings } | { success: false; error: string }
   > => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.affiliateSettings);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

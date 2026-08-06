@@ -1,7 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
-// CRUD de categorias e marcas para o admin. Padrão: requireAdmin() +
+// CRUD de categorias e marcas para o admin. Padrão: requireRole() +
 // supabaseAdmin (service role).
 
 function slugify(s: string): string {
@@ -18,8 +18,9 @@ function slugify(s: string): string {
 
 export const listCategories = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.categories);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("categories")
@@ -46,8 +47,9 @@ export const upsertCategory = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.categories);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const row = {
         name: data.name,
@@ -76,8 +78,9 @@ export const deleteCategory = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.categories);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.from("categories").delete().eq("id", data.id);
       if (error) return { success: false as const, error: error.message };
@@ -91,8 +94,9 @@ export const deleteCategory = createServerFn({ method: "POST" })
 
 export const listBrands = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.categories);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data, error } = await supabaseAdmin
       .from("brands")
@@ -111,8 +115,9 @@ export const upsertBrand = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.categories);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const row = { name: data.name, slug: slugify(data.name) };
       if (data.id) {
@@ -132,8 +137,9 @@ export const deleteBrand = createServerFn({ method: "POST" })
   .validator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.categories);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.from("brands").delete().eq("id", data.id);
       if (error) return { success: false as const, error: error.message };

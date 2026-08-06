@@ -20,8 +20,9 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
     error?: string;
   }> => {
     try {
-      const { requireAdmin } = await import("./admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("./admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.affiliates);
       const { supabaseAdmin } = await import(
         "@/integrations/supabase/client.server"
       );
@@ -92,8 +93,9 @@ export const approveAffiliate = createServerFn({
   )
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
-    const { requireAdmin } = await import("./admin-auth");
-    const admin = await requireAdmin();
+    const { requireRole } = await import("./admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    const admin = await requireRole(ADMIN_AREA_ROLES.affiliates);
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
@@ -158,8 +160,9 @@ export const rejectAffiliate = createServerFn({
   )
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
-    const { requireAdmin } = await import("./admin-auth");
-    const admin = await requireAdmin();
+    const { requireRole } = await import("./admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    const admin = await requireRole(ADMIN_AREA_ROLES.affiliates);
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
@@ -214,8 +217,9 @@ export const suspendAffiliate = createServerFn({
   )
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
-    const { requireAdmin } = await import("./admin-auth");
-    const admin = await requireAdmin();
+    const { requireRole } = await import("./admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    const admin = await requireRole(ADMIN_AREA_ROLES.affiliates);
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );
@@ -320,8 +324,9 @@ export const getAffiliateDetails = createServerFn({
   )
   .handler(async ({ data: { affiliateId } }: { data: { affiliateId: string } }) => {
   try {
-    const { requireAdmin } = await import("./admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("./admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.affiliates);
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
     );

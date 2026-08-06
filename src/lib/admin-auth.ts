@@ -4,11 +4,12 @@
 //
 // Flow: loginAdmin() signs in via Supabase Auth, confirms the user is in the
 // `admins` table, then stores {access_token, refresh_token} in an httpOnly
-// cookie. requireAdmin() validates that cookie on every protected server
+// cookie. resolveAdmin() validates that cookie on every protected server
 // function (and the /admin beforeLoad), refreshing the token when expired.
 import { getCookie, setCookie, deleteCookie, getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import ws from "ws";
+import type { AdminRole } from "@/lib/admin-roles";
 
 // Node < 22 has no native WebSocket. supabase-js constructs a RealtimeClient on
 // createClient() and throws "Node.js N detected without native WebSocket
@@ -23,7 +24,7 @@ export const ADMIN_COOKIE = "fa_admin_session";
 
 type SessionTokens = { access_token: string; refresh_token: string };
 
-export type AdminUser = { userId: string; email: string };
+export type AdminUser = { userId: string; email: string; role: AdminRole };
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 7; // 7 dias
 
@@ -78,20 +79,25 @@ export function clearAdminCookie() {
 
 // True if this auth user id is listed in the admins table. Uses service role
 // (bypasses RLS); admins is not readable by anon/authenticated.
-async function isAdminUser(userId: string): Promise<boolean> {
+async function isAdminUser(userId: string): Promise<AdminUser | null> {
   const { supabaseAdmin } = await import(
     "@/integrations/supabase/client.server"
   );
   const { data, error } = await supabaseAdmin
     .from("admins")
-    .select("user_id")
+    .select("user_id, email, role")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) {
     console.error("isAdminUser error:", error.message);
-    return false;
+    return null;
   }
-  return !!data;
+  if (!data) return null;
+  return {
+    userId: data.user_id,
+    email: data.email ?? "",
+    role: (data.role as AdminRole) ?? "total",
+  };
 }
 
 // Validates the session cookie and returns the admin, or null. If the access
@@ -127,12 +133,13 @@ export async function resolveAdmin(): Promise<AdminUser | null> {
     });
   }
 
-  if (!userId || !(await isAdminUser(userId))) {
+  const admin = userId ? await isAdminUser(userId) : null;
+  if (!admin) {
     clearAdminCookie();
     return null;
   }
 
-  return { userId, email: email ?? "" };
+  return { ...admin, email: email ?? admin.email };
 }
 
 // Throws when there is no valid admin session. Use at the top of every
@@ -145,10 +152,17 @@ export async function requireAdmin(): Promise<AdminUser> {
   return admin;
 }
 
+export async function requireRole(allowed: readonly AdminRole[]): Promise<AdminUser> {
+  const admin = await requireAdmin();
+  if (!allowed.includes(admin.role)) {
+    throw new Error("NAO_AUTORIZADO");
+  }
+  return admin;
+}
+
 export function logoutAdmin(): void {
   clearAdminCookie();
 }
-
 
 export async function loginAdmin(
   email: string,
@@ -173,11 +187,11 @@ export async function loginAdmin(
   const auth = getAuthClient();
   const { data, error } = await auth.auth.signInWithPassword({ email, password });
   if (error || !data?.user || !data?.session) {
-      throw new Error("CREDENCIAIS_INVALIDAS");
+    throw new Error("CREDENCIAIS_INVALIDAS");
   }
 
-  const userId = data.user.id;
-  if (!(await isAdminUser(userId))) {
+  const admin = await isAdminUser(data.user.id);
+  if (!admin) {
     throw new Error("NAO_AUTORIZADO");
   }
 
@@ -187,5 +201,5 @@ export async function loginAdmin(
   });
 
   rateLimitReset(rlKey);
-  return { userId, email: data.user.email ?? "" };
+  return admin;
 }

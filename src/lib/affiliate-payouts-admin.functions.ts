@@ -60,8 +60,9 @@ export const getAffiliatePayoutOverview = createServerFn({ method: "GET" }).hand
     | { success: false; error: string }
   > => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.affiliatePayouts);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
@@ -169,8 +170,9 @@ export const closeAffiliatePayout = createServerFn({ method: "POST" })
       data,
     }): Promise<{ success: true; data: ClosePayoutResult } | { success: false; error: string }> => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.affiliatePayouts);
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const db = supabaseAdmin as any;
@@ -220,8 +222,9 @@ export const closeAllAffiliatePayouts = createServerFn({ method: "POST" })
       | { success: false; error: string }
     > => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.affiliatePayouts);
         const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const db = supabaseAdmin as any;

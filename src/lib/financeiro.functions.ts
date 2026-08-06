@@ -150,8 +150,9 @@ export const getFinanceiro = createServerFn({ method: "GET" })
     return schema.parse(d ?? {});
   })
   .handler(async ({ data }): Promise<FinanceiroResult> => {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.financeiro);
 
     const { supabaseAdmin } = await import(
       "@/integrations/supabase/client.server"
