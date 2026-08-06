@@ -13,11 +13,7 @@ import {
   Calendar,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import {
-  listAdminActionLogs,
-  type AuditLogRow,
-  type ListAuditLogsResult,
-} from "@/lib/admin-audit";
+import { listAdminActionLogs, type AuditLogRow, type ListAuditLogsResult, type ListAuditLogsInput } from "@/lib/admin-audit";
 
 export const Route = createFileRoute("/admin/logs")({
   component: AdminLogs,
@@ -75,8 +71,7 @@ function formatDateShort(iso: string): string {
 function actionBadgeColor(action: string): string {
   if (action.startsWith("product.create") || action.startsWith("coupon.create"))
     return "bg-green-100 text-green-800 border-green-200";
-  if (action.startsWith("product.delete"))
-    return "bg-red-100 text-red-800 border-red-200";
+  if (action.startsWith("product.delete")) return "bg-red-100 text-red-800 border-red-200";
   if (action.endsWith(".deactivate") || action.endsWith(".reject") || action.endsWith(".suspend"))
     return "bg-orange-100 text-orange-800 border-orange-200";
   if (action.endsWith(".approve") || action.endsWith(".activate"))
@@ -138,7 +133,7 @@ function JsonView({ data, label }: { data: unknown; label: string }) {
 function LogRow({ log }: { log: AuditLogRow }) {
   const [expanded, setExpanded] = useState(false);
   const batchId: string | null = log.metadata
-    ? ((log.metadata as Record<string, unknown>).batch_id as string | null) ?? null
+    ? (((log.metadata as Record<string, unknown>).batch_id as string | null) ?? null)
     : null;
 
   return (
@@ -157,7 +152,10 @@ function LogRow({ log }: { log: AuditLogRow }) {
         </div>
 
         {/* Quem */}
-        <div className="w-36 truncate text-sm text-[#1C302E]" title={log.admin_email ?? log.user_id}>
+        <div
+          className="w-36 truncate text-sm text-[#1C302E]"
+          title={log.admin_email ?? log.user_id}
+        >
           {log.admin_email || log.user_id.slice(0, 8) + "..."}
         </div>
 
@@ -184,7 +182,10 @@ function LogRow({ log }: { log: AuditLogRow }) {
             {log.entity_type}
           </span>
           {log.entity_id && (
-            <span className="text-[11px] text-[#51635F] truncate max-w-[100px]" title={log.entity_id}>
+            <span
+              className="text-[11px] text-[#51635F] truncate max-w-[100px]"
+              title={log.entity_id}
+            >
               {log.entity_id}
             </span>
           )}
@@ -243,7 +244,7 @@ function AdminLogs() {
   const [dateTo, setDateTo] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
-  const listLogsFn = useServerFn(listAdminActionLogs as any);
+  const listLogsFn = useServerFn(listAdminActionLogs);
 
   const { data: queryResult, isFetching } = useQuery({
     queryKey: ["admin-audit-logs", page, actionFilter, dateFrom, dateTo],
@@ -254,13 +255,11 @@ function AdminLogs() {
         action: actionFilter || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-      } as any),
+      } as ListAuditLogsInput),
     refetchOnWindowFocus: false,
   });
 
-  const result: ListAuditLogsResult | null = queryResult?.success
-    ? queryResult.data
-    : null;
+  const result: ListAuditLogsResult | null = queryResult?.success ? queryResult.data : null;
   const logs: AuditLogRow[] = result?.rows ?? [];
   const total = result?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / 50));
@@ -281,10 +280,9 @@ function AdminLogs() {
     let currentGroup: AuditLogRow[] = [];
 
     for (const log of logs) {
-      const batchId =
-        log.metadata
-          ? ((log.metadata as Record<string, unknown>).batch_id as string | null)
-          : null;
+      const batchId = log.metadata
+        ? ((log.metadata as Record<string, unknown>).batch_id as string | null)
+        : null;
 
       if (batchId !== currentBatch && currentGroup.length > 0) {
         groups.push({ batchId: currentBatch, logs: currentGroup });
@@ -304,12 +302,8 @@ function AdminLogs() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#0F3A3E] font-serif">
-            Logs de Auditoria
-          </h1>
-          <p className="text-sm text-[#51635F] mt-1">
-            Histórico de ações administrativas
-          </p>
+          <h1 className="text-2xl font-semibold text-[#0F3A3E] font-serif">Logs de Auditoria</h1>
+          <p className="text-sm text-[#51635F] mt-1">Histórico de ações administrativas</p>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -323,9 +317,7 @@ function AdminLogs() {
           >
             <Filter className="h-4 w-4" />
             Filtros
-            {hasActiveFilters && (
-              <span className="ml-1 w-2 h-2 rounded-full bg-[#E8C25A]" />
-            )}
+            {hasActiveFilters && <span className="ml-1 w-2 h-2 rounded-full bg-[#E8C25A]" />}
           </button>
           {hasActiveFilters && (
             <button

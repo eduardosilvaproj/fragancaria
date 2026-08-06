@@ -80,23 +80,30 @@ export function clearAdminCookie() {
 // True if this auth user id is listed in the admins table. Uses service role
 // (bypasses RLS); admins is not readable by anon/authenticated.
 async function isAdminUser(userId: string): Promise<AdminUser | null> {
-  const { supabaseAdmin } = await import(
-    "@/integrations/supabase/client.server"
-  );
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const { data, error } = await supabaseAdmin
     .from("admins")
-    .select("user_id, email, role")
+    .select("user_id, email, role, is_active")
     .eq("user_id", userId)
     .maybeSingle();
   if (error) {
     console.error("isAdminUser error:", error.message);
     return null;
   }
-  if (!data) return null;
+  const adminRow = data as {
+    user_id: string;
+    email: string | null;
+    role: AdminRole;
+    is_active?: boolean;
+  } | null;
+  if (!adminRow) return null;
+  // Desativado não entra nem mantém sessão: o login é recusado e o
+  // resolveAdmin (chamado a cada server fn) derruba a sessão na hora.
+  if (adminRow.is_active === false) return null;
   return {
-    userId: data.user_id,
-    email: data.email ?? "",
-    role: (data.role as AdminRole) ?? "total",
+    userId: adminRow.user_id,
+    email: adminRow.email ?? "",
+    role: adminRow.role ?? "total",
   };
 }
 
@@ -119,8 +126,9 @@ export async function resolveAdmin(): Promise<AdminUser | null> {
     email = userData.user.email ?? "";
   } else {
     // Access token invalid/expired — try to refresh.
-    const { data: refreshed, error: refreshError } =
-      await auth.auth.refreshSession({ refresh_token: tokens.refresh_token });
+    const { data: refreshed, error: refreshError } = await auth.auth.refreshSession({
+      refresh_token: tokens.refresh_token,
+    });
     if (refreshError || !refreshed?.session || !refreshed.user) {
       clearAdminCookie();
       return null;
@@ -164,10 +172,7 @@ export function logoutAdmin(): void {
   clearAdminCookie();
 }
 
-export async function loginAdmin(
-  email: string,
-  password: string,
-): Promise<AdminUser> {
+export async function loginAdmin(email: string, password: string): Promise<AdminUser> {
   // Rate limit por e-mail + IP: no máximo 5 tentativas a cada 15 min. Trava
   // brute-force. O bucket é zerado num login bem-sucedido. Em memória (uma
   // instância no Railway); migrar p/ Redis se escalar horizontalmente.

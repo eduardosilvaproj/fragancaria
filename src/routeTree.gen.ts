@@ -38,6 +38,7 @@ import { Route as AfiliadoLoginRouteImport } from './routes/afiliado/login'
 import { Route as AfiliadoDashboardRouteImport } from './routes/afiliado/dashboard'
 import { Route as AfiliadoCadastroSucessoRouteImport } from './routes/afiliado/cadastro-sucesso'
 import { Route as AfiliadoCadastroRouteImport } from './routes/afiliado/cadastro'
+import { Route as AdminUsuariosRouteImport } from './routes/admin/usuarios'
 import { Route as AdminSacRouteImport } from './routes/admin/sac'
 import { Route as AdminReviewsRouteImport } from './routes/admin/reviews'
 import { Route as AdminReembolsosRouteImport } from './routes/admin/reembolsos'
@@ -225,6 +226,11 @@ const AfiliadoCadastroRoute = AfiliadoCadastroRouteImport.update({
   id: '/afiliado/cadastro',
   path: '/afiliado/cadastro',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AdminUsuariosRoute = AdminUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AdminRoute,
 } as any)
 const AdminSacRoute = AdminSacRouteImport.update({
   id: '/sac',
@@ -487,6 +493,7 @@ export interface FileRoutesByFullPath {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
@@ -557,6 +564,7 @@ export interface FileRoutesByTo {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/login': typeof AfiliadoLoginRoute
@@ -630,6 +638,7 @@ export interface FileRoutesById {
   '/admin/reembolsos': typeof AdminReembolsosRoute
   '/admin/reviews': typeof AdminReviewsRoute
   '/admin/sac': typeof AdminSacRoute
+  '/admin/usuarios': typeof AdminUsuariosRoute
   '/afiliado/cadastro': typeof AfiliadoCadastroRoute
   '/afiliado/cadastro-sucesso': typeof AfiliadoCadastroSucessoRoute
   '/afiliado/dashboard': typeof AfiliadoDashboardRouteWithChildren
@@ -705,6 +714,7 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
+    | '/admin/usuarios'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/dashboard'
@@ -775,6 +785,7 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
+    | '/admin/usuarios'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/login'
@@ -847,6 +858,7 @@ export interface FileRouteTypes {
     | '/admin/reembolsos'
     | '/admin/reviews'
     | '/admin/sac'
+    | '/admin/usuarios'
     | '/afiliado/cadastro'
     | '/afiliado/cadastro-sucesso'
     | '/afiliado/dashboard'
@@ -1120,6 +1132,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/afiliado/cadastro'
       preLoaderRoute: typeof AfiliadoCadastroRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/usuarios': {
+      id: '/admin/usuarios'
+      path: '/usuarios'
+      fullPath: '/admin/usuarios'
+      preLoaderRoute: typeof AdminUsuariosRouteImport
+      parentRoute: typeof AdminRoute
     }
     '/admin/sac': {
       id: '/admin/sac'
@@ -1456,6 +1475,7 @@ interface AdminRouteChildren {
   AdminReembolsosRoute: typeof AdminReembolsosRoute
   AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSacRoute: typeof AdminSacRoute
+  AdminUsuariosRoute: typeof AdminUsuariosRoute
   AdminIndexRoute: typeof AdminIndexRoute
 }
 
@@ -1479,6 +1499,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReembolsosRoute: AdminReembolsosRoute,
   AdminReviewsRoute: AdminReviewsRoute,
   AdminSacRoute: AdminSacRoute,
+  AdminUsuariosRoute: AdminUsuariosRoute,
   AdminIndexRoute: AdminIndexRoute,
 }
 

@@ -21,7 +21,10 @@ export type AuditAction =
   | "store_settings.update"
   | "shipping_settings.update"
   | "payment_settings.update"
-  | "nfe_settings.update";
+  | "nfe_settings.update"
+  | "admin.user_create"
+  | "admin.user_role_change"
+  | "admin.user_deactivate";
 
 export type AuditEntity =
   | "product"
@@ -32,7 +35,8 @@ export type AuditEntity =
   | "store_settings"
   | "shipping_settings"
   | "payment_settings"
-  | "nfe_settings";
+  | "nfe_settings"
+  | "admin";
 
 export type AuditLogEntry = {
   user_id: string;
@@ -67,9 +71,7 @@ export function logAdminAction(
 ): void {
   void (async () => {
     try {
-      const { supabaseAdmin } = await import(
-        "@/integrations/supabase/client.server"
-      );
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.from("admin_action_logs").insert({
         user_id: admin.userId,
         action,
@@ -117,9 +119,7 @@ export function logAdminActionBatch(
 
   void (async () => {
     try {
-      const { supabaseAdmin } = await import(
-        "@/integrations/supabase/client.server"
-      );
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { error } = await supabaseAdmin.from("admin_action_logs").insert(rows);
       if (error) {
         console.error("[admin-audit] batch insert failed:", error.message);
@@ -168,10 +168,7 @@ export function diffSnapshots(
 ): { before: Json; after: Json } | null {
   const beforeNormalized = before ?? {};
   const afterNormalized = after ?? {};
-  const allKeys = new Set([
-    ...Object.keys(beforeNormalized),
-    ...Object.keys(afterNormalized),
-  ]);
+  const allKeys = new Set([...Object.keys(beforeNormalized), ...Object.keys(afterNormalized)]);
 
   const beforeDiff: Record<string, unknown> = {};
   const afterDiff: Record<string, unknown> = {};
@@ -187,9 +184,7 @@ export function diffSnapshots(
     }
   }
 
-  return hasDiff
-    ? { before: beforeDiff as Json, after: afterDiff as Json }
-    : null;
+  return hasDiff ? { before: beforeDiff as Json, after: afterDiff as Json } : null;
 }
 
 // ---------- Tipos para a tela de logs ----------
@@ -231,9 +226,7 @@ export const listAdminActionLogs = createServerFn({ method: "GET" })
       const { requireRole } = await import("@/lib/admin-auth");
       const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
       await requireRole(ADMIN_AREA_ROLES.auditLogs);
-      const { supabaseAdmin } = await import(
-        "@/integrations/supabase/client.server"
-      );
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
@@ -261,22 +254,29 @@ export const listAdminActionLogs = createServerFn({ method: "GET" })
         query = query.lte("created_at", data.dateTo + "T23:59:59.999Z");
       }
 
-      const { data: rows, error, count } = await query
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      const {
+        data: rows,
+        error,
+        count,
+      } = await query.order("created_at", { ascending: false }).range(from, to);
 
       if (error) {
         return { success: false as const, error: error.message };
       }
 
       // Busca emails dos admins envolvidos (lote único)
-      const userIds = [...new Set((rows ?? []).map((r: Record<string, unknown>) => r.user_id as string))];
+      const userIds = [
+        ...new Set((rows ?? []).map((r: Record<string, unknown>) => r.user_id as string)),
+      ];
       const { data: adminRows } = await db
         .from("admins")
         .select("user_id, email")
         .in("user_id", userIds);
       const emailMap = new Map(
-        (adminRows ?? []).map((a: Record<string, unknown>) => [a.user_id as string, a.email as string | null]),
+        (adminRows ?? []).map((a: Record<string, unknown>) => [
+          a.user_id as string,
+          a.email as string | null,
+        ]),
       );
 
       const mapped: AuditLogRow[] = (rows ?? []).map((r: Record<string, unknown>) => ({
@@ -301,10 +301,13 @@ export const listAdminActionLogs = createServerFn({ method: "GET" })
           pageSize,
         } as ListAuditLogsResult,
       };
-    } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403)
+    } catch (e: unknown) {
+      const status =
+        typeof e === "object" && e !== null ? (e as { status?: number }).status : undefined;
+      const message = e instanceof Error ? e.message : "Erro desconhecido";
+      if (status === 401 || status === 403) {
         return { success: false as const, error: "Não autorizado" };
-      return { success: false as const, error: e?.message || "Erro desconhecido" };
+      }
+      return { success: false as const, error: message };
     }
   });
-
