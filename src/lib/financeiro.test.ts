@@ -82,4 +82,32 @@ describe("agregarFinanceiro", () => {
     assert.strictEqual(result.itensSemCusto, 0);
     assert.strictEqual(result.totalItensVendidos, 0);
   });
+
+  it("nao aplica filtro de data quando dateFrom/dateTo estao vazios/undefined", () => {
+    // Esta verificacao cobre o bug de produção: undefined chegava ao filtro
+    // do Supabase como string "undefined" e causava erro de timestamp.
+    // A query no servidor soh aplica .gte/.lte quando os valores existem.
+    const orders = [
+      {
+        id: "order-3",
+        created_at: "2026-08-05T10:00:00Z",
+        items: [
+          {
+            id: "prod-1",
+            title: "Produto com custo",
+            quantity: 1,
+            price: 100,
+            cost: 40,
+          },
+        ],
+      },
+    ];
+
+    const result = agregarFinanceiro(orders, { dataInicio: "2026-08-05" });
+
+    assert.strictEqual(result.receita, 100);
+    assert.strictEqual(result.custo, 40);
+    assert.strictEqual(result.margemBruta, 60);
+    assert.strictEqual(result.totalPedidos, 1);
+  });
 });

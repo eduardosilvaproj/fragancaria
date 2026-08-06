@@ -186,18 +186,22 @@ export const getFinanceiro = createServerFn({ method: "GET" })
       }
     }
 
-    // Período padrão: da data de início até hoje
+    // Período padrão: da data de início até hoje. Se o usuário não enviar
+    // datas, o servidor não encaminha undefined/"" para o filtro do banco.
     const dateFrom = data.dateFrom || dataInicio;
     const dateTo = data.dateTo || new Date().toISOString().split("T")[0];
 
     // Busca pedidos pagos/aprovados no período
-    const { data: orders, error } = await supabaseAdmin
+    let query = supabaseAdmin
       .from("orders")
       .select("id, items, created_at")
       .in("payment_status", ["approved"])
-      .in("status", ["paid", "processing", "shipped", "delivered"])
-      .gte("created_at", dateFrom)
-      .lte("created_at", dateTo + "T23:59:59.999Z");
+      .in("status", ["paid", "processing", "shipped", "delivered"]);
+
+    if (dateFrom) query = query.gte("created_at", dateFrom);
+    if (dateTo) query = query.lte("created_at", dateTo + "T23:59:59.999Z");
+
+    const { data: orders, error } = await query;
 
     if (error) {
       throw new Error("Erro ao buscar pedidos: " + error.message);
