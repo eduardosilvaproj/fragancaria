@@ -155,8 +155,9 @@ export const listReturnRequests = createServerFn({ method: "GET" })
   .handler(
     async ({ data }): Promise<{ success: true; data: AdminReturnRow[] } | { success: false; error: string }> => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.returns);
 
         let q = supabaseAdmin
           .from("return_requests" as never)
@@ -223,8 +224,9 @@ export const resolveReturn = createServerFn({ method: "POST" })
       .parse(d),
   )
   .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.returns);
 
     const { data: rr, error: rrErr } = await supabaseAdmin
       .from("return_requests" as never)

@@ -270,8 +270,9 @@ export type ApproveRefundResult =
 export const approveRefund = createServerFn({ method: "POST" })
   .validator((d: unknown) => approveSchema.parse(d))
   .handler(async ({ data }): Promise<ApproveRefundResult> => {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    const admin = await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    const admin = await requireRole(ADMIN_AREA_ROLES.refund);
     const { logAdminAction } = await import("@/lib/admin-audit");
 
     const token = process.env.MP_ACCESS_TOKEN;
@@ -399,7 +400,7 @@ export const approveRefund = createServerFn({ method: "POST" })
   });
 
 // ADMIN: lista as solicitações de reembolso, juntando dados do pedido para a
-// tela de gestão. requireAdmin + service role.
+// tela de gestão. requireRole + service role.
 export type AdminRefundRow = {
   id: string;
   orderId: string;
@@ -419,8 +420,9 @@ export const listRefundRequests = createServerFn({ method: "GET" })
   .handler(
     async ({ data }): Promise<{ success: true; data: AdminRefundRow[] } | { success: false; error: string }> => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.refund);
 
         let q = supabaseAdmin
           .from("refund_requests")
@@ -467,8 +469,9 @@ export const rejectRefund = createServerFn({ method: "POST" })
     z.object({ refundRequestId: uuid, adminNotes: z.string().trim().max(500).optional() }).strict().parse(d),
   )
   .handler(async ({ data }): Promise<{ success: boolean; error?: string }> => {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    const admin = await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    const admin = await requireRole(ADMIN_AREA_ROLES.refund);
     const { logAdminAction } = await import("@/lib/admin-audit");
 
     const { data: rr, error: rrErr } = await supabaseAdmin

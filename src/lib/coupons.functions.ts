@@ -76,8 +76,9 @@ export const listCoupons = createServerFn({ method: "GET" })
   .validator((d: unknown) => (d ?? {}) as { activeOnly?: boolean })
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.coupons);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
@@ -103,8 +104,9 @@ export const createCoupon = createServerFn({ method: "POST" })
   .validator((d: unknown) => createInputSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      const admin = await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      const admin = await requireRole(ADMIN_AREA_ROLES.coupons);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { logAdminAction } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -156,8 +158,9 @@ export const updateCoupon = createServerFn({ method: "POST" })
   .validator((d: unknown) => updateInputSchema.parse(d))
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      const admin = await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      const admin = await requireRole(ADMIN_AREA_ROLES.coupons);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { logAdminAction, diffSnapshots } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -226,8 +229,9 @@ export const deactivateCoupon = createServerFn({ method: "POST" })
   .validator((d: unknown) => ({ id: z.string().uuid().parse(d) }))
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      const admin = await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      const admin = await requireRole(ADMIN_AREA_ROLES.coupons);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { logAdminAction } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

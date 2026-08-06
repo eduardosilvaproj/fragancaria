@@ -866,8 +866,9 @@ export const listPaymentTransactions = createServerFn({ method: "GET" })
   // @ts-expect-error TanStack Start ServerFn type mismatch
   .handler(async ({ data }: any) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.payments);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
@@ -915,8 +916,9 @@ export const listPaymentTransactions = createServerFn({ method: "GET" })
 
 export const getPaymentStats = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.payments);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabaseAdmin as any;
@@ -959,8 +961,9 @@ export const getPaymentStats = createServerFn({ method: "GET" }).handler(async (
 
 export const getPaymentSettings = createServerFn({ method: "GET" }).handler(async () => {
   try {
-    const { requireAdmin } = await import("@/lib/admin-auth");
-    await requireAdmin();
+    const { requireRole } = await import("@/lib/admin-auth");
+    const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+    await requireRole(ADMIN_AREA_ROLES.payments);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const db = supabaseAdmin as any;
@@ -992,8 +995,9 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
   )
   .handler(async ({ data }) => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      const admin = await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      const admin = await requireRole(ADMIN_AREA_ROLES.payments);
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { logAdminAction, redactedFieldDiff } = await import("@/lib/admin-audit");
       // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -3,10 +3,10 @@ import { z } from "zod";
 
 // Server fns para o painel /admin/pedidos. Antes: usava supabase client direto
 // no browser, dependia das 3 policies USING(true) abertas. Agora: server fn
-// com requireAdmin + supabaseAdmin (bypass RLS). O guard beforeLoad em
+// com requireRole + supabaseAdmin (bypass RLS). O guard beforeLoad em
 // src/routes/admin.tsx ja barra visitantes, mas a defesa em profundidade
 // aqui significa que mesmo se o guard for burlado, o service role nunca
-// aceita input anonimo (sem o cookie, requireAdmin joga 401).
+// aceita input anonimo (sem o cookie, requireRole joga 401).
 //
 // Por design: SELECT/UPDATE de pedidos por admin sao SEMPRE via service
 // role. A camada RLS para admin seria fragil (RLS depende de JWT claim, e
@@ -165,8 +165,9 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
       { success: true; data: AdminOrderList } | { success: false; error: string }
     > => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.orders);
 
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
@@ -232,8 +233,9 @@ export const getStuckApprovedOrders = createServerFn({ method: "GET" }).handler(
     { success: true; data: AdminOrderRow[] } | { success: false; error: string }
   > => {
     try {
-      const { requireAdmin } = await import("@/lib/admin-auth");
-      await requireAdmin();
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.orders);
 
       const { supabaseAdmin } = await import(
         "@/integrations/supabase/client.server"
@@ -287,8 +289,9 @@ export const reconcileApprovedOrderForAdmin = createServerFn({ method: "POST" })
       | { success: false; error: string; missingFields?: string[] }
     > => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.orders);
 
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
@@ -364,8 +367,9 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
       data,
     }): Promise<{ success: true } | { success: false; error: string }> => {
       try {
-        const { requireAdmin } = await import("@/lib/admin-auth");
-        const admin = await requireAdmin();
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        const admin = await requireRole(ADMIN_AREA_ROLES.orders);
 
         const { supabaseAdmin } = await import(
           "@/integrations/supabase/client.server"
