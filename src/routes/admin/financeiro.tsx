@@ -143,7 +143,7 @@ function AdminFinanceiro() {
                 CPV (Custo)
               </p>
               <p className="font-serif text-2xl text-[#0F3A3E]">
-                {formatBRL(financeiro.custo)}
+                {financeiro.itensComCusto > 0 ? formatBRL(financeiro.custo) : "—"}
               </p>
             </div>
 
@@ -153,9 +153,9 @@ function AdminFinanceiro() {
                 Margem Bruta
               </p>
               <p className="font-serif text-2xl text-[#0F3A3E]">
-                {formatBRL(financeiro.margemBruta)}
+                {financeiro.itensComCusto > 0 ? formatBRL(financeiro.margemBruta) : "—"}
               </p>
-              {financeiro.margemPercentual != null && (
+              {financeiro.itensComCusto > 0 && financeiro.margemPercentual != null && (
                 <div className="flex items-center gap-1 mt-1">
                   {financeiro.margemPercentual >= 0 ? (
                     <TrendingUp className="h-3 w-3 text-emerald-600" />
@@ -174,7 +174,7 @@ function AdminFinanceiro() {
                   </span>
                 </div>
               )}
-              {financeiro.margemPercentual == null && (
+              {financeiro.itensComCusto === 0 && (
                 <p className="text-xs text-[#8A938E] mt-1">
                   Nenhum item com custo
                 </p>
