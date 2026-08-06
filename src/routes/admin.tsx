@@ -24,6 +24,7 @@ import {
   Layers,
   RotateCcw,
   History,
+  DollarSign,
   } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -61,6 +62,7 @@ const SIDEBAR_ITEMS = [
   { label: "Reviews", href: "/admin/reviews", icon: Star },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { section: "Sistema" },
+  { label: "Financeiro", href: "/admin/financeiro", icon: DollarSign },
   { label: "Logs", href: "/admin/logs", icon: History },
   { label: "Pagamentos", href: "/admin/pagamentos", icon: CreditCard },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings },

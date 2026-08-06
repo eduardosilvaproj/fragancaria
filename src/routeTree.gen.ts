@@ -48,6 +48,7 @@ import { Route as AdminPagamentosRouteImport } from './routes/admin/pagamentos'
 import { Route as AdminLoyaltyRouteImport } from './routes/admin/loyalty'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
+import { Route as AdminFinanceiroRouteImport } from './routes/admin/financeiro'
 import { Route as AdminCuponsRouteImport } from './routes/admin/cupons'
 import { Route as AdminCrmRouteImport } from './routes/admin/crm'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
@@ -275,6 +276,11 @@ const AdminLogisticaRoute = AdminLogisticaRouteImport.update({
   path: '/logistica',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
+  id: '/financeiro',
+  path: '/financeiro',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminCuponsRoute = AdminCuponsRouteImport.update({
   id: '/cupons',
   path: '/cupons',
@@ -470,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
@@ -540,6 +547,7 @@ export interface FileRoutesByTo {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
@@ -611,6 +619,7 @@ export interface FileRoutesById {
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
+  '/admin/financeiro': typeof AdminFinanceiroRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
@@ -685,6 +694,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
+    | '/admin/financeiro'
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
@@ -755,6 +765,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
+    | '/admin/financeiro'
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
@@ -825,6 +836,7 @@ export interface FileRouteTypes {
     | '/admin/configuracoes'
     | '/admin/crm'
     | '/admin/cupons'
+    | '/admin/financeiro'
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
@@ -1179,6 +1191,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminLogisticaRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/financeiro': {
+      id: '/admin/financeiro'
+      path: '/financeiro'
+      fullPath: '/admin/financeiro'
+      preLoaderRoute: typeof AdminFinanceiroRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/cupons': {
       id: '/admin/cupons'
       path: '/cupons'
@@ -1426,6 +1445,7 @@ interface AdminRouteChildren {
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
   AdminCrmRoute: typeof AdminCrmRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
+  AdminFinanceiroRoute: typeof AdminFinanceiroRoute
   AdminLogisticaRoute: typeof AdminLogisticaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminLoyaltyRoute: typeof AdminLoyaltyRoute
@@ -1448,6 +1468,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
   AdminCrmRoute: AdminCrmRoute,
   AdminCuponsRoute: AdminCuponsRoute,
+  AdminFinanceiroRoute: AdminFinanceiroRoute,
   AdminLogisticaRoute: AdminLogisticaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminLoyaltyRoute: AdminLoyaltyRoute,
