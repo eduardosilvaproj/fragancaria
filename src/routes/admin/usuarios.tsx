@@ -12,6 +12,7 @@ import {
   LockKeyhole,
   Check,
   Copy,
+  Mail,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -19,6 +20,7 @@ import {
   createAdminUser,
   listAdminUsers,
   resetAdminUserPassword,
+  resendAdminWelcomeEmail,
   setAdminUserActive,
   updateAdminUserRole,
   type AdminUserRow,
@@ -57,6 +59,7 @@ function AdminUsersPage() {
   const [editingRoleUser, setEditingRoleUser] = useState<AdminUserRow | null>(null);
   const [activeBusyId, setActiveBusyId] = useState<string | null>(null);
   const [resetBusyId, setResetBusyId] = useState<string | null>(null);
+  const [resendBusyId, setResendBusyId] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
 
   const listFn = useServerFn(listAdminUsers);
@@ -64,6 +67,7 @@ function AdminUsersPage() {
   const roleFn = useServerFn(updateAdminUserRole);
   const activeFn = useServerFn(setAdminUserActive);
   const resetFn = useServerFn(resetAdminUserPassword);
+  const resendFn = useServerFn(resendAdminWelcomeEmail);
 
   const { data: queryResult, isFetching, refetch } = useQuery({
     queryKey: ["admin-users", search],
@@ -127,6 +131,17 @@ function AdminUsersPage() {
       return;
     }
     toast.error("Erro ao resetar senha", { description: res.error });
+  }
+
+  async function resendWelcomeEmail(user: AdminUserRow) {
+    setResendBusyId(user.userId);
+    const res = await resendFn({ data: { userId: user.userId } });
+    setResendBusyId(null);
+    if (res.success) {
+      toast.success("E-mail de boas-vindas reenviado");
+      return;
+    }
+    toast.error("Erro ao reenviar e-mail", { description: res.error });
   }
 
   async function copyPassword() {
@@ -268,6 +283,18 @@ function AdminUsersPage() {
                       <LockKeyhole className="h-4 w-4" />
                     )}
                     Resetar senha
+                  </button>
+                  <button
+                    disabled={resendBusyId === user.userId || !user.email}
+                    onClick={() => resendWelcomeEmail(user)}
+                    className="inline-flex items-center gap-2 px-2 py-1 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] disabled:opacity-60"
+                  >
+                    {resendBusyId === user.userId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Mail className="h-4 w-4" />
+                    )}
+                    Reenviar e-mail
                   </button>
                 </div>
                 <div className="text-sm text-[#51635F]">{formatDate(user.createdAt)}</div>

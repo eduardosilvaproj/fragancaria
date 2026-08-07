@@ -76,7 +76,8 @@ function audit(
     | "admin.user_role_change"
     | "admin.user_deactivate"
     | "admin.user_reactivate"
-    | "admin.user_password_reset",
+    | "admin.user_password_reset"
+    | "admin.user_welcome_resent",
   entityId: string,
   metadata: Record<string, unknown>,
 ) {
@@ -265,7 +266,6 @@ export const createAdminUser = createServerFn({ method: "POST" })
                 name: email.split("@")[0],
                 role: roleLabel,
                 tempPassword,
-                loginUrl: `${base}/admin-login`,
               });
             } catch (err) {
               console.error("[admin-users] falha ao enviar e-mail de boas-vindas", err);
@@ -482,6 +482,53 @@ export const changeAdminPassword = createServerFn({ method: "POST" })
       try {
         const { changeAdminPassword } = await import("@/lib/admin-auth");
         await changeAdminPassword(data.currentPassword, data.newPassword);
+        return { success: true };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "erro";
+        return { success: false, error: msg };
+      }
+    },
+  );
+
+export const resendAdminWelcomeEmail = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({ userId: z.string().uuid() })
+      .parse(d),
+  )
+  .handler(
+    async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+      try {
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        await requireRole(ADMIN_AREA_ROLES.adminUsers);
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const db = await getDb();
+
+        const { data: row, error: rowErr } = await db
+          .from("admins")
+          .select("user_id, email, role")
+          .eq("user_id", data.userId)
+          .maybeSingle();
+        if (rowErr || !row) {
+          return { success: false, error: "Usuário não encontrado" };
+        }
+
+        const { sendAdminWelcomeEmail } = await import("@/lib/email.functions");
+        const roleLabel = ROLE_LABELS[row.role] || row.role;
+        const tempPassword = crypto.randomUUID().slice(0, 12);
+        await sendAdminWelcomeEmail({
+          email: row.email ?? "",
+          name: row.email?.split("@")[0] ?? "admin",
+          role: roleLabel,
+          tempPassword,
+        });
+
+        audit(await requireRole(ADMIN_AREA_ROLES.adminUsers), "admin.user_welcome_resent", row.user_id, {
+          email: row.email,
+          role: row.role,
+        });
+
         return { success: true };
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "erro";

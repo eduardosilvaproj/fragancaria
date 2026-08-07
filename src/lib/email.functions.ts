@@ -232,7 +232,6 @@ type AdminWelcomeEmailInput = {
   name: string;
   role: string;
   tempPassword: string;
-  loginUrl: string;
 };
 
 export async function sendAdminWelcomeEmail(
@@ -249,6 +248,7 @@ export async function sendAdminWelcomeEmail(
     const resend = new Resend(apiKey);
     const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
     const changePasswordUrl = `${base}/admin/alterar-senha`;
+    const loginUrl = "https://www.fragranciaria.com/admin-login";
 
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
@@ -277,7 +277,7 @@ export async function sendAdminWelcomeEmail(
           E-mail: ${input.email}<br>
           Senha temporária: ${input.tempPassword}
         </div>
-        <a href="${input.loginUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">
+        <a href="${loginUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">
           Entrar no painel
         </a>
       </div>
