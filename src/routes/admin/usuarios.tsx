@@ -13,11 +13,13 @@ import {
   Check,
   Copy,
   Mail,
+  Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   createAdminUser,
+  deleteAdminUser,
   listAdminUsers,
   resetAdminUserPassword,
   resendAdminWelcomeEmail,
@@ -60,6 +62,7 @@ function AdminUsersPage() {
   const [activeBusyId, setActiveBusyId] = useState<string | null>(null);
   const [resetBusyId, setResetBusyId] = useState<string | null>(null);
   const [resendBusyId, setResendBusyId] = useState<string | null>(null);
+  const [deleteBusyId, setDeleteBusyId] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
 
   const listFn = useServerFn(listAdminUsers);
@@ -68,6 +71,7 @@ function AdminUsersPage() {
   const activeFn = useServerFn(setAdminUserActive);
   const resetFn = useServerFn(resetAdminUserPassword);
   const resendFn = useServerFn(resendAdminWelcomeEmail);
+  const deleteFn = useServerFn(deleteAdminUser);
 
   const { data: queryResult, isFetching, refetch } = useQuery({
     queryKey: ["admin-users", search],
@@ -142,6 +146,22 @@ function AdminUsersPage() {
       return;
     }
     toast.error("Erro ao reenviar e-mail", { description: res.error });
+  }
+
+  async function deleteUser(user: AdminUserRow) {
+    const confirmed = window.confirm(
+      `Excluir o usuário ${user.email ?? user.userId}? Isso remove o acesso ao painel.`,
+    );
+    if (!confirmed) return;
+    setDeleteBusyId(user.userId);
+    const res = await deleteFn({ data: { userId: user.userId } });
+    setDeleteBusyId(null);
+    if (res.success) {
+      toast.success("Usuário excluído");
+      await refetch();
+      return;
+    }
+    toast.error("Erro ao excluir usuário", { description: res.error });
   }
 
   async function copyPassword() {
@@ -295,6 +315,18 @@ function AdminUsersPage() {
                       <Mail className="h-4 w-4" />
                     )}
                     Reenviar e-mail
+                  </button>
+                  <button
+                    disabled={deleteBusyId === user.userId}
+                    onClick={() => deleteUser(user)}
+                    className="inline-flex items-center gap-2 px-2 py-1 text-sm border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100 disabled:opacity-60"
+                  >
+                    {deleteBusyId === user.userId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Excluir
                   </button>
                 </div>
                 <div className="text-sm text-[#51635F]">{formatDate(user.createdAt)}</div>

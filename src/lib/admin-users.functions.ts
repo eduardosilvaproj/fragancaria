@@ -77,7 +77,8 @@ function audit(
     | "admin.user_deactivate"
     | "admin.user_reactivate"
     | "admin.user_password_reset"
-    | "admin.user_welcome_resent",
+    | "admin.user_welcome_resent"
+    | "admin.user_delete",
   entityId: string,
   metadata: Record<string, unknown>,
 ) {
@@ -528,6 +529,55 @@ export const resendAdminWelcomeEmail = createServerFn({ method: "POST" })
           email: row.email,
           role: row.role,
         });
+
+        return { success: true };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "erro";
+        return { success: false, error: msg };
+      }
+    },
+  );
+
+export const deleteAdminUser = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({ userId: z.string().uuid() })
+      .parse(d),
+  )
+  .handler(
+    async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+      try {
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        const admin = await requireRole(ADMIN_AREA_ROLES.adminUsers);
+        const db = await getDb();
+
+        // Impede o próprio usuário de se excluir (ficaria sem admin no sistema)
+        if (data.userId === admin.userId) {
+          return { success: false, error: "Você não pode excluir o próprio usuário." };
+        }
+
+        const { data: row, error: rowErr } = await db
+          .from("admins")
+          .select("user_id, email, role")
+          .eq("user_id", data.userId)
+          .maybeSingle();
+        if (rowErr || !row) {
+          return { success: false, error: "Usuário não encontrado" };
+        }
+
+        // Remove o acesso ao painel. NÃO apaga de auth.users (a conta do
+        // provedor/loja continua existindo) e registra auditoria antes da
+        // remoção, para preservar histórico de quem foi removido.
+        audit(admin, "admin.user_delete", row.user_id, {
+          email: row.email,
+          role: row.role,
+        });
+
+        const { error } = await db.from("admins").delete().eq("user_id", data.userId);
+        if (error) {
+          return { success: false, error: error.message };
+        }
 
         return { success: true };
       } catch (e: unknown) {

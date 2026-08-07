@@ -27,7 +27,8 @@ export type AuditAction =
   | "admin.user_deactivate"
   | "admin.user_reactivate"
   | "admin.user_password_reset"
-  | "admin.user_welcome_resent";
+  | "admin.user_welcome_resent"
+  | "admin.user_delete";
 
 export type AuditEntity =
   | "product"
