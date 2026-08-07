@@ -16,7 +16,7 @@ export const loginAdmin = createServerFn({ method: "POST" })
     const { loginAdmin: doLogin } = await import("./admin-auth");
     try {
       const admin = await doLogin(data.email, data.password);
-      return { success: true as const, email: admin.email };
+      return { success: true as const, email: admin.email, role: admin.role };
     } catch (err: any) {
       return { success: false as const, error: err?.message || "ERRO" };
     }

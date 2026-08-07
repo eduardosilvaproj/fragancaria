@@ -17,6 +17,10 @@ export type AdminRole = (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES];
 // Áreas mapeadas por arquivo de server fns. O primeiro papel da lista é o
 // dono; os demais são os que também podem chamar.
 export const ADMIN_AREA_ROLES: Record<string, readonly AdminRole[]> = {
+  // Dashboard (visão geral) — só total. Logística e social caem direto
+  // na área deles após o login.
+  dashboard: [ADMIN_ROLES.total],
+
   // --- Só total (dados sensíveis: pagamento, cliente, financeiro) ---
   orders: [ADMIN_ROLES.total],
   customers: [ADMIN_ROLES.total],

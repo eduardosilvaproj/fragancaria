@@ -57,6 +57,7 @@ import { Route as AdminClientesRouteImport } from './routes/admin/clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as AdminAlterarSenhaRouteImport } from './routes/admin/alterar-senha'
 import { Route as AdminAfiliadosRouteImport } from './routes/admin/afiliados'
 import { Route as MinhaContaPerfilIndexRouteImport } from './routes/minha-conta/perfil/index'
 import { Route as MinhaContaPedidosIndexRouteImport } from './routes/minha-conta/pedidos/index'
@@ -322,6 +323,11 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminAlterarSenhaRoute = AdminAlterarSenhaRouteImport.update({
+  id: '/alterar-senha',
+  path: '/alterar-senha',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAfiliadosRoute = AdminAfiliadosRouteImport.update({
   id: '/afiliados',
   path: '/afiliados',
@@ -475,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
+  '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
@@ -547,6 +554,7 @@ export interface FileRoutesByTo {
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
+  '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
@@ -620,6 +628,7 @@ export interface FileRoutesById {
   '/termos': typeof TermosRoute
   '/trocas': typeof TrocasRoute
   '/admin/afiliados': typeof AdminAfiliadosRoute
+  '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/categorias': typeof AdminCategoriasRoute
@@ -696,6 +705,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
+    | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
@@ -768,6 +778,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
+    | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
@@ -840,6 +851,7 @@ export interface FileRouteTypes {
     | '/termos'
     | '/trocas'
     | '/admin/afiliados'
+    | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/categorias'
@@ -1266,6 +1278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/alterar-senha': {
+      id: '/admin/alterar-senha'
+      path: '/alterar-senha'
+      fullPath: '/admin/alterar-senha'
+      preLoaderRoute: typeof AdminAlterarSenhaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/afiliados': {
       id: '/admin/afiliados'
       path: '/afiliados'
@@ -1457,6 +1476,7 @@ const AdminProdutosRouteWithChildren = AdminProdutosRoute._addFileChildren(
 
 interface AdminRouteChildren {
   AdminAfiliadosRoute: typeof AdminAfiliadosRoute
+  AdminAlterarSenhaRoute: typeof AdminAlterarSenhaRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAtendimentoIaRoute: typeof AdminAtendimentoIaRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
@@ -1481,6 +1501,7 @@ interface AdminRouteChildren {
 
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAfiliadosRoute: AdminAfiliadosRoute,
+  AdminAlterarSenhaRoute: AdminAlterarSenhaRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAtendimentoIaRoute: AdminAtendimentoIaRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,

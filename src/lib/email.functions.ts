@@ -227,6 +227,87 @@ export async function sendOrderStatusEmail(
   }
 }
 
+type AdminWelcomeEmailInput = {
+  email: string;
+  name: string;
+  role: string;
+  tempPassword: string;
+  loginUrl: string;
+};
+
+export async function sendAdminWelcomeEmail(
+  input: AdminWelcomeEmailInput,
+): Promise<{ success: boolean; error?: string }> {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY ausente — e-mail de boas-vindas admin não enviado", {
+      email: input.email,
+    });
+    return { success: false, error: "RESEND_API_KEY ausente" };
+  }
+  try {
+    const resend = new Resend(apiKey);
+    const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
+    const changePasswordUrl = `${base}/admin/alterar-senha`;
+
+    const { error } = await resend.emails.send({
+      from: "Fragranciaria <naoresponda@fragranciaria.com>",
+      to: [input.email],
+      subject: `Acesso ao painel administrativo — ${input.name}`,
+      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
+<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
+  <div style="max-width:600px;margin:0 auto;padding:20px;">
+    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
+      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">Acesso ao painel administrativo</h1>
+      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${input.name}.</p>
+      <p style="margin:0 0 20px;color:#51635f;font-size:15px;line-height:1.5;">
+        Seu acesso ao painel administrativo da Fragranciaria foi criado com o papel <strong>${input.role}</strong>.
+      </p>
+
+      <div style="background:#fdf6e3;border:1px solid #e8c25a;border-radius:6px;padding:16px;margin:0 0 24px;">
+        <div style="font-size:13px;color:#8a6413;line-height:1.5;">
+          <strong>Senha temporária</strong><br>
+          Ela é válida até você trocar a senha. Assim que entrar, acesse o link abaixo para definir uma senha definitiva.
+        </div>
+      </div>
+
+      <div style="background:#f3eee3;border-radius:6px;padding:16px;margin:0 0 24px;">
+        <div style="font-size:12px;color:#51635f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Credenciais</div>
+        <div style="font-family:monospace;font-size:18px;letter-spacing:1px;color:#0f3a3e;">
+          E-mail: ${input.email}<br>
+          Senha temporária: ${input.tempPassword}
+        </div>
+        <a href="${input.loginUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">
+          Entrar no painel
+        </a>
+      </div>
+
+      <p style="margin:0 0 16px;color:#51635f;font-size:15px;line-height:1.5;">
+        Após entrar, <a href="${changePasswordUrl}" style="color:#b07b1e;">troque sua senha</a> o quanto antes — a senha do e-mail é temporária.
+      </p>
+      <p style="margin:0;color:#51635f;font-size:14px;">Este é um e-mail automático. Não responda.</p>
+    </div>
+  </div>
+</body></html>`,
+    });
+    if (error) {
+      console.error("[email] Falha ao enviar e-mail de boas-vindas admin", {
+        email: input.email,
+        error: error.message,
+      });
+      return { success: false, error: error.message };
+    }
+    console.log("[email] E-mail de boas-vindas admin enviado", { email: input.email });
+    return { success: true };
+  } catch (err: any) {
+    console.error("[email] Erro inesperado (boas-vindas admin)", {
+      email: input.email,
+      error: err?.message,
+    });
+    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+  }
+}
+
 export async function sendOrderConfirmationEmail(
   input: OrderEmailInput,
 ): Promise<{ success: boolean; error?: string }> {

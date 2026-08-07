@@ -12,6 +12,12 @@ import { z } from "zod";
 import type { AdminRole } from "@/lib/admin-roles";
 import type { AdminUser } from "@/lib/admin-auth";
 
+const ROLE_LABELS: Record<string, string> = {
+  total: "Total",
+  social: "Social",
+  logistica: "Logística",
+};
+
 const ROLES = ["total", "social", "logistica"] as const;
 const ROLE_SCHEMA = z.enum(ROLES);
 
@@ -247,6 +253,26 @@ export const createAdminUser = createServerFn({ method: "POST" })
           already_existed: alreadyExisted,
         });
 
+        // Envia e-mail de boas-vindas (senha temporaria) se nao for usuario existente
+        if (!alreadyExisted) {
+          void (async () => {
+            try {
+              const { sendAdminWelcomeEmail } = await import("@/lib/email.functions");
+              const base = process.env.PUBLIC_URL || "https://www.fragancaria.com";
+              const roleLabel = ROLE_LABELS[data.role] || data.role;
+              await sendAdminWelcomeEmail({
+                email,
+                name: email.split("@")[0],
+                role: roleLabel,
+                tempPassword,
+                loginUrl: `${base}/admin-login`,
+              });
+            } catch (err) {
+              console.error("[admin-users] falha ao enviar e-mail de boas-vindas", err);
+            }
+          })();
+        }
+
         return {
           success: true,
           data: {
@@ -435,6 +461,28 @@ export const resetAdminUserPassword = createServerFn({ method: "POST" })
               : "Senha temporária gerada.",
           },
         };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "erro";
+        return { success: false, error: msg };
+      }
+    },
+  );
+
+export const changeAdminPassword = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        currentPassword: z.string().min(1),
+        newPassword: z.string().min(8),
+      })
+      .parse(d),
+  )
+  .handler(
+    async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+      try {
+        const { changeAdminPassword } = await import("@/lib/admin-auth");
+        await changeAdminPassword(data.currentPassword, data.newPassword);
+        return { success: true };
       } catch (e: unknown) {
         const msg = e instanceof Error ? e.message : "erro";
         return { success: false, error: msg };

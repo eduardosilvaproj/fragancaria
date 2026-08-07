@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Users,
   UserCog,
@@ -26,16 +27,30 @@ import {
   RotateCcw,
   History,
   DollarSign,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { logoutAdmin } from "@/lib/admin.functions";
 import { allowedAreasForRole, ADMIN_AREA_ROLES } from "@/lib/admin-roles";
 
 export const Route = createFileRoute("/admin")({
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { getAdminSession } = await import("@/lib/admin.functions");
     const session = await getAdminSession();
     if (!session) {
       throw redirect({ to: "/admin-login" });
+    }
+    // Conveniência: papel limitado que cai no dashboard é levado para a
+    // área dele. A barreira real continua sendo o requireRole nas server fns.
+    // Só redireciona no /admin exato — rotas filhas também passam pelo
+    // beforeLoad do layout e não devem sofrer redirect (senão loop).
+    if (location.pathname === "/admin") {
+      if (session.role === "logistica") {
+        throw redirect({ to: "/admin/logistica" });
+      }
+      if (session.role === "social") {
+        throw redirect({ to: "/admin/produtos" });
+      }
     }
     return { admin: session };
   },
@@ -49,7 +64,7 @@ type SidebarItem =
   | { section: string };
 
 const SIDEBAR_ITEMS: SidebarItem[] = [
-  { label: "Dashboard", href: "/admin", icon: Home, exact: true },
+  { label: "Dashboard", href: "/admin", icon: Home, exact: true, area: "dashboard" },
   { section: "E-commerce" },
   { label: "Produtos", href: "/admin/produtos", icon: Package, area: "products" },
   { label: "Categorias", href: "/admin/categorias", icon: Layers, area: "categories" },
@@ -87,6 +102,13 @@ function AdminLayout() {
   const isActive = (href: string, exact?: boolean) => {
     if (exact) return location.pathname === href;
     return location.pathname.startsWith(href);
+  };
+
+  const logoutFn = useServerFn(logoutAdmin);
+
+  const handleLogout = async () => {
+    await logoutFn();
+    window.location.href = "/admin-login";
   };
 
   return (
@@ -234,6 +256,13 @@ function AdminLayout() {
                 <p className="text-xs text-[#8A938E]">{adminEmail}</p>
               </div>
             </div>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3]"
+            >
+              <LogOut className="h-4 w-4" />
+              Sair
+            </button>
           </div>
         </header>
 

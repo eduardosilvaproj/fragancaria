@@ -38,7 +38,11 @@ function AdminLoginPage() {
     try {
       const res = await loginAdmin({ data: { email, password } });
       if (res.success) {
-        await navigate({ to: "/admin" });
+        // Redireciona por papel
+        let target = "/admin";
+        if (res.role === "logistica") target = "/admin/logistica";
+        else if (res.role === "social") target = "/admin/produtos";
+        await navigate({ to: target });
       } else {
         setError(mapError(res.error));
       }

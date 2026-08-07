@@ -202,3 +202,23 @@ export async function loginAdmin(email: string, password: string): Promise<Admin
   rateLimitReset(rlKey);
   return admin;
 }
+
+/**
+ * Altera a senha do admin autenticado. Requer sessão válida (resolveAdmin).
+ * Usa supabase.auth.updateUser (não admin) para que o usuário possa trocar
+ * sua própria senha sem precisar de service role.
+ */
+export async function changeAdminPassword(currentPassword: string, newPassword: string): Promise<void> {
+  const admin = await resolveAdmin();
+  if (!admin) {
+    throw new Error("NAO_AUTORIZADO");
+  }
+
+  const auth = getAuthClient();
+  const { error } = await auth.auth.updateUser({
+    password: newPassword,
+  });
+  if (error) {
+    throw new Error("FALHA_ALTERAR_SENHA");
+  }
+}
