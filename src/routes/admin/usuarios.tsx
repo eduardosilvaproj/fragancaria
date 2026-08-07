@@ -13,10 +13,12 @@ import {
   Check,
   Copy,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   createAdminUser,
   listAdminUsers,
+  resetAdminUserPassword,
   setAdminUserActive,
   updateAdminUserRole,
   type AdminUserRow,
@@ -51,22 +53,21 @@ function AdminUsersPage() {
   const [newEmail, setNewEmail] = useState("");
   const [newRole, setNewRole] = useState("total");
   const [generatedPassword, setGeneratedPassword] = useState("");
-  const [copied, setCopied] = useState(false);
+  const [copyLabel, setCopyLabel] = useState("Copiar");
   const [editingRoleUser, setEditingRoleUser] = useState<AdminUserRow | null>(null);
   const [activeBusyId, setActiveBusyId] = useState<string | null>(null);
+  const [resetBusyId, setResetBusyId] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
 
   const listFn = useServerFn(listAdminUsers);
   const createFn = useServerFn(createAdminUser);
   const roleFn = useServerFn(updateAdminUserRole);
   const activeFn = useServerFn(setAdminUserActive);
+  const resetFn = useServerFn(resetAdminUserPassword);
 
-  const {
-    data: queryResult,
-    isFetching,
-    refetch,
-  } = useQuery({
+  const { data: queryResult, isFetching, refetch } = useQuery({
     queryKey: ["admin-users", search],
-    queryFn: () => listFn({ data: { search: search || undefined } }),
+    queryFn: async () => listFn({ data: { search: search || undefined } }),
     refetchOnWindowFocus: false,
   });
 
@@ -77,14 +78,19 @@ function AdminUsersPage() {
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
+    setBanner(null);
     const res = await createFn({ data: { email: newEmail, role: newRole as AdminRole } });
     if (res.success) {
-      setGeneratedPassword(res.data.tempPassword);
+      setGeneratedPassword(res.data.tempPassword ?? "");
+      setBanner(res.data.message ?? null);
       setNewEmail("");
       setNewRole("total");
       setCreateOpen(false);
       await refetch();
+      return;
     }
+    setBanner(res.error);
+    toast.error("Erro ao criar usuário", { description: res.error });
   }
 
   async function onRoleChange(userId: string, role: string) {
@@ -92,7 +98,9 @@ function AdminUsersPage() {
     if (res.success) {
       setEditingRoleUser(null);
       await refetch();
+      return;
     }
+    toast.error("Erro ao alterar papel", { description: res.error });
   }
 
   async function toggleActive(user: AdminUserRow) {
@@ -101,14 +109,31 @@ function AdminUsersPage() {
     setActiveBusyId(null);
     if (res.success) {
       await refetch();
+      return;
     }
+    toast.error(user.isActive ? "Erro ao desativar" : "Erro ao ativar", {
+      description: res.error,
+    });
+  }
+
+  async function resetPassword(user: AdminUserRow) {
+    setResetBusyId(user.userId);
+    const res = await resetFn({ data: { userId: user.userId } });
+    setResetBusyId(null);
+    if (res.success) {
+      setGeneratedPassword(res.data.tempPassword);
+      setBanner(res.data.message);
+      await refetch();
+      return;
+    }
+    toast.error("Erro ao resetar senha", { description: res.error });
   }
 
   async function copyPassword() {
     if (!generatedPassword) return;
     await navigator.clipboard.writeText(generatedPassword);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    setCopyLabel("Copiado");
+    setTimeout(() => setCopyLabel("Copiar"), 1500);
   }
 
   return (
@@ -136,6 +161,12 @@ function AdminUsersPage() {
         </div>
       </div>
 
+      {banner && (
+        <div className="border border-[#E9E1D2] bg-[#F5F3EE] p-4 text-sm text-[#1C302E]">
+          {banner}
+        </div>
+      )}
+
       {generatedPassword && (
         <div className="bg-amber-50 border border-amber-200 p-4 flex items-center justify-between gap-4">
           <div>
@@ -146,8 +177,8 @@ function AdminUsersPage() {
             onClick={copyPassword}
             className="inline-flex items-center gap-2 px-3 py-2 text-sm border border-amber-300 bg-white hover:bg-amber-100"
           >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-            {copied ? "Copiado" : "Copiar"}
+            {copyLabel === "Copiado" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copyLabel}
           </button>
         </div>
       )}
@@ -167,7 +198,7 @@ function AdminUsersPage() {
         </div>
       ) : (
         <div className="bg-white border border-[#E9E1D2] overflow-hidden">
-          <div className="grid grid-cols-[2fr_1fr_120px_160px] gap-3 px-4 py-3 bg-[#F5F3EE] text-[10px] uppercase tracking-wider text-[#51635F] font-medium">
+          <div className="grid grid-cols-[2fr_1fr_140px_180px] gap-3 px-4 py-3 bg-[#F5F3EE] text-[10px] uppercase tracking-wider text-[#51635F] font-medium">
             <div>E-mail</div>
             <div>Papel</div>
             <div>Ativo</div>
@@ -179,7 +210,7 @@ function AdminUsersPage() {
             orderedUsers.map((user) => (
               <div
                 key={user.userId}
-                className="grid grid-cols-[2fr_1fr_120px_160px] gap-3 px-4 py-4 border-t border-[#E9E1D2] items-center"
+                className="grid grid-cols-[2fr_1fr_140px_180px] gap-3 px-4 py-4 border-t border-[#E9E1D2] items-center"
               >
                 <div className="min-w-0">
                   <p className="text-sm text-[#1C302E] truncate">{user.email ?? user.userId}</p>
@@ -206,7 +237,7 @@ function AdminUsersPage() {
                     </button>
                   )}
                 </div>
-                <div>
+                <div className="flex flex-col gap-2">
                   <button
                     disabled={activeBusyId === user.userId}
                     onClick={() => toggleActive(user)}
@@ -226,6 +257,18 @@ function AdminUsersPage() {
                     )}
                     {user.isActive ? "Ativo" : "Desativado"}
                   </button>
+                  <button
+                    disabled={resetBusyId === user.userId}
+                    onClick={() => resetPassword(user)}
+                    className="inline-flex items-center gap-2 px-2 py-1 text-sm border border-[#E9E1D2] hover:bg-[#F3EEE3] disabled:opacity-60"
+                  >
+                    {resetBusyId === user.userId ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <LockKeyhole className="h-4 w-4" />
+                    )}
+                    Resetar senha
+                  </button>
                 </div>
                 <div className="text-sm text-[#51635F]">{formatDate(user.createdAt)}</div>
               </div>
@@ -236,10 +279,7 @@ function AdminUsersPage() {
 
       {createOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form
-            onSubmit={onCreate}
-            className="w-full max-w-lg bg-white border border-[#E9E1D2] p-6 space-y-4"
-          >
+          <form onSubmit={onCreate} className="w-full max-w-lg bg-white border border-[#E9E1D2] p-6 space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold text-[#0F3A3E]">Criar usuário admin</h2>
               <button type="button" onClick={() => setCreateOpen(false)} className="text-[#51635F]">

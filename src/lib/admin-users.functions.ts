@@ -65,7 +65,12 @@ function generateTempPassword(): string {
 
 function audit(
   admin: AdminUser,
-  action: "admin.user_create" | "admin.user_role_change" | "admin.user_deactivate",
+  action:
+    | "admin.user_create"
+    | "admin.user_role_change"
+    | "admin.user_deactivate"
+    | "admin.user_reactivate"
+    | "admin.user_password_reset",
   entityId: string,
   metadata: Record<string, unknown>,
 ) {
@@ -136,7 +141,8 @@ export const listAdminUsers = createServerFn({ method: "GET" })
 
 export type CreateAdminUserResult = {
   user: AdminUserRow;
-  tempPassword: string;
+  tempPassword: string | null;
+  message?: string;
 };
 
 export const createAdminUser = createServerFn({ method: "POST" })
@@ -164,54 +170,97 @@ export const createAdminUser = createServerFn({ method: "POST" })
         const email = data.email.toLowerCase().trim();
         const tempPassword = generateTempPassword();
 
-        // 1. Cria o usuario no Supabase Auth (email_confirm true para poder
-        //    logar com a senha temporaria; nao envia email de convite para nao
-        //    vazar a senha — a tela exibe uma unica vez).
-        const { data: authData, error: authError } = await db.auth.admin.createUser({
+        // 0. Se o email ja tem acesso admin, e erro (nao duplica linha).
+        const { data: existingAdmin, error: existingAdminErr } = await db
+          .from("admins")
+          .select("user_id, email")
+          .eq("email", email)
+          .maybeSingle();
+        if (existingAdminErr) {
+          return { success: false, error: "Falha ao verificar e-mail existente." };
+        }
+        if (existingAdmin) {
+          return {
+            success: false,
+            error: "Este e-mail já tem acesso como admin.",
+          };
+        }
+
+        let userId: string | null = null;
+        let alreadyExisted = false;
+
+        // 2. Tenta criar no Supabase Auth. Se o email ja estiver cadastrado
+        //    (ex.: cliente que vira funcionario), o createUser recusa — nesse
+        //    caso recuperamos o usuario existente e seguimos como caminho valido.
+        const { data: created, error: createErr } = await db.auth.admin.createUser({
           email,
           password: tempPassword,
           email_confirm: true,
         });
-        if (authError || !authData?.user) {
-          return {
-            success: false,
-            error: authError?.message || "falha ao criar usuario no Auth",
-          };
+        if (createErr) {
+          const { data: existingUser, error: lookupErr } = await db.auth.admin.listUsers({
+            page: 1,
+            perPage: 1000,
+          });
+          const userRecord = !lookupErr
+            ? (existingUser?.users ?? []).find(
+                (u: { email?: string | null }) => (u.email ?? "").toLowerCase() === email,
+              )
+            : undefined;
+          if (userRecord?.id) {
+            userId = userRecord.id;
+            alreadyExisted = true;
+          } else {
+            return {
+              success: false,
+              error: "Não foi possível criar o usuário: e-mail já cadastrado e não localizável.",
+            };
+          }
+        } else if (created?.user) {
+          userId = created.user.id;
         }
 
-        // 2. Insere em admins. Se o email ja existir em admins (outro user_id),
-        //    nao duplicamos — retorna erro sem criar lixo.
+        if (!userId) {
+          return { success: false, error: "Falha ao criar usuário no Auth." };
+        }
+
+        // 3. Insere em admins usando o user_id (novo ou existente). Para usuário
+        //    que já existia, não trocamos a senha do Auth — entra com a senha que
+        //    já tem. is_active true por padrão.
         const { error: insertError } = await db.from("admins").insert({
-          user_id: authData.user.id,
+          user_id: userId,
           email,
           role: data.role,
           is_active: true,
         });
         if (insertError) {
-          // Rollback: remove o usuario criado no Auth para nao deixar lixo.
-          await db.auth.admin.deleteUser(authData.user.id);
-          return {
-            success: false,
-            error: insertError.message,
-          };
+          // Se acabamos de criar no Auth, rollback para não deixar lixo.
+          if (!alreadyExisted) {
+            await db.auth.admin.deleteUser(userId);
+          }
+          return { success: false, error: insertError.message };
         }
 
-        audit(admin, "admin.user_create", authData.user.id, {
+        audit(admin, "admin.user_create", userId, {
           email,
           role: data.role,
+          already_existed: alreadyExisted,
         });
 
         return {
           success: true,
           data: {
             user: {
-              userId: authData.user.id,
+              userId,
               email,
               role: data.role,
               isActive: true,
               createdAt: new Date().toISOString(),
             },
-            tempPassword,
+            tempPassword: alreadyExisted ? null : tempPassword,
+            message: alreadyExisted
+              ? `E-mail já existia. A pessoa entra com a senha que já tem (papel ${data.role}).`
+              : undefined,
           },
         };
       } catch (e: unknown) {
@@ -220,6 +269,67 @@ export const createAdminUser = createServerFn({ method: "POST" })
       }
     },
   );
+
+export const setAdminUserActive = createServerFn({ method: "POST" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        userId: z.string().uuid(),
+        isActive: z.boolean(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
+    try {
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      const admin = await requireRole(ADMIN_AREA_ROLES.adminUsers);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const db = await getDb();
+
+      // Nunca deixa o proprio admin se desativar (evita se trancar).
+      if (data.userId === admin.userId && !data.isActive) {
+        return {
+          success: false,
+          error: "Você não pode desativar o próprio acesso.",
+        };
+      }
+
+      const { data: before, error: fetchErr } = await db
+        .from("admins")
+        .select("user_id, email, role, is_active")
+        .eq("user_id", data.userId)
+        .maybeSingle();
+      if (fetchErr || !before) {
+        return { success: false, error: "Usuário não encontrado" };
+      }
+
+      const { error } = await db
+        .from("admins")
+        .update({ is_active: data.isActive })
+        .eq("user_id", data.userId);
+      if (error) return { success: false, error: error.message };
+
+      // Desativar nao apaga nada (auth.users e admins ficam intactos). O
+      // resolveAdmin passa a negar sessao na proxima requisicao.
+      if (!data.isActive) {
+        audit(admin, "admin.user_deactivate", data.userId, {
+          email: before.email,
+          role: before.role,
+        });
+      } else {
+        audit(admin, "admin.user_reactivate", data.userId, {
+          email: before.email,
+          role: before.role,
+        });
+      }
+
+      return { success: true };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return { success: false, error: msg };
+    }
+  });
 
 export const updateAdminUserRole = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
@@ -274,58 +384,60 @@ export const updateAdminUserRole = createServerFn({ method: "POST" })
     }
   });
 
-export const setAdminUserActive = createServerFn({ method: "POST" })
+export const resetAdminUserPassword = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
     z
       .object({
         userId: z.string().uuid(),
-        isActive: z.boolean(),
       })
       .parse(d),
   )
-  .handler(async ({ data }): Promise<{ success: true } | { success: false; error: string }> => {
-    try {
-      const { requireRole } = await import("@/lib/admin-auth");
-      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
-      const admin = await requireRole(ADMIN_AREA_ROLES.adminUsers);
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-      const db = await getDb();
+  .handler(
+    async ({ data }): Promise<
+      | { success: true; data: { tempPassword: string; message: string } }
+      | { success: false; error: string }
+    > => {
+      try {
+        const { requireRole } = await import("@/lib/admin-auth");
+        const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+        const admin = await requireRole(ADMIN_AREA_ROLES.adminUsers);
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const db = await getDb();
 
-      // Nunca deixa o proprio admin se desativar (evita se trancar).
-      if (data.userId === admin.userId && !data.isActive) {
-        return {
-          success: false,
-          error: "Você não pode desativar o próprio acesso.",
-        };
-      }
+        const { data: row, error: fetchErr } = await db
+          .from("admins")
+          .select("user_id, email, role, is_active")
+          .eq("user_id", data.userId)
+          .maybeSingle();
+        if (fetchErr || !row) {
+          return { success: false, error: "Usuário não encontrado" };
+        }
 
-      const { data: before, error: fetchErr } = await db
-        .from("admins")
-        .select("user_id, email, role, is_active")
-        .eq("user_id", data.userId)
-        .maybeSingle();
-      if (fetchErr || !before) {
-        return { success: false, error: "Usuário não encontrado" };
-      }
-
-      const { error } = await db
-        .from("admins")
-        .update({ is_active: data.isActive })
-        .eq("user_id", data.userId);
-      if (error) return { success: false, error: error.message };
-
-      // Desativar nao apaga nada (auth.users e admins ficam intactos). O
-      // resolveAdmin passa a negar sessao na proxima requisicao.
-      if (!data.isActive) {
-        audit(admin, "admin.user_deactivate", data.userId, {
-          email: before.email,
-          role: before.role,
+        const tempPassword = generateTempPassword();
+        const { error: resetErr } = await db.auth.admin.updateUserById(data.userId, {
+          password: tempPassword,
         });
-      }
+        if (resetErr) {
+          return { success: false, error: resetErr.message };
+        }
 
-      return { success: true };
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : "erro";
-      return { success: false, error: msg };
-    }
-  });
+        audit(admin, "admin.user_password_reset", data.userId, {
+          email: row.email,
+          role: row.role,
+        });
+
+        return {
+          success: true,
+          data: {
+            tempPassword,
+            message: row.email
+              ? `Senha temporária gerada para ${row.email}. A pessoa entra com essa senha uma vez.`
+              : "Senha temporária gerada.",
+          },
+        };
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "erro";
+        return { success: false, error: msg };
+      }
+    },
+  );

@@ -24,7 +24,9 @@ export type AuditAction =
   | "nfe_settings.update"
   | "admin.user_create"
   | "admin.user_role_change"
-  | "admin.user_deactivate";
+  | "admin.user_deactivate"
+  | "admin.user_reactivate"
+  | "admin.user_password_reset";
 
 export type AuditEntity =
   | "product"
