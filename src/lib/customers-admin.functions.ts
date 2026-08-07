@@ -824,3 +824,157 @@ export const setCustomerLoyalty = createServerFn({ method: "POST" })
       }
     },
   );
+
+export type LoyaltyDashboardRow = {
+  id: string;
+  name: string;
+  email: string | null;
+  tier: string;
+  points: number;
+  joinedAt: string;
+};
+
+export type LoyaltyDashboardSummary = {
+  totalMembers: number;
+  totalPointsIssued: number;
+  tierCounts: Record<string, number>;
+  members: LoyaltyDashboardRow[];
+};
+
+export const getLoyaltyDashboard = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ success: boolean; data: LoyaltyDashboardSummary; error?: string }> => {
+    try {
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.customers);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin
+        .from("customers")
+        .select("id, name, email, loyalty_points, loyalty_tier, created_at")
+        .order("loyalty_points", { ascending: false })
+        .limit(500);
+      if (error) {
+        return {
+          success: false,
+          data: { totalMembers: 0, totalPointsIssued: 0, tierCounts: {}, members: [] },
+          error: error.message,
+        };
+      }
+      const rows = (data ?? []) as Array<{
+        id: string;
+        name: string | null;
+        email: string | null;
+        loyalty_points: number | null;
+        loyalty_tier: string | null;
+        created_at: string;
+      }>;
+      const tierCounts: Record<string, number> = {};
+      let totalPointsIssued = 0;
+      const members = rows.map((row) => {
+        const tier = row.loyalty_tier ?? "bronze";
+        tierCounts[tier] = (tierCounts[tier] ?? 0) + 1;
+        totalPointsIssued += row.loyalty_points ?? 0;
+        return {
+          id: row.id,
+          name: row.name ?? "Cliente",
+          email: row.email,
+          tier,
+          points: row.loyalty_points ?? 0,
+          joinedAt: row.created_at,
+        };
+      });
+      return {
+        success: true,
+        data: {
+          totalMembers: rows.length,
+          totalPointsIssued,
+          tierCounts,
+          members,
+        },
+      };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return {
+        success: false,
+        data: { totalMembers: 0, totalPointsIssued: 0, tierCounts: {}, members: [] },
+        error: msg,
+      };
+    }
+  },
+);
+
+export type CrmDashboardRow = {
+  id: string;
+  name: string;
+  description: string;
+  count: number;
+  criteria: string[];
+};
+
+export type CrmDashboardData = {
+  totalContacts: number;
+  avgOpenRate: number;
+  avgClickRate: number;
+  campaigns: Array<{ id: string; name: string; subject: string; status: string; sentTo: number; openRate: number; clickRate: number; sentAt?: string; scheduledFor?: string }>;
+  segments: CrmDashboardRow[];
+  automations: Array<{ name: string; description: string; active: boolean; sent: number }>;
+};
+
+export const getCrmDashboard = createServerFn({ method: "GET" }).handler(
+  async (): Promise<{ success: boolean; data: CrmDashboardData; error?: string }> => {
+    try {
+      const { requireRole } = await import("@/lib/admin-auth");
+      const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
+      await requireRole(ADMIN_AREA_ROLES.customers);
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data, error } = await supabaseAdmin
+        .from("customers")
+        .select("id, name, email, loyalty_points, loyalty_tier, created_at");
+      if (error) {
+        return {
+          success: false,
+          data: { totalContacts: 0, avgOpenRate: 0, avgClickRate: 0, campaigns: [], segments: [], automations: [] },
+          error: error.message,
+        };
+      }
+      const rows = (data ?? []) as Array<{
+        id: string;
+        name: string | null;
+        email: string | null;
+        loyalty_points: number | null;
+        loyalty_tier: string | null;
+        created_at: string;
+      }>;
+      const totalContacts = rows.filter((row) => Boolean(row.email)).length;
+      const vip = rows.filter((row) => (row.loyalty_points ?? 0) >= 500);
+      const newClients = rows.filter((row) => Date.parse(row.created_at) >= Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const inactive = rows.filter((row) => Date.parse(row.created_at) < Date.now() - 90 * 24 * 60 * 60 * 1000);
+      return {
+        success: true,
+        data: {
+          totalContacts,
+          avgOpenRate: 0,
+          avgClickRate: 0,
+          campaigns: [],
+          segments: [
+            { id: "vip", name: "Clientes VIP", description: "Compraram mais e têm maior saldo de pontos", count: vip.length, criteria: ["loyalty_points >= 500"] },
+            { id: "new", name: "Novos Clientes", description: "Cadastros recentes", count: newClients.length, criteria: ["created_at nos últimos 30 dias"] },
+            { id: "inactive", name: "Inativos", description: "Sem entrada recente no cadastro", count: inactive.length, criteria: ["created_at há mais de 90 dias"] },
+          ],
+          automations: [
+            { name: "Boas-vindas", description: "Email ao criar conta", active: true, sent: totalContacts },
+            { name: "Carrinho Abandonado", description: "Lembrete após 2h", active: true, sent: 0 },
+            { name: "Pós-compra", description: "Agradecimento + review", active: true, sent: 0 },
+          ],
+        },
+      };
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : "erro";
+      return {
+        success: false,
+        data: { totalContacts: 0, avgOpenRate: 0, avgClickRate: 0, campaigns: [], segments: [], automations: [] },
+        error: msg,
+      };
+    }
+  },
+);

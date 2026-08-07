@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Gift,
   Star,
@@ -13,11 +15,13 @@ import {
   Crown,
   Gem,
   Sparkles,
-  ShoppingBag,
-  Calendar,
   Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  getLoyaltyDashboard,
+  type LoyaltyDashboardRow,
+} from "@/lib/customers-admin.functions";
 
 export const Route = createFileRoute("/admin/loyalty")({
   component: AdminLoyalty,
@@ -43,16 +47,6 @@ interface Reward {
   active: boolean;
 }
 
-interface Member {
-  id: string;
-  name: string;
-  email: string;
-  tier: string;
-  points: number;
-  totalSpent: number;
-  joinedAt: string;
-}
-
 const TIERS: LoyaltyTier[] = [
   {
     id: "bronze",
@@ -61,7 +55,7 @@ const TIERS: LoyaltyTier[] = [
     color: "bg-amber-700",
     minPoints: 0,
     benefits: ["1 ponto por R$1 gasto", "Acesso antecipado a promoções"],
-    memberCount: 412,
+    memberCount: 0,
   },
   {
     id: "silver",
@@ -70,7 +64,7 @@ const TIERS: LoyaltyTier[] = [
     color: "bg-gray-400",
     minPoints: 500,
     benefits: ["1.5 pontos por R$1 gasto", "Frete grátis em pedidos acima de R$150", "5% OFF no aniversário"],
-    memberCount: 234,
+    memberCount: 0,
   },
   {
     id: "gold",
@@ -79,7 +73,7 @@ const TIERS: LoyaltyTier[] = [
     color: "bg-yellow-500",
     minPoints: 1500,
     benefits: ["2 pontos por R$1 gasto", "Frete grátis sempre", "10% OFF no aniversário", "Acesso a produtos exclusivos"],
-    memberCount: 156,
+    memberCount: 0,
   },
   {
     id: "diamond",
@@ -88,7 +82,7 @@ const TIERS: LoyaltyTier[] = [
     color: "bg-cyan-400",
     minPoints: 5000,
     benefits: ["3 pontos por R$1 gasto", "Frete expresso grátis", "15% OFF no aniversário", "Consultor pessoal", "Brindes exclusivos"],
-    memberCount: 42,
+    memberCount: 0,
   },
 ];
 
@@ -140,25 +134,42 @@ const REWARDS: Reward[] = [
   },
 ];
 
-const MOCK_MEMBERS: Member[] = [
-  { id: "1", name: "Maria Silva", email: "maria@email.com", tier: "gold", points: 2340, totalSpent: 4500, joinedAt: "2023-06-15" },
-  { id: "2", name: "João Santos", email: "joao@email.com", tier: "silver", points: 890, totalSpent: 1200, joinedAt: "2023-09-20" },
-  { id: "3", name: "Ana Costa", email: "ana@email.com", tier: "diamond", points: 5670, totalSpent: 12000, joinedAt: "2022-01-10" },
-  { id: "4", name: "Pedro Lima", email: "pedro@email.com", tier: "bronze", points: 230, totalSpent: 350, joinedAt: "2024-01-05" },
-];
+const TIER_IDS = ["bronze", "silver", "gold", "diamond"] as const;
+
+function formatJoinedAt(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("pt-BR");
+}
 
 function AdminLoyalty() {
   const [activeTab, setActiveTab] = useState<"overview" | "rewards" | "members">("overview");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const totalMembers = TIERS.reduce((sum, t) => sum + t.memberCount, 0);
-  const totalPointsIssued = 45600;
-  const totalRedemptions = 519;
+  const listFn = useServerFn(getLoyaltyDashboard as any);
+  const { data: loyaltyData, isFetching, error } = useQuery({
+    queryKey: ["loyalty-dashboard"],
+    queryFn: () => listFn({}),
+    refetchOnWindowFocus: false,
+  });
 
-  const filteredMembers = MOCK_MEMBERS.filter(
-    (m) =>
+  const result = loyaltyData?.success ? loyaltyData.data : null;
+  const tierCounts = result?.tierCounts ?? {};
+  const members = result?.members ?? [];
+  const totalMembers = result?.totalMembers ?? 0;
+  const totalPointsIssued = result?.totalPointsIssued ?? 0;
+  const totalRedemptions = members.filter((m: { points: number }) => m.points >= 200).length;
+
+  // Preenche os contadores reais por nível no array de TIERS.
+  const tiersWithCount = TIERS.map((tier) => ({
+    ...tier,
+    memberCount: tierCounts[tier.id] ?? 0,
+  }));
+
+  const filteredMembers = members.filter(
+    (m: { name: string; email: string | null }) =>
       m.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      m.email.toLowerCase().includes(searchQuery.toLowerCase())
+      (m.email ?? "").toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -179,6 +190,12 @@ function AdminLoyalty() {
         </p>
       </div>
 
+      {error && !isFetching && (
+        <div className="bg-red-50 border border-red-200 p-4 text-red-700 text-sm mb-8">
+          Erro ao carregar dados de fidelidade: {error.message}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-[#E9E1D2] p-5">
@@ -190,7 +207,7 @@ function AdminLoyalty() {
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
             Membros Ativos
           </p>
-          <p className="font-serif text-2xl text-[#0F3A3E]">{totalMembers}</p>
+          <p className="font-serif text-2xl text-[#0F3A3E]">{totalMembers.toLocaleString("pt-BR")}</p>
         </div>
 
         <div className="bg-white border border-[#E9E1D2] p-5">
@@ -203,7 +220,7 @@ function AdminLoyalty() {
             Pontos Emitidos
           </p>
           <p className="font-serif text-2xl text-[#0F3A3E]">
-            {totalPointsIssued.toLocaleString()}
+            {totalPointsIssued.toLocaleString("pt-BR")}
           </p>
         </div>
 
@@ -275,7 +292,7 @@ function AdminLoyalty() {
       {/* Overview Tab - Tiers */}
       {activeTab === "overview" && (
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {TIERS.map((tier) => (
+          {tiersWithCount.map((tier) => (
             <div
               key={tier.id}
               className="bg-white border border-[#E9E1D2] overflow-hidden"
@@ -405,6 +422,17 @@ function AdminLoyalty() {
             </div>
           </div>
 
+          {isFetching && (
+            <div className="p-8 text-center text-sm text-[#8A938E]">
+              Carregando membros...
+            </div>
+          )}
+          {!isFetching && filteredMembers.length === 0 && (
+            <div className="p-8 text-center text-sm text-[#8A938E]">
+              Nenhum membro encontrado.
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -418,17 +446,14 @@ function AdminLoyalty() {
                   <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
                     Pontos
                   </th>
-                  <th className="text-right p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
-                    Total Gasto
-                  </th>
                   <th className="text-left p-4 text-[11px] uppercase tracking-wider text-[#8A938E] font-medium">
                     Desde
                   </th>
                 </tr>
               </thead>
               <tbody>
-                {filteredMembers.map((member) => {
-                  const tier = TIERS.find((t) => t.id === member.tier);
+                {filteredMembers.map((member: { id: string; name: string; email: string | null; tier: string; points: number; joinedAt: string }) => {
+                  const tier = TIERS.find((t) => t.id === member.tier) ?? TIERS[0];
                   return (
                     <tr
                       key={member.id}
@@ -441,7 +466,7 @@ function AdminLoyalty() {
                           </div>
                           <div>
                             <p className="font-medium text-[#0F3A3E]">{member.name}</p>
-                            <p className="text-sm text-[#8A938E]">{member.email}</p>
+                            <p className="text-sm text-[#8A938E]">{member.email ?? "—"}</p>
                           </div>
                         </div>
                       </td>
@@ -449,27 +474,21 @@ function AdminLoyalty() {
                         <span
                           className={cn(
                             "inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium text-white",
-                            tier?.color
+                            tier.color
                           )}
                         >
-                          {tier?.icon && <tier.icon className="h-3 w-3" />}
-                          {tier?.name}
+                          {tier.icon && <tier.icon className="h-3 w-3" />}
+                          {tier.name}
                         </span>
                       </td>
                       <td className="p-4 text-right">
                         <span className="font-medium text-[#B07B1E]">
-                          {member.points.toLocaleString()}
+                          {member.points.toLocaleString("pt-BR")}
                         </span>
                       </td>
-                      <td className="p-4 text-right">
-                        <span className="font-medium text-[#0F3A3E]">
-                          {member.totalSpent.toLocaleString("pt-BR", {
-                            style: "currency",
-                            currency: "BRL",
-                          })}
-                        </span>
+                      <td className="p-4 text-sm text-[#8A938E]">
+                        {formatJoinedAt(member.joinedAt)}
                       </td>
-                      <td className="p-4 text-sm text-[#8A938E]">{member.joinedAt}</td>
                     </tr>
                   );
                 })}

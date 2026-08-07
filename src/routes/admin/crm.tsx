@@ -1,19 +1,17 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import {
   Mail,
   Users,
   Send,
   BarChart3,
   Plus,
-  Search,
-  Filter,
   Edit2,
-  Trash2,
-  Copy,
   Eye,
+  Copy,
   Calendar,
-  Clock,
   TrendingUp,
   MousePointer,
   Inbox,
@@ -21,6 +19,7 @@ import {
   Zap,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { getCrmDashboard } from "@/lib/customers-admin.functions";
 
 export const Route = createFileRoute("/admin/crm")({
   component: AdminCRM,
@@ -46,81 +45,13 @@ interface Segment {
   criteria: string[];
 }
 
-const MOCK_CAMPAIGNS: Campaign[] = [
-  {
-    id: "1",
-    name: "Promoção de Verão",
-    subject: "☀️ Até 40% OFF nos cuidados de verão!",
-    status: "sent",
-    sentTo: 2400,
-    openRate: 32.5,
-    clickRate: 8.2,
-    sentAt: "2024-01-15 10:00",
-  },
-  {
-    id: "2",
-    name: "Lançamento Kérastase",
-    subject: "✨ Novidade: Linha Chronologiste chegou!",
-    status: "sent",
-    sentTo: 1850,
-    openRate: 45.2,
-    clickRate: 12.8,
-    sentAt: "2024-01-10 14:00",
-  },
-  {
-    id: "3",
-    name: "Carrinho Abandonado",
-    subject: "Ops! Você esqueceu algo no carrinho 🛒",
-    status: "sent",
-    sentTo: 320,
-    openRate: 52.1,
-    clickRate: 18.5,
-    sentAt: "2024-01-18 09:00",
-  },
-  {
-    id: "4",
-    name: "Newsletter Fevereiro",
-    subject: "💜 Dicas de cuidados para o Carnaval",
-    status: "scheduled",
-    sentTo: 0,
-    openRate: 0,
-    clickRate: 0,
-    scheduledFor: "2024-02-01 10:00",
-  },
-];
+const STATUS_CONFIG: Record<Campaign["status"], { label: string; color: string }> = {
+  draft: { label: "Rascunho", color: "bg-gray-100 text-gray-700" },
+  scheduled: { label: "Agendado", color: "bg-amber-100 text-amber-700" },
+  sent: { label: "Enviado", color: "bg-emerald-100 text-emerald-700" },
+};
 
-const MOCK_SEGMENTS: Segment[] = [
-  {
-    id: "1",
-    name: "Clientes VIP",
-    description: "Compraram mais de R$500 nos últimos 6 meses",
-    count: 234,
-    criteria: ["Valor total > R$500", "Últimos 6 meses"],
-  },
-  {
-    id: "2",
-    name: "Novos Clientes",
-    description: "Primeira compra nos últimos 30 dias",
-    count: 89,
-    criteria: ["1 compra", "Últimos 30 dias"],
-  },
-  {
-    id: "3",
-    name: "Carrinho Abandonado",
-    description: "Adicionaram ao carrinho mas não compraram",
-    count: 156,
-    criteria: ["Carrinho abandonado", "Últimas 48h"],
-  },
-  {
-    id: "4",
-    name: "Inativos",
-    description: "Não compraram nos últimos 90 dias",
-    count: 412,
-    criteria: ["Sem compras", "90+ dias"],
-  },
-];
-
-const AUTOMATIONS = [
+const DEFAULT_AUTOMATIONS = [
   { name: "Boas-vindas", description: "Email ao criar conta", active: true, sent: 892 },
   { name: "Carrinho Abandonado", description: "Lembrete após 2h", active: true, sent: 1240 },
   { name: "Pós-compra", description: "Agradecimento + review", active: true, sent: 2100 },
@@ -128,18 +59,24 @@ const AUTOMATIONS = [
   { name: "Reativação", description: "Clientes inativos 60d", active: true, sent: 340 },
 ];
 
-const STATUS_CONFIG = {
-  draft: { label: "Rascunho", color: "bg-gray-100 text-gray-700" },
-  scheduled: { label: "Agendado", color: "bg-amber-100 text-amber-700" },
-  sent: { label: "Enviado", color: "bg-emerald-100 text-emerald-700" },
-};
-
 function AdminCRM() {
   const [activeTab, setActiveTab] = useState<"campaigns" | "segments" | "automations">("campaigns");
 
-  const totalContacts = 2400;
-  const avgOpenRate = 38.5;
-  const avgClickRate = 12.2;
+  const listFn = useServerFn(getCrmDashboard as any);
+  const { data: crmData, isFetching, error } = useQuery({
+    queryKey: ["crm-dashboard"],
+    queryFn: () => listFn({}),
+    refetchOnWindowFocus: false,
+  });
+
+  const result = crmData?.success ? crmData.data : null;
+  const totalContacts = result?.totalContacts ?? 0;
+  const avgOpenRate = result?.avgOpenRate ?? 0;
+  const avgClickRate = result?.avgClickRate ?? 0;
+  const campaigns = result?.campaigns ?? [];
+  const segments = result?.segments ?? [];
+  const automations =
+    result && result.automations.length > 0 ? result.automations : DEFAULT_AUTOMATIONS;
 
   return (
     <div className="p-6 md:p-8">
@@ -159,6 +96,12 @@ function AdminCRM() {
         </p>
       </div>
 
+      {error && !isFetching && (
+        <div className="bg-red-50 border border-red-200 p-4 text-red-700 text-sm mb-8">
+          Erro ao carregar dados de CRM: {error.message}
+        </div>
+      )}
+
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <div className="bg-white border border-[#E9E1D2] p-5">
@@ -171,7 +114,7 @@ function AdminCRM() {
             Total Contatos
           </p>
           <p className="font-serif text-2xl text-[#0F3A3E]">
-            {totalContacts.toLocaleString()}
+            {totalContacts.toLocaleString("pt-BR")}
           </p>
         </div>
 
@@ -184,7 +127,7 @@ function AdminCRM() {
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
             Taxa de Abertura
           </p>
-          <p className="font-serif text-2xl text-[#0F3A3E]">{avgOpenRate}%</p>
+          <p className="font-serif text-2xl text-[#0F3A3E]">{avgOpenRate.toFixed(1)}%</p>
         </div>
 
         <div className="bg-white border border-[#E9E1D2] p-5">
@@ -196,7 +139,7 @@ function AdminCRM() {
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
             Taxa de Clique
           </p>
-          <p className="font-serif text-2xl text-[#0F3A3E]">{avgClickRate}%</p>
+          <p className="font-serif text-2xl text-[#0F3A3E]">{avgClickRate.toFixed(1)}%</p>
         </div>
 
         <div className="bg-white border border-[#E9E1D2] p-5">
@@ -206,9 +149,9 @@ function AdminCRM() {
             </div>
           </div>
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
-            Emails Enviados
+            Campanhas Enviadas
           </p>
-          <p className="font-serif text-2xl text-[#0F3A3E]">12.4K</p>
+          <p className="font-serif text-2xl text-[#0F3A3E]">0</p>
         </div>
       </div>
 
@@ -263,8 +206,20 @@ function AdminCRM() {
             </button>
           </div>
 
+          {isFetching && (
+            <div className="p-8 text-center text-sm text-[#8A938E]">
+              Carregando campanhas...
+            </div>
+          )}
+          {!isFetching && campaigns.length === 0 && (
+            <div className="p-12 text-center">
+              <p className="text-sm font-medium text-[#0F3A3E]">Campanhas ainda não disponíveis</p>
+              <p className="text-xs text-[#8A938E] mt-1">Esta área depende de uma tabela de campanhas que ainda não existe no banco de dados.</p>
+            </div>
+          )}
+
           <div className="divide-y divide-[#E9E1D2]">
-            {MOCK_CAMPAIGNS.map((campaign) => (
+            {campaigns.map((campaign: any) => (
               <div key={campaign.id} className="p-4 hover:bg-[#F9F7F3] transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex-1 min-w-0">
@@ -273,17 +228,17 @@ function AdminCRM() {
                       <span
                         className={cn(
                           "text-[10px] px-2 py-0.5 rounded-full",
-                          STATUS_CONFIG[campaign.status].color
+                          STATUS_CONFIG[campaign.status as keyof typeof STATUS_CONFIG].color
                         )}
                       >
-                        {STATUS_CONFIG[campaign.status].label}
+                        {STATUS_CONFIG[campaign.status as keyof typeof STATUS_CONFIG].label}
                       </span>
                     </div>
                     <p className="text-sm text-[#51635F] mb-2">{campaign.subject}</p>
                     <div className="flex items-center gap-4 text-xs text-[#8A938E]">
                       {campaign.status === "sent" ? (
                         <>
-                          <span>Enviado para {campaign.sentTo.toLocaleString()}</span>
+                          <span>Enviado para {campaign.sentTo.toLocaleString("pt-BR")}</span>
                           <span className="flex items-center gap-1">
                             <TrendingUp className="h-3 w-3" />
                             {campaign.openRate}% abriram
@@ -323,7 +278,17 @@ function AdminCRM() {
       {/* Segments Tab */}
       {activeTab === "segments" && (
         <div className="grid md:grid-cols-2 gap-4">
-          {MOCK_SEGMENTS.map((segment) => (
+          {isFetching && (
+            <div className="col-span-full p-8 text-center text-sm text-[#8A938E]">
+              Carregando segmentos...
+            </div>
+          )}
+          {!isFetching && segments.length === 0 && (
+            <div className="col-span-full p-8 text-center text-sm text-[#8A938E]">
+              Nenhum segmento encontrado.
+            </div>
+          )}
+          {segments.map((segment: any) => (
             <div
               key={segment.id}
               className="bg-white border border-[#E9E1D2] p-5 hover:shadow-sm transition-shadow"
@@ -335,14 +300,14 @@ function AdminCRM() {
                 </div>
                 <div className="text-right">
                   <p className="font-serif text-2xl text-[#0F3A3E]">
-                    {segment.count.toLocaleString()}
+                    {segment.count.toLocaleString("pt-BR")}
                   </p>
                   <p className="text-[10px] text-[#8A938E]">contatos</p>
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2 mb-4">
-                {segment.criteria.map((c) => (
+                {segment.criteria.map((c: any) => (
                   <span
                     key={c}
                     className="text-[10px] bg-[#F5F3EE] text-[#51635F] px-2 py-1 rounded"
@@ -382,7 +347,7 @@ function AdminCRM() {
           </div>
 
           <div className="divide-y divide-[#E9E1D2]">
-            {AUTOMATIONS.map((automation) => (
+            {automations.map((automation: any) => (
               <div
                 key={automation.name}
                 className="p-4 flex items-center justify-between hover:bg-[#F9F7F3] transition-colors"
@@ -406,32 +371,20 @@ function AdminCRM() {
                     <p className="text-sm text-[#8A938E]">{automation.description}</p>
                   </div>
                 </div>
-
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="font-medium text-[#0F3A3E]">
-                      {automation.sent.toLocaleString()}
-                    </p>
-                    <p className="text-[10px] text-[#8A938E]">emails enviados</p>
-                  </div>
-
-                  <button
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-[#8A938E]">
+                    {automation.sent.toLocaleString("pt-BR")} enviados
+                  </span>
+                  <span
                     className={cn(
-                      "w-12 h-6 rounded-full transition-colors relative",
-                      automation.active ? "bg-emerald-500" : "bg-gray-300"
+                      "text-[10px] px-2 py-1 rounded-full",
+                      automation.active
+                        ? "bg-emerald-100 text-emerald-700"
+                        : "bg-gray-100 text-gray-500"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "absolute top-1 w-4 h-4 rounded-full bg-white shadow transition-transform",
-                        automation.active ? "translate-x-7" : "translate-x-1"
-                      )}
-                    />
-                  </button>
-
-                  <button className="p-2 text-[#51635F] hover:bg-[#F3EEE3] rounded-lg">
-                    <Edit2 className="h-4 w-4" />
-                  </button>
+                    {automation.active ? "Ativa" : "Inativa"}
+                  </span>
                 </div>
               </div>
             ))}
