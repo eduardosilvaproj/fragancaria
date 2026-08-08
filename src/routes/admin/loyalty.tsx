@@ -245,7 +245,11 @@ function AdminLoyalty() {
           <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
             Taxa de Uso
           </p>
-          <p className="font-serif text-2xl text-[#0F3A3E]">68%</p>
+          <p className="font-serif text-2xl text-[#0F3A3E]">
+            {totalRedemptions > 0 && totalPointsIssued > 0
+              ? `${Math.round((totalRedemptions / totalPointsIssued) * 100)}%`
+              : "--"}
+          </p>
         </div>
       </div>
 

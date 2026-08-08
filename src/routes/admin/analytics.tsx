@@ -16,19 +16,20 @@ import {
   Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getFinanceiro } from "@/lib/financeiro.functions";
+import { getFinanceiro, type FinanceiroResult } from "@/lib/financeiro.functions";
 
 export const Route = createFileRoute("/admin/analytics")({
   component: AdminAnalytics,
 });
 
-const FUNNEL_DATA = [
-  { stage: "Visitantes", count: 12400, percentage: 100 },
-  { stage: "Visualizaram Produto", count: 6820, percentage: 55 },
-  { stage: "Adicionaram ao Carrinho", count: 1860, percentage: 15 },
-  { stage: "Iniciaram Checkout", count: 892, percentage: 7.2 },
-  { stage: "Compraram", count: 324, percentage: 2.6 },
-];
+function EmptyBlock({ title, description }: { title: string; description: string }) {
+  return (
+    <div className="border border-dashed border-[#E9E1D2] bg-white p-8 text-center text-sm text-[#8A938E]">
+      <p className="font-medium text-[#51635F] mb-1">{title}</p>
+      <p>{description}</p>
+    </div>
+  );
+}
 
 function AdminAnalytics() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("30d");
@@ -47,10 +48,10 @@ function AdminAnalytics() {
     refetchOnWindowFocus: false,
   });
 
-  const result = financeData?.data ?? null;
+  const result: FinanceiroResult | null = financeData?.success ? financeData.data : null;
   const topProducts = useMemo(
     () =>
-      result?.ranking?.slice(0, 5).map((item: any, index: number) => ({
+      result?.ranking?.slice(0, 5).map((item, index) => ({
         name: item.title,
         sales: item.quantity,
         revenue: item.revenue,
@@ -121,151 +122,113 @@ function AdminAnalytics() {
                 onClick={() => setPeriod(p.value as any)}
                 className={cn(
                   "px-4 py-2 text-sm rounded-md transition-colors",
-                  period === p.value
-                    ? "bg-white text-[#0F3A3E] shadow-sm"
-                    : "text-[#51635F] hover:text-[#0F3A3E]"
+                  period === p.value ? "bg-white text-[#0F3A3E] shadow-sm" : "text-[#51635F] hover:text-[#0F3A3E]",
                 )}
               >
                 {p.label}
               </button>
             ))}
           </div>
-
-          <button className="flex items-center gap-2 bg-[#0F3A3E] text-white px-4 py-2 rounded-lg text-sm">
+          <button className="inline-flex items-center gap-2 px-4 py-2 border border-[#E9E1D2] bg-white text-sm hover:bg-[#F3EEE3]">
             <Download className="h-4 w-4" />
             Exportar
           </button>
         </div>
       </div>
 
-      {error && !isFetching && (
-        <div className="bg-red-50 border border-red-200 p-4 text-red-700 text-sm mb-8">
-          Erro ao carregar analytics: {error.message}
-        </div>
-      )}
-
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        {stats.map((stat) => (
-          <div key={stat.label} className="bg-white border border-[#E9E1D2] p-5">
+      <div className="grid md:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white border border-[#E9E1D2] p-5">
             <div className="flex items-center justify-between mb-3">
-              <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center", stat.color)}>
+              <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${stat.color}`}>
                 <stat.icon className="h-5 w-5" />
               </div>
-              <div
+              <span
                 className={cn(
-                  "flex items-center gap-1 text-xs font-medium",
-                  stat.trend === "up" ? "text-emerald-600" : "text-red-500"
+                  "text-xs font-medium inline-flex items-center gap-1",
+                  stat.trend === "up" ? "text-emerald-600" : "text-rose-600",
                 )}
               >
-                {stat.trend === "up" ? (
-                  <ArrowUpRight className="h-3 w-3" />
-                ) : (
-                  <ArrowDownRight className="h-3 w-3" />
-                )}
+                {stat.trend === "up" ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
                 {stat.change}
-              </div>
+              </span>
             </div>
-            <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">
-              {stat.label}
-            </p>
+            <p className="text-[11px] uppercase tracking-wider text-[#8A938E] mb-1">{stat.label}</p>
             <p className="font-serif text-2xl text-[#0F3A3E]">{stat.value}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white border border-[#E9E1D2] p-6">
-          <h3 className="font-serif text-lg text-[#0F3A3E] mb-4">Vendas por Dia</h3>
-          <div className="h-64 bg-[#F9F7F3] rounded-lg flex items-center justify-center">
-            <div className="text-center">
-              <BarChart3 className="h-12 w-12 text-[#E9E1D2] mx-auto mb-2" />
-              <p className="text-sm text-[#8A938E]">Dados reais de vendas do período selecionado</p>
-              <p className="text-xs text-[#8A938E]">Fonte: orders</p>
-            </div>
+      <div className="grid lg:grid-cols-3 gap-6 mb-8">
+        <div className="lg:col-span-2 bg-white border border-[#E9E1D2] p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-xl text-[#0F3A3E]">Funil de Conversão</h2>
+            <span className="text-xs text-[#8A938E]">Sem dados reais disponíveis</span>
           </div>
+          <EmptyBlock
+            title="Funil sem fonte real"
+            description="Os números estáticos foram removidos até existir uma fonte confiável no backend."
+          />
         </div>
 
         <div className="bg-white border border-[#E9E1D2] p-6">
-          <h3 className="font-serif text-lg text-[#0F3A3E] mb-4">Funil de Conversão</h3>
-          <div className="space-y-3">
-            {FUNNEL_DATA.map((item) => (
-              <div key={item.stage}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm text-[#51635F]">{item.stage}</span>
-                  <span className="text-sm font-medium text-[#0F3A3E]">
-                    {item.count.toLocaleString("pt-BR")} ({item.percentage}%)
-                  </span>
-                </div>
-                <div className="h-8 bg-[#F5F3EE] rounded overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#0F3A3E] to-[#1a5a5e] transition-all duration-500"
-                    style={{ width: `${item.percentage}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-serif text-xl text-[#0F3A3E]">Fontes de Tráfego</h2>
+            <span className="text-xs text-[#8A938E]">Sem dados reais disponíveis</span>
           </div>
+          <EmptyBlock
+            title="Fontes de tráfego sem dados"
+            description="Removemos os percentuais fixos para evitar exibir métricas inventadas."
+          />
         </div>
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-[#E9E1D2] overflow-hidden">
-          <div className="p-4 border-b border-[#E9E1D2]">
-            <h3 className="font-serif text-lg text-[#0F3A3E]">Produtos Mais Vendidos</h3>
-          </div>
-          <div className="divide-y divide-[#E9E1D2]">
-            {topProducts.map((product: any, index: number) => (
-              <div key={product.name} className="p-4 flex items-center gap-4">
-                <div className="w-8 h-8 bg-[#F5F3EE] rounded-lg flex items-center justify-center text-sm font-medium text-[#8A938E]">
-                  {index + 1}
+        <div className="bg-white border border-[#E9E1D2] p-6">
+          <h2 className="font-serif text-xl text-[#0F3A3E] mb-6">Top Produtos</h2>
+          {topProducts.length === 0 ? (
+            <EmptyBlock
+              title="Sem ranking disponível"
+              description="Nenhum produto elegível no período selecionado."
+            />
+          ) : (
+            <div className="space-y-4">
+              {topProducts.map((product, index) => (
+                <div key={index} className="flex items-center justify-between py-3 border-b border-[#F1E9DA] last:border-0">
+                  <div>
+                    <p className="font-medium text-[#0F3A3E]">{product.name}</p>
+                    <p className="text-sm text-[#8A938E]">{product.sales} vendas</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-medium text-[#0F3A3E]">
+                      {product.revenue.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
+                    </p>
+                    <p className="text-sm text-emerald-600">{product.change}</p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-[#0F3A3E] truncate">{product.name}</p>
-                  <p className="text-xs text-[#8A938E]">{product.sales} vendas</p>
-                </div>
-                <div className="text-right">
-                  <p className="font-medium text-[#0F3A3E]">
-                    {product.revenue.toLocaleString("pt-BR", {
-                      style: "currency",
-                      currency: "BRL",
-                    })}
-                  </p>
-                  <p
-                    className={cn(
-                      "text-xs",
-                      product.change.startsWith("+") ? "text-emerald-600" : "text-red-500"
-                    )}
-                  >
-                    {product.change}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div className="bg-white border border-[#E9E1D2] overflow-hidden">
-          <div className="p-4 border-b border-[#E9E1D2]">
-            <h3 className="font-serif text-lg text-[#0F3A3E]">Fontes de Tráfego</h3>
-          </div>
-          <div className="divide-y divide-[#E9E1D2]">
-            {[
-              ["Google Orgânico", 38.9],
-              ["Instagram", 23.7],
-              ["Direto", 16.9],
-              ["Facebook Ads", 12.6],
-              ["Google Ads", 7.9],
-            ].map(([source, percentage]) => (
-              <div key={source} className="p-4 flex items-center justify-between">
-                <span className="text-sm text-[#0F3A3E]">{source}</span>
-                <span className="text-sm text-[#8A938E]">{percentage}%</span>
-              </div>
-            ))}
+        <div className="bg-white border border-[#E9E1D2] p-6">
+          <h2 className="font-serif text-xl text-[#0F3A3E] mb-6">Insights</h2>
+          <div className="space-y-4">
+            <div className="p-4 bg-[#F5F3EE] border border-[#E9E1D2]">
+              <p className="text-sm text-[#51635F]">Período analisado</p>
+              <p className="font-medium text-[#0F3A3E]">
+                {period === "7d" ? "Últimos 7 dias" : period === "30d" ? "Últimos 30 dias" : "Últimos 90 dias"}
+              </p>
+            </div>
+            <div className="p-4 bg-[#F5F3EE] border border-[#E9E1D2]">
+              <p className="text-sm text-[#51635F]">Status da fonte de dados</p>
+              <p className="font-medium text-[#0F3A3E]">
+                {error ? "Erro ao carregar financeiro" : isFetching ? "Carregando" : "Financeiro conectado"}
+              </p>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 }
-
-export default AdminAnalytics;
