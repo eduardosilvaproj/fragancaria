@@ -184,6 +184,19 @@ function AdminDashboard() {
     };
   }, [affiliatesQuery.data, conversationsQuery.data, crmQuery.data, financeiroQuery.data, loyaltyQuery.data, postsQuery.data, reviewsQuery.data]);
 
+  const queryFailures = [
+    financeiroQuery.data?.success === false && { label: "Vendas Hoje / Pedidos / Conversão", message: financeiroQuery.data.error || "Erro desconhecido" },
+    conversationsQuery.data?.success === false && { label: "Mensagens / SAC", message: conversationsQuery.data.error || "Erro desconhecido" },
+    affiliatesQuery.data?.success === false && { label: "Afiliados", message: affiliatesQuery.data.error || "Erro desconhecido" },
+    reviewsQuery.data?.success === false && { label: "Reviews", message: reviewsQuery.data.error || "Erro desconhecido" },
+    crmQuery.data?.success === false && { label: "CRM", message: crmQuery.data.error || "Erro desconhecido" },
+    loyaltyQuery.data?.success === false && { label: "Loyalty", message: loyaltyQuery.data.error || "Erro desconhecido" },
+    postsQuery.data?.success === false && { label: "Redes Sociais", message: postsQuery.data.error || "Erro desconhecido" },
+  ].filter(Boolean) as Array<{ label: string; message: string }>;
+
+  const hasError = queryFailures.length > 0;
+  const firstFailure = queryFailures[0] ?? null;
+
   const isLoading =
     financeiroQuery.isPending ||
     conversationsQuery.isPending ||
@@ -192,15 +205,6 @@ function AdminDashboard() {
     crmQuery.isPending ||
     loyaltyQuery.isPending ||
     postsQuery.isPending;
-
-  const hasError =
-    financeiroQuery.isError ||
-    conversationsQuery.isError ||
-    affiliatesQuery.isError ||
-    reviewsQuery.isError ||
-    crmQuery.isError ||
-    loyaltyQuery.isError ||
-    postsQuery.isError;
 
   return (
     <div className="p-6 md:p-8">
@@ -222,7 +226,8 @@ function AdminDashboard() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
         {hasError ? (
           <div className="col-span-2 md:col-span-4 border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-900">
-            Falha ao carregar métricas do dashboard administrativo.
+            <p className="font-medium">Falha ao carregar {firstFailure?.label ?? "métricas do dashboard administrativo"}.</p>
+            <p className="mt-1 text-red-800">{firstFailure?.message ?? "Erro desconhecido"}</p>
           </div>
         ) : isLoading ? (
           <>
