@@ -47,6 +47,12 @@ const productInput = z.object({
   // Dados fiscais
   ncm: z.string().max(10).nullable().optional(),
   eanBarcode: z.string().max(20).nullable().optional(),
+  cest: z.string().max(10).nullable().optional(),
+  cstIcms: z.string().max(3).nullable().optional(),
+  csosn: z.string().max(3).nullable().optional(),
+  origem: z.number().int().min(0).max(8).nullable().optional(),
+  cstPisCofins: z.string().max(2).nullable().optional(),
+  unidade: z.string().max(6).nullable().optional(),
   // Custo e margem
   cost: z.number().nonnegative().nullable().optional(),
   pricingMode: z.enum(["manual", "auto"]).optional(),
@@ -92,6 +98,12 @@ function inputToPatch(data: Partial<ProductInput>): Record<string, unknown> {
   if (data.lengthCm !== undefined) patch.length_cm = data.lengthCm;
   if (data.ncm !== undefined) patch.ncm = data.ncm;
   if (data.eanBarcode !== undefined) patch.ean_barcode = data.eanBarcode;
+  if (data.cest !== undefined) patch.cest = data.cest;
+  if (data.cstIcms !== undefined) patch.cst_icms = data.cstIcms;
+  if (data.csosn !== undefined) patch.csosn = data.csosn;
+  if (data.origem !== undefined) patch.origem = data.origem;
+  if (data.cstPisCofins !== undefined) patch.cst_pis_cofins = data.cstPisCofins;
+  if (data.unidade !== undefined) patch.unidade = data.unidade;
   if (data.cost !== undefined) patch.cost = data.cost;
   if (data.pricingMode !== undefined) patch.pricing_mode = data.pricingMode;
   if (data.targetMargin !== undefined) patch.target_margin = data.targetMargin;
@@ -128,6 +140,12 @@ function inputToRow(data: ProductInput) {
     // Dados fiscais
     ncm: data.ncm ?? null,
     ean_barcode: data.eanBarcode ?? null,
+    cest: data.cest ?? null,
+    cst_icms: data.cstIcms ?? null,
+    csosn: data.csosn ?? null,
+    origem: data.origem ?? null,
+    cst_pis_cofins: data.cstPisCofins ?? null,
+    unidade: data.unidade ?? null,
     // Custo e margem
     cost: data.cost ?? null,
     pricing_mode: data.pricingMode ?? "manual",

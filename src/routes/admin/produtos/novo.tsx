@@ -37,6 +37,12 @@ interface FormState {
   // Dados fiscais
   ncm: string;
   eanBarcode: string;
+  cest: string;
+  cstIcms: string;
+  csosn: string;
+  origem: string;
+  cstPisCofins: string;
+  unidade: string;
   // Variações
   hasVariations: boolean;
   variations: VariationForm[];
@@ -66,6 +72,12 @@ const EMPTY_FORM: FormState = {
   // Dados fiscais
   ncm: "",
   eanBarcode: "",
+  cest: "",
+  cstIcms: "",
+  csosn: "",
+  origem: "",
+  cstPisCofins: "",
+  unidade: "",
   // Variações
   hasVariations: false,
   variations: [],
@@ -130,6 +142,12 @@ function NovoProduto() {
           lengthCm: form.lengthCm ? Number(form.lengthCm) : null,
           ncm: form.ncm.trim() || null,
           eanBarcode: form.eanBarcode.trim() || null,
+          cest: form.cest.trim() || null,
+          cstIcms: form.cstIcms.trim() || null,
+          csosn: form.csosn.trim() || null,
+          origem: form.origem !== "" ? Number(form.origem) : null,
+          cstPisCofins: form.cstPisCofins.trim() || null,
+          unidade: form.unidade.trim() || null,
           variations: form.hasVariations
             ? form.variations
                 .filter((v) => v.name.trim())
@@ -375,7 +393,7 @@ function NovoProduto() {
           <h3 className="text-xs uppercase tracking-wider text-[#B07B1E] font-medium mb-4">
             Dados Fiscais (NF-e)
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs text-[#8A938E] mb-1">NCM</label>
               <input
@@ -395,6 +413,80 @@ function NovoProduto() {
                 onChange={(e) => set("eanBarcode", e.target.value)}
                 placeholder="7891234567890"
                 maxLength={20}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">CEST</label>
+              <input
+                type="text"
+                value={form.cest}
+                onChange={(e) => set("cest", e.target.value)}
+                placeholder="00.000.00"
+                maxLength={7}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">CST ICMS</label>
+              <input
+                type="text"
+                value={form.cstIcms}
+                onChange={(e) => set("cstIcms", e.target.value)}
+                placeholder="00"
+                maxLength={3}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">CSOSN (Simples)</label>
+              <input
+                type="text"
+                value={form.csosn}
+                onChange={(e) => set("csosn", e.target.value)}
+                placeholder="102"
+                maxLength={3}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Origem Mercadoria</label>
+              <select
+                value={form.origem}
+                onChange={(e) => set("origem", e.target.value)}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+              >
+                <option value="">Padrão da Loja</option>
+                <option value="0">0 - Nacional</option>
+                <option value="1">1 - Estrangeira (importação direta)</option>
+                <option value="2">2 - Estrangeira (mercado interno)</option>
+                <option value="3">3 - Nacional (conteúdo importação &gt; 40%)</option>
+                <option value="4">4 - Nacional (processos básicos)</option>
+                <option value="5">5 - Nacional (conteúdo importação &lt;= 40%)</option>
+                <option value="6">6 - Estrangeira (importação direta sem similar)</option>
+                <option value="7">7 - Estrangeira (mercado interno sem similar)</option>
+                <option value="8">8 - Nacional (conteúdo importação &gt;= 70%)</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">CST PIS/COFINS</label>
+              <input
+                type="text"
+                value={form.cstPisCofins}
+                onChange={(e) => set("cstPisCofins", e.target.value)}
+                placeholder="01"
+                maxLength={2}
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-[#8A938E] mb-1">Unidade</label>
+              <input
+                type="text"
+                value={form.unidade}
+                onChange={(e) => set("unidade", e.target.value)}
+                placeholder="UN"
+                maxLength={6}
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
               />
             </div>

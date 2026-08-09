@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // =====================================================
 // Mapa único: área administrativa -> papéis que acessam.
 // =====================================================
@@ -19,7 +20,7 @@ export type AdminRole = (typeof ADMIN_ROLES)[keyof typeof ADMIN_ROLES];
 // dono; os demais são os que também podem chamar.
 export const ADMIN_AREA_ROLES: Record<string, readonly AdminRole[]> = {
   // Dashboard (visão geral) — só total.
-  dashboard: [ADMIN_ROLES.total, ADMIN_ROLES.contador],
+  dashboard: [ADMIN_ROLES.total],
 
   // --- Só total (dados sensíveis: pagamento, cliente, financeiro) ---
   orders: [ADMIN_ROLES.total],
@@ -60,18 +61,13 @@ export const ADMIN_AREA_ROLES: Record<string, readonly AdminRole[]> = {
 
 // Acesso genérico para layout: um papel pode acessar a área se a lista
 // incluir o papel.
-export function roleAllowsArea(
-  role: AdminRole,
-  area: keyof typeof ADMIN_AREA_ROLES,
-): boolean {
+export function roleAllowsArea(role: AdminRole, area: keyof typeof ADMIN_AREA_ROLES): boolean {
   return ADMIN_AREA_ROLES[area]?.includes(role) ?? false;
 }
 
 // Áreas acessíveis para um papel. Útil para filtrar a sidebar no cliente.
-export function allowedAreasForRole(
-  role: AdminRole,
-): Array<keyof typeof ADMIN_AREA_ROLES> {
-  return (
-    Object.keys(ADMIN_AREA_ROLES) as Array<keyof typeof ADMIN_AREA_ROLES>
-  ).filter((area) => ADMIN_AREA_ROLES[area].includes(role));
+export function allowedAreasForRole(role: AdminRole): Array<keyof typeof ADMIN_AREA_ROLES> {
+  return (Object.keys(ADMIN_AREA_ROLES) as Array<keyof typeof ADMIN_AREA_ROLES>).filter((area) =>
+    ADMIN_AREA_ROLES[area].includes(role),
+  );
 }
