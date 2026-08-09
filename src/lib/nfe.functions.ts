@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 /**
  * NF-e (Nota Fiscal Eletrônica) Integration — notaas.com.br
  *
@@ -18,6 +19,7 @@
 
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 
 const NOTAAS_BASE = "https://platform.notaas.com.br/api/v1";
 
@@ -36,6 +38,21 @@ export type NfeSettings = {
   ambiente_sefaz: "homologacao" | "producao";
   estado_uf: string;
   nfe_serie: number;
+  ncm_padrao?: string;
+  cfop_padrao?: string;
+  cst_icms_padrao?: string;
+  csosn_padrao?: string;
+  origem_padrao?: string;
+  icms_aliquota?: number;
+  pis_aliquota?: number;
+  cofins_aliquota?: number;
+  cst_pis_cofins_padrao?: string;
+  unidade_padrao?: string;
+  cest_padrao?: string;
+  modalidade_frete?: number;
+  crt?: number;
+  webservice_url?: string;
+  certificado_path?: string;
 };
 
 export type NfeEndereco = {
@@ -79,14 +96,17 @@ function formatCEP(cep: string): string {
 // Código IBGE de cidade — usado tanto para emitente quanto destinatário.
 // Idealmente viria de uma tabela de cidades; por enquanto lookup por cidade.
 const CITY_CODES: Record<string, number> = {
-  "São Paulo": 3550308, "São Paulo, SP": 3550308,
-  "Rio de Janeiro": 3304557, "Rio de Janeiro, RJ": 3304557,
-  "Belo Horizonte": 3106200, "Belo Horizonte, MG": 3106200,
-  "Campinas": 3509502,
-  "Guarulhos": 3518800,
+  "São Paulo": 3550308,
+  "São Paulo, SP": 3550308,
+  "Rio de Janeiro": 3304557,
+  "Rio de Janeiro, RJ": 3304557,
+  "Belo Horizonte": 3106200,
+  "Belo Horizonte, MG": 3106200,
+  Campinas: 3509502,
+  Guarulhos: 3518800,
   "São Bernardo do Campo": 3548702,
   "Santo André": 3547803,
-  "Osasco": 3534401,
+  Osasco: 3534401,
   "Ribeirão Preto": 3541402,
 };
 
@@ -97,7 +117,10 @@ function getCityCode(city: string): number {
 // Código de pagamento para a notaas (tabela 4.4.7 do Manual NF-e).
 function paymentType(method: string): string {
   const map: Record<string, string> = {
-    pix: "17", credit_card: "03", debit_card: "04", boleto: "15",
+    pix: "17",
+    credit_card: "03",
+    debit_card: "04",
+    boleto: "15",
   };
   return map[method?.toLowerCase()] || "99";
 }
@@ -106,8 +129,10 @@ function paymentType(method: string): string {
 // OBTER CONFIGURAÇÕES NF-E
 // =====================================================
 
-export const getNfeSettings = createServerFn({ method: "GET" })
-  .handler(async (): Promise<{ success: true; data: NfeSettings | null } | { success: false; error: string }> => {
+export const getNfeSettings = createServerFn({ method: "GET" }).handler(
+  async (): Promise<
+    { success: true; data: NfeSettings | null } | { success: false; error: string }
+  > => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
       await requireAdmin();
@@ -134,11 +159,31 @@ export const getNfeSettings = createServerFn({ method: "GET" })
               razao_social: (data as any).razao_social || "",
               nome_fantasia: (data as any).nome_fantasia,
               endereco: ((data as any).endereco as NfeEndereco) || {
-                logradouro: "", numero: "", bairro: "", cidade: "", uf: "", cep: "",
+                logradouro: "",
+                numero: "",
+                bairro: "",
+                cidade: "",
+                uf: "",
+                cep: "",
               },
               ambiente_sefaz: (data as any).ambiente_sefaz || "homologacao",
               estado_uf: (data as any).estado_uf || "",
               nfe_serie: (data as any).nfe_serie || 1,
+              ncm_padrao: (data as any).ncm_padrao ?? undefined,
+              cfop_padrao: (data as any).cfop_padrao ?? undefined,
+              cst_icms_padrao: (data as any).cst_icms_padrao ?? undefined,
+              csosn_padrao: (data as any).csosn_padrao ?? undefined,
+              origem_padrao: (data as any).origem_padrao ?? undefined,
+              icms_aliquota: (data as any).icms_aliquota ?? undefined,
+              pis_aliquota: (data as any).pis_aliquota ?? undefined,
+              cofins_aliquota: (data as any).cofins_aliquota ?? undefined,
+              cst_pis_cofins_padrao: (data as any).cst_pis_cofins_padrao ?? undefined,
+              unidade_padrao: (data as any).unidade_padrao ?? undefined,
+              cest_padrao: (data as any).cest_padrao ?? undefined,
+              modalidade_frete: (data as any).modalidade_frete ?? undefined,
+              crt: (data as any).crt ?? undefined,
+              webservice_url: (data as any).webservice_url ?? undefined,
+              certificado_path: (data as any).certificado_path ?? undefined,
             }
           : null,
       };
@@ -146,7 +191,8 @@ export const getNfeSettings = createServerFn({ method: "GET" })
       const msg = e instanceof Error ? e.message : "erro";
       return { success: false, error: msg };
     }
-  });
+  },
+);
 
 // =====================================================
 // SALVAR CONFIGURAÇÕES NF-E
@@ -154,27 +200,44 @@ export const getNfeSettings = createServerFn({ method: "GET" })
 
 export const saveNfeSettings = createServerFn({ method: "POST" })
   .validator((d: unknown) =>
-    z.object({
-      cnpj: z.string().min(14).max(18),
-      inscricao_estadual: z.string().min(1).max(15),
-      inscricao_municipal: z.string().optional(),
-      razao_social: z.string().min(1).max(120),
-      nome_fantasia: z.string().max(60).optional(),
-      endereco: z.object({
-        logradouro: z.string().max(60),
-        numero: z.string().max(60),
-        complemento: z.string().max(60).optional(),
-        bairro: z.string().max(60),
-        cidade: z.string().max(60),
-        uf: z.string().length(2),
-        cep: z.string().min(8).max(9),
-        pais: z.string().max(60).optional(),
-        telefone: z.string().max(14).optional(),
-      }),
-      ambiente_sefaz: z.enum(["homologacao", "producao"]).default("homologacao"),
-      estado_uf: z.string().length(2),
-      nfe_serie: z.number().int().positive().default(1),
-    }).parse(d),
+    z
+      .object({
+        cnpj: z.string().min(14).max(18),
+        inscricao_estadual: z.string().min(1).max(15),
+        inscricao_municipal: z.string().optional(),
+        razao_social: z.string().min(1).max(120),
+        nome_fantasia: z.string().max(60).optional(),
+        endereco: z.object({
+          logradouro: z.string().max(60),
+          numero: z.string().max(60),
+          complemento: z.string().max(60).optional(),
+          bairro: z.string().max(60),
+          cidade: z.string().max(60),
+          uf: z.string().length(2),
+          cep: z.string().min(8).max(9),
+          pais: z.string().max(60).optional(),
+          telefone: z.string().max(14).optional(),
+        }),
+        ambiente_sefaz: z.enum(["homologacao", "producao"]).default("homologacao"),
+        estado_uf: z.string().length(2),
+        nfe_serie: z.number().int().positive().default(1),
+        ncm_padrao: z.string().max(10).optional(),
+        cfop_padrao: z.string().max(10).optional(),
+        cst_icms_padrao: z.string().max(10).optional(),
+        csosn_padrao: z.string().max(10).optional(),
+        origem_padrao: z.string().max(10).optional(),
+        icms_aliquota: z.number().nonnegative().optional(),
+        pis_aliquota: z.number().nonnegative().optional(),
+        cofins_aliquota: z.number().nonnegative().optional(),
+        cst_pis_cofins_padrao: z.string().max(10).optional(),
+        unidade_padrao: z.string().max(10).optional(),
+        cest_padrao: z.string().max(20).optional(),
+        modalidade_frete: z.number().int().optional(),
+        crt: z.number().int().optional(),
+        webservice_url: z.string().optional(),
+        certificado_path: z.string().optional(),
+      })
+      .parse(d),
   )
   .handler(async ({ data }) => {
     try {
@@ -192,9 +255,8 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
         console.warn("[saveNfeSettings] falha ao ler before para auditoria", beforeErr.message);
       }
 
-      const { error } = await (supabaseAdmin as any)
-        .from("nfe_settings")
-        .upsert({
+      const { error } = await (supabaseAdmin as any).from("nfe_settings").upsert(
+        {
           id: "main",
           cnpj: data.cnpj,
           inscricao_estadual: data.inscricao_estadual,
@@ -205,7 +267,24 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
           ambiente_sefaz: data.ambiente_sefaz,
           estado_uf: data.estado_uf,
           nfe_serie: data.nfe_serie || 15,
-        }, { onConflict: "id" });
+          ncm_padrao: data.ncm_padrao || null,
+          cfop_padrao: data.cfop_padrao || null,
+          cst_icms_padrao: data.cst_icms_padrao || null,
+          csosn_padrao: data.csosn_padrao || null,
+          origem_padrao: data.origem_padrao || null,
+          icms_aliquota: data.icms_aliquota ?? null,
+          pis_aliquota: data.pis_aliquota ?? null,
+          cofins_aliquota: data.cofins_aliquota ?? null,
+          cst_pis_cofins_padrao: data.cst_pis_cofins_padrao || null,
+          unidade_padrao: data.unidade_padrao || null,
+          cest_padrao: data.cest_padrao || null,
+          modalidade_frete: data.modalidade_frete ?? null,
+          crt: data.crt ?? null,
+          webservice_url: data.webservice_url || null,
+          certificado_path: data.certificado_path || null,
+        },
+        { onConflict: "id" },
+      );
 
       if (error) return { success: false, error: error.message };
 
@@ -231,7 +310,7 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
             "nfe_settings.update",
             "nfe_settings",
             "main",
-            diff,
+            diff as unknown as Json,
             null,
           );
         }
@@ -249,9 +328,7 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
 // =====================================================
 
 export const emitNFe = createServerFn({ method: "POST" })
-  .validator((d: unknown) =>
-    z.object({ orderId: z.string().uuid() }).parse(d),
-  )
+  .validator((d: unknown) => z.object({ orderId: z.string().uuid() }).parse(d))
   .handler(async ({ data }): Promise<NfeResult> => {
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
@@ -272,7 +349,10 @@ export const emitNFe = createServerFn({ method: "POST" })
         .single();
 
       if (settingsError || !settingsRaw) {
-        return { success: false, error: "Configurações NF-e não encontradas. Configure em Configurações." };
+        return {
+          success: false,
+          error: "Configurações NF-e não encontradas. Configure em Configurações.",
+        };
       }
 
       const settings: NfeSettings = {
@@ -282,14 +362,73 @@ export const emitNFe = createServerFn({ method: "POST" })
         inscricao_municipal: settingsRaw.inscricao_municipal,
         razao_social: settingsRaw.razao_social,
         nome_fantasia: settingsRaw.nome_fantasia,
-        endereco: (settingsRaw.endereco as NfeEndereco) || { logradouro: "", numero: "", bairro: "", cidade: "", uf: "", cep: "" },
+        endereco: (settingsRaw.endereco as NfeEndereco) || {
+          logradouro: "",
+          numero: "",
+          bairro: "",
+          cidade: "",
+          uf: "",
+          cep: "",
+        },
         ambiente_sefaz: settingsRaw.ambiente_sefaz || "homologacao",
         estado_uf: settingsRaw.estado_uf,
         nfe_serie: settingsRaw.nfe_serie || 1,
+        ncm_padrao: settingsRaw.ncm_padrao ?? undefined,
+        cfop_padrao: settingsRaw.cfop_padrao ?? undefined,
+        cst_icms_padrao: settingsRaw.cst_icms_padrao ?? undefined,
+        csosn_padrao: settingsRaw.csosn_padrao ?? undefined,
+        origem_padrao: settingsRaw.origem_padrao ?? undefined,
+        icms_aliquota: settingsRaw.icms_aliquota ?? undefined,
+        pis_aliquota: settingsRaw.pis_aliquota ?? undefined,
+        cofins_aliquota: settingsRaw.cofins_aliquota ?? undefined,
+        cst_pis_cofins_padrao: settingsRaw.cst_pis_cofins_padrao ?? undefined,
+        unidade_padrao: settingsRaw.unidade_padrao ?? undefined,
+        cest_padrao: settingsRaw.cest_padrao ?? undefined,
+        modalidade_frete: settingsRaw.modalidade_frete ?? undefined,
+        crt: settingsRaw.crt ?? undefined,
       };
 
       if (!settings.cnpj || !settings.inscricao_estadual || !settings.razao_social) {
-        return { success: false, error: "Dados do emitente incompletos. Configure CNPJ, IE e Razão Social." };
+        return {
+          success: false,
+          error: "Dados do emitente incompletos. Configure CNPJ, IE e Razão Social.",
+        };
+      }
+
+      // Parâmetros fiscais padrão vêm de nfe_settings. Sem eles não há como
+      // montar os itens (NCM, CST, ICMS, PIS, COFINS, unidade) — recusa em vez
+      // de emitir com valores errados.
+      const padrao = {
+        ncm: settings.ncm_padrao,
+        cfop: settings.cfop_padrao,
+        cstIcms: settings.cst_icms_padrao,
+        origem: settings.origem_padrao,
+        cstPisCofins: settings.cst_pis_cofins_padrao,
+        icms: settings.icms_aliquota,
+        pis: settings.pis_aliquota,
+        cofins: settings.cofins_aliquota,
+        unidade: settings.unidade_padrao,
+        cest: settings.cest_padrao,
+        crt: settings.crt,
+      };
+      const faltantes = (
+        [
+          ["NCM padrão", padrao.ncm],
+          ["CFOP padrão", padrao.cfop],
+          ["CST ICMS padrão", padrao.cstIcms],
+          ["Origem mercadoria padrão", padrao.origem],
+          ["CST PIS/COFINS padrão", padrao.cstPisCofins],
+          ["Alíquota ICMS", padrao.icms],
+          ["Alíquota PIS", padrao.pis],
+          ["Alíquota COFINS", padrao.cofins],
+          ["Unidade padrão", padrao.unidade],
+        ] as const
+      ).filter(([, v]) => v === undefined || v === null || v === "");
+      if (faltantes.length > 0) {
+        return {
+          success: false,
+          error: `Parâmetros fiscais padrão incompletos em Configurações > NF-e: ${faltantes.map(([n]) => n).join(", ")}.`,
+        };
       }
 
       // 2. Load order
@@ -304,7 +443,10 @@ export const emitNFe = createServerFn({ method: "POST" })
       }
 
       if ((order as any).nfe_key) {
-        return { success: false, error: `NF-e já emitida para este pedido. Chave: ${(order as any).nfe_key}` };
+        return {
+          success: false,
+          error: `NF-e já emitida para este pedido. Chave: ${(order as any).nfe_key}`,
+        };
       }
 
       if (!["approved", "paid", "processing", "shipped"].includes(order.status)) {
@@ -324,25 +466,133 @@ export const emitNFe = createServerFn({ method: "POST" })
       const isCPF = destDocClean.length <= 11;
       const destName = String(order.customer_name || "Consumidor");
 
-      const notaasItems = items.map((item: any, idx: number) => {
+      // Lê dados fiscais primariamente do SNAPSHOT gravado em order.items, com fallback nas settings globais
+      const notaasItemsOrErrors = items.map((item: any, idx: number) => {
         const qtd = Number(item.quantity) || 1;
         const vUn = Number(item.price) || 0;
         const vTotal = qtd * vUn;
+        const rawId = String(item.id || item.product_id || "");
+        const prodId = rawId.split("::")[0];
+
+        const ncm = item.ncm || settings.ncm_padrao;
+        const cfop = item.cfop || settings.cfop_padrao;
+        const isSimples = Number(settings.crt) === 1;
+        const cstVal = isSimples
+          ? (item.csosn || settings.csosn_padrao)
+          : (item.cst_icms || settings.cst_icms_padrao);
+        const cest = item.cest || settings.cest_padrao;
+        const origem =
+          item.origem !== undefined && item.origem !== null && item.origem !== ""
+            ? item.origem
+            : settings.origem_padrao;
+        const unidade = item.unidade || settings.unidade_padrao;
+        const cstPis = item.cst_pis_cofins || settings.cst_pis_cofins_padrao;
+        const rawIcms =
+          item.aliquota_icms !== undefined &&
+          item.aliquota_icms !== null &&
+          item.aliquota_icms !== ""
+            ? item.aliquota_icms
+            : settings.icms_aliquota;
+
+        const rawPis =
+          item.aliquota_pis !== undefined && item.aliquota_pis !== null && item.aliquota_pis !== ""
+            ? item.aliquota_pis
+            : settings.pis_aliquota;
+
+        const rawCofins =
+          item.aliquota_cofins !== undefined &&
+          item.aliquota_cofins !== null &&
+          item.aliquota_cofins !== ""
+            ? item.aliquota_cofins
+            : settings.cofins_aliquota;
+
+        const itemName = String(item.title || item.name || `Item #${idx + 1}`);
+        if (!ncm) {
+          return {
+            success: false,
+            error: `NCM não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (!cfop) {
+          return {
+            success: false,
+            error: `CFOP não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (!cstVal) {
+          return {
+            success: false,
+            error: `${isSimples ? "CSOSN" : "CST ICMS"} não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (origem === undefined || origem === null || origem === "" || isNaN(Number(origem))) {
+          return {
+            success: false,
+            error: `Origem da mercadoria não configurada para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (!unidade) {
+          return {
+            success: false,
+            error: `Unidade não configurada para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (!cstPis) {
+          return {
+            success: false,
+            error: `CST PIS/COFINS não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+          };
+        }
+        if (rawIcms === undefined || rawIcms === null || rawIcms === "" || isNaN(Number(rawIcms)) || Number(rawIcms) < 0) {
+          return { success: false, error: `Alíquota ICMS inválida ou ausente para o item "${itemName}".` };
+        }
+        if (rawPis === undefined || rawPis === null || rawPis === "" || isNaN(Number(rawPis)) || Number(rawPis) < 0) {
+          return { success: false, error: `Alíquota PIS inválida ou ausente para o item "${itemName}".` };
+        }
+        if (rawCofins === undefined || rawCofins === null || rawCofins === "" || isNaN(Number(rawCofins)) || Number(rawCofins) < 0) {
+          return { success: false, error: `Alíquota COFINS inválida ou ausente para o item "${itemName}".` };
+        }
+
+        const aliquotaIcms = Number(rawIcms);
+        const aliquotaPis = Number(rawPis);
+        const aliquotaCofins = Number(rawCofins);
+
         return {
-          descricao: String(item.title || item.name || "Produto"),
-          ncm: "33049990",
-          cfop: "5102",
+          descricao: itemName,
+          ncm,
+          cfop,
           quantidade: qtd,
           valorUnitario: vUn,
           valorTotal: vTotal,
-          unidade: "UN",
-          codigo: String(item.id || item.product_id || `PRD${idx + 1}`).slice(0, 9),
-          cst: "00",
-          aliquotaIcms: 18,
-          aliquotaPis: 1.65,
-          aliquotaCofins: 7.6,
+          unidade,
+          codigo: String(prodId || `PRD${idx + 1}`).slice(0, 9),
+          ...(isSimples ? { csosn: cstVal } : { cst: cstVal }),
+          ...(cest ? { cest } : {}),
+          origem: Number(origem),
+          aliquotaIcms,
+          aliquotaPis,
+          aliquotaCofins,
+          cstPis,
         };
       });
+
+      for (const itemRes of notaasItemsOrErrors) {
+        if ((itemRes as any).error) {
+          return { success: false, error: (itemRes as any).error };
+        }
+      }
+      const notaasItems = notaasItemsOrErrors as Array<any>;
+
+      if (
+        settings.modalidade_frete === undefined ||
+        settings.modalidade_frete === null ||
+        isNaN(Number(settings.modalidade_frete))
+      ) {
+        return {
+          success: false,
+          error: "Modalidade de frete não configurada em Configurações > NF-e.",
+        };
+      }
 
       const totalProd = notaasItems.reduce((s, i) => s + i.valorTotal, 0);
       const shippingPrice = Number(order.shipping_price) || 0;
@@ -378,11 +628,9 @@ export const emitNFe = createServerFn({ method: "POST" })
           },
         },
         dest: {
-          ...(isCPF
-            ? { cpf: destDocClean.padStart(11, "0") }
-            : { cnpj: formatCNPJ(destDocClean) }),
+          ...(isCPF ? { cpf: destDocClean.padStart(11, "0") } : { cnpj: formatCNPJ(destDocClean) }),
           nome: destName,
-          indicadorIE: 9,   // 9=não contribuinte
+          indicadorIE: 9, // 9=não contribuinte
           endereco: {
             logradouro: shippingAddr?.street || "",
             numero: shippingAddr?.number || "SN",
@@ -394,12 +642,11 @@ export const emitNFe = createServerFn({ method: "POST" })
           },
         },
         items: notaasItems,
-        pagamentos: [
-          { tipoPagamento: paymentType(order.payment_method), valor: totalNf },
-        ],
+        pagamentos: [{ tipoPagamento: paymentType(order.payment_method), valor: totalNf }],
         transporte: {
-          modalidadeFrete: 1, // FOB (comprador assume frete)
+          modalidadeFrete: Number(settings.modalidade_frete),
         },
+        ...(settings.crt !== undefined && settings.crt !== null ? { crt: settings.crt } : {}),
         infCpl: `Pedido Fragranciaria #${String(order.id).slice(0, 8).toUpperCase()}`,
       };
 
@@ -418,7 +665,10 @@ export const emitNFe = createServerFn({ method: "POST" })
 
       if (!emitRes.ok) {
         const errBody = await emitRes.text().catch(() => "");
-        return { success: false, error: `notaas rejeitou (${emitRes.status}): ${errBody.slice(0, 300)}` };
+        return {
+          success: false,
+          error: `notaas rejeitou (${emitRes.status}): ${errBody.slice(0, 300)}`,
+        };
       }
 
       const emitData: any = await emitRes.json();
@@ -431,7 +681,9 @@ export const emitNFe = createServerFn({ method: "POST" })
       let nfeResult: any = null;
       for (let attempt = 0; attempt < 5; attempt++) {
         await new Promise((r) => setTimeout(r, 2000));
-        const statusRes = await fetch(`${NOTAAS_BASE}/nfe/invoices/${invoiceId}/status`, { headers });
+        const statusRes = await fetch(`${NOTAAS_BASE}/nfe/invoices/${invoiceId}/status`, {
+          headers,
+        });
         if (!statusRes.ok) continue;
         const statusData: any = await statusRes.json();
         if (statusData.status === "issued" || statusData.status === "error") {
@@ -443,12 +695,18 @@ export const emitNFe = createServerFn({ method: "POST" })
       if (!nfeResult) {
         // A nota foi aceita pela notaas mas ainda não processou. Salva como
         // "processando" — o admin pode consultar depois.
-        await db.from("orders").update({
-          nfe_status: "processando",
-          nfe_xml: JSON.stringify({ invoiceId }),
-          nfe_emitted_at: new Date().toISOString(),
-        } as never).eq("id", data.orderId);
-        return { success: false, error: "NF-e enviada para a notaas, mas ainda não processada. Verifique em instantes." };
+        await db
+          .from("orders")
+          .update({
+            nfe_status: "processando",
+            nfe_xml: JSON.stringify({ invoiceId }),
+            nfe_emitted_at: new Date().toISOString(),
+          } as never)
+          .eq("id", data.orderId);
+        return {
+          success: false,
+          error: "NF-e enviada para a notaas, mas ainda não processada. Verifique em instantes.",
+        };
       }
 
       if (nfeResult.status === "error") {
@@ -461,15 +719,18 @@ export const emitNFe = createServerFn({ method: "POST" })
       const nfeNumber = nfeResult.nNf || 0;
       const protocol = nfeResult.nProt || "";
 
-      await db.from("orders").update({
-        nfe_key: nfeKey,
-        nfe_number: nfeNumber,
-        nfe_series: settings.nfe_serie,
-        nfe_status: "autorizada",
-        nfe_danfe_url: nfeResult.pdfUrl || null,
-        nfe_xml: nfeResult.xmlUrl || null,
-        nfe_emitted_at: new Date().toISOString(),
-      } as never).eq("id", data.orderId);
+      await db
+        .from("orders")
+        .update({
+          nfe_key: nfeKey,
+          nfe_number: nfeNumber,
+          nfe_series: settings.nfe_serie,
+          nfe_status: "autorizada",
+          nfe_danfe_url: nfeResult.pdfUrl || null,
+          nfe_xml: nfeResult.xmlUrl || null,
+          nfe_emitted_at: new Date().toISOString(),
+        } as never)
+        .eq("id", data.orderId);
 
       return {
         success: true,
@@ -500,7 +761,8 @@ export const getDanfePdf = createServerFn({ method: "GET" })
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const db = supabaseAdmin as any;
 
-      const { data: order } = await db.from("orders")
+      const { data: order } = await db
+        .from("orders")
         .select("nfe_danfe_url, nfe_number")
         .eq("id", data.orderId)
         .single();
@@ -540,7 +802,8 @@ export const getDanfePdf = createServerFn({ method: "GET" })
         },
       };
     } catch (e: any) {
-      if (e?.status === 401 || e?.status === 403) return { success: false as const, error: "Não autorizado" };
+      if (e?.status === 401 || e?.status === 403)
+        return { success: false as const, error: "Não autorizado" };
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
