@@ -39,6 +39,7 @@ const ROLE_LABELS: Record<string, string> = {
   total: "Total",
   social: "Social",
   logistica: "Logística",
+  contador: "Contador",
 };
 
 function formatDate(iso: string): string {
@@ -261,6 +262,7 @@ function AdminUsersPage() {
                       <option value="total">Total</option>
                       <option value="social">Social</option>
                       <option value="logistica">Logística</option>
+                      <option value="contador">Contador</option>
                     </select>
                   ) : (
                     <button
