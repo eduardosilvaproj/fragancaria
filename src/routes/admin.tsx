@@ -88,6 +88,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { label: "Logs", href: "/admin/logs", icon: History, area: "auditLogs" },
   { label: "Pagamentos", href: "/admin/pagamentos", icon: CreditCard, area: "payments" },
   { label: "Usuários", href: "/admin/usuarios", icon: Users, area: "adminUsers" },
+  { label: "Nota Fiscal", href: "/admin/nfe", icon: FileText, area: "nfe" },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings, area: "storeSettings" },
 ];
 
