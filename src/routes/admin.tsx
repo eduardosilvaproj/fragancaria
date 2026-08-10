@@ -27,6 +27,7 @@ import {
   RotateCcw,
   History,
   DollarSign,
+  FileText,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -86,6 +87,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { section: "Sistema" },
   { label: "Financeiro", href: "/admin/financeiro", icon: DollarSign, area: "financeiro" },
   { label: "Logs", href: "/admin/logs", icon: History, area: "auditLogs" },
+  { label: "NF-e", href: "/admin/nfe", icon: FileText, area: "nfe" },
   { label: "Pagamentos", href: "/admin/pagamentos", icon: CreditCard, area: "payments" },
   { label: "Usuários", href: "/admin/usuarios", icon: Users, area: "adminUsers" },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings, area: "storeSettings" },
