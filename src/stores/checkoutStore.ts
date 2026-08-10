@@ -32,6 +32,7 @@ export interface ShippingAddress {
   neighborhood: string;
   city: string;
   state: string;
+  ibgeCode?: string;
 }
 
 export interface PaymentData {

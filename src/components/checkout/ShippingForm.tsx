@@ -142,6 +142,7 @@ export function ShippingForm() {
         neighborhood: data.bairro || prev.neighborhood,
         city: data.localidade || prev.city,
         state: data.uf || prev.state,
+        ibgeCode: data.ibge || prev.ibgeCode,
       }));
       setErrors((prev) => ({ ...prev, cep: undefined }));
       toast.success("Endereço preenchido!");

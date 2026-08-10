@@ -65,6 +65,7 @@ const payerSchema = z.object({
     city: z.string().min(1),
     state: z.string().length(2),
     complement: z.string().optional(),
+    ibgeCode: z.string().optional(),
   }),
 });
 const cartItemSchema = z.object({
@@ -207,11 +208,21 @@ export const createPayment = createServerFn({ method: "POST" })
       const productIds = [...new Set(data.items.map((i) => i.id.split("::")[0]))];
       const { data: prodRows, error: prodErr } = await admin
         .from("products")
-        .select("id, price, is_active, cost, target_margin")
+        .select("id, price, is_active, cost, target_margin, ncm, ean_barcode")
         .in("id", productIds);
       if (prodErr) return { success: false, error: "Falha ao validar preços dos produtos." };
       const priceById = new Map(
-        (prodRows ?? []).map((p: any) => [p.id, { price: Number(p.price), active: p.is_active, cost: p.cost != null ? Number(p.cost) : null, targetMargin: p.target_margin != null ? Number(p.target_margin) : null }]),
+        (prodRows ?? []).map((p: any) => [
+          p.id,
+          {
+            price: Number(p.price),
+            active: p.is_active,
+            cost: p.cost != null ? Number(p.cost) : null,
+            targetMargin: p.target_margin != null ? Number(p.target_margin) : null,
+            ncm: p.ncm,
+            ean: p.ean_barcode,
+          },
+        ]),
       );
       let serverSubtotal = 0;
       for (const item of data.items) {
@@ -472,6 +483,8 @@ export const createPayment = createServerFn({ method: "POST" })
                 ...item,
                 cost: p?.cost ?? null,
                 targetMargin: p?.targetMargin ?? null,
+                ncm: p?.ncm ?? null,
+                ean: p?.ean ?? null,
               };
             }),
             auth_user_id: data.userId ?? null,
@@ -489,6 +502,7 @@ export const createPayment = createServerFn({ method: "POST" })
               cep: data.payer.address.zipCode,
               zipCode: data.payer.address.zipCode,
             },
+            shipping_ibge_code: data.payer.address.ibgeCode ?? null,
             affiliate_id: resolvedAffiliateId,
             affiliate_link_id: resolvedAffiliateLinkId,
             affiliate_commission_rate: resolvedAffiliateCommissionRate,

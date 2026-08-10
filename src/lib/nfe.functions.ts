@@ -108,6 +108,8 @@ const CITY_CODES: Record<string, number> = {
   "Santo André": 3547803,
   Osasco: 3534401,
   "Ribeirão Preto": 3541402,
+  Araraquara: 3503208,
+  "Araraquara, SP": 3503208,
 };
 
 function getCityCode(city: string): number {
@@ -236,6 +238,16 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
         crt: z.number().int().optional(),
         webservice_url: z.string().optional(),
         certificado_path: z.string().optional(),
+        ncm_padrao: z.string().max(10).optional(),
+        cfop_padrao: z.string().max(4).optional(),
+        cst_icms_padrao: z.string().max(3).optional(),
+        csosn_padrao: z.string().max(3).optional(),
+        origem_padrao: z.string().max(1).optional(),
+        cst_pis_cofins_padrao: z.string().max(2).optional(),
+        icms_aliquota: z.number().nonnegative().optional(),
+        pis_aliquota: z.number().nonnegative().optional(),
+        cofins_aliquota: z.number().nonnegative().optional(),
+        unidade_padrao: z.string().max(5).optional(),
       })
       .parse(d),
   )
@@ -576,12 +588,12 @@ export const emitNFe = createServerFn({ method: "POST" })
         };
       });
 
-      for (const itemRes of notaasItemsOrErrors) {
-        if ((itemRes as any).error) {
-          return { success: false, error: (itemRes as any).error };
-        }
+      if (!order.shipping_ibge_code) {
+        return {
+          success: false,
+          error: `Código IBGE do município não encontrado para o pedido ${order.id}. Execute o backfill de IBGE ou preencha o endereço.`,
+        };
       }
-      const notaasItems = notaasItemsOrErrors as Array<any>;
 
       if (
         settings.modalidade_frete === undefined ||
@@ -598,6 +610,13 @@ export const emitNFe = createServerFn({ method: "POST" })
       const shippingPrice = Number(order.shipping_price) || 0;
       const discount = Number(order.discount) || 0;
       const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
+
+      if (!order.shipping_ibge_code) {
+        return {
+          success: false,
+          error: `Pedido ${String(order.id).slice(0, 8).toUpperCase()}: código IBGE do município de entrega não informado. Rode o backfill ou preencha manualmente antes de emitir.`,
+        };
+      }
 
       const payload: Record<string, unknown> = {
         modelo: 55,
@@ -635,7 +654,7 @@ export const emitNFe = createServerFn({ method: "POST" })
             logradouro: shippingAddr?.street || "",
             numero: shippingAddr?.number || "SN",
             bairro: shippingAddr?.neighborhood || "",
-            codigoMunicipio: getCityCode(shippingAddr?.city || ""),
+            codigoMunicipio: Number(order.shipping_ibge_code),
             cidade: shippingAddr?.city || "",
             uf: shippingAddr?.state || settings.estado_uf,
             cep: formatCEP(shippingAddr?.zipCode || shippingAddr?.cep || ""),

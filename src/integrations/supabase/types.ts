@@ -1110,6 +1110,16 @@ export type Database = {
           length_cm: number | null
           ncm: string | null
           ean_barcode: string | null
+          cfop: string | null
+          cst_icms: string | null
+          csosn: string | null
+          origem: number | null
+          cst_pis_cofins: string | null
+          aliquota_icms: number | null
+          aliquota_pis: number | null
+          aliquota_cofins: number | null
+          unidade: string | null
+          cest: string | null
           variations: Json
           cost: number | null
           pricing_mode: string
@@ -1144,6 +1154,16 @@ export type Database = {
           length_cm?: number | null
           ncm?: string | null
           ean_barcode?: string | null
+          cfop?: string | null
+          cst_icms?: string | null
+          csosn?: string | null
+          origem?: number | null
+          cst_pis_cofins?: string | null
+          aliquota_icms?: number | null
+          aliquota_pis?: number | null
+          aliquota_cofins?: number | null
+          unidade?: string | null
+          cest?: string | null
           variations?: Json
           cost?: number | null
           pricing_mode?: string
@@ -1178,6 +1198,16 @@ export type Database = {
           length_cm?: number | null
           ncm?: string | null
           ean_barcode?: string | null
+          cfop?: string | null
+          cst_icms?: string | null
+          csosn?: string | null
+          origem?: number | null
+          cst_pis_cofins?: string | null
+          aliquota_icms?: number | null
+          aliquota_pis?: number | null
+          aliquota_cofins?: number | null
+          unidade?: string | null
+          cest?: string | null
           variations?: Json | null
           cost?: number | null
           pricing_mode?: string | null
@@ -1293,6 +1323,18 @@ export type Database = {
           created_at: string | null
           updated_at: string | null
           nfe_serie: number | null
+          ncm_padrao: string | null
+          cfop_padrao: string | null
+          cst_icms_padrao: string | null
+          csosn_padrao: string | null
+          origem_padrao: number | null
+          cst_pis_cofins_padrao: string | null
+          aliquota_icms_padrao: number | null
+          aliquota_pis_padrao: number | null
+          aliquota_cofins_padrao: number | null
+          unidade_padrao: string | null
+          modalidade_frete_padrao: number | null
+          cest_padrao: string | null
         }
         Insert: {
           id?: string
@@ -1311,6 +1353,18 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           nfe_serie?: number | null
+          ncm_padrao?: string | null
+          cfop_padrao?: string | null
+          cst_icms_padrao?: string | null
+          csosn_padrao?: string | null
+          origem_padrao?: number | null
+          cst_pis_cofins_padrao?: string | null
+          aliquota_icms_padrao?: number | null
+          aliquota_pis_padrao?: number | null
+          aliquota_cofins_padrao?: number | null
+          unidade_padrao?: string | null
+          modalidade_frete_padrao?: number | null
+          cest_padrao?: string | null
         }
         Update: {
           id?: string | null
@@ -1329,6 +1383,18 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           nfe_serie?: number | null
+          ncm_padrao?: string | null
+          cfop_padrao?: string | null
+          cst_icms_padrao?: string | null
+          csosn_padrao?: string | null
+          origem_padrao?: number | null
+          cst_pis_cofins_padrao?: string | null
+          aliquota_icms_padrao?: number | null
+          aliquota_pis_padrao?: number | null
+          aliquota_cofins_padrao?: number | null
+          unidade_padrao?: string | null
+          modalidade_frete_padrao?: number | null
+          cest_padrao?: string | null
         }
         Relationships: []
       }
