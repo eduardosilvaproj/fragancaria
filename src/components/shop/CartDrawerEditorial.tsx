@@ -22,13 +22,15 @@ export const CartDrawerEditorial = () => {
     if (!couponCode.trim()) return;
     setApplying(true);
     try {
-      const res = await resolveCoupon({ code: couponCode.trim(), subtotal });
+      const res = await resolveCoupon({
+        data: { code: couponCode.trim(), subtotal },
+      });
       if (res.valid) {
         setCoupon({
           code: res.coupon.code,
           type: res.coupon.type,
           value: res.coupon.value,
-          label: res.coupon.label,
+          label: res.label,
         });
         toast.success(`Cupom ${res.coupon.code} aplicado!`);
         setCouponCode("");
