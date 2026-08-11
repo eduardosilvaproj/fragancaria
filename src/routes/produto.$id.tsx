@@ -12,6 +12,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
 import { useFranChatStore } from "@/stores/franChatStore";
+import { trackViewItem, trackMetaViewContent } from "@/lib/analytics";
 import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 import { toast } from "sonner";
 import {
@@ -65,6 +66,20 @@ function ProductPage() {
         price: product.price,
         originalPrice: product.originalPrice,
         image: product.images[0],
+      });
+      // GA4: view_item | Meta: ViewContent
+      trackViewItem({
+        id: product.id,
+        name: product.name,
+        brand: product.brand || undefined,
+        price: product.price,
+        category: product.category || undefined,
+      });
+      trackMetaViewContent({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category || undefined,
       });
     }
   }, [product, addToRecentlyViewed]);

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
+import { trackBeginCheckout } from "@/lib/analytics";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
@@ -27,8 +28,15 @@ function CheckoutPage() {
   useEffect(() => {
     if (items.length === 0 && step !== "confirmation") {
       navigate({ to: "/" });
+    } else if (items.length > 0 && step === "shipping") {
+      trackBeginCheckout(items.map((i) => ({
+        id: i.productId || i.id,
+        name: i.title,
+        price: i.price,
+        quantity: i.quantity,
+      })));
     }
-  }, [items.length, step, navigate]);
+  }, [items, step, navigate]);
 
   return (
     <div className="min-h-screen bg-[#F3EEE3]">

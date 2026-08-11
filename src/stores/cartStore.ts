@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { trackAddToCart } from '@/lib/analytics';
 
 export interface SimpleCartItem {
   id: string; // chave única da linha: productId, ou `${productId}::${variationId}` quando há variação
@@ -47,6 +48,18 @@ export const useCartStore = create<SimpleCartStore>()(
         } else {
           set({ items: [...items, { ...item, quantity: qty }] });
         }
+
+        // GA4: add_to_cart | Meta: AddToCart — disparado em qualquer lugar do
+        // site que adicione um item ao carrinho (página de produto, vitrine,
+        // quickview, complementos). A função em analytics.ts no-ops quando os
+        // scripts não estão configurados/carregados, então é seguro chamar aqui.
+        trackAddToCart({
+          id: item.productId || item.id,
+          name: item.title,
+          brand: item.vendor,
+          price: item.price,
+          quantity: qty,
+        });
       },
 
       updateQuantity: (id, quantity) => {

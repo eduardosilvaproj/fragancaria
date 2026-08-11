@@ -1,8 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { CheckCircle2, Package, MapPin, CreditCard, Copy } from "lucide-react";
 import { toast } from "sonner";
 import { useCheckoutStore } from "@/stores/checkoutStore";
+import { useCartStore } from "@/stores/cartStore";
 import { PAYMENT_METHODS } from "@/config/mercadopago";
+import { trackPurchase } from "@/lib/analytics";
 
 // Só aceitamos UUIDs reais do Supabase. O `payment_id` do Mercado Pago é
 // numérico (ex: 165965290803) e quebra o `.eq("id", ...)` na rota
@@ -23,6 +26,25 @@ export function OrderConfirmation() {
     opcoes,
     clearCheckout,
   } = useCheckoutStore();
+  const items = useCartStore((s) => s.items);
+
+  // Regra de Ouro: só dispara purchase/Purchase quando o pagamento estiver
+  // efetivamente aprovado. Deduplicado via localStorage na própria trackPurchase.
+  useEffect(() => {
+    if (paymentData?.status === "approved" && paymentData?.orderId && items.length > 0) {
+      const value = items.reduce((sum, i) => sum + i.price * i.quantity, 0);
+      trackPurchase({
+        orderId: paymentData.orderId,
+        value,
+        items: items.map((i) => ({
+          id: i.productId || i.id,
+          name: i.title,
+          price: i.price,
+          quantity: i.quantity,
+        })),
+      });
+    }
+  }, [paymentData, items]);
 
   const shipping = opcoes.find((opcao) => opcao.servicoId === servicoId);
   const payment = PAYMENT_METHODS.find((p) => p.id === paymentMethod);

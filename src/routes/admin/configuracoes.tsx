@@ -685,59 +685,13 @@ function AdminConfiguracoes() {
 
               <div className="space-y-4">
                 <div className="border border-[#E9E1D2] rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className="font-medium text-[#0F3A3E]">Shopify</p>
-                      <p className="text-sm text-emerald-600">✓ Conectado</p>
-                    </div>
-                    <button className="text-sm text-red-500 hover:underline">
-                      Desconectar
-                    </button>
-                  </div>
-                  <div>
-                    <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">
-                      API Key
-                    </label>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type={showApiKey ? "text" : "password"}
-                        value="sk_live_xxxxxxxxxxxxx"
-                        readOnly
-                        className="flex-1 bg-[#F5F3EE] rounded-lg px-4 py-2 text-sm outline-none font-mono"
-                      />
-                      <button
-                        onClick={() => setShowApiKey(!showApiKey)}
-                        className="p-2 text-[#51635F] hover:bg-[#F5F3EE] rounded-lg"
-                      >
-                        {showApiKey ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
-                      </button>
-                      <button
-                        onClick={handleCopyKey}
-                        className="p-2 text-[#51635F] hover:bg-[#F5F3EE] rounded-lg"
-                      >
-                        {copied ? (
-                          <Check className="h-4 w-4 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border border-[#E9E1D2] rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-[#0F3A3E]">Google Analytics</p>
-                      <p className="text-sm text-emerald-600">✓ Conectado</p>
+                      <p className={cn("text-sm", import.meta.env.VITE_GA_MEASUREMENT_ID ? "text-emerald-600" : "text-[#8A938E]")}>
+                        {import.meta.env.VITE_GA_MEASUREMENT_ID ? "✓ Configurado" : "Não configurado"}
+                      </p>
                     </div>
-                    <button className="text-sm text-[#B07B1E] hover:underline">
-                      Configurar
-                    </button>
                   </div>
                 </div>
 
@@ -745,11 +699,10 @@ function AdminConfiguracoes() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-[#0F3A3E]">Meta Pixel</p>
-                      <p className="text-sm text-[#8A938E]">Não conectado</p>
+                      <p className={cn("text-sm", import.meta.env.VITE_META_PIXEL_ID ? "text-emerald-600" : "text-[#8A938E]")}>
+                        {import.meta.env.VITE_META_PIXEL_ID ? "✓ Configurado" : "Não configurado"}
+                      </p>
                     </div>
-                    <button className="text-sm text-[#B07B1E] hover:underline">
-                      Conectar
-                    </button>
                   </div>
                 </div>
               </div>

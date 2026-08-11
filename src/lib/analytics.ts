@@ -224,3 +224,64 @@ export function trackMetaViewContent(item: {
     currency: 'BRL',
   });
 }
+
+// Compra confirmada. Deve ser chamada APENAS quando o pagamento estiver
+// aprovado — nunca na criação do pedido (PIX/boleto confirmam DEPOIS via
+// webhook, e a tela de sucesso aparece ANTES da confirmação).
+//
+// `dedupeKey` é o id do pedido; se já estiver no localStorage, a função não
+// envia novamente (evita contar duas vezes em recarregamento de tela).
+export function trackPurchase(input: {
+  orderId: string;
+  value: number;
+  items: Array<{
+    id: string;
+    name: string;
+    price: number;
+    quantity: number;
+  }>;
+  onTracked?: () => void;
+}) {
+  if (typeof window === 'undefined') return;
+
+  const flagKey = `purchase_tracked_${input.orderId}`;
+  try {
+    if (localStorage.getItem(flagKey)) return;
+  } catch {
+    // localStorage indisponido (modo anônimo/strict privacy) — prosseguimos
+    // sem deduplicação. Risco: contar duas vezes se o cliente recarregar.
+  }
+
+  // GA4: purchase
+  if (window.gtag) {
+    window.gtag('event', 'purchase', {
+      transaction_id: input.orderId,
+      value: input.value,
+      currency: 'BRL',
+      items: input.items.map((it) => ({
+        item_id: it.id,
+        item_name: it.name,
+        price: it.price,
+        quantity: it.quantity,
+      })),
+    });
+  }
+
+  // Meta: Purchase
+  if (window.fbq) {
+    window.fbq('track', 'Purchase', {
+      content_ids: input.items.map((i) => i.id),
+      num_items: input.items.reduce((s, i) => s + i.quantity, 0),
+      value: input.value,
+      currency: 'BRL',
+    });
+  }
+
+  try {
+    localStorage.setItem(flagKey, '1');
+  } catch {
+    // Sem localStorage, sem dedupe — já tratado acima.
+  }
+
+  input.onTracked?.();
+}
