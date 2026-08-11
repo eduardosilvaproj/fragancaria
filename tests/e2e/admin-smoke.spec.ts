@@ -13,7 +13,7 @@ async function checkAdminRoute(page: Page, requestedPath: string, expectedHeadin
       `Guarda de URL: rota solicitada ${requestedPath} divergiu para ${finalUrl}`
     );
   }
-  await expect(page.getByRole("heading", { name: expectedHeading })).toBeVisible();
+  await expect(page.getByRole("heading", { name: expectedHeading, exact: true })).toBeVisible();
 }
 
 test.describe("Smoke Admin", () => {

@@ -90,6 +90,24 @@ Todo commit deve passar em sequencia localmente:
 modulo Node no topo de um arquivo consumido pelo cliente) que `tsc --noEmit`
 e os testes unitarios nao pegam.
 
+### Smoke Test obrigatório para rotas admin
+
+**LIÇÃO (2026-08-10):** um commit que adicionou `/admin/nfe` quebrou todo
+o painel admin em produção porque `admin.tsx` (layout pai) usava um ícone
+`FileText` no `SIDEBAR_ITEMS` **sem importá-lo**. O build local passou
+limpo. `npx tsc --noEmit` e `npm run build` não capturam erros de runtime
+de referência não definida em objetos declarados no módulo.
+
+**Regra:** qualquer alteração em `SIDEBAR_ITEMS`, `beforeLoad`, ou
+qualquer nova rota em `src/routes/admin/` **DEVE** ter um smoke test E2E
+em `tests/e2e/admin-smoke.spec.ts` que:
+1. Navega em `/admin` com autenticação de contador (papel limitado) e
+   verifica que a sidebar renderiza (sem `ReferenceError`).
+2. Navega na rota específica e confirma status 200 + pelo menos um
+   heading visível.
+3. Valida que o `beforeLoad` não cria loop de redirect (rota de contador
+   não redireciona infinitamente).
+
 ## Diretorios chave
 
 - `src/routes/`         — file-based routing (TanStack Router)

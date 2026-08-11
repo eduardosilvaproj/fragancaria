@@ -8,6 +8,7 @@ import {
   saveNfeSettings,
   type NfeSettings,
 } from "@/lib/nfe.functions";
+import { backfillOrdersIbge } from "@/lib/orders-backfill.functions";
 
 export function NfeSection() {
   const queryClient = useQueryClient();
@@ -49,9 +50,9 @@ export function NfeSection() {
     pis_aliquota: "" as string | number,
     cofins_aliquota: "" as string | number,
     cst_pis_cofins_padrao: "",
-    unidade_padrao: "UN",
+    unidade_padrao: "",
     cest_padrao: "",
-    modalidade_frete: 1,
+    modalidade_frete: "",
   });
 
   useEffect(() => {
@@ -83,9 +84,9 @@ export function NfeSection() {
         pis_aliquota: settings.pis_aliquota ?? "",
         cofins_aliquota: settings.cofins_aliquota ?? "",
         cst_pis_cofins_padrao: settings.cst_pis_cofins_padrao || "",
-        unidade_padrao: settings.unidade_padrao || "UN",
+        unidade_padrao: settings.unidade_padrao || "",
         cest_padrao: settings.cest_padrao || "",
-        modalidade_frete: settings.modalidade_frete ?? 1,
+        modalidade_frete: settings.modalidade_frete !== undefined && settings.modalidade_frete !== null ? String(settings.modalidade_frete) : "",
       });
     }
   }, [settings]);
@@ -143,7 +144,7 @@ export function NfeSection() {
       cst_pis_cofins_padrao: form.cst_pis_cofins_padrao,
       unidade_padrao: form.unidade_padrao,
       cest_padrao: form.cest_padrao,
-      modalidade_frete: Number(form.modalidade_frete) ?? 1,
+      modalidade_frete: form.modalidade_frete === "" ? null : Number(form.modalidade_frete),
     });
   };
 
@@ -158,14 +159,31 @@ export function NfeSection() {
   return (
     <div className="space-y-6">
       <div className="bg-white border border-[#E9E1D2] p-6">
-        <div className="flex items-center gap-3">
-          <FileText className="h-6 w-6 text-[#0F3A3E]" />
-          <div>
-            <h3 className="font-serif text-lg text-[#0F3A3E]">Configurações de Nota Fiscal (NF-e)</h3>
-            <p className="text-sm text-[#8A938E]">
-              Parâmetros do emitente, ambiente SEFAZ e valores fiscais padrão para integração com a Notaas.
-            </p>
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <FileText className="h-6 w-6 text-[#0F3A3E]" />
+            <div>
+              <h3 className="font-serif text-lg text-[#0F3A3E]">Configurações de Nota Fiscal (NF-e)</h3>
+              <p className="text-sm text-[#8A938E]">
+                Parâmetros do emitente, ambiente SEFAZ e valores fiscais padrão para integração com a Notaas.
+              </p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={async () => {
+              const toastId = toast.loading("Sincronizando IBGE dos pedidos...");
+              const res = await backfillOrdersIbge({});
+              if (res.success) {
+                toast.success(`Sucesso: ${res.updatedCount} pedidos atualizados.`, { id: toastId });
+              } else {
+                toast.error(res.error || "Erro ao sincronizar", { id: toastId });
+              }
+            }}
+            className="text-xs px-3 py-2 bg-[#F5F3EE] hover:bg-[#E9E1D2] text-[#0F3A3E] rounded border border-[#E9E1D2] transition-colors"
+          >
+            Sincronizar IBGE dos Pedidos
+          </button>
         </div>
       </div>
 
@@ -465,7 +483,7 @@ export function NfeSection() {
                 step="0.01"
                 value={form.icms_aliquota}
                 onChange={(e) => setField("icms_aliquota", e.target.value)}
-                placeholder="18.00"
+                placeholder="18"
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
               />
             </div>
@@ -491,7 +509,7 @@ export function NfeSection() {
                 step="0.01"
                 value={form.cofins_aliquota}
                 onChange={(e) => setField("cofins_aliquota", e.target.value)}
-                placeholder="7.60"
+                placeholder="7.6"
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
               />
             </div>

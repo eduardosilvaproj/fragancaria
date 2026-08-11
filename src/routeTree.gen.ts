@@ -46,6 +46,7 @@ import { Route as AdminRedesSociaisRouteImport } from './routes/admin/redes-soci
 import { Route as AdminProdutosRouteImport } from './routes/admin/produtos'
 import { Route as AdminPedidosRouteImport } from './routes/admin/pedidos'
 import { Route as AdminPagamentosRouteImport } from './routes/admin/pagamentos'
+import { Route as AdminNfeRouteImport } from './routes/admin/nfe'
 import { Route as AdminLoyaltyRouteImport } from './routes/admin/loyalty'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
@@ -266,6 +267,11 @@ const AdminPedidosRoute = AdminPedidosRouteImport.update({
 const AdminPagamentosRoute = AdminPagamentosRouteImport.update({
   id: '/pagamentos',
   path: '/pagamentos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNfeRoute = AdminNfeRouteImport.update({
+  id: '/nfe',
+  path: '/nfe',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminLoyaltyRoute = AdminLoyaltyRouteImport.update({
@@ -493,6 +499,7 @@ export interface FileRoutesByFullPath {
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
+  '/admin/nfe': typeof AdminNfeRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -566,6 +573,7 @@ export interface FileRoutesByTo {
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
+  '/admin/nfe': typeof AdminNfeRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
@@ -640,6 +648,7 @@ export interface FileRoutesById {
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
+  '/admin/nfe': typeof AdminNfeRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -717,6 +726,7 @@ export interface FileRouteTypes {
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
+    | '/admin/nfe'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -790,6 +800,7 @@ export interface FileRouteTypes {
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
+    | '/admin/nfe'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/redes-sociais'
@@ -863,6 +874,7 @@ export interface FileRouteTypes {
     | '/admin/logistica'
     | '/admin/logs'
     | '/admin/loyalty'
+    | '/admin/nfe'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -1201,6 +1213,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPagamentosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/nfe': {
+      id: '/admin/nfe'
+      path: '/nfe'
+      fullPath: '/admin/nfe'
+      preLoaderRoute: typeof AdminNfeRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/loyalty': {
       id: '/admin/loyalty'
       path: '/loyalty'
@@ -1488,6 +1507,7 @@ interface AdminRouteChildren {
   AdminLogisticaRoute: typeof AdminLogisticaRoute
   AdminLogsRoute: typeof AdminLogsRoute
   AdminLoyaltyRoute: typeof AdminLoyaltyRoute
+  AdminNfeRoute: typeof AdminNfeRoute
   AdminPagamentosRoute: typeof AdminPagamentosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminProdutosRoute: typeof AdminProdutosRouteWithChildren
@@ -1513,6 +1533,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogisticaRoute: AdminLogisticaRoute,
   AdminLogsRoute: AdminLogsRoute,
   AdminLoyaltyRoute: AdminLoyaltyRoute,
+  AdminNfeRoute: AdminNfeRoute,
   AdminPagamentosRoute: AdminPagamentosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminProdutosRoute: AdminProdutosRouteWithChildren,

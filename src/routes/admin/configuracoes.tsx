@@ -335,7 +335,7 @@ function AdminConfiguracoes() {
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-blue-900">Frete via Contrato Direto com Correios</p>
+                    <p className="font-medium text-blue-900">Integração legada com os Correios</p>
                     <p className="text-sm text-blue-700 mt-1">
                       Os valores de PAC, SEDEX e SEDEX 10 são configurados diretamente no código.
                       Para alterar, edite o arquivo <code className="bg-blue-100 px-1 rounded">src/config/mercadopago.ts</code>.
@@ -356,7 +356,7 @@ function AdminConfiguracoes() {
                     <div>
                       <p className="font-medium text-[#0F3A3E]">Ativar frete grátis</p>
                       <p className="text-sm text-[#8A938E]">
-                        Oferecer frete grátis para pedidos acima do valor mínimo
+                        Oferecer frete grátis para pedidos acima do valor definido
                       </p>
                     </div>
                     <button
