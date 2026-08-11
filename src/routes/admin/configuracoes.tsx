@@ -387,11 +387,11 @@ function AdminConfiguracoes() {
                       <span className="text-[#8A938E]">R$</span>
                       <input
                         type="number"
-                        value={(settings?.freeShippingThreshold ?? 19900) / 100}
+                        value={settings?.freeShippingThreshold ?? 199}
                         onChange={(e) => handleShippingSetting("freeShippingThreshold", {
                           ...settings,
                           enabled: settings?.freeShippingEnabled ?? true,
-                          value: Math.round(parseFloat(e.target.value || "0") * 100),
+                          value: parseFloat(e.target.value || "0"),
                         })}
                         className="w-32 bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
                         step="1"

@@ -63,7 +63,7 @@ export const getShippingSettings = createServerFn({ method: "GET" })
 
       // Montar objeto de configuracoes
       const settings: ShippingSettings = {
-        freeShippingThreshold: 19900, // em centavos
+        freeShippingThreshold: 199, // em reais
         freeShippingEnabled: true,
         handlingDays: { min: 1, max: 3 },
         senderInfo: {
@@ -101,7 +101,7 @@ export const getShippingSettings = createServerFn({ method: "GET" })
 
         switch (key) {
           case "free_shipping_threshold":
-            settings.freeShippingThreshold = value?.value ?? 19900;
+            settings.freeShippingThreshold = value?.value ?? 199;
             settings.freeShippingEnabled = value?.enabled ?? true;
             break;
           case "default_handling_days":
@@ -185,7 +185,7 @@ export const updateShippingSetting = createServerFn({ method: "PATCH" })
       } else if (data.key === "freeShippingThreshold") {
         dbKey = "free_shipping_threshold";
         dbValue = {
-          value: (data.value as any)?.value ?? 19900,
+          value: (data.value as any)?.value ?? 199,
           enabled: (data.value as any)?.enabled ?? true,
         };
       } else if (data.key === "handlingDays") {
@@ -261,7 +261,7 @@ export const getPublicShippingConfig = createServerFn({ method: "GET" })
 
       // Retornar apenas configuracoes publicas
       const publicConfig = {
-        freeShippingThreshold: 19900,
+        freeShippingThreshold: 199,
         freeShippingEnabled: true,
         handlingDays: { min: 1, max: 3 },
         carriers: [] as any[],
@@ -269,7 +269,7 @@ export const getPublicShippingConfig = createServerFn({ method: "GET" })
 
       for (const row of data || []) {
         if (row.key === "free_shipping_threshold") {
-          publicConfig.freeShippingThreshold = row.value?.value ?? 19900;
+          publicConfig.freeShippingThreshold = row.value?.value ?? 199;
           publicConfig.freeShippingEnabled = row.value?.enabled ?? true;
         } else if (row.key === "default_handling_days") {
           publicConfig.handlingDays = row.value ?? { min: 1, max: 3 };
