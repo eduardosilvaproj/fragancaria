@@ -159,7 +159,7 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     await expect(page.locator("aside").getByText("R$ 199,00").last()).toBeVisible();
   });
 
-  test("5. Drawer do carrinho delega frete e descontos ao checkout", async ({ page }) => {
+  test("5. Drawer do carrinho permite aplicar cupom e delega frete ao checkout", async ({ page }) => {
     await page.addInitScript(() => {
       window.localStorage.setItem(
         "fragranciaria-cart",
@@ -173,8 +173,8 @@ test.describe("Funil observável (sem MP sandbox)", () => {
     });
     await page.goto("/");
     await page.getByRole("button", { name: "Carrinho" }).click();
-    await expect(page.getByText("Frete e descontos calculados no checkout")).toBeVisible();
-    await expect(page.getByText("Código do cupom")).toHaveCount(0);
+    await expect(page.getByPlaceholder("Código do cupom")).toBeVisible();
+    await expect(page.getByText("Frete calculado no checkout")).toBeVisible();
     await page.getByRole("link", { name: "Finalizar Compra" }).click();
     await page.waitForURL(/\/checkout$/);
     await expect(page.getByText("Dados Pessoais")).toBeVisible();
