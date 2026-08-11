@@ -60,8 +60,6 @@ const BRANDS: Array<{ label: string; vendor: string }> = [
   { label: "L'Oréal", vendor: "L'Oréal" },
   { label: "Keune", vendor: "Keune" },
   { label: "Itallian", vendor: "Itallian" },
-  { label: "Truss", vendor: "Truss" },
-  { label: "Lowell", vendor: "Lowell" },
   { label: "Alfaparf", vendor: "Alfaparf" },
   { label: "Schwarzkopf", vendor: "Schwarzkopf" },
 ];
