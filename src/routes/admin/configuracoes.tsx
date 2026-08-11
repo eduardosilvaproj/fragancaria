@@ -330,15 +330,15 @@ function AdminConfiguracoes() {
 
           {activeSection === "frete" && (
             <div className="space-y-6">
-              {/* Aviso sobre Correios Direto */}
+              {/* Aviso sobre Melhor Envio */}
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
                 <div className="flex items-start gap-3">
                   <Info className="h-5 w-5 text-blue-600 mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="font-medium text-blue-900">Integração legada com os Correios</p>
+                    <p className="font-medium text-blue-900">Integração com o Melhor Envio</p>
                     <p className="text-sm text-blue-700 mt-1">
-                      Os valores de PAC, SEDEX e SEDEX 10 são configurados diretamente no código.
-                      Para alterar, edite o arquivo <code className="bg-blue-100 px-1 rounded">src/config/mercadopago.ts</code>.
+                      As transportadoras e os valores de frete são gerenciados pelo Melhor Envio.
+                      O frete grátis é configurado abaixo.
                     </p>
                   </div>
                 </div>
@@ -363,7 +363,7 @@ function AdminConfiguracoes() {
                       onClick={() => handleShippingSetting("freeShippingThreshold", {
                         ...settings,
                         enabled: !settings?.freeShippingEnabled,
-                        value: settings?.freeShippingThreshold ?? 19900,
+                        value: settings?.freeShippingThreshold ?? 199,
                       })}
                       className={cn(
                         "w-12 h-6 rounded-full relative transition-colors",
@@ -402,64 +402,6 @@ function AdminConfiguracoes() {
                 </div>
               </div>
 
-              {/* Transportadoras */}
-              <div className="bg-white border border-[#E9E1D2] p-6">
-                <h3 className="font-serif text-lg text-[#0F3A3E] mb-6 flex items-center gap-2">
-                  <Truck className="h-5 w-5" />
-                  Transportadoras Ativas
-                </h3>
-
-                <div className="space-y-3">
-                  {settings?.carriers?.map((carrier) => (
-                    <div
-                      key={carrier.id}
-                      className={cn(
-                        "flex items-center justify-between p-4 rounded-lg border transition-colors",
-                        carrier.enabled
-                          ? "bg-[#F9F7F3] border-[#E9E1D2]"
-                          : "bg-gray-50 border-transparent"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <button
-                          onClick={() => handleCarrierToggle(carrier.id, !carrier.enabled)}
-                          className={cn(
-                            "w-12 h-6 rounded-full relative transition-colors",
-                            carrier.enabled ? "bg-emerald-500" : "bg-gray-300"
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "absolute top-1 w-4 h-4 bg-white rounded-full transition-transform",
-                              carrier.enabled ? "right-1" : "left-1"
-                            )}
-                          />
-                        </button>
-                        <div>
-                          <p className={cn(
-                            "font-medium",
-                            carrier.enabled ? "text-[#0F3A3E]" : "text-[#8A938E]"
-                          )}>
-                            {carrier.name}
-                          </p>
-                          <p className="text-xs text-[#8A938E]">
-                            {carrier.services?.join(", ")}
-                          </p>
-                        </div>
-                      </div>
-                      {carrier.enabled && (
-                        <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
-                          Ativo
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                <p className="text-xs text-[#8A938E] mt-4">
-                  Apenas Correios está funcionando no momento.
-                </p>
-              </div>
 
               {/* Dados do Remetente */}
               <div className="bg-white border border-[#E9E1D2] p-6">
@@ -730,70 +672,6 @@ function AdminConfiguracoes() {
                     defaultValue="noreply@fragranciaria.com.br"
                     className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
                   />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "seguranca" && (
-            <div className="bg-white border border-[#E9E1D2] p-6">
-              <h3 className="font-serif text-lg text-[#0F3A3E] mb-6">
-                Segurança
-              </h3>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Alterar Senha
-                  </label>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    <input
-                      type="password"
-                      placeholder="Senha atual"
-                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Nova senha"
-                      className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Autenticação de Dois Fatores
-                  </label>
-                  <div className="flex items-center justify-between p-4 bg-[#F9F7F3] rounded-lg">
-                    <div>
-                      <p className="font-medium text-[#0F3A3E]">2FA Ativado</p>
-                      <p className="text-sm text-[#8A938E]">
-                        Proteção extra para sua conta
-                      </p>
-                    </div>
-                    <button className="w-12 h-6 bg-emerald-500 rounded-full relative">
-                      <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full" />
-                    </button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-2">
-                    Sessões Ativas
-                  </label>
-                  <div className="border border-[#E9E1D2] rounded-lg p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-[#0F3A3E]">Chrome - Windows</p>
-                        <p className="text-xs text-[#8A938E]">
-                          São Paulo, Brasil • Ativo agora
-                        </p>
-                      </div>
-                      <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-1 rounded">
-                        Sessão atual
-                      </span>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
