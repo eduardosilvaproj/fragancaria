@@ -208,7 +208,9 @@ export const createPayment = createServerFn({ method: "POST" })
       const productIds = [...new Set(data.items.map((i) => i.id.split("::")[0]))];
       const { data: prodRows, error: prodErr } = await admin
         .from("products")
-        .select("id, price, is_active, cost, target_margin, ncm, ean_barcode")
+        .select(
+          "id, price, is_active, cost, target_margin, ncm, ean_barcode, cst_icms, csosn, origem, cst_pis_cofins, unidade, cest, cst_ibscbs, cclasstrib, aliquota_ibs_estadual, aliquota_ibs_municipal, aliquota_cbs, codigo_beneficio_fiscal",
+        )
         .in("id", productIds);
       if (prodErr) return { success: false, error: "Falha ao validar preços dos produtos." };
       const priceById = new Map(
@@ -221,6 +223,18 @@ export const createPayment = createServerFn({ method: "POST" })
             targetMargin: p.target_margin != null ? Number(p.target_margin) : null,
             ncm: p.ncm,
             ean: p.ean_barcode,
+            cest: p.cest,
+            cstIcms: p.cst_icms,
+            csosn: p.csosn,
+            origem: p.origem,
+            cstPisCofins: p.cst_pis_cofins,
+            unidade: p.unidade,
+            cstIbscbs: p.cst_ibscbs,
+            cclassTrib: p.cclasstrib,
+            aliquotaIbsEstadual: p.aliquota_ibs_estadual != null ? Number(p.aliquota_ibs_estadual) : null,
+            aliquotaIbsMunicipal: p.aliquota_ibs_municipal != null ? Number(p.aliquota_ibs_municipal) : null,
+            aliquotaCbs: p.aliquota_cbs != null ? Number(p.aliquota_cbs) : null,
+            codigoBeneficioFiscal: p.codigo_beneficio_fiscal,
           },
         ]),
       );
@@ -485,6 +499,18 @@ export const createPayment = createServerFn({ method: "POST" })
                 targetMargin: p?.targetMargin ?? null,
                 ncm: p?.ncm ?? null,
                 ean: p?.ean ?? null,
+                cest: p?.cest ?? null,
+                cst_icms: p?.cstIcms ?? null,
+                csosn: p?.csosn ?? null,
+                origem: p?.origem ?? null,
+                cst_pis_cofins: p?.cstPisCofins ?? null,
+                unidade: p?.unidade ?? null,
+                cst_ibscbs: p?.cstIbscbs ?? null,
+                cclasstrib: p?.cclassTrib ?? null,
+                aliquota_ibs_estadual: p?.aliquotaIbsEstadual ?? null,
+                aliquota_ibs_municipal: p?.aliquotaIbsMunicipal ?? null,
+                aliquota_cbs: p?.aliquotaCbs ?? null,
+                codigo_beneficio_fiscal: p?.codigoBeneficioFiscal ?? null,
               };
             }),
             auth_user_id: data.userId ?? null,

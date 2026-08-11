@@ -53,6 +53,13 @@ export type NfeSettings = {
   crt?: number;
   webservice_url?: string;
   certificado_path?: string;
+  // IBS/CBS (Reforma Tributária — NT 2025.002-RTC). Preenchidos pela contadora.
+  cst_ibscbs_padrao?: string;
+  cclasstrib_padrao?: string;
+  aliquota_ibs_estadual?: number;
+  aliquota_ibs_municipal?: number;
+  aliquota_cbs?: number;
+  codigo_beneficio_fiscal_padrao?: string;
 };
 
 export type NfeEndereco = {
@@ -224,6 +231,12 @@ export const getNfeSettings = createServerFn({ method: "GET" }).handler(
               crt: (data as any).crt ?? undefined,
               webservice_url: (data as any).webservice_url ?? undefined,
               certificado_path: (data as any).certificado_path ?? undefined,
+              cst_ibscbs_padrao: (data as any).cst_ibscbs_padrao ?? undefined,
+              cclasstrib_padrao: (data as any).cclasstrib_padrao ?? undefined,
+              aliquota_ibs_estadual: (data as any).aliquota_ibs_estadual != null ? Number((data as any).aliquota_ibs_estadual) : undefined,
+              aliquota_ibs_municipal: (data as any).aliquota_ibs_municipal != null ? Number((data as any).aliquota_ibs_municipal) : undefined,
+              aliquota_cbs: (data as any).aliquota_cbs != null ? Number((data as any).aliquota_cbs) : undefined,
+              codigo_beneficio_fiscal_padrao: (data as any).codigo_beneficio_fiscal_padrao ?? undefined,
             }
           : null,
       };
@@ -276,6 +289,12 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
         pis_aliquota: z.number().nonnegative().optional(),
         cofins_aliquota: z.number().nonnegative().optional(),
         unidade_padrao: z.string().max(5).optional(),
+        cst_ibscbs_padrao: z.string().max(3).optional().nullable(),
+        cclasstrib_padrao: z.string().max(6).optional().nullable(),
+        aliquota_ibs_estadual: z.number().nonnegative().optional().nullable(),
+        aliquota_ibs_municipal: z.number().nonnegative().optional().nullable(),
+        aliquota_cbs: z.number().nonnegative().optional().nullable(),
+        codigo_beneficio_fiscal_padrao: z.string().max(15).optional().nullable(),
       })
       .parse(d),
   )
@@ -322,6 +341,12 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
           crt: data.crt ?? null,
           webservice_url: data.webservice_url || null,
           certificado_path: data.certificado_path || null,
+          cst_ibscbs_padrao: data.cst_ibscbs_padrao || null,
+          cclasstrib_padrao: data.cclasstrib_padrao || null,
+          aliquota_ibs_estadual: data.aliquota_ibs_estadual ?? null,
+          aliquota_ibs_municipal: data.aliquota_ibs_municipal ?? null,
+          aliquota_cbs: data.aliquota_cbs ?? null,
+          codigo_beneficio_fiscal_padrao: data.codigo_beneficio_fiscal_padrao || null,
         },
         { onConflict: "id" },
       );
@@ -597,6 +622,34 @@ export const emitNFe = createServerFn({ method: "POST" })
         const aliquotaPis = Number(rawPis);
         const aliquotaCofins = Number(rawCofins);
 
+        const cstIbscbs = item.cst_ibscbs || settings.cst_ibscbs_padrao;
+        const cClassTrib = item.cclasstrib || settings.cclasstrib_padrao;
+        const rawIbsEst = item.aliquota_ibs_estadual ?? settings.aliquota_ibs_estadual;
+        const rawIbsMun = item.aliquota_ibs_municipal ?? settings.aliquota_ibs_municipal;
+        const rawCbs = item.aliquota_cbs ?? settings.aliquota_cbs;
+        const cBenef = item.codigo_beneficio_fiscal || settings.codigo_beneficio_fiscal_padrao;
+
+        // DECISÃO: IBS/CBS NÃO entra no bloco de faltantes que trava a emissão por ora.
+        // Se preenchido, vai no payload; se vazio, não vai.
+        // TODO: Tornar obrigatório (bloqueando a emissão) assim que a contadora definir os valores em produção.
+        let ibscbsObj: Record<string, unknown> | undefined = undefined;
+        if (
+          cstIbscbs &&
+          cClassTrib &&
+          rawIbsEst !== undefined &&
+          rawIbsEst !== null &&
+          rawCbs !== undefined &&
+          rawCbs !== null
+        ) {
+          ibscbsObj = {
+            cst: String(cstIbscbs),
+            cClassTrib: String(cClassTrib),
+            aliquotaIbsEstadual: Number(rawIbsEst),
+            aliquotaIbsMunicipal: rawIbsMun !== undefined && rawIbsMun !== null ? Number(rawIbsMun) : 0,
+            aliquotaCbs: Number(rawCbs),
+          };
+        }
+
         return {
           descricao: itemName,
           ncm,
@@ -613,6 +666,8 @@ export const emitNFe = createServerFn({ method: "POST" })
           aliquotaPis,
           aliquotaCofins,
           cstPis,
+          ...(cBenef ? { codigoBeneficioFiscal: String(cBenef) } : {}),
+          ...(ibscbsObj ? { ibscbs: ibscbsObj } : {}),
         };
       });
 

@@ -43,6 +43,13 @@ interface FormState {
   origem: string;
   cstPisCofins: string;
   unidade: string;
+  // IBS/CBS (Reforma Tributária)
+  cstIbscbs: string;
+  cclassTrib: string;
+  aliquotaIbsEstadual: string;
+  aliquotaIbsMunicipal: string;
+  aliquotaCbs: string;
+  codigoBeneficioFiscal: string;
   // Variações
   hasVariations: boolean;
   variations: VariationForm[];
@@ -78,6 +85,12 @@ const EMPTY_FORM: FormState = {
   origem: "",
   cstPisCofins: "",
   unidade: "",
+  cstIbscbs: "",
+  cclassTrib: "",
+  aliquotaIbsEstadual: "",
+  aliquotaIbsMunicipal: "",
+  aliquotaCbs: "",
+  codigoBeneficioFiscal: "",
   // Variações
   hasVariations: false,
   variations: [],
@@ -148,6 +161,12 @@ function NovoProduto() {
           origem: form.origem !== "" ? Number(form.origem) : null,
           cstPisCofins: form.cstPisCofins.trim() || null,
           unidade: form.unidade.trim() || null,
+          cstIbscbs: form.cstIbscbs.trim() || null,
+          cclassTrib: form.cclassTrib.trim() || null,
+          aliquotaIbsEstadual: form.aliquotaIbsEstadual !== "" ? Number(form.aliquotaIbsEstadual) : null,
+          aliquotaIbsMunicipal: form.aliquotaIbsMunicipal !== "" ? Number(form.aliquotaIbsMunicipal) : null,
+          aliquotaCbs: form.aliquotaCbs !== "" ? Number(form.aliquotaCbs) : null,
+          codigoBeneficioFiscal: form.codigoBeneficioFiscal.trim() || null,
           variations: form.hasVariations
             ? form.variations
                 .filter((v) => v.name.trim())
@@ -489,6 +508,80 @@ function NovoProduto() {
                 maxLength={6}
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
               />
+            </div>
+          </div>
+          {/* IBS / CBS — Reforma Tributária */}
+          <div className="mt-4 pt-4 border-t border-[#E9E1D2]">
+            <h4 className="text-[10px] uppercase tracking-wider text-[#B07B1E] font-medium mb-3">
+              IBS / CBS — Reforma Tributária
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">CST IBS/CBS</label>
+                <input
+                  type="text"
+                  value={form.cstIbscbs}
+                  onChange={(e) => set("cstIbscbs", e.target.value)}
+                  placeholder="000"
+                  maxLength={3}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">cClassTrib</label>
+                <input
+                  type="text"
+                  value={form.cclassTrib}
+                  onChange={(e) => set("cclassTrib", e.target.value)}
+                  placeholder="000001"
+                  maxLength={6}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Alíquota IBS Estadual (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.aliquotaIbsEstadual}
+                  onChange={(e) => set("aliquotaIbsEstadual", e.target.value)}
+                  placeholder="0.1"
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Alíquota IBS Municipal (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.aliquotaIbsMunicipal}
+                  onChange={(e) => set("aliquotaIbsMunicipal", e.target.value)}
+                  placeholder="0"
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Alíquota CBS (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.aliquotaCbs}
+                  onChange={(e) => set("aliquotaCbs", e.target.value)}
+                  placeholder="0.9"
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Código Benefício Fiscal</label>
+                <input
+                  type="text"
+                  value={form.codigoBeneficioFiscal}
+                  onChange={(e) => set("codigoBeneficioFiscal", e.target.value)}
+                  placeholder="SP070130"
+                  maxLength={15}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
+                />
+              </div>
             </div>
           </div>
         </div>

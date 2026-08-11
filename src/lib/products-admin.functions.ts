@@ -53,6 +53,13 @@ const productInput = z.object({
   origem: z.number().int().min(0).max(8).nullable().optional(),
   cstPisCofins: z.string().max(2).nullable().optional(),
   unidade: z.string().max(6).nullable().optional(),
+  // IBS/CBS (Reforma Tributária)
+  cstIbscbs: z.string().max(3).nullable().optional(),
+  cclassTrib: z.string().max(6).nullable().optional(),
+  aliquotaIbsEstadual: z.number().nonnegative().nullable().optional(),
+  aliquotaIbsMunicipal: z.number().nonnegative().nullable().optional(),
+  aliquotaCbs: z.number().nonnegative().nullable().optional(),
+  codigoBeneficioFiscal: z.string().max(15).nullable().optional(),
   // Custo e margem
   cost: z.number().nonnegative().nullable().optional(),
   pricingMode: z.enum(["manual", "auto"]).optional(),
@@ -104,6 +111,12 @@ function inputToPatch(data: Partial<ProductInput>): Record<string, unknown> {
   if (data.origem !== undefined) patch.origem = data.origem;
   if (data.cstPisCofins !== undefined) patch.cst_pis_cofins = data.cstPisCofins;
   if (data.unidade !== undefined) patch.unidade = data.unidade;
+  if (data.cstIbscbs !== undefined) patch.cst_ibscbs = data.cstIbscbs;
+  if (data.cclassTrib !== undefined) patch.cclasstrib = data.cclassTrib;
+  if (data.aliquotaIbsEstadual !== undefined) patch.aliquota_ibs_estadual = data.aliquotaIbsEstadual;
+  if (data.aliquotaIbsMunicipal !== undefined) patch.aliquota_ibs_municipal = data.aliquotaIbsMunicipal;
+  if (data.aliquotaCbs !== undefined) patch.aliquota_cbs = data.aliquotaCbs;
+  if (data.codigoBeneficioFiscal !== undefined) patch.codigo_beneficio_fiscal = data.codigoBeneficioFiscal;
   if (data.cost !== undefined) patch.cost = data.cost;
   if (data.pricingMode !== undefined) patch.pricing_mode = data.pricingMode;
   if (data.targetMargin !== undefined) patch.target_margin = data.targetMargin;
@@ -146,6 +159,13 @@ function inputToRow(data: ProductInput) {
     origem: data.origem ?? null,
     cst_pis_cofins: data.cstPisCofins ?? null,
     unidade: data.unidade ?? null,
+    // IBS/CBS (Reforma Tributária)
+    cst_ibscbs: data.cstIbscbs ?? null,
+    cclasstrib: data.cclassTrib ?? null,
+    aliquota_ibs_estadual: data.aliquotaIbsEstadual ?? null,
+    aliquota_ibs_municipal: data.aliquotaIbsMunicipal ?? null,
+    aliquota_cbs: data.aliquotaCbs ?? null,
+    codigo_beneficio_fiscal: data.codigoBeneficioFiscal ?? null,
     // Custo e margem
     cost: data.cost ?? null,
     pricing_mode: data.pricingMode ?? "manual",
@@ -286,6 +306,20 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.isNew !== undefined) patch.is_new = p.isNew;
       if (p.isActive !== undefined) patch.is_active = p.isActive;
       if (p.cost !== undefined) patch.cost = p.cost;
+      if (p.ncm !== undefined) patch.ncm = p.ncm;
+      if (p.eanBarcode !== undefined) patch.ean_barcode = p.eanBarcode;
+      if (p.cest !== undefined) patch.cest = p.cest;
+      if (p.cstIcms !== undefined) patch.cst_icms = p.cstIcms;
+      if (p.csosn !== undefined) patch.csosn = p.csosn;
+      if (p.origem !== undefined) patch.origem = p.origem;
+      if (p.cstPisCofins !== undefined) patch.cst_pis_cofins = p.cstPisCofins;
+      if (p.unidade !== undefined) patch.unidade = p.unidade;
+      if (p.cstIbscbs !== undefined) patch.cst_ibscbs = p.cstIbscbs;
+      if (p.cclassTrib !== undefined) patch.cclasstrib = p.cclassTrib;
+      if (p.aliquotaIbsEstadual !== undefined) patch.aliquota_ibs_estadual = p.aliquotaIbsEstadual;
+      if (p.aliquotaIbsMunicipal !== undefined) patch.aliquota_ibs_municipal = p.aliquotaIbsMunicipal;
+      if (p.aliquotaCbs !== undefined) patch.aliquota_cbs = p.aliquotaCbs;
+      if (p.codigoBeneficioFiscal !== undefined) patch.codigo_beneficio_fiscal = p.codigoBeneficioFiscal;
       if (p.pricingMode !== undefined) patch.pricing_mode = p.pricingMode;
       if (p.targetMargin !== undefined) patch.target_margin = p.targetMargin;
       if (p.variations !== undefined) patch.variations = p.variations;
