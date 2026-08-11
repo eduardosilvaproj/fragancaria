@@ -1,16 +1,46 @@
+import { useState } from "react";
 import { useCartStore } from "@/stores/cartStore";
+import { useCheckoutStore } from "@/stores/checkoutStore";
 import { Link } from "@tanstack/react-router";
-import { ShoppingBag, Minus, Plus, Trash2, X } from "lucide-react";
+import { ShoppingBag, Minus, Plus, Trash2, X, Tag, Check, Loader2 } from "lucide-react";
 import { CartComplements } from "./CartComplements";
-
-// O drawer é um preview do carrinho: mostra itens e subtotal, mas NÃO calcula
-// frete nem desconto. Frete e cupom são decididos no checkout.
+import { resolveCoupon } from "@/lib/coupon-resolve.functions";
+import { couponRejectionMessage } from "@/lib/coupon-messages";
+import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 export const CartDrawerEditorial = () => {
   const { items, isOpen, setIsOpen, updateQuantity, removeItem, getTotalPrice } = useCartStore();
+  const { coupon, setCoupon } = useCheckoutStore();
+  const [couponCode, setCouponCode] = useState("");
+  const [applying, setApplying] = useState(false);
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = getTotalPrice();
+
+  const handleApplyCoupon = async () => {
+    if (!couponCode.trim()) return;
+    setApplying(true);
+    try {
+      const res = await resolveCoupon({ code: couponCode.trim(), subtotal });
+      if (res.valid) {
+        setCoupon({
+          code: res.coupon.code,
+          type: res.coupon.type,
+          value: res.coupon.value,
+          label: res.coupon.label,
+        });
+        toast.success(`Cupom ${res.coupon.code} aplicado!`);
+        setCouponCode("");
+      } else {
+        toast.error(couponRejectionMessage(res.reason));
+      }
+    } catch (e) {
+      toast.error("Erro ao aplicar cupom");
+    } finally {
+      setApplying(false);
+    }
+  };
 
   const formatPrice = (value: number) => {
     return value.toLocaleString("pt-BR", {
@@ -77,28 +107,20 @@ export const CartDrawerEditorial = () => {
 
                   {/* Info */}
                   <div className="flex-1 flex flex-col min-w-0">
-                    {/* Vendor */}
                     <p className="text-[10px] uppercase tracking-[0.14em] text-[#B07B1E] font-medium mb-1">
                       {item.vendor}
                     </p>
-
-                    {/* Title */}
                     <h4 className="font-serif text-[15px] text-[#0F3A3E] leading-tight mb-2 line-clamp-2">
                       {item.title}
                     </h4>
-
                     {item.variationName && (
                       <p className="text-[11px] text-[#75827E] mb-1">
                         Variação: {item.variationName}
                       </p>
                     )}
-
-                    {/* Price */}
                     <p className="text-[15px] font-medium text-[#0F3A3E] mb-3">
                       {formatPrice(item.price)}
                     </p>
-
-                    {/* Quantity & Remove */}
                     <div className="flex items-center justify-between mt-auto">
                       <div className="flex items-center border border-[#E0D8C7] bg-white">
                         <button
@@ -117,7 +139,6 @@ export const CartDrawerEditorial = () => {
                           <Plus className="h-3 w-3 text-[#0F3A3E]" />
                         </button>
                       </div>
-
                       <button
                         onClick={() => removeItem(item.id)}
                         className="text-[#9AA39F] hover:text-[#C4433A] transition-colors p-1"
@@ -129,14 +150,43 @@ export const CartDrawerEditorial = () => {
                 </div>
               ))}
 
-              {/* "Leve junto": complemento por regra determinística. Fica aqui,
-                  e não no checkout, porque este drawer É o carrinho na prática:
-                  nada no site linka /carrinho e o CTA daqui vai direto pro
-                  /checkout. Não renderiza nada quando nenhuma regra casa. */}
               <CartComplements variant="drawer" />
 
-              {/* Resumo: subtotal + aviso de que frete/desconto vêm do checkout */}
+              {/* Cupom + Resumo */}
               <div className="mt-2 pt-5 border-t border-[#E0D8C7]">
+                <div className="mb-4">
+                  <label className="text-[11px] uppercase tracking-[0.18em] text-[#51635F] font-semibold mb-2 block">
+                    Cupom de desconto
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={couponCode}
+                      onChange={(e) => setCouponCode(e.target.value)}
+                      placeholder="Código do cupom"
+                      disabled={!!coupon || applying}
+                      className="flex-1 bg-white border border-[#E9E1D2] px-3 py-2 text-sm outline-none focus:border-[#B07B1E] disabled:bg-[#F5F3EE]"
+                    />
+                    <button
+                      onClick={handleApplyCoupon}
+                      disabled={!!coupon || applying || !couponCode.trim()}
+                      className="px-4 py-2 bg-[#0F3A3E] text-white text-xs uppercase tracking-[0.14em] font-semibold hover:bg-[#16504F] transition-colors disabled:opacity-50"
+                    >
+                      {applying ? <Loader2 className="h-4 w-4 animate-spin" /> : coupon ? <Check className="h-4 w-4" /> : "Aplicar"}
+                    </button>
+                  </div>
+                  {coupon && (
+                    <div className="mt-2 flex items-center justify-between text-[#1c6b4a] text-xs font-medium">
+                      <span className="flex items-center gap-1">
+                        <Tag className="h-3 w-3" /> Cupom {coupon.code} aplicado
+                      </span>
+                      <button onClick={() => setCoupon(null)} className="text-[#c4433a] hover:underline">
+                        Remover
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] text-[#51635F]">Subtotal</span>
                   <span className="text-[15px] text-[#0F3A3E]">
@@ -144,34 +194,14 @@ export const CartDrawerEditorial = () => {
                   </span>
                 </div>
                 <p className="text-[12px] text-[#75827E]">
-                  Frete e descontos calculados no checkout
+                  Frete calculado no checkout
                 </p>
-              </div>
-
-              {/* Continuar Comprando */}
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-full text-center text-[12px] text-[#51635F] hover:text-[#0F3A3E] transition-colors mt-4"
-              >
-                Continuar Comprando
-              </button>
-
-              {/* Trust */}
-              <div className="flex items-center justify-center gap-4 mt-4 pt-4 border-t border-[#E0D8C7]">
-                <span className="text-[10px] text-[#9AA39F] uppercase tracking-wider">
-                  Pagamento Seguro
-                </span>
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">PIX</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">VISA</span>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 border border-[#C4BBA8] text-[#75827E]">MC</span>
-                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer fixo: Subtotal + botão CTA sempre visível (não rola). */}
+        {/* Footer */}
         {items.length > 0 && (
           <div className="px-6 py-4 border-t border-[#E0D8C7] bg-[#F8F4EA]">
             <div className="flex items-center justify-between mb-3">
@@ -186,15 +216,6 @@ export const CartDrawerEditorial = () => {
               className="block w-full bg-[#0F3A3E] text-white py-4 text-center text-[12px] uppercase tracking-[0.18em] font-semibold hover:bg-[#16504F] transition-colors"
             >
               Finalizar Compra
-            </Link>
-            {/* Única entrada para /carrinho no site inteiro. A página tem o que
-                este drawer não calcula: cupom, frete e total. */}
-            <Link
-              to="/carrinho"
-              onClick={() => setIsOpen(false)}
-              className="block w-full mt-3 text-center text-[12px] text-[#51635F] underline decoration-[#C4BBA8] underline-offset-4 hover:text-[#0F3A3E] transition-colors"
-            >
-              Ver carrinho completo
             </Link>
           </div>
         )}
