@@ -17,10 +17,10 @@ async function checkAdminRoute(page: Page, requestedPath: string, expectedHeadin
 }
 
 test.describe("Smoke Admin", () => {
-  test.use({ storageState: "tmp/admin-auth.json" });
+  test.use({ storageState: "tmp/smoke-admin-storage.json" });
 
   test("carrega dashboard", async ({ page }) => {
-    await checkAdminRoute(page, "/admin", "Usuários Admin");
+    await checkAdminRoute(page, "/admin", "Central de Gestão");
   });
 
   test("carrega NF-e", async ({ page }) => {

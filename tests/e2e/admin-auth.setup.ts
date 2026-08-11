@@ -4,6 +4,14 @@ import { dirname, join } from "node:path";
 import fs from "node:fs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+// Carrega .env da raiz do projeto se existir (ignite localmente).
+try {
+  process.loadEnvFile(new URL("../../.env", import.meta.url));
+} catch {
+  // .env ausente — segue com o que já estiver no ambiente (ex.: CI).
+}
+
 const STORAGE_STATE_PATH = join(__dirname, "..", "..", "tmp", "smoke-admin-storage.json");
 
 const ADMIN_EMAIL = process.env.ADMIN_SMOKE_EMAIL ?? "";
