@@ -416,7 +416,7 @@ export function NfeSection() {
                 type="text"
                 value={form.ncm_padrao}
                 onChange={(e) => setField("ncm_padrao", e.target.value)}
-                placeholder="3304.99.90"
+                placeholder="3305.10.00"
                 maxLength={10}
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
               />

@@ -128,6 +128,44 @@ function paymentType(method: string): string {
 }
 
 // =====================================================
+// RATEIO DE DESCONTO POR ITEM
+// =====================================================
+
+/**
+ * Distribui o desconto total do pedido proporcionalmente entre os itens.
+ * O último item absorve qualquer centavo residual de arredondamento,
+ * garantindo que a soma dos descontos rateados seja EXATAMENTE igual
+ * ao desconto do pedido (evita rejeição da SEFAZ por divergência de R$ 0,01).
+ *
+ * Exportado para permitir testes unitários isolados.
+ */
+export function distributeDiscount<T extends { valorTotal: number }>(
+  items: readonly T[],
+  discount: number,
+): Array<T & { desconto?: number }> {
+  if (discount <= 0 || items.length === 0) return items as Array<T & { desconto?: number }>;
+
+  const totalProd = items.reduce((s, i) => s + i.valorTotal, 0);
+  if (totalProd <= 0) return items as Array<T & { desconto?: number }>;
+
+  let allocatedDiscount = 0;
+  return items.map((item, idx) => {
+    let itemDiscount = 0;
+    if (idx === items.length - 1) {
+      // Último item absorve o resíduo: garante soma EXATA
+      itemDiscount = Number((discount - allocatedDiscount).toFixed(2));
+    } else {
+      itemDiscount = Number(((item.valorTotal / totalProd) * discount).toFixed(2));
+      allocatedDiscount += itemDiscount;
+    }
+    return {
+      ...item,
+      ...(itemDiscount > 0 ? { desconto: itemDiscount } : {}),
+    };
+  });
+}
+
+// =====================================================
 // OBTER CONFIGURAÇÕES NF-E
 // =====================================================
 
@@ -585,26 +623,33 @@ export const emitNFe = createServerFn({ method: "POST" })
         };
       }
 
+      // Separa itens válidos de erros de validação
+      const itemError = notaasItemsOrErrors.find((i: any) => i && !("descricao" in i));
+      if (itemError) return itemError as NfeResult;
+
+      const baseItems = notaasItemsOrErrors as Array<{
+        descricao: string;
+        valorTotal: number;
+        [k: string]: unknown;
+      }>;
+
+      const totalProd = baseItems.reduce((s, i) => s + i.valorTotal, 0);
+      const shippingPrice = Number(order.shipping_price) || 0;
+      const discount = Number(order.discount) || 0;
+      const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
+
+      // Desconto (cupom) é declarado por item na notaas (items[].desconto —
+      // não existe desconto na raiz). Utiliza distributeDiscount para rateio
+      // proporcional com ajuste de resíduo de centavos no último item.
+      const notaasItemsFinal = distributeDiscount(baseItems, discount);
+
       if (
-        settings.modalidade_frete === undefined ||
         settings.modalidade_frete === null ||
         isNaN(Number(settings.modalidade_frete))
       ) {
         return {
           success: false,
           error: "Modalidade de frete não configurada em Configurações > NF-e.",
-        };
-      }
-
-      const totalProd = notaasItems.reduce((s, i) => s + i.valorTotal, 0);
-      const shippingPrice = Number(order.shipping_price) || 0;
-      const discount = Number(order.discount) || 0;
-      const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
-
-      if (!order.shipping_ibge_code) {
-        return {
-          success: false,
-          error: `Pedido ${String(order.id).slice(0, 8).toUpperCase()}: código IBGE do município de entrega não informado. Rode o backfill ou preencha manualmente antes de emitir.`,
         };
       }
 
@@ -615,8 +660,10 @@ export const emitNFe = createServerFn({ method: "POST" })
         tipoOperacao: 1,
         finalidade: 1,
         consumidorFinal: 1,
-        presencaComprador: 1,
+        presencaComprador: 2,
+        indicadorIntermediador: 0,
         tipoEmissao: 1,
+        valorFrete: shippingPrice,
         emit: {
           cnpj: formatCNPJ(settings.cnpj),
           inscricaoEstadual: settings.inscricao_estadual,
@@ -650,7 +697,7 @@ export const emitNFe = createServerFn({ method: "POST" })
             cep: formatCEP(shippingAddr?.zipCode || shippingAddr?.cep || ""),
           },
         },
-        items: notaasItems,
+        items: notaasItemsFinal,
         pagamentos: [{ tipoPagamento: paymentType(order.payment_method), valor: totalNf }],
         transporte: {
           modalidadeFrete: Number(settings.modalidade_frete),
