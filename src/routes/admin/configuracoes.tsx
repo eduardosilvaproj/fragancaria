@@ -126,7 +126,6 @@ function AdminConfiguracoes() {
     { id: "frete", label: "Frete", icon: Truck },
     { id: "email", label: "Email", icon: Mail },
     { id: "seguranca", label: "Segurança", icon: Shield },
-    { id: "integracoes", label: "Integrações", icon: Globe },
     { id: "vitrine", label: "Vitrine da Home", icon: LayoutGrid },
     { id: "nfe", label: "Nota Fiscal", icon: FileText },
     { id: "afiliados", label: "Afiliados", icon: Users },
@@ -672,38 +671,6 @@ function AdminConfiguracoes() {
                     defaultValue="noreply@fragranciaria.com"
                     className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
                   />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeSection === "integracoes" && (
-            <div className="bg-white border border-[#E9E1D2] p-6">
-              <h3 className="font-serif text-lg text-[#0F3A3E] mb-6">
-                Integrações
-              </h3>
-
-              <div className="space-y-4">
-                <div className="border border-[#E9E1D2] rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-[#0F3A3E]">Google Analytics</p>
-                      <p className={cn("text-sm", import.meta.env.VITE_GA_MEASUREMENT_ID ? "text-emerald-600" : "text-[#8A938E]")}>
-                        {import.meta.env.VITE_GA_MEASUREMENT_ID ? "✓ Configurado" : "Não configurado"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="border border-[#E9E1D2] rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-[#0F3A3E]">Meta Pixel</p>
-                      <p className={cn("text-sm", import.meta.env.VITE_META_PIXEL_ID ? "text-emerald-600" : "text-[#8A938E]")}>
-                        {import.meta.env.VITE_META_PIXEL_ID ? "✓ Configurado" : "Não configurado"}
-                      </p>
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>
