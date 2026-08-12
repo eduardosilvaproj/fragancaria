@@ -43,7 +43,7 @@ export const Route = createFileRoute("/")({
       { property: "og:title", content: "Fragranciaria | Especialista em Cabelo Profissional" },
       { property: "og:description", content: "A excelência do salão na sua casa." },
       { property: "og:type", content: "website" },
-      { property: "og:url", content: "https://fragranciaria.com.br" },
+      { property: "og:url", content: "https://fragranciaria.com" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "robots", content: "index, follow" },
       { name: "keywords", content: "produtos capilares, shampoo profissional, coloração, tratamento capilar, Kérastase, Wella, L'Oréal, Schwarzkopf" },

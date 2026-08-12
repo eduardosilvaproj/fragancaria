@@ -117,10 +117,10 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[], baseUrl: strin
 export function generateOrganizationSchema(org?: Partial<OrganizationSchemaData>): object {
   const defaults: OrganizationSchemaData = {
     name: "Fragranciaria",
-    url: "https://fragranciaria.com.br",
-    logo: "https://fragranciaria.com.br/images/logo.png",
+    url: "https://fragranciaria.com",
+    logo: "https://fragranciaria.com/images/logo.png",
     description: "Especialista em cabelo profissional. Curadoria dos melhores cosméticos para cabelos.",
-    email: "contato@fragranciaria.com.br",
+    email: "contato@fragranciaria.com",
     socialProfiles: [
       "https://instagram.com/fragranciaria",
       "https://facebook.com/fragranciaria",
@@ -172,7 +172,7 @@ export function generateOrganizationSchema(org?: Partial<OrganizationSchemaData>
  * Uses default Fragranciaria URL if none provided
  */
 export function generateWebsiteSchema(baseUrl?: string): object {
-  const url = baseUrl || "https://fragranciaria.com.br";
+  const url = baseUrl || "https://fragranciaria.com";
   return {
     "@context": "https://schema.org",
     "@type": "WebSite",

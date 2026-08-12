@@ -417,6 +417,7 @@ export async function sendOrderConfirmationEmail(
 }
 
 export type AdminSaleEmailInput = {
+  destination: string;
   orderId: string;
   total: number;
   paymentMethod: string;
@@ -431,11 +432,12 @@ export async function sendAdminSaleNotificationEmail(input: AdminSaleEmailInput)
     return;
   }
   const resend = new Resend(apiKey);
+  const base = process.env.PUBLIC_URL || "https://fragranciaria.com";
 
   try {
     await resend.emails.send({
-      from: "Fragranciaria <contato@fragranciaria.com.br>",
-      to: "contato@fragranciaria.com.br",
+      from: "Fragranciaria <naoresponda@fragranciaria.com>",
+      to: [input.destination],
       subject: `🚨 Novo Pedido: #${input.orderId.slice(0, 8)} - ${formatBRL(input.total)}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -448,7 +450,7 @@ export async function sendAdminSaleNotificationEmail(input: AdminSaleEmailInput)
             <li><strong>Cliente:</strong> ${input.customerName}</li>
             <li><strong>Itens:</strong> ${input.itemsCount}</li>
           </ul>
-          <a href="https://fragranciaria.com.br/admin/pedidos/${input.orderId}" style="background: #0F3A3E; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block;">Ver pedido no Admin</a>
+          <a href="${base}/admin/pedidos/${input.orderId}" style="background: #0F3A3E; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block;">Ver pedido no Admin</a>
         </div>
       `,
     });

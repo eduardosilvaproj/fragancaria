@@ -99,10 +99,10 @@ function CadastroSucessoPage() {
           <p className="text-[13px] text-[#75827E] mt-10">
             Dúvidas? Entre em contato:{" "}
             <a
-              href="mailto:afiliados@fragranciaria.com.br"
+              href="mailto:afiliados@fragranciaria.com"
               className="text-[#B07B1E] hover:underline"
             >
-              afiliados@fragranciaria.com.br
+              afiliados@fragranciaria.com
             </a>
           </p>
         </div>

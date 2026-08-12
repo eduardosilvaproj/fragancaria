@@ -557,10 +557,10 @@ export const NavbarEditorial = () => {
                   Segunda a Sexta, 9h - 18h
                 </p>
                 <a
-                  href="mailto:contato@fragranciaria.com.br"
+                  href="mailto:contato@fragranciaria.com"
                   className="text-[#0F3A3E] text-sm hover:text-[#B07B1E] transition-colors"
                 >
-                  contato@fragranciaria.com.br
+                  contato@fragranciaria.com
                 </a>
               </div>
             </div>

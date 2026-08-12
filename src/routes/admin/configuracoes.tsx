@@ -669,7 +669,7 @@ function AdminConfiguracoes() {
                   </label>
                   <input
                     type="email"
-                    defaultValue="noreply@fragranciaria.com.br"
+                    defaultValue="noreply@fragranciaria.com"
                     className="w-full bg-[#F5F3EE] rounded-lg px-4 py-3 text-sm outline-none"
                   />
                 </div>

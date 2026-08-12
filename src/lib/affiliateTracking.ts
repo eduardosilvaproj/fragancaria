@@ -253,7 +253,7 @@ export async function createAffiliateSale(params: {
 export function buildAffiliateUrl(code: string, productId?: string): string {
   const baseUrl = typeof window !== 'undefined'
     ? window.location.origin
-    : 'https://fragranciaria.com.br';
+    : 'https://fragranciaria.com';
 
   if (productId) {
     return `${baseUrl}/produto/${productId}?ref=${code}`;

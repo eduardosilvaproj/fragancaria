@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireRole } from "@/lib/admin-auth";
+import { ADMIN_AREA_ROLES } from "@/lib/admin-roles";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { logAdminAction } from "@/lib/admin-audit";
 import { sendAdminSaleNotificationEmail } from "@/lib/email.functions";
@@ -11,14 +12,14 @@ export type NotificationSetting = {
   id: number;
   event: NotificationEvent;
   audience: 'customer' | 'internal';
-  channel: 'email' | 'whatsapp' | 'telegram';
+  channel: 'email' | 'whatsapp' | 'whatsapp_group' | 'telegram';
   destination: string | null;
   enabled: boolean;
   template_ref: string | null;
 };
 
 export const listNotificationSettings = createServerFn({ method: "GET" }).handler(async () => {
-  await requireAdmin();
+  await requireRole(ADMIN_AREA_ROLES.notifications);
   const { data, error } = await (supabaseAdmin as any).from("notification_settings").select("*");
   if (error) throw error;
   return data as NotificationSetting[];
@@ -29,13 +30,13 @@ export const upsertNotificationSetting = createServerFn({ method: "POST" })
     id: z.number().optional(),
     event: z.string(),
     audience: z.enum(['customer', 'internal']),
-    channel: z.enum(['email', 'whatsapp', 'telegram']),
+    channel: z.enum(['email', 'whatsapp', 'whatsapp_group', 'telegram']),
     destination: z.string().optional().nullable(),
     enabled: z.boolean(),
     template_ref: z.string().optional().nullable(),
   }))
   .handler(async ({ data }) => {
-    await requireAdmin();
+    await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: before } = await (supabaseAdmin as any).from("notification_settings").select("*").eq("id", data.id || 0).maybeSingle();
 
     const { data: result, error } = await (supabaseAdmin as any).from("notification_settings").upsert({
@@ -52,7 +53,7 @@ export const upsertNotificationSetting = createServerFn({ method: "POST" })
 export const deleteNotificationSetting = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number() }))
   .handler(async ({ data }) => {
-    await requireAdmin();
+    await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: before } = await (supabaseAdmin as any).from("notification_settings").select("*").eq("id", data.id).single();
     const { error } = await (supabaseAdmin as any).from("notification_settings").delete().eq("id", data.id);
     if (error) throw error;
@@ -63,7 +64,7 @@ export const deleteNotificationSetting = createServerFn({ method: "POST" })
 export const sendTestNotification = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number() }))
   .handler(async ({ data }) => {
-    await requireAdmin();
+    await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: setting, error } = await (supabaseAdmin as any)
       .from("notification_settings")
       .select("*")
@@ -71,13 +72,12 @@ export const sendTestNotification = createServerFn({ method: "POST" })
       .single();
 
     if (error || !setting) throw new Error("Regra não encontrada");
-
-    // Payload de exemplo
-    const payload = { orderId: "TESTE1234" };
+    if (!setting.destination) throw new Error("Destino não configurado");
 
     // Dispara via dispatch
     if (setting.channel === 'email' && setting.audience === 'internal') {
         await sendAdminSaleNotificationEmail({
+            destination: setting.destination,
             orderId: "TESTE1234 (TESTE)",
             total: 199.90,
             paymentMethod: "PIX",
@@ -100,9 +100,8 @@ export async function dispatchNotification(event: NotificationEvent, payload: { 
 
     if (error || !settings || settings.length === 0) return;
 
-
     for (const setting of settings) {
-      if (setting.channel === 'email' && setting.audience === 'internal') {
+      if (setting.channel === 'email' && setting.audience === 'internal' && setting.destination) {
         // Busca dados do pedido
         const { data: order } = await supabaseAdmin
           .from("orders")
@@ -112,6 +111,7 @@ export async function dispatchNotification(event: NotificationEvent, payload: { 
 
         if (order) {
           await sendAdminSaleNotificationEmail({
+            destination: setting.destination,
             orderId: order.id,
             total: order.total || 0,
             paymentMethod: order.payment_method_id || "Desconhecido",
@@ -120,7 +120,6 @@ export async function dispatchNotification(event: NotificationEvent, payload: { 
           });
         }
       }
-      // Outros canais são no-op nesta rodada
     }
   } catch (err) {
     console.error(`[dispatchNotification] falha ao disparar ${event}:`, err);
