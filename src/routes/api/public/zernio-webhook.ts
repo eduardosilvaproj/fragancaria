@@ -244,9 +244,21 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
           });
         }
 
-        // Se não for texto, loga o payload e retorna 200
+        // Se não for texto ou for um clique de botão, processa
         if (!msg.text) {
           console.log("[zernio-webhook] payload nao-texto:", JSON.stringify(payload));
+          return new Response(JSON.stringify({ received: true }), {
+            status: 200,
+            headers: { ...corsHeaders, "content-type": "application/json" },
+          });
+        }
+
+        // Tratamento de botões de produto
+        const text = msg.text.trim();
+        if (text.startsWith("VER_PRODUTO_")) {
+          const productId = text.replace("VER_PRODUTO_", "");
+          const productUrl = `https://www.fragranciaria.com/produto/${productId}`;
+          await sendZernioMessage(msg.conversationId, payload.account.id, `Aqui está o produto: ${productUrl}`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { ...corsHeaders, "content-type": "application/json" },
