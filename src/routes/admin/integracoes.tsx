@@ -22,7 +22,38 @@ function AdminIntegracoes() {
   const upsertFn = useServerFn(upsertZernioAccount);
   const deleteFn = useServerFn(deleteZernioAccount);
 
-  // ... rest of the code ...
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ["zernio-accounts"],
+    queryFn: () => listFn({}),
+  });
+
+  const [form, setForm] = useState<Partial<ZernioAccount>>({
+    platform: 'instagram',
+    label: '',
+    account_id: '',
+    is_active: true
+  });
+
+  const upsertMutation = useMutation({
+    mutationFn: (data: any) => upsertFn({ data }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zernio-accounts"] });
+      toast.success("Conta salva!");
+      setForm({ platform: 'instagram', label: '', account_id: '', is_active: true });
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao salvar"),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => deleteFn({ data: { id } }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["zernio-accounts"] });
+      toast.success("Conta removida!");
+    },
+    onError: (e: any) => toast.error(e?.message || "Erro ao remover"),
+  });
+
+  if (isLoading) return <div>Carregando...</div>;
 
   return (
     <div className="p-6 md:p-8 max-w-4xl">
