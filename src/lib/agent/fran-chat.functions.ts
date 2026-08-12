@@ -41,7 +41,13 @@ const inputSchema = z.object({
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
 
 export type FranChatResult =
-  | { success: true; resposta: string; historico: FranHistoryItem[]; produtoPrincipal?: { id: string; name: string } }
+  | {
+      success: true;
+      resposta: string;
+      historico: FranHistoryItem[];
+      produtoPrincipal?: { id: string; name: string };
+      siteLink?: string;
+    }
   | { success: false; error: string }
   | { success: false; error: "human_mode"; resposta: string };
 
@@ -245,6 +251,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
       let respostaFinal = "";
       let produtoPrincipal: { id: string; name: string } | undefined;
+      let siteLink: string | undefined;
 
       for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
         const response = await client.messages.create({
@@ -261,6 +268,12 @@ export const chatWithFran = createServerFn({ method: "POST" })
             .map((block) => (block as { type: "text"; text: string }).text)
             .join("\n")
             .trim();
+
+          // Detecta links da loja no texto
+          const siteMatch = respostaFinal.match(/https?:\/\/(www\.)?fragranciaria\.com(\/\S*)?/);
+          if (siteMatch) {
+            siteLink = siteMatch[0];
+          }
           break;
         }
 
@@ -354,6 +367,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
         success: true,
         resposta: respostaFinal,
         produtoPrincipal,
+        siteLink,
         historico: [
           ...data.historico,
           { role: "user", content: data.mensagem },
