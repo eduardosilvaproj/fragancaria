@@ -60,6 +60,36 @@ export const deleteNotificationSetting = createServerFn({ method: "POST" })
     return { success: true };
   });
 
+export const sendTestNotification = createServerFn({ method: "POST" })
+  .validator(z.object({ id: z.number() }))
+  .handler(async ({ data }) => {
+    await requireAdmin();
+    const { data: setting, error } = await (supabaseAdmin as any)
+      .from("notification_settings")
+      .select("*")
+      .eq("id", data.id)
+      .single();
+
+    if (error || !setting) throw new Error("Regra não encontrada");
+
+    // Payload de exemplo
+    const payload = { orderId: "TESTE1234" };
+
+    // Dispara via dispatch
+    if (setting.channel === 'email' && setting.audience === 'internal') {
+        await sendAdminSaleNotificationEmail({
+            orderId: "TESTE1234 (TESTE)",
+            total: 199.90,
+            paymentMethod: "PIX",
+            customerName: "Cliente de Teste",
+            itemsCount: 2
+        });
+    }
+
+    await logAdminAction("notification.test", { settingId: data.id, event: setting.event });
+    return { success: true };
+  });
+
 export async function dispatchNotification(event: NotificationEvent, payload: { orderId: string }) {
   try {
     const { data: settings, error } = await (supabaseAdmin as any)

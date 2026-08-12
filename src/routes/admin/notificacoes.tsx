@@ -6,10 +6,11 @@ import {
   listNotificationSettings,
   upsertNotificationSetting,
   deleteNotificationSetting,
+  sendTestNotification,
   type NotificationSetting,
 } from "@/lib/notifications.functions";
 import { toast } from "sonner";
-import { Bell, Plus, Trash2, Check, X, AlertCircle } from "lucide-react";
+import { Bell, Plus, Trash2, Check, X, Mail, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/notificacoes")({
@@ -21,6 +22,7 @@ function AdminNotificacoes() {
   const listFn = useServerFn(listNotificationSettings);
   const upsertFn = useServerFn(upsertNotificationSetting);
   const deleteFn = useServerFn(deleteNotificationSetting);
+  const sendTestFn = useServerFn(sendTestNotification);
 
   const { data: settings = [], isLoading } = useQuery({
     queryKey: ["notification-settings"],
@@ -50,6 +52,12 @@ function AdminNotificacoes() {
       toast.success("Regra removida!");
     },
     onError: (e: any) => toast.error(e?.message || "Erro ao remover"),
+  });
+
+  const testMutation = useMutation({
+    mutationFn: (id: number) => sendTestFn({ data: { id } }),
+    onSuccess: () => toast.success("Notificação de teste enviada com sucesso!"),
+    onError: (e: any) => toast.error(e?.message || "Falha ao enviar teste"),
   });
 
   if (isLoading) return <div>Carregando...</div>;
@@ -110,7 +118,14 @@ function AdminNotificacoes() {
                   </button>
                 </td>
                 <td className="p-4 text-right">
-                  <button onClick={() => deleteMutation.mutate(s.id)} className="text-red-500"><Trash2 className="h-4 w-4" /></button>
+                  <div className="flex gap-2 justify-end">
+                    <button onClick={() => testMutation.mutate(s.id)} className="text-blue-500 hover:text-blue-700" title="Enviar teste">
+                      <Mail className="h-4 w-4" />
+                    </button>
+                    <button onClick={() => deleteMutation.mutate(s.id)} className="text-red-500 hover:text-red-700">
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
