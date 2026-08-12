@@ -46,6 +46,7 @@ import { Route as AdminRedesSociaisRouteImport } from './routes/admin/redes-soci
 import { Route as AdminProdutosRouteImport } from './routes/admin/produtos'
 import { Route as AdminPedidosRouteImport } from './routes/admin/pedidos'
 import { Route as AdminPagamentosRouteImport } from './routes/admin/pagamentos'
+import { Route as AdminNotificacoesRouteImport } from './routes/admin/notificacoes'
 import { Route as AdminNfeRouteImport } from './routes/admin/nfe'
 import { Route as AdminLoyaltyRouteImport } from './routes/admin/loyalty'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
@@ -267,6 +268,11 @@ const AdminPedidosRoute = AdminPedidosRouteImport.update({
 const AdminPagamentosRoute = AdminPagamentosRouteImport.update({
   id: '/pagamentos',
   path: '/pagamentos',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminNotificacoesRoute = AdminNotificacoesRouteImport.update({
+  id: '/notificacoes',
+  path: '/notificacoes',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminNfeRoute = AdminNfeRouteImport.update({
@@ -500,6 +506,7 @@ export interface FileRoutesByFullPath {
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/nfe': typeof AdminNfeRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -574,6 +581,7 @@ export interface FileRoutesByTo {
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/nfe': typeof AdminNfeRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/redes-sociais': typeof AdminRedesSociaisRoute
@@ -649,6 +657,7 @@ export interface FileRoutesById {
   '/admin/logs': typeof AdminLogsRoute
   '/admin/loyalty': typeof AdminLoyaltyRoute
   '/admin/nfe': typeof AdminNfeRoute
+  '/admin/notificacoes': typeof AdminNotificacoesRoute
   '/admin/pagamentos': typeof AdminPagamentosRoute
   '/admin/pedidos': typeof AdminPedidosRoute
   '/admin/produtos': typeof AdminProdutosRouteWithChildren
@@ -727,6 +736,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/loyalty'
     | '/admin/nfe'
+    | '/admin/notificacoes'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -801,6 +811,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/loyalty'
     | '/admin/nfe'
+    | '/admin/notificacoes'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/redes-sociais'
@@ -875,6 +886,7 @@ export interface FileRouteTypes {
     | '/admin/logs'
     | '/admin/loyalty'
     | '/admin/nfe'
+    | '/admin/notificacoes'
     | '/admin/pagamentos'
     | '/admin/pedidos'
     | '/admin/produtos'
@@ -1213,6 +1225,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPagamentosRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/notificacoes': {
+      id: '/admin/notificacoes'
+      path: '/notificacoes'
+      fullPath: '/admin/notificacoes'
+      preLoaderRoute: typeof AdminNotificacoesRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/nfe': {
       id: '/admin/nfe'
       path: '/nfe'
@@ -1508,6 +1527,7 @@ interface AdminRouteChildren {
   AdminLogsRoute: typeof AdminLogsRoute
   AdminLoyaltyRoute: typeof AdminLoyaltyRoute
   AdminNfeRoute: typeof AdminNfeRoute
+  AdminNotificacoesRoute: typeof AdminNotificacoesRoute
   AdminPagamentosRoute: typeof AdminPagamentosRoute
   AdminPedidosRoute: typeof AdminPedidosRoute
   AdminProdutosRoute: typeof AdminProdutosRouteWithChildren
@@ -1534,6 +1554,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminLogsRoute: AdminLogsRoute,
   AdminLoyaltyRoute: AdminLoyaltyRoute,
   AdminNfeRoute: AdminNfeRoute,
+  AdminNotificacoesRoute: AdminNotificacoesRoute,
   AdminPagamentosRoute: AdminPagamentosRoute,
   AdminPedidosRoute: AdminPedidosRoute,
   AdminProdutosRoute: AdminProdutosRouteWithChildren,

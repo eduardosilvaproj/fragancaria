@@ -105,6 +105,10 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
             );
             if (rpcErr) throw rpcErr;
           },
+          dispatchNotification: async (event, payload) => {
+            const { dispatchNotification } = await import("@/lib/notifications.functions");
+            await dispatchNotification(event, payload);
+          },
           createAffiliateSale: async (params) => {
             const commissionAmount = Number((params.commissionBase * params.commissionRate).toFixed(2));
             const { error } = await supabaseAdmin.from("affiliate_sales").insert({

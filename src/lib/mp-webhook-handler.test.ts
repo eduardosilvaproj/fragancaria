@@ -31,16 +31,21 @@ function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) 
   const emails: string[] = [];
   // Ids dos pedidos para os quais o cupom foi incrementado.
   const couponIncrements: string[] = [];
+  // Ids dos pedidos para os quais o dispatchNotification foi chamado.
+  const notifications: Array<{ event: string; orderId: string }> = [];
   const deps = {
     webhookSecret: undefined,
     isDevelopment: true,
     now: () => NOW,
-    log: { log: () => {}, error: () => {} },
+    log: { log: console.log, error: console.error },
     fetchPayment: async () => payment,
-    findOrderById: async (id: string) => (order && order.id === id ? order : null),
-    findOrderByPaymentId: async () => order,
+    findOrderById: async (id: string) => (order && order.id === id ? { ...order } : null),
+    findOrderByPaymentId: async () => (order ? { ...order } : null),
     updateOrder: async (orderId: string, patch: any) => {
       updates.push({ orderId, patch });
+      if (order) {
+        Object.assign(order, patch);
+      }
     },
     sendPaymentConfirmedEmail: async (orderId: string) => {
       emails.push(orderId);
@@ -48,8 +53,11 @@ function makeDeps(order: WebhookOrder | null, payment: Record<string, unknown>) 
     incrementCouponUsage: async (orderId: string) => {
       couponIncrements.push(orderId);
     },
+    dispatchNotification: async (event: 'order.approved' | 'order.shipped' | 'order.created', payload: { orderId: string }) => {
+      notifications.push({ event, orderId: payload.orderId });
+    },
   };
-  return { deps, updates, emails, couponIncrements };
+  return { deps, updates, emails, couponIncrements, notifications };
 }
 
 test("aprovado com snapshot completo vira paid", async () => {
@@ -264,6 +272,32 @@ test("pagamento rejeitado NÃO envia e-mail de confirmação", async () => {
   await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 444 } }), deps);
 
   assert.deepEqual(emails, []);
+});
+
+test("notificação de venda aprovada é disparada exatamente uma vez (idempotência)", async () => {
+  const order: WebhookOrder = {
+    id: "order-notif",
+    status: "pending",
+    payment_status: "pending",
+    payment_id: "777",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, notifications } = makeDeps(order, {
+    id: 777,
+    status: "approved",
+    external_reference: "order-notif",
+  });
+
+  // Primeira vez: aprova
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 777 } }), deps);
+  assert.equal(notifications.length, 1);
+  assert.equal(notifications[0].event, 'order.approved');
+  assert.equal(notifications[0].orderId, 'order-notif');
+
+  // Segunda vez (reentrega): nada acontece (webhook-handler.ts já faz dedup)
+  await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 777 } }), deps);
+  assert.equal(notifications.length, 1);
 });
 
 test("webhook funciona sem sendPaymentConfirmedEmail configurado", async () => {

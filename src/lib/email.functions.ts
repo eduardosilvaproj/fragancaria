@@ -415,3 +415,45 @@ export async function sendOrderConfirmationEmail(
     return { success: false, error: err?.message || "Erro ao enviar e-mail" };
   }
 }
+
+export type AdminSaleEmailInput = {
+  orderId: string;
+  total: number;
+  paymentMethod: string;
+  customerName: string;
+  itemsCount: number;
+};
+
+export async function sendAdminSaleNotificationEmail(input: AdminSaleEmailInput) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) {
+    console.warn("[email] RESEND_API_KEY ausente, ignorando aviso interno de venda");
+    return;
+  }
+  const resend = new Resend(apiKey);
+
+  try {
+    await resend.emails.send({
+      from: "Fragranciaria <contato@fragranciaria.com.br>",
+      to: "contato@fragranciaria.com.br",
+      subject: `🚨 Novo Pedido: #${input.orderId.slice(0, 8)} - ${formatBRL(input.total)}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <h2 style="color: #0F3A3E;">Novo pedido aprovado!</h2>
+          <p>Um novo pedido foi confirmado com sucesso.</p>
+          <ul style="list-style: none; padding: 0;">
+            <li><strong>Pedido:</strong> #${input.orderId.slice(0, 8)}</li>
+            <li><strong>Valor:</strong> ${formatBRL(input.total)}</li>
+            <li><strong>Pagamento:</strong> ${input.paymentMethod}</li>
+            <li><strong>Cliente:</strong> ${input.customerName}</li>
+            <li><strong>Itens:</strong> ${input.itemsCount}</li>
+          </ul>
+          <a href="https://fragranciaria.com.br/admin/pedidos/${input.orderId}" style="background: #0F3A3E; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block;">Ver pedido no Admin</a>
+        </div>
+      `,
+    });
+  } catch (err) {
+    console.error("[email] Falha ao enviar aviso interno de venda", err);
+  }
+}
+

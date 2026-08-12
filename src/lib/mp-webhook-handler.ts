@@ -81,6 +81,10 @@ export type MpWebhookDependencies = {
    * aplica o incremento.
    */
   incrementCouponUsage?: (orderId: string) => Promise<void>;
+  /**
+   * Dispara notificações configuradas pelo admin (canal-agnóstico).
+   */
+  dispatchNotification?: (event: 'order.approved', payload: { orderId: string }) => Promise<void>;
   now?: () => string;
   log?: {
     log: (message: string, context?: unknown) => void;
@@ -264,6 +268,8 @@ export async function handleMpWebhookRequest(
       !paymentConfirmedWithoutSnapshot &&
       existing.payment_status !== "approved";
 
+    log.log("[mp-webhook] debug", { acabouDeSerAprovado, mappedStatus: mapped.paymentStatus, existingStatus: existing.payment_status });
+
     if (acabouDeSerAprovado && deps.sendPaymentConfirmedEmail) {
       deps.sendPaymentConfirmedEmail(existing.id).catch((err) => {
         log.error("[mp-webhook] falha ao enviar e-mail de confirmação (ignorada)", {
@@ -279,6 +285,16 @@ export async function handleMpWebhookRequest(
     if (acabouDeSerAprovado && deps.incrementCouponUsage) {
       deps.incrementCouponUsage(existing.id).catch((err) => {
         log.error("[mp-webhook] falha ao incrementar usage_count do cupom (ignorada)", {
+          orderId: existing.id,
+          err,
+        });
+      });
+    }
+
+    // Notificações configuradas pelo admin
+    if (acabouDeSerAprovado && deps.dispatchNotification) {
+      deps.dispatchNotification('order.approved', { orderId: existing.id }).catch((err) => {
+        log.error("[mp-webhook] falha ao disparar notificação (ignorada)", {
           orderId: existing.id,
           err,
         });

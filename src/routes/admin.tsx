@@ -88,6 +88,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { label: "Financeiro", href: "/admin/financeiro", icon: DollarSign, area: "financeiro" },
   { label: "Logs", href: "/admin/logs", icon: History, area: "auditLogs" },
   { label: "NF-e", href: "/admin/nfe", icon: FileText, area: "nfe" },
+  { label: "Notificações", href: "/admin/notificacoes", icon: Bell, area: "notifications" },
   { label: "Pagamentos", href: "/admin/pagamentos", icon: CreditCard, area: "payments" },
   { label: "Usuários", href: "/admin/usuarios", icon: Users, area: "adminUsers" },
   { label: "Configurações", href: "/admin/configuracoes", icon: Settings, area: "storeSettings" },

@@ -34,6 +34,7 @@ export const ADMIN_AREA_ROLES: Record<string, readonly AdminRole[]> = {
   affiliatePayouts: [ADMIN_ROLES.total],
   affiliateSettings: [ADMIN_ROLES.total],
   storeSettings: [ADMIN_ROLES.total],
+  notifications: [ADMIN_ROLES.total],
   auditLogs: [ADMIN_ROLES.total],
   adminUsers: [ADMIN_ROLES.total],
 
