@@ -6,6 +6,7 @@ import { ShoppingBag, Minus, Plus, Trash2, X, Tag, Check, Loader2 } from "lucide
 import { CartComplements } from "./CartComplements";
 import { resolveCoupon } from "@/lib/coupon-resolve.functions";
 import { couponRejectionMessage } from "@/lib/coupon-messages";
+import { calculateDiscount, calculateOrderTotal } from "@/lib/commerce-config";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,11 @@ export const CartDrawerEditorial = () => {
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = getTotalPrice();
+
+  // Cálculo de desconto provisório (sem considerar método de pagamento no drawer,
+  // pois o usuário só escolhe no checkout).
+  const discount = calculateDiscount(subtotal, { coupon });
+  const total = calculateOrderTotal({ subtotal, shipping: 0, discount });
 
   const handleApplyCoupon = async () => {
     if (!couponCode.trim()) return;
@@ -189,13 +195,31 @@ export const CartDrawerEditorial = () => {
                   )}
                 </div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-[13px] text-[#51635F]">Subtotal</span>
-                  <span className="text-[15px] text-[#0F3A3E]">
-                    {formatPrice(subtotal)}
-                  </span>
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[13px] text-[#51635F]">Subtotal</span>
+                    <span className="text-[15px] text-[#0F3A3E]">
+                      {formatPrice(subtotal)}
+                    </span>
+                  </div>
+                  {discount > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-[13px] text-[#1c6b4a]">
+                        Desconto ({coupon?.label})
+                      </span>
+                      <span className="text-[15px] text-[#1c6b4a]">
+                        −{formatPrice(discount)}
+                      </span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between pt-1 border-t border-[#E9E1D2]">
+                    <span className="text-[13px] font-medium text-[#0F3A3E]">Total</span>
+                    <span className="text-[15px] font-semibold text-[#0F3A3E]">
+                      {formatPrice(total)}
+                    </span>
+                  </div>
                 </div>
-                <p className="text-[12px] text-[#75827E]">
+                <p className="text-[12px] text-[#75827E] mt-2">
                   Frete calculado no checkout
                 </p>
               </div>
@@ -207,9 +231,9 @@ export const CartDrawerEditorial = () => {
         {items.length > 0 && (
           <div className="px-6 py-4 border-t border-[#E0D8C7] bg-[#F8F4EA]">
             <div className="flex items-center justify-between mb-3">
-              <span className="text-[14px] font-medium text-[#0F3A3E]">Subtotal</span>
+              <span className="text-[14px] font-medium text-[#0F3A3E]">Total</span>
               <span className="font-serif text-[24px] text-[#0F3A3E]">
-                {formatPrice(subtotal)}
+                {formatPrice(total)}
               </span>
             </div>
             <Link
