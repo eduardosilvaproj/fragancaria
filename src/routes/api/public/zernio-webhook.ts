@@ -162,27 +162,11 @@ async function processFranResponse(payload: {
   );
 
   // No WhatsApp, envia botões de resposta para os produtos recomendados
+  /*
   if (payload.channel === "whatsapp" && result.produtoPrincipal?.id) {
-    // Busca até 3 produtos para gerar botões
-    const { searchProducts } = await import("@/lib/agent/product-search");
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const produtos = await searchProducts(supabaseAdmin, { query: result.produtoPrincipal.name, limit: 3 });
-
-    if (produtos.length > 0) {
-      const buttons = produtos.map((p) => ({
-        type: "reply" as const,
-        title: p.name.length > 20 ? p.name.substring(0, 17) + "..." : p.name,
-        payload: `VER_PRODUTO_${p.id}`,
-      }));
-
-      await sendZernioMessage(
-        payload.message.conversationId,
-        payload.account.id,
-        "Aqui estão os produtos que encontrei:",
-        { buttons },
-      );
-    }
+    // ...
   }
+  */
 
   // Grava a resposta da Fran no banco (sender='agent') e atualiza a conversa
   await (supabaseAdmin as any).from("messages").insert({
@@ -244,21 +228,9 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
           });
         }
 
-        // Se não for texto ou for um clique de botão, processa
+        // Se não for texto, loga o payload e retorna 200
         if (!msg.text) {
           console.log("[zernio-webhook] payload nao-texto:", JSON.stringify(payload));
-          return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { ...corsHeaders, "content-type": "application/json" },
-          });
-        }
-
-        // Tratamento de botões de produto
-        const text = msg.text.trim();
-        if (text.startsWith("VER_PRODUTO_")) {
-          const productId = text.replace("VER_PRODUTO_", "");
-          const productUrl = `https://www.fragranciaria.com/produto/${productId}`;
-          await sendZernioMessage(msg.conversationId, payload.account.id, `Aqui está o produto: ${productUrl}`);
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { ...corsHeaders, "content-type": "application/json" },
