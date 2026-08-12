@@ -21,6 +21,12 @@ export type AgentShippingResult =
   | { ok: true; opcoes: AgentShippingQuote[] }
   | { ok: false; erro: string };
 
+export type ShippingSummary = {
+  prazoDias: number;
+  transportadora: string;
+  servico: string;
+};
+
 // Busca produtos do catálogo pelo Supabase para montar o payload de cotação.
 // Retorna array vazio se nenhum produto for encontrado.
 export async function buscarProdutosParaCotacao(
@@ -86,14 +92,19 @@ export async function quoteShipping(
     return { ok: false, erro: erros[result.erro] ?? "Erro ao consultar frete." };
   }
 
+  // Filtra apenas a opção com menor prazo
+  const menorPrazo = result.opcoes.reduce((prev, curr) =>
+    curr.prazoDias < prev.prazoDias ? curr : prev
+  );
+
   return {
     ok: true,
-    opcoes: result.opcoes.map((o) => ({
-      servicoId: o.servicoId,
-      transportadora: o.transportadora,
-      servico: o.servico,
-      precoReais: o.precoCentavos / 100,
-      prazoDias: o.prazoDias,
-    })),
+    opcoes: [{
+      servicoId: menorPrazo.servicoId,
+      transportadora: menorPrazo.transportadora,
+      servico: menorPrazo.servico,
+      precoReais: 0,
+      prazoDias: menorPrazo.prazoDias,
+    }],
   };
 }

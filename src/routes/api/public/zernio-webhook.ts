@@ -31,12 +31,31 @@ async function sendZernioMessage(
   conversationId: string,
   accountId: string,
   message: string,
+  options?: {
+    buttons?: Array<{ type: "reply"; title: string; payload: string }>;
+    interactive?: {
+      type: "cta_url";
+      body: { text: string };
+      action: { name: "cta_url"; parameters: { display_text: string; url: string } };
+    };
+  },
 ): Promise<void> {
   const apiKey = process.env.ZERNIO_API_KEY;
   if (!apiKey) {
     console.error("[zernio-webhook] ZERNIO_API_KEY não configurada — não respondeu");
     return;
   }
+
+  const payload: any = { accountId };
+  if (options?.interactive) {
+    payload.interactive = options.interactive;
+  } else {
+    payload.message = message;
+    if (options?.buttons) {
+      payload.buttons = options.buttons;
+    }
+  }
+
   const res = await fetch(
     `${ZERNIO_API_BASE}/inbox/conversations/${conversationId}/messages`,
     {
@@ -45,7 +64,7 @@ async function sendZernioMessage(
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({ accountId, message }),
+      body: JSON.stringify(payload),
     },
   );
   if (!res.ok) {
@@ -142,6 +161,42 @@ async function processFranResponse(payload: {
     result.resposta,
   );
 
+  // No WhatsApp, envia botão CTA para o produto principal recomendado
+  if (
+    payload.channel === "whatsapp" &&
+    result.produtoPrincipal?.id
+  ) {
+    const productId = result.produtoPrincipal.id;
+    const productUrl = `https://fragranciaria.com/produto/${productId}`;
+    await sendZernioMessage(
+      payload.message.conversationId,
+      payload.account.id,
+      result.produtoPrincipal.name,
+      {
+        interactive: {
+          type: "cta_url",
+          body: { text: result.produtoPrincipal.name },
+          action: {
+            name: "cta_url",
+            parameters: {
+              display_text: "Ver produto",
+              url: productUrl,
+            },
+          },
+        },
+      },
+    );
+
+    // Loga o encaminhamento para auditoria
+    await (supabaseAdmin as any).from("messages").insert({
+      conversation_id: conv.id,
+      content: `[cta_url] ${productUrl}`,
+      sender: "agent",
+      message_type: "text",
+      read: false,
+    });
+  }
+
   // Grava a resposta da Fran no banco (sender='agent') e atualiza a conversa
   await (supabaseAdmin as any).from("messages").insert({
     conversation_id: conv.id,
@@ -196,6 +251,15 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
 
         // TRAVA ANTI-LOOP: só processa mensagens recebidas (incoming)
         if (msg.direction !== "incoming") {
+          return new Response(JSON.stringify({ received: true }), {
+            status: 200,
+            headers: { ...corsHeaders, "content-type": "application/json" },
+          });
+        }
+
+        // Se não for texto, loga o payload e retorna 200
+        if (!msg.text) {
+          console.log("[zernio-webhook] payload nao-texto:", JSON.stringify(payload));
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { ...corsHeaders, "content-type": "application/json" },

@@ -107,7 +107,10 @@ export async function searchProducts(
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score || a.product.name.localeCompare(b.product.name))
     .slice(0, limit)
-    .map((entry) => entry.product);
+    .map((entry) => ({
+      ...entry.product,
+      id: encodeURIComponent(entry.product.id),
+    }));
 }
 
 // Detalhe de um produto ativo por id. null se não existir ou estiver inativo.
@@ -123,5 +126,10 @@ export async function getProduct(
     .eq("is_active", true)
     .maybeSingle();
   if (error) throw new Error(error.message);
-  return data ? rowToAgentProduct(data as ProductRow) : null;
+  return data
+    ? {
+        ...rowToAgentProduct(data as ProductRow),
+        id: encodeURIComponent((data as ProductRow).id),
+      }
+    : null;
 }

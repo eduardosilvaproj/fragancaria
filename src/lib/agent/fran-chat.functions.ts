@@ -41,7 +41,7 @@ const inputSchema = z.object({
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
 
 export type FranChatResult =
-  | { success: true; resposta: string; historico: FranHistoryItem[] }
+  | { success: true; resposta: string; historico: FranHistoryItem[]; produtoPrincipal?: { id: string; name: string } }
   | { success: false; error: string }
   | { success: false; error: "human_mode"; resposta: string };
 
@@ -244,6 +244,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
       ];
 
       let respostaFinal = "";
+      let produtoPrincipal: { id: string; name: string } | undefined;
 
       for (let iteration = 0; iteration < MAX_TOOL_ITERATIONS; iteration += 1) {
         const response = await client.messages.create({
@@ -273,7 +274,11 @@ export const chatWithFran = createServerFn({ method: "POST" })
           try {
             if (block.name === "searchProducts") {
               const args = block.input as { query: string; limit?: number };
-              result = await searchProducts(supabaseAdmin, { query: args.query, limit: args.limit });
+              const products = await searchProducts(supabaseAdmin, { query: args.query, limit: args.limit });
+              result = products;
+              if (products.length > 0 && !produtoPrincipal) {
+                produtoPrincipal = { id: products[0].id, name: products[0].name };
+              }
             } else if (block.name === "getProduct") {
               const args = block.input as { id: string };
               result = await getProduct(supabaseAdmin, args.id);
@@ -348,6 +353,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
       return {
         success: true,
         resposta: respostaFinal,
+        produtoPrincipal,
         historico: [
           ...data.historico,
           { role: "user", content: data.mensagem },
