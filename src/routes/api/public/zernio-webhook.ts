@@ -59,6 +59,7 @@ async function sendZernioMessage(
 async function processFranResponse(payload: {
   message: { conversationId: string; text?: string; id: string };
   account: { id: string };
+  channel: "instagram" | "whatsapp";
 }): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
@@ -124,7 +125,7 @@ async function processFranResponse(payload: {
     data: {
       mensagem: text,
       historico,
-      channel: "instagram",
+      channel: payload.channel,
     },
   });
 
@@ -208,7 +209,13 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
         // =============================================================
         const conversationId = msg.conversationId;
         const accountId = payload.account?.id;
-        const participantName = payload.conversation?.participantName || "Visitante Instagram";
+        // Define o canal a partir da plataforma da mensagem. O Instagram usa
+        // participantName do perfil; o WhatsApp pode vir com número — usamos
+        // fallback legível para cada caso.
+        const channel = msg.platform === "whatsapp" ? "whatsapp" : "instagram";
+        const participantName =
+          payload.conversation?.participantName ||
+          (channel === "whatsapp" ? "Cliente WhatsApp" : "Visitante Instagram");
 
         // Tenta encontrar conversa existente
         const { data: existingConv } = await (supabaseAdmin as any)
@@ -233,7 +240,7 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
           const { data: created } = await (supabaseAdmin as any)
             .from("conversations")
             .insert({
-              channel: "instagram",
+              channel: channel,
               customer_name: participantName,
               zernio_conversation_id: conversationId,
               zernio_account_id: accountId,
@@ -306,6 +313,7 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
         processFranResponse({
           message: { conversationId, text: msg.text, id: msg.id },
           account: { id: accountId },
+          channel: channel,
         }).catch((err) =>
           console.error("[zernio-webhook] background error:", err),
         );

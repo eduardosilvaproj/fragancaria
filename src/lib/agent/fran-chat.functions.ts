@@ -35,7 +35,7 @@ const inputSchema = z.object({
    *  web e controle de handoff (replied_by). */
   sessionId: z.string().optional(),
   /** Canal de atendimento: 'web' (chat do site) ou 'instagram' (DM). */
-  channel: z.enum(["web", "instagram"]).default("web"),
+  channel: z.enum(["web", "instagram", "whatsapp"]).default("web"),
 });
 
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
@@ -226,7 +226,9 @@ export const chatWithFran = createServerFn({ method: "POST" })
       const channelInstruction =
         data.channel === "instagram"
           ? "Você está atendendo por mensagem direta no Instagram. A pessoa NÃO está no site. Quando fizer sentido, convide para [www.fragranciaria.com](https://www.fragranciaria.com)."
-          : "Você está atendendo pelo chat do site.";
+          : data.channel === "whatsapp"
+            ? "Você está atendendo por WhatsApp. A pessoa NÃO está no site. Seja prática e cordial, como em uma conversa de app de mensagens."
+            : "Você está atendendo pelo chat do site.";
       const system = [
         { type: "text" as const, text: `${FRAN_SYSTEM_PROMPT}\n\n${channelInstruction}`, cache_control: { type: "ephemeral" as const } },
       ];
