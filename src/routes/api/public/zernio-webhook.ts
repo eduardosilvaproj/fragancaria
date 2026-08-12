@@ -161,60 +161,26 @@ async function processFranResponse(payload: {
     result.resposta,
   );
 
-  const siteLink = result.siteLink ?? null;
-  if (payload.channel === "whatsapp") {
-    if (siteLink) {
+  // No WhatsApp, envia botões de resposta para os produtos recomendados
+  if (payload.channel === "whatsapp" && result.produtoPrincipal?.id) {
+    // Busca até 3 produtos para gerar botões
+    const { searchProducts } = await import("@/lib/agent/product-search");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const produtos = await searchProducts(supabaseAdmin, { query: result.produtoPrincipal.name, limit: 3 });
+
+    if (produtos.length > 0) {
+      const buttons = produtos.map((p) => ({
+        type: "reply" as const,
+        title: p.name.length > 20 ? p.name.substring(0, 17) + "..." : p.name,
+        payload: `VER_PRODUTO_${p.id}`,
+      }));
+
       await sendZernioMessage(
         payload.message.conversationId,
         payload.account.id,
-        siteLink,
-        {
-          interactive: {
-            type: "cta_url",
-            body: { text: siteLink },
-            action: {
-              name: "cta_url",
-              parameters: {
-                display_text: "Abrir site",
-                url: siteLink,
-              },
-            },
-          },
-        },
+        "Aqui estão os produtos que encontrei:",
+        { buttons },
       );
-    }
-
-    // No WhatsApp, envia botão CTA para o produto principal recomendado
-    if (result.produtoPrincipal?.id) {
-      const productId = result.produtoPrincipal.id;
-      const productUrl = `https://www.fragranciaria.com/produto/${productId}`;
-      await sendZernioMessage(
-        payload.message.conversationId,
-        payload.account.id,
-        result.produtoPrincipal.name,
-        {
-          interactive: {
-            type: "cta_url",
-            body: { text: result.produtoPrincipal.name },
-            action: {
-              name: "cta_url",
-              parameters: {
-                display_text: "Ver produto",
-                url: productUrl,
-              },
-            },
-          },
-        },
-      );
-
-      // Loga o encaminhamento para auditoria
-      await (supabaseAdmin as any).from("messages").insert({
-        conversation_id: conv.id,
-        content: `[cta_url] ${productUrl}`,
-        sender: "agent",
-        message_type: "text",
-        read: false,
-      });
     }
   }
 
