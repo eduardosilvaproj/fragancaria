@@ -87,7 +87,6 @@ export const publishNow = createServerFn({ method: "POST" })
       });
 
       // Salva no Supabase
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: post, error } = await supabaseAdmin
         .from("social_posts")
         .insert({
@@ -141,7 +140,6 @@ export const schedulePost = createServerFn({ method: "POST" })
       });
 
       // Salva no Supabase
-      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { data: post, error } = await supabaseAdmin
         .from("social_posts")
         .insert({
