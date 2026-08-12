@@ -167,7 +167,7 @@ async function processFranResponse(payload: {
     result.produtoPrincipal?.id
   ) {
     const productId = result.produtoPrincipal.id;
-    const productUrl = `https://fragranciaria.com/produto/${productId}`;
+    const productUrl = `https://www.fragranciaria.com/produto/${productId}`;
     await sendZernioMessage(
       payload.message.conversationId,
       payload.account.id,
