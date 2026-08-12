@@ -65,7 +65,15 @@ export const publishNow = createServerFn({ method: "POST" })
   .validator((d: unknown) => publishSchema.parse(d))
   .handler(async ({ data }): Promise<PublishResult> => {
     try {
-      const accountId = process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: account } = await (supabaseAdmin as any)
+        .from("zernio_accounts")
+        .select("account_id")
+        .eq("platform", "instagram")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      const accountId = account?.account_id ?? process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID;
       if (!accountId) {
         return { success: false, error: "ZERNIO_INSTAGRAM_ACCOUNT_ID não configurado." };
       }
@@ -110,7 +118,15 @@ export const schedulePost = createServerFn({ method: "POST" })
   }).parse(d))
   .handler(async ({ data }): Promise<PublishResult> => {
     try {
-      const accountId = process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: account } = await (supabaseAdmin as any)
+        .from("zernio_accounts")
+        .select("account_id")
+        .eq("platform", "instagram")
+        .eq("is_active", true)
+        .maybeSingle();
+
+      const accountId = account?.account_id ?? process.env.ZERNIO_INSTAGRAM_ACCOUNT_ID;
       if (!accountId) {
         return { success: false, error: "ZERNIO_INSTAGRAM_ACCOUNT_ID não configurado." };
       }
