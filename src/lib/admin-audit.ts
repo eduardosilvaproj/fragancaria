@@ -22,6 +22,12 @@ export type AuditAction =
   | "shipping_settings.update"
   | "payment_settings.update"
   | "nfe_settings.update"
+  | "notification_settings.create"
+  | "notification_settings.update"
+  | "notification_settings.delete"
+  | "zernio_accounts.create"
+  | "zernio_accounts.update"
+  | "zernio_accounts.delete"
   | "admin.user_create"
   | "admin.user_role_change"
   | "admin.user_deactivate"
@@ -40,6 +46,8 @@ export type AuditEntity =
   | "shipping_settings"
   | "payment_settings"
   | "nfe_settings"
+  | "notification_settings"
+  | "zernio_accounts"
   | "admin";
 
 export type AuditLogEntry = {

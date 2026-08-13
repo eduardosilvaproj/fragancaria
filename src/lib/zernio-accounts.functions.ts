@@ -33,7 +33,7 @@ export const upsertZernioAccount = createServerFn({ method: "POST" })
     is_active: z.boolean().default(true),
   }))
   .handler(async ({ data }) => {
-    await requireRole(ADMIN_AREA_ROLES.integrations);
+    const admin = await requireRole(ADMIN_AREA_ROLES.integrations);
     const { data: before } = await (supabaseAdmin as any).from("zernio_accounts").select("*").eq("id", data.id || 0).maybeSingle();
 
     const { data: result, error } = await (supabaseAdmin as any).from("zernio_accounts").upsert({
@@ -43,17 +43,31 @@ export const upsertZernioAccount = createServerFn({ method: "POST" })
 
     if (error) throw error;
 
-    await logAdminAction("upsert_zernio_account", { before, after: result });
+    await logAdminAction(
+      admin,
+      data.id ? "zernio_accounts.update" : "zernio_accounts.create",
+      "zernio_accounts",
+      String(result.id),
+      (before ?? null) as any,
+      (result ?? null) as any,
+    );
     return result;
   });
 
 export const deleteZernioAccount = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number() }))
   .handler(async ({ data }) => {
-    await requireRole(ADMIN_AREA_ROLES.integrations);
+    const admin = await requireRole(ADMIN_AREA_ROLES.integrations);
     const { data: before } = await (supabaseAdmin as any).from("zernio_accounts").select("*").eq("id", data.id).single();
     const { error } = await (supabaseAdmin as any).from("zernio_accounts").delete().eq("id", data.id);
     if (error) throw error;
-    await logAdminAction("delete_zernio_account", { before });
+    await logAdminAction(
+      admin,
+      "zernio_accounts.delete",
+      "zernio_accounts",
+      String(data.id),
+      (before ?? null) as any,
+      null,
+    );
     return { success: true };
   });

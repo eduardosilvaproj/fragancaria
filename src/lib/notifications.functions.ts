@@ -36,7 +36,7 @@ export const upsertNotificationSetting = createServerFn({ method: "POST" })
     template_ref: z.string().optional().nullable(),
   }))
   .handler(async ({ data }) => {
-    await requireRole(ADMIN_AREA_ROLES.notifications);
+    const admin = await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: before } = await (supabaseAdmin as any).from("notification_settings").select("*").eq("id", data.id || 0).maybeSingle();
 
     const { data: result, error } = await (supabaseAdmin as any).from("notification_settings").upsert({
@@ -46,25 +46,39 @@ export const upsertNotificationSetting = createServerFn({ method: "POST" })
 
     if (error) throw error;
 
-    await logAdminAction("upsert_notification_setting", { before, after: result });
+    await logAdminAction(
+      admin,
+      data.id ? "notification_settings.update" : "notification_settings.create",
+      "notification_settings",
+      String(result.id),
+      (before ?? null) as any,
+      (result ?? null) as any,
+    );
     return result;
   });
 
 export const deleteNotificationSetting = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number() }))
   .handler(async ({ data }) => {
-    await requireRole(ADMIN_AREA_ROLES.notifications);
+    const admin = await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: before } = await (supabaseAdmin as any).from("notification_settings").select("*").eq("id", data.id).single();
     const { error } = await (supabaseAdmin as any).from("notification_settings").delete().eq("id", data.id);
     if (error) throw error;
-    await logAdminAction("delete_notification_setting", { before });
+    await logAdminAction(
+      admin,
+      "notification_settings.delete",
+      "notification_settings",
+      String(data.id),
+      (before ?? null) as any,
+      null,
+    );
     return { success: true };
   });
 
 export const sendTestNotification = createServerFn({ method: "POST" })
   .validator(z.object({ id: z.number() }))
   .handler(async ({ data }) => {
-    await requireRole(ADMIN_AREA_ROLES.notifications);
+    const admin = await requireRole(ADMIN_AREA_ROLES.notifications);
     const { data: setting, error } = await (supabaseAdmin as any)
       .from("notification_settings")
       .select("*")
@@ -86,7 +100,15 @@ export const sendTestNotification = createServerFn({ method: "POST" })
         });
     }
 
-    await logAdminAction("notification.test", { settingId: data.id, event: setting.event });
+    await logAdminAction(
+      admin,
+      "notification_settings.update",
+      "notification_settings",
+      String(data.id),
+      null,
+      { id: data.id, event: setting.event, destination: setting.destination } as any,
+      { source: "notification.test" },
+    );
     return { success: true };
   });
 
