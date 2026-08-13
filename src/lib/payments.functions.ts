@@ -1087,8 +1087,8 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
             "payment_settings.update",
             "payment_settings",
             "1",
-            diff,
-            null,
+            diff.before as any,
+            diff.after as any,
           );
         }
       }

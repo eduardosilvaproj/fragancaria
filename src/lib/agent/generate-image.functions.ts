@@ -158,8 +158,8 @@ async function runGeneration(jobId: string, data: z.infer<typeof startInputSchem
     });
 
     const genCall = response.output?.find(
-      (item): item is { type: "image_generation_call"; result: string } =>
-        item.type === "image_generation_call" && typeof (item as any).result === "string"
+      (item: any) =>
+        item.type === "image_generation_call" && typeof item.result === "string"
     ) as { type: "image_generation_call"; result: string } | undefined;
 
     if (!genCall?.result) {

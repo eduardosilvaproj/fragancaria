@@ -273,7 +273,7 @@ function PedidosPage() {
         setSelectedOrder(null);
         fetchOrders();
       } else {
-        toast.error(result.error || "Erro ao gerar etiqueta");
+        toast.error((!result.success && (result as any).error) || "Erro ao gerar etiqueta");
       }
     } catch (e) {
       toast.error("Erro ao gerar etiqueta");

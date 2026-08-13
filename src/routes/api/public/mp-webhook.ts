@@ -45,7 +45,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
             return data as WebhookOrder | null;
           },
           updateOrder: async (orderId, patch: WebhookUpdate) => {
-            const { error } = await supabaseAdmin.from("orders").update(patch).eq("id", orderId);
+            const { error } = await supabaseAdmin.from("orders").update(patch as any).eq("id", orderId);
             if (error) throw error;
           },
           // Busca os dados do pedido aqui (e não no handler) para manter o

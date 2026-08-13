@@ -219,8 +219,8 @@ export const updateShippingSetting = createServerFn({ method: "POST" })
         const beforeVal = (before as any).value ?? {};
         const afterVal = dbValue;
         const diff = redactedFieldDiff(
-          typeof beforeVal === "object" ? beforeVal : { value: beforeVal },
-          typeof afterVal === "object" ? afterVal : { value: afterVal },
+          (typeof beforeVal === "object" && beforeVal !== null ? beforeVal : { value: beforeVal }) as Record<string, unknown>,
+          (typeof afterVal === "object" && afterVal !== null ? afterVal : { value: afterVal }) as Record<string, unknown>,
         );
         if (diff) {
           logAdminAction(
@@ -228,8 +228,8 @@ export const updateShippingSetting = createServerFn({ method: "POST" })
             "shipping_settings.update",
             "shipping_settings",
             dbKey,
-            diff,
-            null,
+            diff.before as any,
+            diff.after as any,
             { key: data.key },
           );
         }

@@ -229,9 +229,7 @@ export const getAllOrdersForAdmin = createServerFn({ method: "GET" })
 // esta consulta dedicada, um pedido velho (fora dos 50 mais recentes da
 // lista principal) fica invisível — dinheiro recebido e ninguém sabe.
 export const getStuckApprovedOrders = createServerFn({ method: "GET" }).handler(
-  async (): Promise<
-    { success: true; data: AdminOrderRow[] } | { success: false; error: string }
-  > => {
+  async (): Promise<{ success: true; data: any } | { success: false; error: string }> => {
     try {
       const { requireRole } = await import("@/lib/admin-auth");
       const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
@@ -473,8 +471,8 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
 
         if (beforeOrder && afterOrder) {
           const diff = diffSnapshots(
-            beforeOrder as Record<string, unknown>,
-            afterOrder as Record<string, unknown>,
+            beforeOrder as unknown as Record<string, unknown>,
+            afterOrder as unknown as Record<string, unknown>,
           );
           if (diff) {
             logAdminAction(admin, "order.update", "order", data.orderId, diff.before, diff.after);

@@ -264,8 +264,8 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
         if (response.stop_reason !== "tool_use") {
           respostaFinal = response.content
-            .filter((block): block is { type: "text"; text: string } => block.type === "text")
-            .map((block) => (block as { type: "text"; text: string }).text)
+            .filter((block: any) => block.type === "text")
+            .map((block: any) => block.text)
             .join("\n")
             .trim();
 

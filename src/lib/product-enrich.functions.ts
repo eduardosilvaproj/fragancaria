@@ -527,7 +527,7 @@ export const enrichProduct = createServerFn({ method: "POST" })
 
       const { error: updateError } = await supabaseAdmin
         .from("products")
-        .update(updates)
+        .update(updates as any)
         .eq("id", data.id);
 
       if (updateError) {
@@ -675,7 +675,7 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
           if (Object.keys(updates).length > 0) {
             const { error } = await supabaseAdmin
               .from("products")
-              .update(updates)
+              .update(updates as any)
               .eq("id", id);
 
             if (error) {
