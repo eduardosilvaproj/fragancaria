@@ -250,9 +250,10 @@ type MelhorEnvioCheckoutResponse = {
   };
 };
 
+type MelhorEnvioPerOrderFailure = { status?: boolean; message?: string };
 type MelhorEnvioGenerateResponse =
-  | Record<string, { status?: boolean; message?: string }>
-  | { status?: boolean; message?: string };
+  | Record<string, MelhorEnvioPerOrderFailure>
+  | MelhorEnvioPerOrderFailure;
 
 type MelhorEnvioPreviewResponse = {
   url?: string | null;
@@ -266,16 +267,22 @@ function extractGenerateFailure(
   response: MelhorEnvioGenerateResponse,
   shipmentIdExternal: string,
 ): string | null {
-  if (response && !Array.isArray(response) && shipmentIdExternal in response) {
-    const perOrder = response[shipmentIdExternal];
-    if (perOrder && perOrder.status === false) {
-      return perOrder.message || "Melhor Envio sandbox falhou ao gerar etiqueta.";
+  if (!response || Array.isArray(response)) return null;
+
+  const perOrder = (response as Record<string, unknown>)[shipmentIdExternal];
+  if (perOrder && typeof perOrder === "object" && "status" in perOrder) {
+    const typed = perOrder as MelhorEnvioPerOrderFailure;
+    if (typed.status === false) {
+      return typed.message || "Melhor Envio sandbox falhou ao gerar etiqueta.";
     }
     return null;
   }
 
-  if (response && !Array.isArray(response) && "status" in response && response.status === false) {
-    return response.message || "Melhor Envio sandbox falhou ao gerar etiqueta.";
+  if ("status" in response && response.status === false) {
+    const msg = (response as { message?: unknown }).message;
+    return typeof msg === "string"
+      ? msg
+      : "Melhor Envio sandbox falhou ao gerar etiqueta.";
   }
 
   return null;
