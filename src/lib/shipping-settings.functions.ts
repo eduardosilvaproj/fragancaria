@@ -134,7 +134,7 @@ export const getShippingSettings = createServerFn({ method: "GET" })
 // ATUALIZAR CONFIGURACAO
 // =====================================================
 
-export const updateShippingSetting = createServerFn({ method: "PATCH" })
+export const updateShippingSetting = createServerFn({ method: "POST" })
   .validator((d: unknown) => d as UpdateSettingInput)
   .handler(async ({ data }) => {
     try {

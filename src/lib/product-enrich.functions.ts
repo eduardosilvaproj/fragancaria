@@ -491,7 +491,7 @@ export const enrichProduct = createServerFn({ method: "POST" })
       // Buscar dados do ML se solicitado
       if (data.fields.includes("images") || data.fields.includes("dimensions")) {
         let imageUrl: string | null = null;
-        let mlData: { weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
+        let mlData: { imageUrl: string | null; allImages: string[]; weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
         // Primeiro tenta buscar pelo ID do ML
         if (product.id.startsWith("MLB")) {

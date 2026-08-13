@@ -82,7 +82,7 @@ const DeleteSchema = z.object({
   path: z.string().min(1, "Caminho obrigatório"),
 });
 
-export const deleteProductImage = createServerFn({ method: "DELETE" })
+export const deleteProductImage = createServerFn({ method: "POST" })
   .validator((d: unknown) => DeleteSchema.parse(d))
   .handler(async ({ data }) => {
     try {
