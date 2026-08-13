@@ -219,6 +219,42 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_settings: {
+        Row: {
+          id: number
+          event: string
+          audience: string
+          channel: string
+          destination: string | null
+          enabled: boolean
+          template_ref: string | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          event?: string
+          audience?: string
+          channel?: string
+          destination?: string | null
+          enabled?: boolean
+          template_ref?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number | null
+          event?: string | null
+          audience?: string | null
+          channel?: string | null
+          destination?: string | null
+          enabled?: boolean | null
+          template_ref?: string | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           id: string
@@ -272,6 +308,7 @@ export type Database = {
           affiliate_link_id: string | null
           affiliate_commission_rate: number | null
           coupon_code: string | null
+          shipping_ibge_code: string | null
         }
         Insert: {
           id?: string
@@ -325,6 +362,7 @@ export type Database = {
           affiliate_link_id?: string | null
           affiliate_commission_rate?: number | null
           coupon_code?: string | null
+          shipping_ibge_code?: string | null
         }
         Update: {
           id?: string | null
@@ -378,6 +416,7 @@ export type Database = {
           affiliate_link_id?: string | null
           affiliate_commission_rate?: number | null
           coupon_code?: string | null
+          shipping_ibge_code?: string | null
         }
         Relationships: []
       }
@@ -1080,6 +1119,42 @@ export type Database = {
         }
         Relationships: []
       }
+      zernio_accounts: {
+        Row: {
+          id: number
+          platform: string
+          account_id: string
+          label: string
+          phone_number: string | null
+          mode: string | null
+          is_active: boolean
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: number
+          platform?: string
+          account_id?: string
+          label?: string
+          phone_number?: string | null
+          mode?: string | null
+          is_active?: boolean
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: number | null
+          platform?: string | null
+          account_id?: string | null
+          label?: string | null
+          phone_number?: string | null
+          mode?: string | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           id: string
@@ -1110,6 +1185,10 @@ export type Database = {
           length_cm: number | null
           ncm: string | null
           ean_barcode: string | null
+          variations: Json
+          cost: number | null
+          pricing_mode: string
+          target_margin: number | null
           cfop: string | null
           cst_icms: string | null
           csosn: string | null
@@ -1120,10 +1199,12 @@ export type Database = {
           aliquota_cofins: number | null
           unidade: string | null
           cest: string | null
-          variations: Json
-          cost: number | null
-          pricing_mode: string
-          target_margin: number | null
+          cst_ibscbs: string | null
+          cclasstrib: string | null
+          aliquota_ibs_estadual: number | null
+          aliquota_ibs_municipal: number | null
+          aliquota_cbs: number | null
+          codigo_beneficio_fiscal: string | null
         }
         Insert: {
           id?: string
@@ -1154,6 +1235,10 @@ export type Database = {
           length_cm?: number | null
           ncm?: string | null
           ean_barcode?: string | null
+          variations?: Json
+          cost?: number | null
+          pricing_mode?: string
+          target_margin?: number | null
           cfop?: string | null
           cst_icms?: string | null
           csosn?: string | null
@@ -1164,10 +1249,12 @@ export type Database = {
           aliquota_cofins?: number | null
           unidade?: string | null
           cest?: string | null
-          variations?: Json
-          cost?: number | null
-          pricing_mode?: string
-          target_margin?: number | null
+          cst_ibscbs?: string | null
+          cclasstrib?: string | null
+          aliquota_ibs_estadual?: number | null
+          aliquota_ibs_municipal?: number | null
+          aliquota_cbs?: number | null
+          codigo_beneficio_fiscal?: string | null
         }
         Update: {
           id?: string | null
@@ -1198,6 +1285,10 @@ export type Database = {
           length_cm?: number | null
           ncm?: string | null
           ean_barcode?: string | null
+          variations?: Json | null
+          cost?: number | null
+          pricing_mode?: string | null
+          target_margin?: number | null
           cfop?: string | null
           cst_icms?: string | null
           csosn?: string | null
@@ -1208,10 +1299,12 @@ export type Database = {
           aliquota_cofins?: number | null
           unidade?: string | null
           cest?: string | null
-          variations?: Json | null
-          cost?: number | null
-          pricing_mode?: string | null
-          target_margin?: number | null
+          cst_ibscbs?: string | null
+          cclasstrib?: string | null
+          aliquota_ibs_estadual?: number | null
+          aliquota_ibs_municipal?: number | null
+          aliquota_cbs?: number | null
+          codigo_beneficio_fiscal?: string | null
         }
         Relationships: []
       }
@@ -1323,18 +1416,25 @@ export type Database = {
           created_at: string | null
           updated_at: string | null
           nfe_serie: number | null
+          crt: number | null
           ncm_padrao: string | null
           cfop_padrao: string | null
           cst_icms_padrao: string | null
           csosn_padrao: string | null
           origem_padrao: number | null
           cst_pis_cofins_padrao: string | null
-          aliquota_icms_padrao: number | null
-          aliquota_pis_padrao: number | null
-          aliquota_cofins_padrao: number | null
+          icms_aliquota: number | null
+          pis_aliquota: number | null
+          cofins_aliquota: number | null
           unidade_padrao: string | null
-          modalidade_frete_padrao: number | null
           cest_padrao: string | null
+          modalidade_frete: number | null
+          cst_ibscbs_padrao: string | null
+          cclasstrib_padrao: string | null
+          aliquota_ibs_estadual: number | null
+          aliquota_ibs_municipal: number | null
+          aliquota_cbs: number | null
+          codigo_beneficio_fiscal_padrao: string | null
         }
         Insert: {
           id?: string
@@ -1353,18 +1453,25 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           nfe_serie?: number | null
+          crt?: number | null
           ncm_padrao?: string | null
           cfop_padrao?: string | null
           cst_icms_padrao?: string | null
           csosn_padrao?: string | null
           origem_padrao?: number | null
           cst_pis_cofins_padrao?: string | null
-          aliquota_icms_padrao?: number | null
-          aliquota_pis_padrao?: number | null
-          aliquota_cofins_padrao?: number | null
+          icms_aliquota?: number | null
+          pis_aliquota?: number | null
+          cofins_aliquota?: number | null
           unidade_padrao?: string | null
-          modalidade_frete_padrao?: number | null
           cest_padrao?: string | null
+          modalidade_frete?: number | null
+          cst_ibscbs_padrao?: string | null
+          cclasstrib_padrao?: string | null
+          aliquota_ibs_estadual?: number | null
+          aliquota_ibs_municipal?: number | null
+          aliquota_cbs?: number | null
+          codigo_beneficio_fiscal_padrao?: string | null
         }
         Update: {
           id?: string | null
@@ -1383,18 +1490,25 @@ export type Database = {
           created_at?: string | null
           updated_at?: string | null
           nfe_serie?: number | null
+          crt?: number | null
           ncm_padrao?: string | null
           cfop_padrao?: string | null
           cst_icms_padrao?: string | null
           csosn_padrao?: string | null
           origem_padrao?: number | null
           cst_pis_cofins_padrao?: string | null
-          aliquota_icms_padrao?: number | null
-          aliquota_pis_padrao?: number | null
-          aliquota_cofins_padrao?: number | null
+          icms_aliquota?: number | null
+          pis_aliquota?: number | null
+          cofins_aliquota?: number | null
           unidade_padrao?: string | null
-          modalidade_frete_padrao?: number | null
           cest_padrao?: string | null
+          modalidade_frete?: number | null
+          cst_ibscbs_padrao?: string | null
+          cclasstrib_padrao?: string | null
+          aliquota_ibs_estadual?: number | null
+          aliquota_ibs_municipal?: number | null
+          aliquota_cbs?: number | null
+          codigo_beneficio_fiscal_padrao?: string | null
         }
         Relationships: []
       }
