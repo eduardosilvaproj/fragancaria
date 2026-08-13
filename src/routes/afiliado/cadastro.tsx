@@ -4,6 +4,7 @@ import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { useState } from "react";
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { registerAffiliate } from "@/lib/affiliates.functions";
 import type { AffiliateRegistrationForm, PixKeyType } from "@/types/affiliate";
 import { affiliateAuth } from "@/lib/supabase";
 
@@ -192,7 +193,12 @@ function CadastroAfiliadoPage() {
 
     setIsSubmitting(true);
     try {
-      await affiliateAuth.register(formData);
+      const result = await registerAffiliate({ data: formData });
+
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+
       toast.success("Cadastro realizado com sucesso! Aguarde a aprovação.", {
         duration: 5000,
       });
