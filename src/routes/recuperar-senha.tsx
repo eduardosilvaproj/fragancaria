@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { KeyRound, Loader2, CheckCircle } from "lucide-react";
 
 export const Route = createFileRoute("/recuperar-senha")({
@@ -47,7 +48,7 @@ function RecuperarSenhaPage() {
         <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
           <div className="text-center mb-8">
             <Link to="/" className="inline-block mb-4">
-              <img src="/images/logo.png" alt="Fragranciaria" className="h-10 w-auto mx-auto" />
+              <BrandLogo variant="compact" className="mx-auto" />
             </Link>
             <h1 className="text-lg font-semibold text-[#0F3A3E] flex items-center justify-center gap-2">
               <KeyRound className="h-5 w-5" />

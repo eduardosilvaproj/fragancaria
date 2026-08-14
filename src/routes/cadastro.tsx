@@ -3,6 +3,7 @@ import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useSupabaseSession } from "@/hooks/useSupabaseSession";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { LogIn, Loader2, UserPlus } from "lucide-react";
 
 type CadastroSearch = { redirect?: string };
@@ -110,7 +111,7 @@ function CadastroPage() {
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <Link to="/" className="inline-block mb-4">
-            <img src="/images/logo.png" alt="Fragranciaria" className="h-10 w-auto mx-auto" />
+            <BrandLogo variant="compact" className="mx-auto" />
           </Link>
           <h1 className="text-lg font-semibold text-[#0F3A3E] flex items-center justify-center gap-2">
             <UserPlus className="h-5 w-5" />

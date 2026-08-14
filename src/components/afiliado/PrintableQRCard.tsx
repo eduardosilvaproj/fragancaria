@@ -75,7 +75,7 @@ export function PrintableQRCard({
 
       // Logo real, centralizado no topo
       try {
-        const logo = await loadImage("/images/logo.png");
+        const logo = await loadImage("/images/logo-compact@2x.png");
         const logoW = 42;
         const logoH = (logo.height / logo.width) * logoW;
         doc.addImage(logo, "PNG", cx - logoW / 2, 16, logoW, logoH);
@@ -173,7 +173,7 @@ export function PrintableQRCard({
               justifyContent: "space-between",
             }}
           >
-            <img src="/images/logo.png" alt="Fragranciaria" className="h-9 w-auto object-contain" />
+            <img src="/images/logo-compact@2x.png" alt="Fragranciaria" className="h-9 w-auto object-contain" />
 
             <div>
               <p className="font-serif text-[19px] leading-tight" style={{ color: "#123F35" }}>

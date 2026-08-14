@@ -6,6 +6,7 @@ import { chatWithFran } from "@/lib/agent/fran-chat.functions";
 import { pollWebMessages } from "@/lib/whatsapp.functions";
 import { useStoreConfig } from "@/lib/use-store-config";
 import { whatsappLink } from "@/lib/store-contact";
+import { cn } from "@/lib/utils";
 
 const MotionDiv = motion.div as any;
 const MotionButton = motion.button as any;
@@ -52,7 +53,11 @@ function FranMessage({ msg }: { msg: FranChatMessage }) {
   );
 }
 
-export function FranChatWidget() {
+type FranChatWidgetProps = {
+  bottomOffsetClassName?: string;
+};
+
+export function FranChatWidget({ bottomOffsetClassName }: FranChatWidgetProps = {}) {
   const {
     isOpen, prefillMessage, messages, isLoading, repliedBy,
     open, close, addMessage, setLoading, clearMessages,
@@ -238,7 +243,7 @@ export function FranChatWidget() {
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.95 }}
           onClick={() => open()}
-          className="fixed bottom-6 right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#0F3A3E] text-white rounded-full shadow-lg hover:bg-[#1a4f54] transition-colors"
+          className={cn("fixed right-6 z-50 flex items-center justify-center w-14 h-14 bg-[#0F3A3E] text-white rounded-full shadow-lg hover:bg-[#1a4f54] transition-colors", bottomOffsetClassName ?? "bottom-6") }
           aria-label="Abrir chat com a Fran"
         >
           <MessageCircle className="w-7 h-7" />
@@ -253,7 +258,7 @@ export function FranChatWidget() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", stiffness: 300, damping: 28 }}
-            className="fixed bottom-6 right-6 z-50 w-[380px] max-w-[calc(100vw-24px)] h-[560px] max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-[#E0D8C7]"
+            className={cn("fixed right-6 z-50 w-[380px] max-w-[calc(100vw-24px)] h-[560px] max-h-[calc(100vh-120px)] bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden border border-[#E0D8C7]", bottomOffsetClassName ?? "bottom-6") }
           >
             {/* Header */}
             <div className="flex items-center justify-between px-5 py-4 bg-[#0F3A3E] text-white flex-shrink-0">

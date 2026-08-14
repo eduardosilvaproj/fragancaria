@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { BrandLogo } from "./BrandLogo";
 import { useStoreConfig } from "@/lib/use-store-config";
 import { whatsappLink, formatPhoneBR } from "@/lib/store-contact";
 
@@ -110,11 +111,7 @@ export function FooterEditorial() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-10 md:gap-16">
           {/* Logo & Description */}
           <div className="col-span-2 md:col-span-1">
-            <img
-              src="/images/logo.png"
-              alt="Fragranciaria"
-              className="h-16 w-auto mb-6 brightness-0 invert opacity-90"
-            />
+            <BrandLogo variant="full" className="mb-6 h-16" />
             <p className="text-white/50 text-sm leading-relaxed mb-6">
               Curadoria profissional dos melhores cosméticos para cabelos.
             </p>

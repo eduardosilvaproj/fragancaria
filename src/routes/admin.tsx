@@ -1,5 +1,6 @@
 import { createFileRoute, Link, Outlet, useLocation, redirect } from "@tanstack/react-router";
 import { useState } from "react";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { useServerFn } from "@tanstack/react-start";
 import {
   Users,
@@ -123,11 +124,7 @@ function AdminLayout() {
         {/* Logo */}
         <div className="p-6 border-b border-white/10">
           <Link to="/" className="flex items-center gap-3">
-            <img
-              src="/images/logo.png"
-              alt="Fragranciaria"
-              className="h-8 w-auto brightness-0 invert"
-            />
+            <BrandLogo variant="compact" className="h-8 brightness-0 invert" />
           </Link>
           <p className="text-[10px] uppercase tracking-wider text-white/50 mt-2">
             Painel Administrativo
@@ -182,11 +179,7 @@ function AdminLayout() {
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-[#0F3A3E] text-white">
             <div className="p-6 border-b border-white/10 flex items-center justify-between">
               <Link to="/">
-                <img
-                  src="/images/logo.png"
-                  alt="Fragranciaria"
-                  className="h-8 w-auto brightness-0 invert"
-                />
+                <BrandLogo variant="compact" className="h-8 brightness-0 invert" />
               </Link>
               <button
                 onClick={() => setSidebarOpen(false)}

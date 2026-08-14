@@ -1,5 +1,6 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { loginAdmin, getAdminSession } from "@/lib/admin.functions";
 
 export const Route = createFileRoute("/admin-login")({
@@ -58,11 +59,7 @@ function AdminLoginPage() {
     <div className="min-h-screen bg-[#0F3A3E] flex items-center justify-center px-4">
       <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
-          <img
-            src="/images/logo.png"
-            alt="Fragranciaria"
-            className="h-10 w-auto mx-auto mb-4"
-          />
+          <BrandLogo variant="compact" className="mx-auto mb-4" />
           <h1 className="text-lg font-semibold text-[#0F3A3E]">
             Painel Administrativo
           </h1>

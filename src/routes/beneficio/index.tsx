@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { Check, Copy, Sparkles, Gift, ShieldCheck, Headset, BadgeCheck } from "lucide-react";
 import { useCheckoutStore } from "@/stores/checkoutStore";
@@ -6,6 +6,7 @@ import { resolveCoupon } from "@/lib/coupon-resolve.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { trackEvent, trackPageView } from "@/lib/analytics";
 import { cn } from "@/lib/utils";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 
 const COUPON_CODE = "BEMVINDO10";
 
@@ -26,12 +27,25 @@ function BeneficioPage() {
   useEffect(() => {
     trackPageView("/beneficio", "Benefício Exclusivo | Fragranciaria");
   }, []);
+  const heroCtaRef = useRef<HTMLButtonElement | null>(null);
+  const [heroCtaVisible, setHeroCtaVisible] = useState(true);
   const [activated, setActivated] = useState(false);
   const [copying, setCopying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setCoupon = useCheckoutStore((s) => s.setCoupon);
   const resolveCouponFn = useServerFn(resolveCoupon);
+
+  useEffect(() => {
+    const target = heroCtaRef.current;
+    if (!target) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setHeroCtaVisible(entry.isIntersecting),
+      { threshold: 0.15 },
+    );
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, []);
 
   const handleActivate = async () => {
     setError(null);
@@ -100,11 +114,7 @@ function BeneficioPage() {
         <div className="relative mx-auto max-w-[1280px] px-6 md:px-14 py-14 md:py-20">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
-              <img
-                src="/images/logo-editorial.png"
-                alt="Fragranciaria"
-                className="h-12 w-auto mb-8 brightness-0 invert opacity-90"
-              />
+              <BrandLogo variant="full" className="mb-8 h-20 md:h-24" />
               <p className="text-[#E8BD45] text-[12px] uppercase tracking-[0.2em] font-semibold mb-4">
                 Seu benefício exclusivo
               </p>
@@ -116,6 +126,7 @@ function BeneficioPage() {
               </p>
               <div className="flex flex-col sm:flex-row gap-4">
                 <button
+                  ref={heroCtaRef}
                   onClick={handleActivate}
                   className={cn(
                     "bg-[#E8BD45] text-[#123E31] font-semibold uppercase tracking-[0.14em] text-sm px-8 py-4 transition-all",
@@ -250,27 +261,26 @@ function BeneficioPage() {
       </section>
 
       {/* CTA fixo discreto no mobile após rolagem */}
-      <div
-        className="fixed bottom-0 left-0 right-0 md:hidden z-40 pointer-events-none"
-        style={{ pointerEvents: "none" }}
-      >
-        <div className="pointer-events-auto mx-4 mb-4">
-          <button
-            onClick={handleActivate}
-            className={cn(
-              "w-full bg-[#E8BD45] text-[#123E31] font-semibold uppercase tracking-[0.14em] text-sm py-4 shadow-lg transition-all",
-              activated
-                ? "bg-[#1C6B4A] text-white"
-                : "hover:bg-[#F2CE6B]"
-            )}
-          >
-            {activated ? "ESCOLHER MEUS PRODUTOS" : "ATIVAR MEUS 10% OFF"}
-          </button>
+      {heroCtaVisible ? null : (
+        <div className="fixed bottom-0 left-0 right-0 md:hidden z-40 pointer-events-none">
+          <div className="pointer-events-auto mx-4 mb-4">
+            <button
+              onClick={handleActivate}
+              className={cn(
+                "w-full bg-[#E8BD45] text-[#123E31] font-semibold uppercase tracking-[0.14em] text-sm py-4 shadow-lg transition-all",
+                activated
+                  ? "bg-[#1C6B4A] text-white"
+                  : "hover:bg-[#F2CE6B]"
+              )}
+            >
+              {activated ? "ESCOLHER MEUS PRODUTOS" : "ATIVAR MEUS 10% OFF"}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Spacer para não cobrir o conteúdo no mobile */}
-      <div className="h-20 md:hidden" />
+      <div className={cn("h-20 md:hidden", heroCtaVisible && "hidden")} />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { BrandLogo } from "@/components/layout/BrandLogo";
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -242,11 +243,7 @@ function AdminConfiguracoes() {
                     Logo
                   </label>
                   <div className="border-2 border-dashed border-[#E9E1D2] rounded-lg p-8 text-center">
-                    <img
-                      src="/images/logo.png"
-                      alt="Logo"
-                      className="h-12 mx-auto mb-4"
-                    />
+                    <BrandLogo variant="compact" className="mx-auto mb-4 h-12" />
                     <button className="text-sm text-[#B07B1E] hover:underline">
                       Alterar logo
                     </button>

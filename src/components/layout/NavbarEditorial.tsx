@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
+import { BrandLogo } from "./BrandLogo";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useProducts } from "@/hooks/useProducts";
@@ -111,14 +112,7 @@ export const NavbarEditorial = () => {
 
         {/* Logo */}
         <Link to="/" className="flex items-center gap-3">
-          <img
-            src="/images/logo-icon.png"
-            alt=""
-            className="h-[42px] w-auto object-contain"
-          />
-          <span className="font-serif text-[22px] md:text-[26px] font-medium tracking-[0.08em] text-[#0F3A3E]">
-            FRAGRANCIARIA
-          </span>
+          <BrandLogo variant="horizontal" className="shrink-0" />
         </Link>
 
         {/* Desktop Navigation */}
@@ -358,14 +352,7 @@ export const NavbarEditorial = () => {
             <div className="flex flex-col h-full">
               <div className="flex items-center justify-between px-6 py-5 border-b border-[#E0D8C7]">
                 <div className="flex items-center gap-2">
-                  <img
-                    src="/images/logo-icon.png"
-                    alt=""
-                    className="h-[36px] w-auto object-contain"
-                  />
-                  <span className="font-serif text-[18px] font-medium tracking-[0.08em] text-[#0F3A3E]">
-                    FRAGRANCIARIA
-                  </span>
+                  <BrandLogo variant="horizontal" className="h-9" />
                 </div>
                 <button
                   onClick={() => setIsMobileMenuOpen(false)}

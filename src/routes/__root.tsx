@@ -11,6 +11,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useMatchRoute,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
 import { Toaster, toast } from "sonner";
@@ -169,6 +170,8 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   const { productId, isOpen, closeQuickView } = useQuickViewStore();
+  const matchRoute = useMatchRoute();
+  const isBeneficio = !!matchRoute({ to: "/beneficio" });
   useCartSync();
   useAppUpdate();
   useAffiliateTracking();
@@ -185,7 +188,7 @@ function RootComponent() {
       <Outlet />
       <ScrollToTop />
       <WhatsAppButton />
-      <FranChatWidget />
+      <FranChatWidget bottomOffsetClassName={isBeneficio ? "bottom-24" : undefined} />
       <div data-testid="sonner-container">
         <Toaster />
       </div>
