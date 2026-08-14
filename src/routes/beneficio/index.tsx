@@ -83,8 +83,20 @@ function BeneficioPage() {
     <div className="min-h-screen bg-[#F3EEE3]">
       {/* Hero */}
       <section className="relative overflow-hidden bg-[#123E31] text-white">
-        {/* Gradiente de fallback (sem imagem da Fran nos assets) */}
+        {/* Gradiente de fundo + imagem da Fran */}
         <div className="absolute inset-0 bg-gradient-to-br from-[#123E31] via-[#16504F] to-[#1C6B4A]" />
+        <picture>
+          <source srcSet="/images/fran-hero.webp" type="image/webp" />
+          <img
+            src="/images/fran-hero-fallback.png"
+            alt="Fran, consultora da Fragranciaria"
+            width={800}
+            height={1000}
+            loading="eager"
+            fetchPriority="high"
+            className="absolute inset-0 w-full h-full object-cover object-top opacity-30 md:opacity-40"
+          />
+        </picture>
         <div className="relative mx-auto max-w-[1280px] px-6 md:px-14 py-14 md:py-20">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div>
