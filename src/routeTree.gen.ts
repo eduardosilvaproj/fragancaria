@@ -30,6 +30,7 @@ import { Route as AdminLoginRouteImport } from './routes/admin-login'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as MinhaContaIndexRouteImport } from './routes/minha-conta/index'
+import { Route as BeneficioIndexRouteImport } from './routes/beneficio/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
 import { Route as ProdutoIdRouteImport } from './routes/produto.$id'
 import { Route as PedidoTokenRouteImport } from './routes/pedido.$token'
@@ -190,6 +191,11 @@ const MinhaContaIndexRoute = MinhaContaIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => MinhaContaRoute,
+} as any)
+const BeneficioIndexRoute = BeneficioIndexRouteImport.update({
+  id: '/beneficio/',
+  path: '/beneficio/',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
@@ -530,6 +536,7 @@ export interface FileRoutesByFullPath {
   '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/beneficio/': typeof BeneficioIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
   '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
@@ -604,6 +611,7 @@ export interface FileRoutesByTo {
   '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin': typeof AdminIndexRoute
+  '/beneficio': typeof BeneficioIndexRoute
   '/minha-conta': typeof MinhaContaIndexRoute
   '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
@@ -683,6 +691,7 @@ export interface FileRoutesById {
   '/pedido/$token': typeof PedidoTokenRoute
   '/produto/$id': typeof ProdutoIdRoute
   '/admin/': typeof AdminIndexRoute
+  '/beneficio/': typeof BeneficioIndexRoute
   '/minha-conta/': typeof MinhaContaIndexRoute
   '/admin/produtos/imagens': typeof AdminProdutosImagensRoute
   '/admin/produtos/novo': typeof AdminProdutosNovoRoute
@@ -763,6 +772,7 @@ export interface FileRouteTypes {
     | '/pedido/$token'
     | '/produto/$id'
     | '/admin/'
+    | '/beneficio/'
     | '/minha-conta/'
     | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
@@ -837,6 +847,7 @@ export interface FileRouteTypes {
     | '/pedido/$token'
     | '/produto/$id'
     | '/admin'
+    | '/beneficio'
     | '/minha-conta'
     | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
@@ -915,6 +926,7 @@ export interface FileRouteTypes {
     | '/pedido/$token'
     | '/produto/$id'
     | '/admin/'
+    | '/beneficio/'
     | '/minha-conta/'
     | '/admin/produtos/imagens'
     | '/admin/produtos/novo'
@@ -969,6 +981,7 @@ export interface RootRouteChildren {
   AfiliadoRecuperarSenhaRoute: typeof AfiliadoRecuperarSenhaRoute
   PedidoTokenRoute: typeof PedidoTokenRoute
   ProdutoIdRoute: typeof ProdutoIdRoute
+  BeneficioIndexRoute: typeof BeneficioIndexRoute
   ApiAdminEtiquetaRoute: typeof ApiAdminEtiquetaRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -1124,6 +1137,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/minha-conta/'
       preLoaderRoute: typeof MinhaContaIndexRouteImport
       parentRoute: typeof MinhaContaRoute
+    }
+    '/beneficio/': {
+      id: '/beneficio/'
+      path: '/beneficio'
+      fullPath: '/beneficio/'
+      preLoaderRoute: typeof BeneficioIndexRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/': {
       id: '/admin/'
@@ -1666,6 +1686,7 @@ const rootRouteChildren: RootRouteChildren = {
   AfiliadoRecuperarSenhaRoute: AfiliadoRecuperarSenhaRoute,
   PedidoTokenRoute: PedidoTokenRoute,
   ProdutoIdRoute: ProdutoIdRoute,
+  BeneficioIndexRoute: BeneficioIndexRoute,
   ApiAdminEtiquetaRoute: ApiAdminEtiquetaRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,

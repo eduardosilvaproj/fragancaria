@@ -309,6 +309,11 @@ export type Database = {
           affiliate_commission_rate: number | null
           coupon_code: string | null
           shipping_ibge_code: string | null
+          utm_source: string | null
+          utm_medium: string | null
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_term: string | null
         }
         Insert: {
           id?: string
@@ -363,6 +368,11 @@ export type Database = {
           affiliate_commission_rate?: number | null
           coupon_code?: string | null
           shipping_ibge_code?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
         }
         Update: {
           id?: string | null
@@ -417,6 +427,11 @@ export type Database = {
           affiliate_commission_rate?: number | null
           coupon_code?: string | null
           shipping_ibge_code?: string | null
+          utm_source?: string | null
+          utm_medium?: string | null
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_term?: string | null
         }
         Relationships: []
       }

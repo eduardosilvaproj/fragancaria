@@ -91,6 +91,11 @@ const inputSchema = z.object({
   subtotal: z.number().nonnegative().optional(),
   discount: z.number().nonnegative().optional(),
   couponCode: z.string().max(64).optional(),
+  utmSource: z.string().max(64).optional(),
+  utmMedium: z.string().max(64).optional(),
+  utmCampaign: z.string().max(64).optional(),
+  utmContent: z.string().max(64).optional(),
+  utmTerm: z.string().max(64).optional(),
   shippingPrice: z.number().nonnegative().optional(),
   shippingMethod: z.string().optional(),
   cotacaoId: z.string().uuid().optional(),
@@ -344,7 +349,7 @@ export const createPayment = createServerFn({ method: "POST" })
           const { data: row, error: couponQueryError } = await admin
             .from("coupons")
             .select(
-              "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at",
+              "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at, first_purchase_only",
             )
             .eq("code", code)
             .maybeSingle();
@@ -356,9 +361,28 @@ export const createPayment = createServerFn({ method: "POST" })
             return { success: false, error: "Não foi possível validar o cupom. Tente de novo." };
           }
           const alreadyFree = qualifiesForFreeShipping(serverSubtotal, freeShippingThreshold);
+          // Regra de primeira compra: se o cupom tem first_purchase_only e o
+          // e-mail do comprador JÁ tem pedido (qualquer status — o benefício é
+          // "primeira compra no site", não "primeira compra aprovada"), recusa.
+          // O identificador é o e-mail (mesmo que syncCheckoutCustomer usa).
+          let hasPriorOrders = false;
+          if ((row as any)?.first_purchase_only) {
+            const { count, error: countErr } = await admin
+              .from("orders")
+              .select("id", { count: "exact", head: true })
+              .eq("customer_email", data.payer.email);
+            if (countErr) {
+              console.warn("[createPayment] falha ao contar pedidos do cliente", {
+                message: countErr.message,
+              });
+            } else {
+              hasPriorOrders = (count ?? 0) > 0;
+            }
+          }
           const res = evaluateCoupon(row as any, {
             subtotal: serverSubtotal,
             alreadyFreeShipping: alreadyFree,
+            hasPriorOrders,
           });
           if (!res.valid) {
             console.warn("[createPayment] cupom recusado", { code, reason: res.reason });
@@ -532,6 +556,11 @@ export const createPayment = createServerFn({ method: "POST" })
             affiliate_id: resolvedAffiliateId,
             affiliate_link_id: resolvedAffiliateLinkId,
             affiliate_commission_rate: resolvedAffiliateCommissionRate,
+            utm_source: data.utmSource ?? null,
+            utm_medium: data.utmMedium ?? null,
+            utm_campaign: data.utmCampaign ?? null,
+            utm_content: data.utmContent ?? null,
+            utm_term: data.utmTerm ?? null,
             tracking_token: generateTrackingToken(),
           })
           .select("id")

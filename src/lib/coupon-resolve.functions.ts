@@ -56,6 +56,7 @@ type CouponRow = {
   is_active: boolean;
   starts_at: string | null;
   expires_at: string | null;
+  first_purchase_only: boolean;
 };
 
 function labelFor(type: CouponType, value: number): string {
@@ -67,13 +68,25 @@ function labelFor(type: CouponType, value: number): string {
 
 // Núcleo puro, testável sem banco: recebe a row e o contexto, devolve a
 // resolução. resolveCoupon (a server fn) só busca a row e delega para cá.
+// A regra de primeira compra NÃO é decidida aqui — é do chamador (createPayment
+// revalida contra o histórico de pedidos do e-mail). A UI chama resolveCoupon
+// com o e-mail do cliente quando disponível para feedback imediato.
 export function evaluateCoupon(
   row: CouponRow | null,
-  ctx: { subtotal: number; alreadyFreeShipping: boolean },
+  ctx: {
+    subtotal: number;
+    alreadyFreeShipping: boolean;
+    // true quando o cliente JÁ tem pelo menos um pedido (regra first_purchase_only).
+    hasPriorOrders?: boolean;
+  },
   now: Date = new Date(),
 ): CouponResolution {
   if (!row) return { valid: false, reason: "not_found" };
   if (!row.is_active) return { valid: false, reason: "inactive" };
+
+  if (row.first_purchase_only && ctx.hasPriorOrders) {
+    return { valid: false, reason: "usage_exceeded" };
+  }
 
   if (row.starts_at && new Date(row.starts_at) > now) {
     // Ainda não começou — para o cliente é indistinguível de expirado.
@@ -133,7 +146,7 @@ export const resolveCoupon = createServerFn({ method: "GET" })
       const { data: row, error } = await db
         .from("coupons")
         .select(
-          "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at",
+          "code, discount_type, discount_value, minimum_order_value, usage_limit, usage_count, is_active, starts_at, expires_at, first_purchase_only",
         )
         .eq("code", code)
         .maybeSingle();

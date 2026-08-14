@@ -16,6 +16,7 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster, toast } from "sonner";
 import { useCartSync } from "../hooks/useCartSync";
 import { useAffiliateTracking } from "../hooks/useAffiliateTracking";
+import { useUTMTracking } from "../hooks/useUTMTracking";
 import { initGA, initMetaPixel } from "../lib/analytics";
 import { QuickViewModal } from "../components/shop/QuickViewModal";
 import { CompareBar } from "../components/shop/CompareBar";
@@ -171,6 +172,7 @@ function RootComponent() {
   useCartSync();
   useAppUpdate();
   useAffiliateTracking();
+  useUTMTracking();
 
   // Initialize analytics on client side
   useEffect(() => {
