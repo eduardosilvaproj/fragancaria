@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import { sendAffiliateApprovedEmail } from "./affiliate-emails.functions";
 
 export type AdminAffiliateRow = {
   id: string;
@@ -27,10 +28,6 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
         "@/integrations/supabase/client.server"
       );
 
-      // A tabela `affiliates` tem os dados cadastrais (nome, email, telefone,
-      // instagram, status, created_at) mas NÃO as métricas. As métricas
-      // (vendas, comissão) vivem na view `affiliate_dashboard_summary`.
-      // Buscamos os dois e juntamos por id.
       const [base, metrics] = await Promise.all([
         supabaseAdmin
           .from("affiliates")
@@ -45,7 +42,6 @@ export const listAffiliates = createServerFn({ method: "GET" }).handler(
         console.error("listAffiliates base error:", base.error.message);
         return { success: false, data: [], error: base.error.message };
       }
-      // Métricas são complementares: se a view falhar, ainda mostramos a lista.
       if (metrics.error) {
         console.error("listAffiliates metrics error:", metrics.error.message);
       }
@@ -101,8 +97,6 @@ export const approveAffiliate = createServerFn({
     );
     const { logAdminAction } = await import("./admin-audit");
 
-    // Aprovar sem tier deixa current_tier_id NULL e o inner join em createPayment
-    // descarta a atribuição inteira. Fixa o afiliado no tier base (menor rate).
     const { data: baseTier } = await supabaseAdmin
       .from("affiliate_tiers")
       .select("id")
@@ -112,7 +106,7 @@ export const approveAffiliate = createServerFn({
 
     const { data: before, error: beforeErr } = await supabaseAdmin
       .from("affiliates")
-      .select("status")
+      .select("status, full_name, email, affiliate_code")
       .eq("id", affiliateId)
       .maybeSingle();
     if (beforeErr) {
@@ -143,6 +137,19 @@ export const approveAffiliate = createServerFn({
         { status: (before as any).status },
         { status: "approved" },
       );
+    }
+
+    const affiliateCode = (data?.[0] as any)?.affiliate_code ?? (before as any)?.affiliate_code ?? "";
+    const email = (data?.[0] as any)?.email ?? (before as any)?.email ?? "";
+    const fullName = (data?.[0] as any)?.full_name ?? (before as any)?.full_name ?? "";
+
+    if (email) {
+      sendAffiliateApprovedEmail({
+        email,
+        fullName,
+        affiliateCode,
+        dashboardUrl: `${process.env.PUBLIC_URL || "https://www.fragranciaria.com"}/afiliado`,
+      }).catch((err) => console.error("[approveAffiliate] e-mail não enviado:", err));
     }
 
     return { success: true, data };
@@ -267,7 +274,6 @@ export const suspendAffiliate = createServerFn({
 });
 
 export type AffiliateFullDetails = {
-  // Dados cadastrais
   id: string;
   user_id: string;
   full_name: string;
@@ -279,7 +285,6 @@ export type AffiliateFullDetails = {
   youtube: string | null;
   tiktok: string | null;
   website: string | null;
-  // Endereço
   address_zip: string | null;
   address_street: string | null;
   address_number: string | null;
@@ -287,21 +292,17 @@ export type AffiliateFullDetails = {
   address_neighborhood: string | null;
   address_city: string | null;
   address_state: string | null;
-  // Status e código
   status: string;
   affiliate_code: string | null;
   current_tier_id: string | null;
   custom_commission_rate: number | null;
-  // Pix
   pix_key_type: string | null;
   pix_key: string | null;
-  // Datas
   created_at: string;
   updated_at: string;
   approved_at: string | null;
   accepted_terms: boolean;
   accepted_terms_at: string | null;
-  // Relacionados
   links: { id: string; code: string; url: string; created_at: string; clicks_count: number }[];
   clicks: { id: string; link_id: string; clicked_at: string; referrer: string | null }[];
   sales: {

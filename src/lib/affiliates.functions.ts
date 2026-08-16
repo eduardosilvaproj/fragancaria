@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
+import { sendAffiliateRegistrationReceivedEmail } from "./affiliate-emails.functions";
 
 const registerSchema = z.object({
   full_name: z.string().min(2, "Nome completo obrigatório"),
@@ -37,7 +38,6 @@ export const registerAffiliate = createServerFn({ method: "POST" })
         throw new Error("Credenciais do Supabase não configuradas no servidor");
       }
 
-      // Cliente anônimo no servidor para disparar o auth.signUp preservando o envio de e-mail de confirmação
       const publicClient = createClient(supabaseUrl, supabaseAnonKey);
 
       const { data: authData, error: authError } = await publicClient.auth.signUp({
@@ -58,7 +58,6 @@ export const registerAffiliate = createServerFn({ method: "POST" })
         throw new Error("Erro ao criar usuário no Auth");
       }
 
-      // Inserir na tabela affiliates usando supabaseAdmin (o trigger do banco preenche o affiliate_code)
       const { data: affiliate, error: affiliateError } = await supabaseAdmin
         .from("affiliates")
         .insert({
@@ -89,10 +88,14 @@ export const registerAffiliate = createServerFn({ method: "POST" })
         .single();
 
       if (affiliateError) {
-        // Rollback: remover o usuário criado no Auth se o insert na tabela falhar
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
         throw new Error(affiliateError.message);
       }
+
+      sendAffiliateRegistrationReceivedEmail({
+        email: data.email,
+        fullName: data.full_name,
+      }).catch((err) => console.error("[registerAffiliate] e-mail não enviado:", err));
 
       return {
         success: true as const,

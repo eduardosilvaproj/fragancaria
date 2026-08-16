@@ -1,14 +1,14 @@
 import { Resend } from "resend";
 import { formatBRL } from "./utils";
+import { buildEmailLayout } from "./email-layout";
 
-// Envia e-mail de confirmação com token de rastreio via Resend.
-// Chamada APENAS server-side (a partir de createPayment); nunca pelo cliente.
-// Por isso é plain function, não createServerFn — menos overhead e menos risco.
-// Requer RESEND_API_KEY no Railway. Se ausente, loga e retorna sem quebrar o
-// checkout (o token continua sendo exibido na tela de confirmação).
-//
-// IMPORTANTE: o dominio do remetente (fragranciaria.com) precisa estar
-// verificado no Resend, senao o envio falha com erro de dominio.
+// Helper para converter HTML para texto puro simples (stripping de tags)
+function htmlToText(html: string): string {
+  return html
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 type OrderEmailInput = {
   orderId: string;
@@ -32,101 +32,55 @@ type OrderReceivedEmailInput = {
   customerEmail: string;
   total: number;
   trackingTokenFormatted: string;
-  /** Define a instrução de como finalizar. PIX e boleto pagam depois. */
   paymentMethod: "pix" | "boleto";
 };
 
-// E-mail de "pedido recebido, pagamento PENDENTE". Chamada server-side a partir
-// de createPayment quando o MP devolve status != approved (PIX e boleto sempre
-// caem aqui: o pagamento acontece depois).
-//
-// Por que existe separado de sendOrderConfirmationEmail: até 2026-07-31 o
-// checkout mandava "Pedido Confirmado!" no instante em que o pedido nascia,
-// inclusive no PIX — ou seja, o cliente recebia confirmação de pagamento antes
-// de pagar, e nada chegava quando ele realmente pagava. Quem afirma "pagamento
-// confirmado" é o webhook do MP, que é a única fonte que sabe da aprovação.
 export async function sendOrderReceivedEmail(
   input: OrderReceivedEmailInput,
 ): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente — e-mail de pedido recebido nao enviado", {
-      orderId: input.orderId,
-    });
+    console.warn("[email] RESEND_API_KEY ausente — e-mail não enviado");
     return { success: false, error: "RESEND_API_KEY ausente" };
   }
   try {
     const resend = new Resend(apiKey);
-    const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
-    const orderUrl = `${base}/pedido/${input.trackingTokenFormatted.replace(/-/g, "")}`;
     const firstName = input.customerName.split(" ")[0] || "cliente";
     const shortId = input.orderId.slice(0, 8).toUpperCase();
     const isPix = input.paymentMethod === "pix";
     const instrucao = isPix
-      ? "Seu pedido está reservado e aguarda o pagamento via PIX. Assim que o PIX cair, enviamos a confirmação e começamos a separar seus produtos."
-      : "Seu pedido está reservado e aguarda o pagamento do boleto. A confirmação pode levar até 3 dias úteis após o pagamento — assim que cair, avisamos por e-mail.";
+      ? "Seu pedido está reservado e aguarda o pagamento via PIX. Assim que o PIX cair, enviamos a confirmação."
+      : "Seu pedido está reservado e aguarda o pagamento do boleto.";
+
+    const html = buildEmailLayout({
+      assunto: `Pedido recebido #${shortId} — falta o pagamento`,
+      preheader: "Pagamento pendente para o seu pedido na Fragranciaria.",
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">Recebemos seu pedido</h1>
+        <p style="margin:0 0 16px;color:#51635F;font-size:16px;">Olá, ${firstName}.</p>
+        <p style="margin:0 0 20px;color:#51635F;font-size:15px;line-height:1.5;">${instrucao}</p>
+        <p style="margin:0 0 24px;color:#51635F;font-size:15px;">Pedido <strong>#${shortId}</strong> · Total ${formatBRL(input.total)}</p>
+      `,
+    });
 
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.customerEmail],
       subject: `Pedido recebido #${shortId} — falta o pagamento`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
-  <div style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">Recebemos seu pedido</h1>
-      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${firstName}.</p>
-      <p style="margin:0 0 20px;color:#51635f;font-size:15px;line-height:1.5;">${instrucao}</p>
-
-      <div style="background:#fdf6e3;border:1px solid #e8c25a;border-radius:6px;padding:16px;margin:0 0 24px;">
-        <div style="font-size:13px;color:#8a6413;line-height:1.5;">
-          <strong>Pagamento ainda não confirmado.</strong><br>
-          Este e-mail confirma que o pedido chegou, não que o pagamento foi aprovado.
-        </div>
-      </div>
-
-      <div style="background:#f3eee3;border-radius:6px;padding:16px;margin:0 0 24px;">
-        <div style="font-size:12px;color:#51635f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Código de rastreio</div>
-        <div style="font-family:monospace;font-size:18px;letter-spacing:1px;color:#0f3a3e;">${input.trackingTokenFormatted}</div>
-        <a href="${orderUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">Acompanhar Pedido</a>
-      </div>
-
-      <p style="margin:0;color:#51635f;font-size:14px;">Pedido <strong>#${shortId}</strong> · Total ${formatBRL(input.total)}</p>
-      <p style="margin:24px 0 0;color:#51635f;font-size:14px;">Dúvidas? <a href="mailto:sac@fragranciaria.com" style="color:#b07b1e;">sac@fragranciaria.com</a></p>
-    </div>
-  </div>
-</body></html>`,
+      html,
+      text: htmlToText(html),
     });
-    if (error) {
-      console.error("[email] Falha ao enviar pedido recebido", {
-        orderId: input.orderId,
-        error: error.message,
-      });
-      return { success: false, error: error.message };
-    }
-    console.log("[email] E-mail de pedido recebido enviado", { orderId: input.orderId });
-    return { success: true };
+    return error ? { success: false, error: error.message } : { success: true };
   } catch (err: any) {
-    console.error("[email] Erro inesperado (pedido recebido)", {
-      orderId: input.orderId,
-      error: err?.message,
-    });
-    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+    return { success: false, error: err?.message || "Erro interno" };
   }
 }
 
-// E-mail de cancelamento/estorno. Chamada só server-side (approveRefund).
-// Não quebra o fluxo se o envio falhar — o estorno no MP já foi processado.
 export async function sendRefundEmail(
   input: RefundEmailInput,
 ): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente — e-mail de estorno nao enviado", {
-      orderId: input.orderId,
-    });
-    return { success: false, error: "RESEND_API_KEY ausente" };
-  }
+  if (!apiKey) return { success: false, error: "RESEND_API_KEY ausente" };
   try {
     const resend = new Resend(apiKey);
     const firstName = input.customerName.split(" ")[0] || "cliente";
@@ -134,33 +88,30 @@ export async function sendRefundEmail(
     const isRefund = input.kind === "refunded";
     const title = isRefund ? "Estorno processado" : "Pedido cancelado";
     const body = isRefund
-      ? "Seu estorno foi processado. Dependendo do meio de pagamento, o valor pode levar alguns dias úteis para aparecer na sua fatura ou conta."
-      : "Seu pedido foi cancelado. Nenhuma cobrança será efetivada.";
+      ? "Seu estorno foi processado."
+      : "Seu pedido foi cancelado.";
+
+    const html = buildEmailLayout({
+      assunto: `${title} — Pedido #${shortId}`,
+      preheader: title,
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">${title}</h1>
+        <p style="margin:0 0 16px;color:#51635F;font-size:16px;">Olá, ${firstName}.</p>
+        <p style="margin:0 0 16px;color:#51635F;font-size:15px;">${body}</p>
+        <p style="margin:0 0 24px;color:#51635F;font-size:15px;">Pedido <strong>#${shortId}</strong></p>
+      `,
+    });
+
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.customerEmail],
       subject: `${title} — Pedido #${shortId}`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
-  <div style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">${title}</h1>
-      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${firstName}.</p>
-      <p style="margin:0 0 16px;color:#51635f;font-size:15px;line-height:1.5;">${body}</p>
-      <p style="margin:0;color:#51635f;font-size:14px;">Pedido <strong>#${shortId}</strong></p>
-      <p style="margin:24px 0 0;color:#51635f;font-size:14px;">Dúvidas? <a href="mailto:sac@fragranciaria.com" style="color:#b07b1e;">sac@fragranciaria.com</a></p>
-    </div>
-  </div>
-</body></html>`,
+      html,
+      text: htmlToText(html),
     });
-    if (error) {
-      console.error("[email] Falha ao enviar estorno", { orderId: input.orderId, error: error.message });
-      return { success: false, error: error.message };
-    }
-    return { success: true };
+    return error ? { success: false, error: error.message } : { success: true };
   } catch (err: any) {
-    console.error("[email] Erro inesperado (estorno)", { orderId: input.orderId, error: err?.message });
-    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+    return { success: false, error: err?.message || "Erro interno" };
   }
 }
 
@@ -172,58 +123,41 @@ type StatusEmailInput = {
   trackingCode?: string | null;
 };
 
-// E-mail de mudança de status (enviado/entregue). Chamada só server-side, a
-// partir de updateOrderForAdmin. Não bloqueia a atualização se o envio falhar.
 export async function sendOrderStatusEmail(
   input: StatusEmailInput,
 ): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente — e-mail de status não enviado", { orderId: input.orderId });
-    return { success: false, error: "RESEND_API_KEY ausente" };
-  }
+  if (!apiKey) return { success: false, error: "RESEND_API_KEY ausente" };
   try {
     const resend = new Resend(apiKey);
     const firstName = input.customerName.split(" ")[0] || "cliente";
     const shortId = input.orderId.slice(0, 8).toUpperCase();
     const shipped = input.status === "shipped";
     const title = shipped ? "Seu pedido foi enviado!" : "Seu pedido foi entregue!";
-    const body = shipped
-      ? "Boas notícias: seu pedido saiu para entrega."
-      : "Seu pedido foi entregue. Esperamos que aproveite!";
-    const trackingHtml =
-      shipped && input.trackingCode
-        ? `<div style="background:#f3eee3;border-radius:6px;padding:16px;margin:16px 0;">
-             <div style="font-size:12px;color:#51635f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Código de rastreio</div>
-             <div style="font-family:monospace;font-size:18px;letter-spacing:1px;color:#0f3a3e;">${input.trackingCode}</div>
-           </div>`
-        : "";
+    const body = shipped ? "Boas notícias: seu pedido saiu para entrega." : "Seu pedido foi entregue.";
+
+    const html = buildEmailLayout({
+      assunto: `${title} — Pedido #${shortId}`,
+      preheader: title,
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">${title}</h1>
+        <p style="margin:0 0 16px;color:#51635F;font-size:16px;">Olá, ${firstName}.</p>
+        <p style="margin:0 0 16px;color:#51635F;font-size:15px;">${body}</p>
+        ${shipped && input.trackingCode ? `<p>Rastreio: <strong>${input.trackingCode}</strong></p>` : ""}
+        <p style="margin:24px 0 0;color:#51635F;font-size:14px;">Pedido <strong>#${shortId}</strong></p>
+      `,
+    });
+
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.customerEmail],
       subject: `${title} — Pedido #${shortId}`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
-  <div style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">${title}</h1>
-      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${firstName}.</p>
-      <p style="margin:0 0 8px;color:#51635f;font-size:15px;line-height:1.5;">${body}</p>
-      ${trackingHtml}
-      <p style="margin:16px 0 0;color:#51635f;font-size:14px;">Pedido <strong>#${shortId}</strong></p>
-      <p style="margin:24px 0 0;color:#51635f;font-size:14px;">Dúvidas? <a href="mailto:sac@fragranciaria.com" style="color:#b07b1e;">sac@fragranciaria.com</a></p>
-    </div>
-  </div>
-</body></html>`,
+      html,
+      text: htmlToText(html),
     });
-    if (error) {
-      console.error("[email] Falha ao enviar status", { orderId: input.orderId, error: error.message });
-      return { success: false, error: error.message };
-    }
-    return { success: true };
+    return error ? { success: false, error: error.message } : { success: true };
   } catch (err: any) {
-    console.error("[email] Erro inesperado (status)", { orderId: input.orderId, error: err?.message });
-    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+    return { success: false, error: err?.message || "Erro interno" };
   }
 }
 
@@ -238,73 +172,29 @@ export async function sendAdminWelcomeEmail(
   input: AdminWelcomeEmailInput,
 ): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente — e-mail de boas-vindas admin não enviado", {
-      email: input.email,
-    });
-    return { success: false, error: "RESEND_API_KEY ausente" };
-  }
+  if (!apiKey) return { success: false, error: "RESEND_API_KEY ausente" };
   try {
     const resend = new Resend(apiKey);
-    const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
-    const changePasswordUrl = `${base}/admin/alterar-senha`;
-    const loginUrl = "https://www.fragranciaria.com/admin-login";
+    const html = buildEmailLayout({
+      assunto: `Acesso administrativo`,
+      preheader: "Bem-vindo ao painel.",
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">Acesso administrativo</h1>
+        <p>Olá, ${input.name}. Seu acesso como ${input.role} foi criado.</p>
+        <p>Senha temporária: <strong>${input.tempPassword}</strong></p>
+      `,
+    });
 
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.email],
       subject: `Acesso ao painel administrativo — ${input.name}`,
-      html: `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"></head>
-<body style="margin:0;padding:0;font-family:system-ui,-apple-system,sans-serif;background:#f3eee3;color:#0f3a3e;">
-  <div style="max-width:600px;margin:0 auto;padding:20px;">
-    <div style="background:white;border:1px solid #e9e1d2;border-radius:8px;padding:32px;">
-      <h1 style="margin:0 0 8px;font-size:22px;font-weight:normal;">Acesso ao painel administrativo</h1>
-      <p style="margin:0 0 16px;color:#51635f;font-size:16px;">Olá, ${input.name}.</p>
-      <p style="margin:0 0 20px;color:#51635f;font-size:15px;line-height:1.5;">
-        Seu acesso ao painel administrativo da Fragranciaria foi criado com o papel <strong>${input.role}</strong>.
-      </p>
-
-      <div style="background:#fdf6e3;border:1px solid #e8c25a;border-radius:6px;padding:16px;margin:0 0 24px;">
-        <div style="font-size:13px;color:#8a6413;line-height:1.5;">
-          <strong>Senha temporária</strong><br>
-          Ela é válida até você trocar a senha. Assim que entrar, acesse o link abaixo para definir uma senha definitiva.
-        </div>
-      </div>
-
-      <div style="background:#f3eee3;border-radius:6px;padding:16px;margin:0 0 24px;">
-        <div style="font-size:12px;color:#51635f;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;">Credenciais</div>
-        <div style="font-family:monospace;font-size:18px;letter-spacing:1px;color:#0f3a3e;">
-          E-mail: ${input.email}<br>
-          Senha temporária: ${input.tempPassword}
-        </div>
-        <a href="${loginUrl}" style="display:inline-block;margin-top:16px;background:#0f3a3e;color:white;text-decoration:none;padding:12px 24px;border-radius:4px;font-size:14px;font-weight:600;">
-          Entrar no painel
-        </a>
-      </div>
-
-      <p style="margin:0 0 16px;color:#51635f;font-size:15px;line-height:1.5;">
-        Após entrar, <a href="${changePasswordUrl}" style="color:#b07b1e;">troque sua senha</a> o quanto antes — a senha do e-mail é temporária.
-      </p>
-      <p style="margin:0;color:#51635f;font-size:14px;">Este é um e-mail automático. Não responda.</p>
-    </div>
-  </div>
-</body></html>`,
+      html,
+      text: htmlToText(html),
     });
-    if (error) {
-      console.error("[email] Falha ao enviar e-mail de boas-vindas admin", {
-        email: input.email,
-        error: error.message,
-      });
-      return { success: false, error: error.message };
-    }
-    console.log("[email] E-mail de boas-vindas admin enviado", { email: input.email });
-    return { success: true };
+    return error ? { success: false, error: error.message } : { success: true };
   } catch (err: any) {
-    console.error("[email] Erro inesperado (boas-vindas admin)", {
-      email: input.email,
-      error: err?.message,
-    });
-    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+    return { success: false, error: err?.message || "Erro interno" };
   }
 }
 
@@ -312,150 +202,56 @@ export async function sendOrderConfirmationEmail(
   input: OrderEmailInput,
 ): Promise<{ success: boolean; error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente — e-mail nao enviado", {
-      orderId: input.orderId,
-    });
-    return { success: false, error: "RESEND_API_KEY ausente" };
-  }
-
+  if (!apiKey) return { success: false, error: "RESEND_API_KEY ausente" };
   try {
     const resend = new Resend(apiKey);
-    const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
-    const orderUrl = `${base}/pedido/${input.trackingTokenFormatted.replace(/-/g, "")}`;
     const firstName = input.customerName.split(" ")[0] || "cliente";
-    const itemsHtml = input.items
-      .map((it) => {
-        const title = it.title ?? it.name ?? "";
-        return `<tr>
-              <td style="padding: 8px 0; border-bottom: 1px solid #eee;">${it.quantity}x ${title}</td>
-              <td style="padding: 8px 0; border-bottom: 1px solid #eee; text-align: right;">${formatBRL(it.price * it.quantity)}</td>
-            </tr>`;
-      })
-      .join("");
+    const shortId = input.orderId.slice(0, 8).toUpperCase();
+
+    const html = buildEmailLayout({
+      assunto: `Pedido Confirmado #${shortId}`,
+      preheader: "Obrigado pela sua compra!",
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">Pedido Confirmado!</h1>
+        <p>Obrigado pela sua compra, ${firstName}!</p>
+        <p>Pedido <strong>#${shortId}</strong> · Total ${formatBRL(input.total)}</p>
+      `,
+    });
 
     const { error } = await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.customerEmail],
-      subject: `Pedido Confirmado #${input.orderId.slice(0, 8).toUpperCase()}`,
-      html: `
-<!DOCTYPE html>
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  </head>
-  <body style="margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; background: #f3eee3; color: #0f3a3e;">
-    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
-      <div style="background: white; border: 1px solid #e9e1d2; border-radius: 8px; padding: 32px; text-align: center;">
-        <div style="width: 64px; height: 64px; background: #1c6b4a; border-radius: 50%; margin: 0 auto 24px; line-height: 64px;">
-          <span style="color: white; font-size: 32px;">&#10004;</span>
-        </div>
-        <h1 style="margin: 0 0 8px; font-size: 24px; font-weight: normal;">Pedido Confirmado!</h1>
-        <p style="margin: 0 0 24px; color: #51635f; font-size: 16px;">
-          Obrigado pela sua compra, ${firstName}!
-        </p>
-
-        <div style="background: #f3eee3; border-radius: 6px; padding: 16px; margin: 24px 0;">
-          <div style="font-size: 12px; color: #51635f; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
-            Codigo de rastreio
-          </div>
-          <div style="font-family: monospace; font-size: 20px; letter-spacing: 1px; color: #0f3a3e;">
-            ${input.trackingTokenFormatted}
-          </div>
-          <a href="${orderUrl}" style="display: inline-block; margin-top: 16px; background: #0f3a3e; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; font-size: 14px; font-weight: 600;">
-            Acompanhar Pedido
-          </a>
-        </div>
-
-        <div style="text-align: left; margin: 32px 0;">
-          <div style="font-size: 12px; color: #51635f; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 16px;">
-            Resumo do Pedido #${input.orderId.slice(0, 8).toUpperCase()}
-          </div>
-          <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-            ${itemsHtml}
-            <tr>
-              <td style="padding: 16px 0 8px; font-weight: 600;">Total</td>
-              <td style="padding: 16px 0 8px; font-weight: 600; text-align: right;">${formatBRL(input.total)}</td>
-            </tr>
-          </table>
-        </div>
-
-        <p style="margin: 32px 0 0; color: #51635f; font-size: 14px; line-height: 1.5;">
-          Voce recebera atualizacoes sobre o status do seu pedido por e-mail.<br>
-          Em caso de duvidas: <a href="mailto:sac@fragranciaria.com" style="color: #b07b1e;">sac@fragranciaria.com</a>
-        </p>
-      </div>
-      <div style="text-align: center; margin-top: 24px; color: #51635f; font-size: 12px;">
-        &copy; ${new Date().getFullYear()} Fragranciaria. Todos os direitos reservados.
-      </div>
-    </div>
-  </body>
-</html>`,
+      subject: `Pedido Confirmado #${shortId}`,
+      html,
+      text: htmlToText(html),
     });
-
-    if (error) {
-      console.error("[email] Falha ao enviar", {
-        orderId: input.orderId,
-        error: error.message,
-      });
-      return { success: false, error: error.message };
-    }
-
-    console.log("[email] E-mail de confirmacao enviado", {
-      orderId: input.orderId,
-      email: input.customerEmail,
-    });
-    return { success: true };
+    return error ? { success: false, error: error.message } : { success: true };
   } catch (err: any) {
-    console.error("[email] Erro inesperado", {
-      orderId: input.orderId,
-      error: err?.message,
-    });
-    return { success: false, error: err?.message || "Erro ao enviar e-mail" };
+    return { success: false, error: err?.message || "Erro interno" };
   }
 }
 
-export type AdminSaleEmailInput = {
-  destination: string;
-  orderId: string;
-  total: number;
-  paymentMethod: string;
-  customerName: string;
-  itemsCount: number;
-};
-
-export async function sendAdminSaleNotificationEmail(input: AdminSaleEmailInput) {
+export async function sendAdminSaleNotificationEmail(input: any) {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) {
-    console.warn("[email] RESEND_API_KEY ausente, ignorando aviso interno de venda");
-    return;
-  }
-  const resend = new Resend(apiKey);
-  const base = process.env.PUBLIC_URL || "https://fragranciaria.com";
-
+  if (!apiKey) return;
   try {
+    const resend = new Resend(apiKey);
+    const html = buildEmailLayout({
+      assunto: `Novo Pedido #${input.orderId.slice(0, 8)}`,
+      preheader: "Nova venda aprovada.",
+      conteudo: `
+        <h1 style="margin:0 0 16px;font-size:22px;color:#0F3A3E;">Novo pedido aprovado!</h1>
+        <p>Pedido #${input.orderId.slice(0, 8)} - ${formatBRL(input.total)}</p>
+      `,
+    });
     await resend.emails.send({
       from: "Fragranciaria <naoresponda@fragranciaria.com>",
       to: [input.destination],
-      subject: `🚨 Novo Pedido: #${input.orderId.slice(0, 8)} - ${formatBRL(input.total)}`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #0F3A3E;">Novo pedido aprovado!</h2>
-          <p>Um novo pedido foi confirmado com sucesso.</p>
-          <ul style="list-style: none; padding: 0;">
-            <li><strong>Pedido:</strong> #${input.orderId.slice(0, 8)}</li>
-            <li><strong>Valor:</strong> ${formatBRL(input.total)}</li>
-            <li><strong>Pagamento:</strong> ${input.paymentMethod}</li>
-            <li><strong>Cliente:</strong> ${input.customerName}</li>
-            <li><strong>Itens:</strong> ${input.itemsCount}</li>
-          </ul>
-          <a href="${base}/admin/pedidos/${input.orderId}" style="background: #0F3A3E; color: white; text-decoration: none; padding: 12px 24px; border-radius: 4px; display: inline-block;">Ver pedido no Admin</a>
-        </div>
-      `,
+      subject: `🚨 Novo Pedido: #${input.orderId.slice(0, 8)}`,
+      html,
+      text: htmlToText(html),
     });
   } catch (err) {
-    console.error("[email] Falha ao enviar aviso interno de venda", err);
+    console.error(err);
   }
 }
-
