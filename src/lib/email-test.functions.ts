@@ -58,6 +58,10 @@ export const sendTestEmail = createServerFn({
       },
     };
   } catch (err: any) {
-    console.error("[TEST-EMAIL-ERROR]", err); return { success: false, error: err?.message || "Erro interno" };
+    console.error("[TEST-EMAIL-ERROR]", err);
+    if (err.message && typeof err.message === 'string' && err.message.includes('includes')) {
+        return { success: false, error: "Erro interno: variável de ambiente mal configurada" };
+    }
+    return { success: false, error: err?.message || "Erro interno" };
   }
 });
