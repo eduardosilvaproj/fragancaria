@@ -58,6 +58,6 @@ export const sendTestEmail = createServerFn({
       },
     };
   } catch (err: any) {
-    return { success: false, error: err?.message || "Erro interno" };
+    console.error("[TEST-EMAIL-ERROR]", err); return { success: false, error: err?.message || "Erro interno" };
   }
 });
