@@ -3,7 +3,8 @@ import { z } from "zod";
 import { Resend } from "resend";
 import { buildEmailLayout } from "./email-layout";
 
-function htmlToText(html: string): string {
+function htmlToText(html: string | undefined): string {
+  if (!html) return "";
   return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 }
 
