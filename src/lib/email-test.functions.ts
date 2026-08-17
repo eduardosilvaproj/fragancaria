@@ -18,7 +18,7 @@ export const sendTestEmail = createServerFn({
   try {
     const { requireRole } = await import("./admin-auth");
     const { ADMIN_AREA_ROLES } = await import("@/lib/admin-roles");
-    await requireRole(ADMIN_AREA_ROLES.settings);
+    await requireRole(ADMIN_AREA_ROLES.shippingSettings);
 
     const apiKey = process.env.RESEND_API_KEY;
     if (!apiKey) {
