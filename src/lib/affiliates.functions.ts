@@ -38,16 +38,14 @@ export const registerAffiliate = createServerFn({ method: "POST" })
         throw new Error("Credenciais do Supabase não configuradas no servidor");
       }
 
-      const publicClient = createClient(supabaseUrl, supabaseAnonKey);
-
-      const { data: authData, error: authError } = await publicClient.auth.signUp({
+      // Usar supabaseAdmin para criar o usuário já confirmado, evitando falha de FK por e-mail pendente
+      const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: data.email,
         password: data.password,
-        options: {
-          data: {
-            full_name: data.full_name,
-            role: "affiliate",
-          },
+        email_confirm: true,
+        user_metadata: {
+          full_name: data.full_name,
+          role: "affiliate",
         },
       });
 
