@@ -4,7 +4,7 @@ import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { registerAffiliate, resendAffiliateConfirmation } from "@/lib/affiliates.functions";
+import { registerAffiliate } from "@/lib/affiliates.functions";
 import type { AffiliateRegistrationForm, PixKeyType } from "@/types/affiliate";
 import { affiliateAuth } from "@/lib/supabase";
 import { useSupabaseUser } from "@/hooks/useSupabaseUser";
@@ -747,21 +747,6 @@ function CadastroAfiliadoPage() {
                 >
                   Próximo
                   <ArrowRight className="h-4 w-4" />
-                </button>
-              ) : result?.state === "needs_confirmation" ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const res = await resendAffiliateConfirmation({ data: { email: result.email } });
-                    if (res.success) {
-                      toast.success("E-mail de confirmação reenviado!");
-                    } else {
-                      toast.error(res.error || "Erro ao reenviar.");
-                    }
-                  }}
-                  className="flex items-center gap-2 bg-[#B07B1E] hover:bg-[#C68C28] text-white px-8 py-3 text-[13px] tracking-[0.14em] uppercase font-medium transition-colors"
-                >
-                  Reenviar Confirmação
                 </button>
               ) : (
                 <button
