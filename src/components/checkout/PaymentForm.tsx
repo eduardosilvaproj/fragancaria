@@ -504,6 +504,7 @@ function CardForm({
             firstName: customer.firstName,
             lastName: customer.lastName,
             phone: customer.phone,
+            whatsappOptIn: customer.whatsapp_opt_in,
             identification: { type: "CPF", number: identificationNumber },
             address: shippingAddress
               ? {

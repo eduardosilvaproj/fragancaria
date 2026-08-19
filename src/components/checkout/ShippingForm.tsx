@@ -99,7 +99,7 @@ export function ShippingForm() {
   const cotarFreteFn = useServerFn(cotarFrete);
 
   const [c, setC] = useState(
-    customer ?? { email: "", firstName: "", lastName: "", phone: "", cpf: "" },
+    customer ?? { email: "", firstName: "", lastName: "", phone: "", cpf: "", whatsapp_opt_in: false },
   );
   const [a, setA] = useState(
     shippingAddress ?? {
@@ -353,7 +353,7 @@ export function ShippingForm() {
               placeholder="Silva"
             />
           </Field>
-          <Field label="Telefone" error={touched.phone ? errors.phone : undefined}>
+          <Field label="Telefone" error={touched.phone ? errors.phone : undefined} full>
             <input
               required
               value={c.phone}
@@ -363,6 +363,18 @@ export function ShippingForm() {
               placeholder="(00) 00000-0000"
               className={inputCls(touched.phone ? errors.phone : undefined)}
             />
+            <div className="flex items-center gap-2 mt-2">
+              <input
+                type="checkbox"
+                id="whatsapp-opt-in"
+                checked={c.whatsapp_opt_in}
+                onChange={(e) => setC({ ...c, whatsapp_opt_in: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <label htmlFor="whatsapp-opt-in" className="text-sm text-gray-600">
+                Quero receber novidades e ofertas da Fragranciaria no WhatsApp
+              </label>
+            </div>
           </Field>
           <Field label="CPF" error={touched.cpf ? errors.cpf : undefined}>
             <input

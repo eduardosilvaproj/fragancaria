@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 import { canTransition } from "@/lib/order-state";
 import { getMissingPaymentSnapshotFields, type PaymentSnapshotOrder } from "@/lib/order-payment-snapshot";
+import { sendVendaAprovadaWhatsApp } from "@/lib/order-whatsapp.functions";
 
 export const mpWebhookCorsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -273,6 +274,16 @@ export async function handleMpWebhookRequest(
     if (acabouDeSerAprovado && deps.sendPaymentConfirmedEmail) {
       deps.sendPaymentConfirmedEmail(existing.id).catch((err) => {
         log.error("[mp-webhook] falha ao enviar e-mail de confirmação (ignorada)", {
+          orderId: existing.id,
+          err,
+        });
+      });
+    }
+
+    // Disparo do WhatsApp de venda aprovada
+    if (acabouDeSerAprovado) {
+      sendVendaAprovadaWhatsApp(existing.id).catch((err) => {
+        log.error("[mp-webhook] falha ao enviar WhatsApp de venda aprovada (ignorada)", {
           orderId: existing.id,
           err,
         });

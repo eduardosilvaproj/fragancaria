@@ -208,7 +208,73 @@ function ShippingSection({ settings, onChange }: { settings: ShippingSettings | 
   return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E] mb-6">Frete</h3><p className="text-sm text-[#51635F]">{settings ? "Configurações carregadas." : "Carregando..."}</p></div>;
 }
 function AppearanceSection() { return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E]">Aparência</h3></div>; }
-function NotificationsSection() { return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E]">Notificações</h3></div>; }
+function NotificationsSection() {
+  const [testPhone, setTestPhone] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<any>(null);
+
+  const handleTestWhatsApp = async () => {
+    if (!testPhone.trim()) {
+      toast.error("Informe um número de WhatsApp para teste");
+      return;
+    }
+    setTesting(true);
+    setTestResult(null);
+    try {
+      const { sendTestWhatsApp } = await import("@/lib/whatsapp-test.functions");
+      const res = await sendTestWhatsApp({ data: { phone: testPhone, templateName: "pedido_aprovado" } });
+      setTestResult(res);
+      if (res.success) {
+        toast.success("Teste de WhatsApp disparado com sucesso!");
+      } else {
+        toast.error("Falha no disparo do WhatsApp (verifique a resposta)");
+      }
+    } catch (e: any) {
+      toast.error(e?.message || "Erro ao testar WhatsApp");
+      setTestResult({ success: false, error: e?.message });
+    } finally {
+      setTesting(false);
+    }
+  };
+
+  return (
+    <div className="bg-white border border-[#E9E1D2] p-6 space-y-6">
+      <h3 className="font-serif text-lg text-[#0F3A3E]">Notificações & WhatsApp (Zernio)</h3>
+      <p className="text-sm text-[#51635F]">
+        Dispare uma mensagem de teste via WhatsApp para validar a integração com a Zernio.
+      </p>
+
+      <div className="border border-[#E9E1D2] p-4 bg-[#FAF7F0] space-y-4">
+        <h4 className="font-medium text-sm text-[#0F3A3E]">Teste de Disparo WhatsApp</h4>
+        <div className="flex gap-3">
+          <input
+            type="text"
+            placeholder="Ex: 5511999999999"
+            value={testPhone}
+            onChange={(e) => setTestPhone(e.target.value)}
+            className="flex-1 border border-[#E9E1D2] bg-white px-3 py-2 text-sm text-[#0F3A3E] focus:outline-none focus:border-[#B07B1E]"
+          />
+          <button
+            onClick={handleTestWhatsApp}
+            disabled={testing}
+            className="bg-[#0F3A3E] text-white px-4 py-2 text-sm font-medium rounded hover:bg-[#16504F] disabled:opacity-50"
+          >
+            {testing ? "Enviando..." : "Testar WhatsApp"}
+          </button>
+        </div>
+
+        {testResult && (
+          <div className="mt-4 p-3 bg-white border border-[#E9E1D2] rounded text-xs font-mono space-y-1">
+            <p className="font-bold text-[#0F3A3E]">Resposta Literal da Zernio:</p>
+            <pre className="whitespace-pre-wrap overflow-x-auto text-[11px] text-[#51635F]">
+              {JSON.stringify(testResult, null, 2)}
+            </pre>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 function PaymentsSection() { return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E]">Pagamentos</h3></div>; }
 function AfiliadosSection() { return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E]">Afiliados</h3></div>; }
 function LojaSection() { return <div className="bg-white border border-[#E9E1D2] p-6"><h3 className="font-serif text-lg text-[#0F3A3E]">Dados da Loja</h3></div>; }

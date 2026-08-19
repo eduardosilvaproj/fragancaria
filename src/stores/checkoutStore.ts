@@ -22,6 +22,7 @@ export interface Customer {
   lastName: string;
   phone: string;
   cpf: string;
+  whatsapp_opt_in: boolean;
 }
 
 export interface ShippingAddress {

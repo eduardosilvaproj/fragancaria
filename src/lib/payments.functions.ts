@@ -56,6 +56,7 @@ const payerSchema = z.object({
   firstName: z.string().min(1).max(120),
   lastName: z.string().min(1).max(120),
   phone: z.string().max(40).optional(),
+  whatsappOptIn: z.boolean().optional(),
   identification: z.object({ type: z.literal("CPF"), number: cpfSchema }),
   address: z.object({
     zipCode: z.string().min(8).max(9),
@@ -569,6 +570,24 @@ export const createPayment = createServerFn({ method: "POST" })
           return { success: false, error: orderErr?.message || "Falha ao criar pedido" };
         }
         orderId = inserted.id;
+
+        // Atualiza opt-in do WhatsApp na tabela customers
+        if (data.payer.email) {
+          try {
+            await admin.from("customers").upsert({
+              email: data.payer.email,
+              name: `${data.payer.firstName} ${data.payer.lastName}`.trim(),
+              phone: data.payer.phone ?? null,
+              cpf: data.payer.identification.number,
+              auth_user_id: data.userId ?? null,
+              whatsapp_opt_in: Boolean(data.payer.whatsappOptIn),
+              whatsapp_opt_in_at: data.payer.whatsappOptIn ? new Date().toISOString() : null,
+              whatsapp_opt_in_source: data.payer.whatsappOptIn ? "checkout" : null,
+            } as any, { onConflict: "email" });
+          } catch (err) {
+            console.warn("[createPayment] falha ao atualizar opt-in do customer:", err);
+          }
+        }
       }
       // 2) monta body do pagamento conforme spec /v1/payments (sdk mercadopago v2.x).
       //    - payer.address: snake_case (zip_code, street_name, street_number, federal_unit)
