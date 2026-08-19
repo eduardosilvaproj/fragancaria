@@ -26,7 +26,7 @@ function RecuperarSenhaPage() {
     setError(null);
     setLoading(true);
     try {
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const origin = "https://fragranciaria.com";
       const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim(), {
         redirectTo: `${origin}/redefinir-senha`,
       });

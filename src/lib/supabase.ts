@@ -177,7 +177,7 @@ export const affiliateAuth = {
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/afiliado/dashboard`,
+        redirectTo: `https://fragranciaria.com/afiliado/dashboard`,
       },
     });
 
@@ -190,7 +190,7 @@ export const affiliateAuth = {
    */
   async resetPassword(email: string) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/afiliado/nova-senha`,
+      redirectTo: `https://fragranciaria.com/afiliado/nova-senha`,
     });
     if (error) throw error;
   },
