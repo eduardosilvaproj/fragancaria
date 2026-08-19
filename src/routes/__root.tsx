@@ -113,10 +113,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     ],
     links: [
       {
-        rel: "canonical",
-        href: "https://fragranciaria.com",
-      },
-      {
         rel: "icon",
         type: "image/png",
         href: "/images/icon.png",

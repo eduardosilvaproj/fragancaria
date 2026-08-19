@@ -231,7 +231,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
       // Monta system prompt com instrução de canal
       const channelInstruction =
         data.channel === "instagram"
-          ? "Você está atendendo por mensagem direta no Instagram. A pessoa NÃO está no site. Quando fizer sentido, convide para [fragranciaria.com](https://fragranciaria.com)."
+          ? "Você está atendendo por mensagem direta no Instagram. A pessoa NÃO está no site. Quando fizer sentido, convide para [www.fragranciaria.com](https://www.fragranciaria.com)."
           : data.channel === "whatsapp"
             ? "Você está atendendo por WhatsApp. A pessoa NÃO está no site. Seja prática e cordial, como em uma conversa de app de mensagens."
             : "Você está atendendo pelo chat do site.";

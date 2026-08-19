@@ -19,7 +19,7 @@ export function buildEmailLayout({
   preheader: string;
   conteudo: string;
 }): string {
-  const logoUrl = "https://fragranciaria.com/images/logo-email@2x.png";
+  const logoUrl = "https://www.fragranciaria.com/images/logo-email@2x.png";
   const year = new Date().getFullYear();
 
   return `<!DOCTYPE html>
