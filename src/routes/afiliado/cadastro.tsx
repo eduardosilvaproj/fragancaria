@@ -71,6 +71,7 @@ function CadastroAfiliadoPage() {
   const isLoggedIn = !!user;
   const [currentStep, setCurrentStep] = useState(isLoggedIn ? 1 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [result, setResult] = useState<any>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -201,7 +202,7 @@ function CadastroAfiliadoPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await registerAffiliate({
+      const res = await registerAffiliate({
         data: {
           full_name: formData.full_name,
           email: isLoggedIn ? user?.email ?? formData.email : formData.email,
@@ -228,29 +229,31 @@ function CadastroAfiliadoPage() {
         },
       });
 
-      if (!result.success) {
-        if (result.state === "needs_login") {
-          toast.error(result.error, {
+      setResult(res);
+
+      if (!res.success) {
+        if (res.state === "needs_login") {
+          toast.error(res.error, {
             duration: 6000,
             action: {
               label: "Fazer login",
-              onClick: () => navigate({ to: result.loginUrl }),
+              onClick: () => navigate({ to: res.loginUrl }),
             },
           });
           return;
         }
 
-        if (result.state === "needs_confirmation") {
-          toast.error(result.error, { duration: 6000 });
+        if (res.state === "needs_confirmation") {
+          toast.error(res.error, { duration: 6000 });
           return;
         }
 
-        if (result.state === "already_affiliate") {
-          toast.error(result.error, { duration: 5000 });
+        if (res.state === "already_affiliate") {
+          toast.error(res.error, { duration: 5000 });
           return;
         }
 
-        throw new Error(result.error || "Erro ao realizar cadastro");
+        throw new Error(res.error || "Erro ao realizar cadastro");
       }
 
       toast.success("Cadastro realizado com sucesso! Aguarde a aprovaÃ§Ã£o.", {
@@ -615,7 +618,7 @@ function CadastroAfiliadoPage() {
                       value={formData.password}
                       onChange={(e) => updateField("password", e.target.value)}
                       className={`${inputClassName} pr-12`}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="Mï¿½nimo 8 caracteres"
                     />
                     <button
                       type="button"
@@ -678,7 +681,7 @@ function CadastroAfiliadoPage() {
                         target="_blank"
                         className="text-[#B07B1E] hover:underline"
                       >
-                        Política de Privacidade
+                        Polï¿½tica de Privacidade
                       </Link>{" "}
                       do Programa de Afiliados Fragranciaria. *
                     </span>
@@ -710,7 +713,7 @@ function CadastroAfiliadoPage() {
                       target="_blank"
                       className="text-[#B07B1E] hover:underline"
                     >
-                      Política de Privacidade
+                      Polï¿½tica de Privacidade
                     </Link>{" "}
                     do Programa de Afiliados Fragranciaria. *
                   </span>

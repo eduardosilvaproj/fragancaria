@@ -81,7 +81,7 @@ export const registerAffiliate = createServerFn({ method: "POST" })
             state: "needs_confirmation",
             email,
             resendUrl: "/afiliado/login",
-            error: "Sua conta ainda não foi confirmada. Confirme o e-mail ou solicite o reenvio da confirmação.",
+            error: "Sua conta ainda não foi confirmada. Confirme o e-mail antes de continuar ou solicite o reenvio da confirmação no login.",
           };
         }
 
