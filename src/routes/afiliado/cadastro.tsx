@@ -180,7 +180,10 @@ function CadastroAfiliadoPage() {
       if (formData.password !== formData.confirm_password) newErrors.confirm_password = "Senhas não conferem";
     }
 
-    if (!formData.accepted_terms) newErrors.accepted_terms = "Você deve aceitar os termos";
+    const maxStep = isLoggedIn ? 3 : STEPS.length;
+    if ((isLoggedIn && step === 3) || (!isLoggedIn && step === 4)) {
+      if (!formData.accepted_terms) newErrors.accepted_terms = "Você deve aceitar os termos";
+    }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
