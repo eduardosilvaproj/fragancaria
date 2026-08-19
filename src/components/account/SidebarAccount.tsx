@@ -10,6 +10,7 @@ import {
   Star,
   MapPin,
   ChevronRight,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -135,6 +136,29 @@ export function SidebarAccount() {
           )
         )}
       </nav>
+
+      <div className="mt-4 pt-3 border-t border-[#E9E1D2]">
+        <button
+          onClick={async () => {
+            try {
+              const { supabase } = await import("@/lib/supabase");
+              await supabase.auth.signOut();
+              // Limpar carrinho e cupom local para evitar vazamento entre usuários
+              localStorage.removeItem("fragrancia-cart-storage");
+              localStorage.removeItem("fragrancia-coupon-storage");
+              window.location.href = "/";
+            } catch (err) {
+              console.error("Erro ao sair:", err);
+            }
+          }}
+          className="w-full group flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg text-sm text-red-600 hover:bg-red-50 transition-colors"
+        >
+          <span className="flex items-center gap-3 font-medium">
+            <LogOut className="h-4 w-4 text-red-500 group-hover:text-red-600" aria-hidden />
+            Sair da conta
+          </span>
+        </button>
+      </div>
     </aside>
   );
 }

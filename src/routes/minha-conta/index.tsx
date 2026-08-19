@@ -26,7 +26,7 @@ function DashboardPage() {
     enabled: !!user,
     queryFn: async () => {
       if (!user) return null;
-      const [customer, ordersCount, activeCount, wishlistCount, unreadCount] =
+      const [customer, ordersCount, activeCount, wishlistCount, unreadCount, affiliateRes] =
         await Promise.all([
           supabase
             .from("customers")
@@ -55,6 +55,11 @@ function DashboardPage() {
             .select("id", { count: "exact", head: true })
             .eq("user_id", user.id)
             .eq("read", false),
+          supabase
+            .from("affiliates")
+            .select("id, status")
+            .eq("user_id", user.id)
+            .maybeSingle(),
         ]);
       return {
         customer: customer.data as any,
@@ -62,6 +67,7 @@ function DashboardPage() {
         activeCount: activeCount.count ?? 0,
         wishlistCount: wishlistCount.count ?? 0,
         unreadCount: unreadCount.count ?? 0,
+        affiliate: affiliateRes.data as any,
       };
     },
     refetchOnWindowFocus: false,
@@ -182,22 +188,44 @@ function DashboardPage() {
             <ArrowRight className="h-5 w-5 text-[#0F3A3E] group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
-        <Link
-          to="/afiliado/cadastro"
-          className="bg-white rounded-2xl border border-[#E9E1D2] p-5 hover:border-[#B07B1E] transition-colors group sm:col-span-2"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-[11px] uppercase tracking-wider text-[#B07B1E] font-semibold">
-                Parceria & Ganhos
-              </p>
-              <p className="text-base font-semibold text-[#0F3A3E] mt-1">
-                Quero ser afiliado Fragranciaria
-              </p>
-            </div>
-            <ArrowRight className="h-5 w-5 text-[#B07B1E] group-hover:translate-x-1 transition-transform" />
-          </div>
-        </Link>
+        {(() => {
+          const aff = dashboard.data?.affiliate;
+          const affStatus = aff?.status;
+          const href = affStatus === "approved"
+            ? "/afiliado/dashboard"
+            : affStatus === "pending"
+            ? "/afiliado/cadastro-sucesso"
+            : "/afiliado/cadastro";
+          const title = affStatus === "approved"
+            ? "Acessar Painel de Afiliado"
+            : affStatus === "pending"
+            ? "Cadastro de Afiliado em Análise"
+            : "Quero ser afiliado Fragranciaria";
+          const subtitle = affStatus === "approved"
+            ? "Acompanhe suas vendas, comissões e links"
+            : affStatus === "pending"
+            ? "Sua solicitação está sendo analisada pela equipe"
+            : "Parceria & Ganhos";
+
+          return (
+            <Link
+              to={href}
+              className="bg-white rounded-2xl border border-[#E9E1D2] p-5 hover:border-[#B07B1E] transition-colors group sm:col-span-2"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] uppercase tracking-wider text-[#B07B1E] font-semibold">
+                    {subtitle}
+                  </p>
+                  <p className="text-base font-semibold text-[#0F3A3E] mt-1">
+                    {title}
+                  </p>
+                </div>
+                <ArrowRight className="h-5 w-5 text-[#B07B1E] group-hover:translate-x-1 transition-transform" />
+              </div>
+            </Link>
+          );
+        })()}
       </div>
     </div>
   );
