@@ -235,3 +235,18 @@ export const registerAffiliate = createServerFn({ method: "POST" })
       };
     }
   });
+
+export const resendAffiliateConfirmation = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ email: z.string().email() }).parse(d))
+  .handler(async ({ data: { email } }: { data: { email: string } }) => {
+    const { data, error } = await supabaseAdmin.auth.admin.generateLink({
+      type: "signup",
+      email,
+    } as any);
+
+    if (error) {
+      return { success: false as const, error: error.message || "Erro ao reenviar confirmação." };
+    }
+
+    return { success: true as const, data: { actionLink: (data as any)?.properties?.action_link ?? null } };
+  });
