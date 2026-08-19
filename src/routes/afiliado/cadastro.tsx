@@ -1,12 +1,13 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Eye, EyeOff, ArrowRight, ArrowLeft, Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { registerAffiliate } from "@/lib/affiliates.functions";
 import type { AffiliateRegistrationForm, PixKeyType } from "@/types/affiliate";
 import { affiliateAuth } from "@/lib/supabase";
+import { useSupabaseUser } from "@/hooks/useSupabaseUser";
 
 export const Route = createFileRoute("/afiliado/cadastro")({
   head: () => ({
@@ -65,7 +66,10 @@ const BRAZILIAN_STATES = [
 
 function CadastroAfiliadoPage() {
   const navigate = useNavigate();
-  const [currentStep, setCurrentStep] = useState(1);
+  const { data: userData } = useSupabaseUser();
+  const user = userData?.user ?? null;
+  const isLoggedIn = !!user;
+  const [currentStep, setCurrentStep] = useState(isLoggedIn ? 1 : 1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -156,8 +160,10 @@ function CadastroAfiliadoPage() {
 
     if (step === 1) {
       if (!formData.full_name.trim()) newErrors.full_name = "Nome é obrigatório";
-      if (!formData.email.trim()) newErrors.email = "E-mail é obrigatório";
-      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "E-mail inválido";
+      if (!isLoggedIn) {
+        if (!formData.email.trim()) newErrors.email = "E-mail é obrigatório";
+        else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = "E-mail inválido";
+      }
       if (!formData.phone.trim()) newErrors.phone = "Telefone é obrigatório";
       if (!formData.cpf.trim()) newErrors.cpf = "CPF é obrigatório";
       else if (formData.cpf.replace(/\D/g, "").length !== 11) newErrors.cpf = "CPF inválido";
@@ -167,20 +173,22 @@ function CadastroAfiliadoPage() {
       if (!formData.pix_key.trim()) newErrors.pix_key = "Chave Pix é obrigatória";
     }
 
-    if (step === 4) {
+    if (step === 4 && !isLoggedIn) {
       if (!formData.password) newErrors.password = "Senha é obrigatória";
       else if (formData.password.length < 8) newErrors.password = "Senha deve ter no mínimo 8 caracteres";
       if (formData.password !== formData.confirm_password) newErrors.confirm_password = "Senhas não conferem";
-      if (!formData.accepted_terms) newErrors.accepted_terms = "Você deve aceitar os termos";
     }
+
+    if (!formData.accepted_terms) newErrors.accepted_terms = "Você deve aceitar os termos";
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const nextStep = () => {
+    const maxStep = isLoggedIn ? 3 : STEPS.length;
     if (validateStep(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, STEPS.length));
+      setCurrentStep((prev) => Math.min(prev + 1, maxStep));
     }
   };
 
@@ -193,10 +201,56 @@ function CadastroAfiliadoPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await registerAffiliate({ data: formData });
+      const result = await registerAffiliate({
+        data: {
+          full_name: formData.full_name,
+          email: isLoggedIn ? user?.email ?? formData.email : formData.email,
+          password: isLoggedIn ? null : formData.password,
+          phone: formData.phone || null,
+          cpf: formData.cpf || null,
+          birth_date: formData.birth_date || null,
+          address_street: formData.address_street || null,
+          address_number: formData.address_number || null,
+          address_complement: formData.address_complement || null,
+          address_neighborhood: formData.address_neighborhood || null,
+          address_city: formData.address_city || null,
+          address_state: formData.address_state || null,
+          address_zip: formData.address_zip || null,
+          pix_key: formData.pix_key || null,
+          pix_key_type: formData.pix_key_type || null,
+          instagram: formData.instagram || null,
+          youtube: formData.youtube || null,
+          tiktok: formData.tiktok || null,
+          website: formData.website || null,
+          accepted_terms: formData.accepted_terms,
+          sessionUserId: user?.id ?? null,
+          sessionEmail: user?.email ?? null,
+        },
+      });
 
       if (!result.success) {
-        throw new Error(result.error);
+        if (result.state === "needs_login") {
+          toast.error(result.error, {
+            duration: 6000,
+            action: {
+              label: "Fazer login",
+              onClick: () => navigate({ to: result.loginUrl }),
+            },
+          });
+          return;
+        }
+
+        if (result.state === "needs_confirmation") {
+          toast.error(result.error, { duration: 6000 });
+          return;
+        }
+
+        if (result.state === "already_affiliate") {
+          toast.error(result.error, { duration: 5000 });
+          return;
+        }
+
+        throw new Error(result.error || "Erro ao realizar cadastro");
       }
 
       toast.success("Cadastro realizado com sucesso! Aguarde a aprovação.", {
@@ -549,7 +603,7 @@ function CadastroAfiliadoPage() {
             )}
 
             {/* Step 4: Senha e Termos */}
-            {currentStep === 4 && (
+            {!isLoggedIn && currentStep === 4 && (
               <div className="space-y-5">
                 <h2 className="font-serif text-[20px] text-[#0F3A3E] mb-6">Criar Senha</h2>
 
@@ -561,7 +615,7 @@ function CadastroAfiliadoPage() {
                       value={formData.password}
                       onChange={(e) => updateField("password", e.target.value)}
                       className={`${inputClassName} pr-12`}
-                      placeholder="Mínimo 8 caracteres"
+                      placeholder="M�nimo 8 caracteres"
                     />
                     <button
                       type="button"
@@ -624,7 +678,7 @@ function CadastroAfiliadoPage() {
                         target="_blank"
                         className="text-[#B07B1E] hover:underline"
                       >
-                        Política de Privacidade
+                        Pol�tica de Privacidade
                       </Link>{" "}
                       do Programa de Afiliados Fragranciaria. *
                     </span>
@@ -633,6 +687,37 @@ function CadastroAfiliadoPage() {
                     <p className={`${errorClassName} mt-2`}>{errors.accepted_terms}</p>
                   )}
                 </div>
+              </div>
+            )}
+
+            {isLoggedIn && currentStep === 3 && (
+              <div className="pt-4 border-t border-[#E0D8C7]">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.accepted_terms}
+                    onChange={(e) => updateField("accepted_terms", e.target.checked)}
+                    className="mt-1 h-4 w-4 border-[#E0D8C7] text-[#0F3A3E] focus:ring-[#B07B1E]"
+                  />
+                  <span className="text-[13px] text-[#51635F]">
+                    Li e aceito os{" "}
+                    <Link to="/termos" target="_blank" className="text-[#B07B1E] hover:underline">
+                      Termos de Uso
+                    </Link>{" "}
+                    e a{" "}
+                    <Link
+                      to="/privacidade"
+                      target="_blank"
+                      className="text-[#B07B1E] hover:underline"
+                    >
+                      Pol�tica de Privacidade
+                    </Link>{" "}
+                    do Programa de Afiliados Fragranciaria. *
+                  </span>
+                </label>
+                {errors.accepted_terms && (
+                  <p className={`${errorClassName} mt-2`}>{errors.accepted_terms}</p>
+                )}
               </div>
             )}
 
@@ -651,7 +736,7 @@ function CadastroAfiliadoPage() {
                 <div />
               )}
 
-              {currentStep < STEPS.length ? (
+              {currentStep < (isLoggedIn ? 3 : STEPS.length) ? (
                 <button
                   type="button"
                   onClick={nextStep}

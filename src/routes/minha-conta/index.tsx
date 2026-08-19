@@ -182,6 +182,22 @@ function DashboardPage() {
             <ArrowRight className="h-5 w-5 text-[#0F3A3E] group-hover:translate-x-1 transition-transform" />
           </div>
         </Link>
+        <Link
+          to="/afiliado/cadastro"
+          className="bg-white rounded-2xl border border-[#E9E1D2] p-5 hover:border-[#B07B1E] transition-colors group sm:col-span-2"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-[11px] uppercase tracking-wider text-[#B07B1E] font-semibold">
+                Parceria & Ganhos
+              </p>
+              <p className="text-base font-semibold text-[#0F3A3E] mt-1">
+                Quero ser afiliado Fragranciaria
+              </p>
+            </div>
+            <ArrowRight className="h-5 w-5 text-[#B07B1E] group-hover:translate-x-1 transition-transform" />
+          </div>
+        </Link>
       </div>
     </div>
   );
