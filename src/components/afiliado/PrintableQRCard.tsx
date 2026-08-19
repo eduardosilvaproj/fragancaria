@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import QRCode from "qrcode";
 import { Download, Loader2, QrCode } from "lucide-react";
 
-// QR do link de indicação → https://www.fragranciaria.com/?ref={affiliate_code}
+// QR do link de indicação → https://fragranciaria.com/?ref={affiliate_code}
 // Arte impressa em A5 (medidas travadas em mm para sair no tamanho certo em
 // qualquer impressora). QR com nível de correção Q para resistir a desgaste.
 
@@ -29,7 +29,7 @@ export function PrintableQRCard({
   const [generating, setGenerating] = useState(false);
   const generatedFor = useRef<string | null>(null);
 
-  const refUrl = `https://www.fragranciaria.com/?ref=${affiliateCode}`;
+  const refUrl = `https://fragranciaria.com/?ref=${affiliateCode}`;
 
   useEffect(() => {
     QRCode.toDataURL(refUrl, {

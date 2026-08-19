@@ -51,6 +51,14 @@ const nodeListener = toNodeListener(handler);
 
 // Serve static assets + Nitro handler
 const server = http.createServer((req, res) => {
+  const host = req.headers.host || '';
+  if (host.startsWith('www.')) {
+    const target = `https://fragranciaria.com${req.url || '/'}`;
+    res.writeHead(301, { Location: target });
+    res.end();
+    return;
+  }
+
   // Handle /assets/* - try BOTH dist/client/assets (client-side) and dist/server/assets (server-side)
   if (req.url.startsWith('/assets/')) {
     // First try dist/server/assets (server-side bundles needed for SSR)

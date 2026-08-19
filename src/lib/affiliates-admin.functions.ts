@@ -148,7 +148,7 @@ export const approveAffiliate = createServerFn({
         email,
         fullName,
         affiliateCode,
-        dashboardUrl: `${process.env.PUBLIC_URL || "https://www.fragranciaria.com"}/afiliado`,
+        dashboardUrl: `${process.env.PUBLIC_URL || "https://fragranciaria.com"}/afiliado`,
       }).catch((err) => console.error("[approveAffiliate] e-mail não enviado:", err));
     }
 

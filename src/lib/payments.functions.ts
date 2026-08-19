@@ -597,7 +597,7 @@ export const createPayment = createServerFn({ method: "POST" })
         external_reference: orderId,
         notification_url: mpWebhookUrl(
           request,
-          `${process.env.PUBLIC_URL || "https://www.fragranciaria.com"}/api/public/mp-webhook`,
+          `${process.env.PUBLIC_URL || "https://fragranciaria.com"}/api/public/mp-webhook`,
         ),
         payer: {
           email: data.payer.email,
