@@ -85,7 +85,7 @@ function isShortReply(text: string): boolean {
 
 function isEscalationTopic(text: string): boolean {
   const normalized = text.toLowerCase();
-  return /\b(cancelamento|cancelar|troca|devolu[cç][aã]o|produto errado|produto danificado|reclama[cç][aã]o)\b/.test(normalized);
+  return /\b(cancel|troc|devolv|devolu|errad|danific|reclam)\w*\b/.test(normalized);
 }
 
 function getEscalationSubject(text: string): string {
