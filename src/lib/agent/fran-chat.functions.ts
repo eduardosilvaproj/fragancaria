@@ -127,6 +127,18 @@ const TOOLS = [
       required: ["toCep", "productIds"],
     },
   },
+  {
+    name: "getRecentOrdersByPhone",
+    description:
+      "Busca até 3 pedidos mais recentes de um cliente pelo telefone (usado no WhatsApp). Retorna array com id, status, paymentStatus, trackingCode, createdAt, items e statusHistory. Use quando o cliente responder a um template transacional e perguntar sobre 'meu pedido', 'quando chega', 'status'.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        phone: { type: "string", description: "Telefone do cliente no formato E.164 (ex: +5511999999999)." },
+      },
+      required: ["phone"],
+    },
+  },
 ];
 
 export const chatWithFran = createServerFn({ method: "POST" })
@@ -222,7 +234,7 @@ export const chatWithFran = createServerFn({ method: "POST" })
       const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
       const { FRAN_SYSTEM_PROMPT } = await import("./fran-persona");
       const { searchProducts, getProduct } = await import("./product-search");
-      const { getOrderByToken, getOrderByIdAndEmail } = await import("./order-status");
+      const { getOrderByToken, getOrderByIdAndEmail, getRecentOrdersByPhone } = await import("./order-status");
       const { getPaymentStatusByToken, getPaymentStatusByIdAndEmail } = await import("./order-status");
       const { quoteShipping, buscarProdutosParaCotacao } = await import("./quote-shipping");
 
@@ -318,6 +330,11 @@ export const chatWithFran = createServerFn({ method: "POST" })
               console.log(`[fran-chat] quoteShipping input: toCep=${args.toCep}, productIds=${JSON.stringify(args.productIds)}`);
               const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
               result = await quoteShipping(args.toCep, produtos);
+            } else if (block.name === "getRecentOrdersByPhone") {
+              const args = block.input as { phone: string };
+              // SEGURANÇA: o telefone vem do contexto da conversa (webhook), nunca do modelo
+              // Em canal whatsapp, o telefone já está normalizado no contexto
+              result = await getRecentOrdersByPhone(supabaseAdmin, args.phone);
             } else {
               result = { error: `Ferramenta desconhecida: ${block.name}` };
             }

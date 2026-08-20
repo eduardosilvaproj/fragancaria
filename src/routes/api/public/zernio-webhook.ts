@@ -75,11 +75,24 @@ async function sendZernioMessage(
   }
 }
 
+function isShortReply(text: string): boolean {
+  const normalized = text.trim().toLowerCase();
+  if (!normalized) return false;
+  const emojiOnly = /^[\p{Emoji_Presentation}\p{Emoji}\s]+$/u.test(normalized);
+  return ["ok", "obrigado", "obrigada", "valeu", "blz", "beleza"].includes(normalized) || emojiOnly;
+}
+
+function isEscalationTopic(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return /\b(cancelamento|cancelar|troca|devolu[cç][aã]o|produto errado|produto danificado|reclama[cç][aã]o)\b/.test(normalized);
+}
+
 async function processFranResponse(payload: {
   message: { conversationId: string; text?: string; id: string };
   account: { id: string };
   channel: "instagram" | "whatsapp";
 }): Promise<void> {
+  console.log("[zernio-webhook] Payload completo para debug:", JSON.stringify(payload));
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Busca a conversa pelo zernio_conversation_id
@@ -102,10 +115,13 @@ async function processFranResponse(payload: {
     return;
   }
 
-  // Texto vazio (só anexo) — não chama a Fran
+  // Texto vazio (só anexo)
   const text = (payload.message.text || "").trim();
+
+  // Áudio/imagem/figurinhas -> pedir texto (a Zernio envia text: undefined ou vazio para midia)
   if (!text) {
-    return;
+      // TODO: Implementar envio de mensagem de texto pedindo esclarecimento
+      return;
   }
 
   // Rate-limit por conversationId
@@ -118,9 +134,6 @@ async function processFranResponse(payload: {
   }
 
   // Busca histórico da conversa (exclui a mensagem atual para não duplicar).
-  // Usamos .neq("zernio_message_id") NÃO funciona porque as respostas da Fran
-  // têm zernio_message_id=NULL, e SQL NULL != 'id' é NULL (falso) — essas
-  // linhas seriam excluídas. Buscamos tudo e filtramos em JS.
   const { data: historicoBruto } = await (supabaseAdmin as any)
     .from("messages")
     .select("content, sender, created_at, zernio_message_id")
@@ -135,43 +148,47 @@ async function processFranResponse(payload: {
       content: m.content,
     }));
 
-  // Chama a Fran (reusa a lógica existente).
-  // Não passa sessionId — a conversa Instagram já foi criada no handler e o
-  // check de replied_by já foi feito acima. O sessionId faria a chatWithFran
-  // buscar por session_id+channel='web' e criar uma conversa duplicada.
-  const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
-  const result = await chatWithFran({
-    data: {
-      mensagem: text,
-      historico,
-      channel: payload.channel,
-    },
-  });
+  let reply: string;
 
-  if (!result.success) {
-    if (result.error === "human_mode") return; // handoff detectado
-    console.error("[zernio-webhook] Fran erro:", result.error);
-    return;
+  // Lógica de resposta curta
+  if (isShortReply(text)) {
+      reply = "De nada! 😊";
+  }
+  // Lógica de escalonamento
+  else if (isEscalationTopic(text)) {
+      reply = "Entendi, isso precisa da nossa equipe. Já encaminhei pra eles e em breve alguém entra em contato.";
+      await (supabaseAdmin as any).from("conversations").update({ replied_by: "human" }).eq("id", conv.id);
+  }
+  else {
+      // Chama a Fran
+      const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
+      const result = await chatWithFran({
+        data: {
+          mensagem: text,
+          historico,
+          channel: payload.channel,
+        },
+      });
+
+      if (!result.success) {
+        if (result.error === "human_mode") return; // handoff detectado
+        console.error("[zernio-webhook] Fran erro:", result.error);
+        return;
+      }
+      reply = result.resposta;
   }
 
   // Envia a resposta para o Zernio
   await sendZernioMessage(
     payload.message.conversationId,
     payload.account.id,
-    result.resposta,
+    reply,
   );
-
-  // No WhatsApp, envia botões de resposta para os produtos recomendados
-  /*
-  if (payload.channel === "whatsapp" && result.produtoPrincipal?.id) {
-    // ...
-  }
-  */
 
   // Grava a resposta da Fran no banco (sender='agent') e atualiza a conversa
   await (supabaseAdmin as any).from("messages").insert({
     conversation_id: conv.id,
-    content: result.resposta,
+    content: reply,
     sender: "agent",
     message_type: "text",
     read: false,
@@ -179,7 +196,7 @@ async function processFranResponse(payload: {
   await (supabaseAdmin as any)
     .from("conversations")
     .update({
-      last_message: result.resposta,
+      last_message: reply,
       last_message_at: new Date().toISOString(),
       unread: true,
     })

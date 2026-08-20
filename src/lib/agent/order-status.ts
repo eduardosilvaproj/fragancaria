@@ -122,3 +122,24 @@ export async function getPaymentStatusByIdAndEmail(
   if (r.customer_email.trim().toLowerCase() !== email.trim().toLowerCase()) return null;
   return r.payment_status ?? "pending";
 }
+
+// Modo 3: busca pedidos recentes por telefone (para WhatsApp)
+// Retorna até 3 pedidos mais recentes (ordenados por created_at DESC)
+// Usado quando o cliente responde a um template transacional e quer saber do pedido
+export async function getRecentOrdersByPhone(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  phone: string,
+): Promise<AgentOrderStatus[]> {
+  const { data, error } = await db
+    .from("orders")
+    .select(SAFE_COLUMNS)
+    .eq("customer_phone", phone)
+    .order("created_at", { ascending: false })
+    .limit(3);
+
+  if (error) return [];
+  if (!data || data.length === 0) return [];
+
+  return data.map((r: OrderRow) => rowToDTO(r));
+}
