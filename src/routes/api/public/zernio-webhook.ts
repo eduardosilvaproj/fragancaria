@@ -89,7 +89,8 @@ function isEscalationTopic(text: string): boolean {
   // Termos que exigem contexto de pedido/transação para evitar falso positivo (ex: "trocar de shampoo")
   const hasAmbiguousTroc = /\b(troc)\w*\b/.test(normalized);
   if (hasAmbiguousTroc) {
-    const hasContext = /\b(pedido|comprei|recebi|chegou|veio|entregue|produto|errado|danificado)\b/.test(normalized);
+    // "produto" removido para evitar falso positivo em "quero trocar de produto, qual indica?"
+    const hasContext = /\b(pedido|comprei|recebi|chegou|veio|entregue|errado|danificado)\b/.test(normalized);
     if (!hasContext) {
       return false;
     }
@@ -205,7 +206,7 @@ async function processFranResponse(payload: {
   else if (isEscalationTopic(rawText)) {
       const subject = getEscalationSubject(rawText);
       reply = `Entendi, isso precisa da nossa equipe. Por favor, envie um e-mail para contato@fragranciaria.com com o assunto "${subject}" e explique seu caso por escrito.`;
-      await (supabaseAdmin as any).from("conversations").update({ replied_by: "human" }).eq("id", conv.id);
+      await (supabaseAdmin as any).from("conversations").update({ status: "pending" }).eq("id", conv.id);
   }
   else {
       const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
