@@ -89,7 +89,7 @@ function isEscalationTopic(text: string): boolean {
 }
 
 async function processFranResponse(payload: {
-  message: { conversationId: string; text?: string; id: string; type?: string };
+  message: { conversationId: string; text?: string; id: string; type?: string; attachments?: any[] };
   account: { id: string };
   channel: "instagram" | "whatsapp";
 }): Promise<void> {
@@ -122,16 +122,15 @@ async function processFranResponse(payload: {
   }
 
   const rawText = (payload.message.text || "").trim();
-  const isAudio = Boolean(payload.message.type && /audio|voice|ptt|voice_note/i.test(payload.message.type));
-  const isAttachment = !rawText || isAudio;
+  const attachments = payload.message.attachments || [];
+  const isAttachment = !rawText && attachments.length > 0;
 
-  // Áudio/imagem/figurinhas -> pedir texto
+  // Se tiver anexo, pedir texto (independente do tipo: áudio, imagem, vídeo)
   if (isAttachment) {
-      console.log("[zernio-webhook] Mensagem sem texto ou mídia:", JSON.stringify({
+      console.log("[zernio-webhook] Mensagem com anexo:", JSON.stringify({
         conversationId: payload.message.conversationId,
         id: payload.message.id,
-        type: payload.message.type,
-        text: payload.message.text,
+        attachments: attachments,
       }));
       const reply = "Oi! Por enquanto só consigo ler mensagens de texto. Pode mandar sua dúvida por escrito que eu respondo por aqui.";
       await sendZernioMessage(
