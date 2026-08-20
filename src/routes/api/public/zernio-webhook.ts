@@ -88,6 +88,15 @@ function isEscalationTopic(text: string): boolean {
   return /\b(cancelamento|cancelar|troca|devolu[cç][aã]o|produto errado|produto danificado|reclama[cç][aã]o)\b/.test(normalized);
 }
 
+function getEscalationSubject(text: string): string {
+  const norm = text.toLowerCase();
+  if (norm.includes("cancel") || norm.includes("cancelar")) return "Cancelamento";
+  if (norm.includes("troca")) return "Troca";
+  if (norm.includes("devolu") || norm.includes("devolver")) return "Devolução";
+  if (norm.includes("errado") || norm.includes("danificado") || norm.includes("defeito")) return "Produto com defeito / Errado";
+  return "Reclamação";
+}
+
 async function processFranResponse(payload: {
   message: { conversationId: string; text?: string | null; id: string; type?: string; attachments?: any[]; sender?: { phoneNumber?: string } };
   account: { id: string };
@@ -184,7 +193,8 @@ async function processFranResponse(payload: {
       reply = "De nada! 😊";
   }
   else if (isEscalationTopic(rawText)) {
-      reply = "Entendi. Vou registrar para o time. Por favor, envie um e-mail para contato@fragranciaria.com com o assunto Cancelamento e explique seu caso por escrito.";
+      const subject = getEscalationSubject(rawText);
+      reply = `Entendi, isso precisa da nossa equipe. Por favor, envie um e-mail para contato@fragranciaria.com com o assunto "${subject}" e explique seu caso por escrito.`;
       await (supabaseAdmin as any).from("conversations").update({ replied_by: "human" }).eq("id", conv.id);
   }
   else {
@@ -274,9 +284,11 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
           });
         }
 
-        // Se não for texto, loga o payload e retorna 200
-        if (!msg.text) {
-          console.log("[zernio-webhook] payload nao-texto:", JSON.stringify(payload));
+        // Se não for texto E não tiver anexos, loga o payload e retorna 200
+        const hasText = Boolean(msg.text && String(msg.text).trim().length > 0);
+        const hasAttachments = Boolean(msg.attachments && Array.isArray(msg.attachments) && msg.attachments.length > 0);
+        if (!hasText && !hasAttachments) {
+          console.log("[zernio-webhook] payload sem texto e sem anexos:", JSON.stringify(payload));
           return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { ...corsHeaders, "content-type": "application/json" },
