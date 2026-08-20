@@ -85,6 +85,16 @@ function isShortReply(text: string): boolean {
 
 function isEscalationTopic(text: string): boolean {
   const normalized = text.toLowerCase();
+
+  // Termos que exigem contexto de pedido/transação para evitar falso positivo (ex: "trocar de shampoo")
+  const hasAmbiguousTroc = /\b(troc)\w*\b/.test(normalized);
+  if (hasAmbiguousTroc) {
+    const hasContext = /\b(pedido|comprei|recebi|chegou|veio|entregue|produto|errado|danificado)\b/.test(normalized);
+    if (!hasContext) {
+      return false;
+    }
+  }
+
   return /\b(cancel|troc|devolv|devolu|errad|danific|reclam)\w*\b/.test(normalized);
 }
 
