@@ -79,7 +79,8 @@ function isShortReply(text: string): boolean {
   const normalized = text.trim().toLowerCase();
   if (!normalized) return false;
   const emojiOnly = /^[\p{Emoji_Presentation}\p{Emoji}\s]+$/u.test(normalized);
-  return ["ok", "obrigado", "obrigada", "valeu", "blz", "beleza"].includes(normalized) || emojiOnly;
+  // Adicionar mais variações comuns
+  return ["ok", "obrigado", "obrigada", "valeu", "blz", "beleza", "obg", "vlw", "thanks", "thank you", "grato", "grata"].includes(normalized) || emojiOnly;
 }
 
 function isEscalationTopic(text: string): boolean {
@@ -88,11 +89,16 @@ function isEscalationTopic(text: string): boolean {
 }
 
 async function processFranResponse(payload: {
-  message: { conversationId: string; text?: string; id: string };
+  message: { conversationId: string; text?: string; id: string; type?: string };
   account: { id: string };
   channel: "instagram" | "whatsapp";
 }): Promise<void> {
-  console.log("[zernio-webhook] Payload completo para debug:", JSON.stringify(payload));
+  console.log("[zernio-webhook] Processando mensagem:", {
+    conversationId: payload.message.conversationId,
+    text: payload.message.text,
+    type: payload.message.type,
+    channel: payload.channel,
+  });
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
   // Busca a conversa pelo zernio_conversation_id
@@ -115,12 +121,36 @@ async function processFranResponse(payload: {
     return;
   }
 
-  // Texto vazio (só anexo)
-  const text = (payload.message.text || "").trim();
+  const rawText = (payload.message.text || "").trim();
+  const isAudio = Boolean(payload.message.type && /audio|voice|ptt|voice_note/i.test(payload.message.type));
+  const isAttachment = !rawText || isAudio;
 
-  // Áudio/imagem/figurinhas -> pedir texto (a Zernio envia text: undefined ou vazio para midia)
-  if (!text) {
-      // TODO: Implementar envio de mensagem de texto pedindo esclarecimento
+  // Áudio/imagem/figurinhas -> pedir texto
+  if (isAttachment) {
+      console.log("[zernio-webhook] Mensagem sem texto ou mídia:", JSON.stringify({
+        conversationId: payload.message.conversationId,
+        id: payload.message.id,
+        type: payload.message.type,
+        text: payload.message.text,
+      }));
+      const reply = "Oi! Por enquanto só consigo ler mensagens de texto. Pode mandar sua dúvida por escrito que eu respondo por aqui.";
+      await sendZernioMessage(
+        payload.message.conversationId,
+        payload.account.id,
+        reply,
+      );
+      await (supabaseAdmin as any).from("conversations").update({
+        last_message: reply,
+        last_message_at: new Date().toISOString(),
+        unread: true,
+      }).eq("id", conv.id);
+      await (supabaseAdmin as any).from("messages").insert({
+        conversation_id: conv.id,
+        content: reply,
+        sender: "agent",
+        message_type: "text",
+        read: false,
+      });
       return;
   }
 
@@ -150,28 +180,26 @@ async function processFranResponse(payload: {
 
   let reply: string;
 
-  // Lógica de resposta curta
-  if (isShortReply(text)) {
+  if (isShortReply(rawText)) {
+      console.log("[zernio-webhook] Resposta curta detectada:", rawText);
       reply = "De nada! 😊";
   }
-  // Lógica de escalonamento
-  else if (isEscalationTopic(text)) {
-      reply = "Entendi, isso precisa da nossa equipe. Já encaminhei pra eles e em breve alguém entra em contato.";
+  else if (isEscalationTopic(rawText)) {
+      reply = "Entendi. Vou registrar para o time. Por favor, envie um e-mail para contato@fragranciaria.com com o assunto Cancelamento e explique seu caso por escrito.";
       await (supabaseAdmin as any).from("conversations").update({ replied_by: "human" }).eq("id", conv.id);
   }
   else {
-      // Chama a Fran
       const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
       const result = await chatWithFran({
         data: {
-          mensagem: text,
+          mensagem: rawText,
           historico,
           channel: payload.channel,
         },
       });
 
       if (!result.success) {
-        if (result.error === "human_mode") return; // handoff detectado
+        if (result.error === "human_mode") return;
         console.error("[zernio-webhook] Fran erro:", result.error);
         return;
       }
