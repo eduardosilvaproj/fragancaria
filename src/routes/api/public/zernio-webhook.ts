@@ -89,7 +89,7 @@ function isEscalationTopic(text: string): boolean {
 }
 
 async function processFranResponse(payload: {
-  message: { conversationId: string; text?: string; id: string; type?: string; attachments?: any[] };
+  message: { conversationId: string; text?: string | null; id: string; type?: string; attachments?: any[]; sender?: { phoneNumber?: string } };
   account: { id: string };
   channel: "instagram" | "whatsapp";
 }): Promise<void> {
@@ -189,11 +189,13 @@ async function processFranResponse(payload: {
   }
   else {
       const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
+      const senderPhone = payload.message.sender?.phoneNumber;
       const result = await chatWithFran({
         data: {
           mensagem: rawText,
           historico,
           channel: payload.channel,
+          senderPhone,
         },
       });
 
@@ -390,7 +392,13 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
         // 4. Processa a Fran em background
         // =============================================================
         processFranResponse({
-          message: { conversationId, text: msg.text, id: msg.id },
+          message: {
+            conversationId,
+            text: msg.text,
+            id: msg.id,
+            attachments: msg.attachments,
+            sender: msg.sender,
+          },
           account: { id: accountId },
           channel: channel,
         }).catch((err) =>

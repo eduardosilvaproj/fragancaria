@@ -36,6 +36,8 @@ const inputSchema = z.object({
   sessionId: z.string().optional(),
   /** Canal de atendimento: 'web' (chat do site) ou 'instagram' (DM). */
   channel: z.enum(["web", "instagram", "whatsapp"]).default("web"),
+  /** Telefone do remetente quando o canal for WhatsApp. Vem do servidor. */
+  senderPhone: z.string().optional(),
 });
 
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
@@ -130,13 +132,10 @@ const TOOLS = [
   {
     name: "getRecentOrdersByPhone",
     description:
-      "Busca até 3 pedidos mais recentes de um cliente pelo telefone (usado no WhatsApp). Retorna array com id, status, paymentStatus, trackingCode, createdAt, items e statusHistory. Use quando o cliente responder a um template transacional e perguntar sobre 'meu pedido', 'quando chega', 'status'.",
+      "Busca até 3 pedidos mais recentes do cliente dono da conversa no WhatsApp. Não recebe telefone do modelo: o servidor injeta o telefone do remetente a partir do contexto do webhook. Retorna array com id, status, paymentStatus, trackingCode, createdAt, items e statusHistory. Use quando o cliente responder a um template transacional e perguntar sobre 'meu pedido', 'quando chega', 'status'.",
     input_schema: {
       type: "object" as const,
-      properties: {
-        phone: { type: "string", description: "Telefone do cliente no formato E.164 (ex: +5511999999999)." },
-      },
-      required: ["phone"],
+      properties: {},
     },
   },
 ];
@@ -331,10 +330,14 @@ export const chatWithFran = createServerFn({ method: "POST" })
               const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
               result = await quoteShipping(args.toCep, produtos);
             } else if (block.name === "getRecentOrdersByPhone") {
-              const args = block.input as { phone: string };
-              // SEGURANÇA: o telefone vem do contexto da conversa (webhook), nunca do modelo
-              // Em canal whatsapp, o telefone já está normalizado no contexto
-              result = await getRecentOrdersByPhone(supabaseAdmin, args.phone);
+              // SEGURANÇA: o telefone NUNCA vem do modelo. O tool não aceita
+              // parâmetro de identificação; o servidor injeta o telefone do
+              // remetente da conversa (senderPhone) no momento da execução.
+              if (!data.senderPhone) {
+                result = { error: "Não foi possível identificar o telefone do remetente desta conversa." };
+              } else {
+                result = await getRecentOrdersByPhone(supabaseAdmin, data.senderPhone);
+              }
             } else {
               result = { error: `Ferramenta desconhecida: ${block.name}` };
             }
