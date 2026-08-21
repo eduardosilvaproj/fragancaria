@@ -130,17 +130,13 @@ export async function sendZernioWhatsAppTemplate({
       return { success: false, error: `Broadcast criado com sucesso, mas ID não encontrado no retorno: ${createBody}` };
     }
 
-    // Passo 2: Adicionar destinatário com as variáveis (parâmetros posicionais: "1", "2", "3")
+    // Passo 2: Adicionar destinatário (phones: array de strings E.164)
     const recipientsUrl = `https://zernio.com/api/v1/broadcasts/${broadcastId}/recipients`;
     const recipientsPayload = {
-      recipients: [
-        {
-          phone: normalizedPhone,
-          variables: Object.fromEntries(
-            templateParams.map((p, i) => [String(i + 1), p.text])
-          ),
-        },
-      ],
+      phones: [normalizedPhone],
+      variables: Object.fromEntries(
+        templateParams.map((p, i) => [String(i + 1), p.text])
+      ),
     };
 
     console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários:", { url: recipientsUrl, payload: recipientsPayload });
