@@ -1,8 +1,10 @@
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { sendZernioWhatsAppTemplate, isWhatsAppEnabled } from "./zernio-whatsapp.functions";
+import { formatBRL } from "./utils";
 
 type WhatsAppOrderRow = {
   id: string;
+  total: number | null;
   customer_name: string | null;
   customer_phone: string | null;
   whatsapp_sent_approved: string | null;
@@ -18,7 +20,7 @@ async function claimWhatsAppSend(orderId: string, field: WhatsAppSentField) {
     .update({ [field]: now } as any)
     .eq("id", orderId)
     .is(field, null)
-    .select("id, customer_name, customer_phone, whatsapp_sent_approved, whatsapp_sent_shipped")
+    .select("id, total, customer_name, customer_phone, whatsapp_sent_approved, whatsapp_sent_shipped")
     .maybeSingle();
 
   if (error) throw error;
@@ -50,10 +52,11 @@ function buildWhatsAppPayload(order: WhatsAppOrderRow, trackingCode?: string) {
         ],
       }
     : {
-        templateName: "pedido_aprovado",
+        templateName: "venda_aprovada",
         templateParams: [
           { type: "text" as const, text: firstName },
           { type: "text" as const, text: shortId },
+          { type: "text" as const, text: formatBRL(order.total || 0) },
         ],
       };
 }

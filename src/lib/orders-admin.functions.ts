@@ -483,6 +483,7 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
         // Não bloqueia a resposta se o envio falhar.
         if (notify) {
           const { sendOrderStatusEmail } = await import("@/lib/email.functions");
+          const { sendPedidoEnviadoWhatsApp } = await import("@/lib/order-whatsapp.functions");
           await sendOrderStatusEmail({
             orderId: data.orderId,
             customerName: notify.name,
@@ -492,6 +493,11 @@ export const updateOrderForAdmin = createServerFn({ method: "POST" })
           }).catch((err) =>
             console.warn("[updateOrderForAdmin] e-mail de status falhou (não bloqueia)", err),
           );
+          if (notify.status === "shipped" && notify.trackingCode) {
+            await sendPedidoEnviadoWhatsApp(data.orderId, notify.trackingCode).catch((err) =>
+              console.warn("[updateOrderForAdmin] WhatsApp de despacho falhou (não bloqueia)", err),
+            );
+          }
         }
         return { success: true };
       } catch (e: unknown) {
