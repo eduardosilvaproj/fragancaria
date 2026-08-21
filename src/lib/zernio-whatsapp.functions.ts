@@ -76,16 +76,23 @@ export async function sendZernioWhatsAppTemplate({
   }
 
   try {
-    const url = "https://zernio.com/api/v1/whatsapp/templates/send";
+    // Endpoint oficial Zernio para envio de template (broadcast): inicia conversa nova
+    // e dispensa conversationId. Documentação: https://docs.zernio.com/platforms/whatsapp
+    const url = "https://zernio.com/api/v1/broadcasts/create-broadcast";
     const payload = {
-      platform: "whatsapp",
       accountId,
-      recipient: {
-        phone: normalizedPhone,
+      recipients: [
+        {
+          phone: normalizedPhone,
+          variables: Object.fromEntries(
+            templateParams.map((p, i) => [String(i + 1), p.text])
+          ),
+        },
+      ],
+      template: {
+        name: templateName,
+        language: "pt_BR",
       },
-      templateName,
-      templateLanguage: "pt_BR",
-      templateParams,
       category,
     };
 
@@ -100,12 +107,19 @@ export async function sendZernioWhatsAppTemplate({
       body: JSON.stringify(payload),
     });
 
+    const allowHeader = response.headers.get("allow");
     const responseBody = await response.text();
-    console.log("[ZernioWhatsApp] Resposta da API:", response.status, responseBody);
+    console.log("[ZernioWhatsApp] Resposta da API:", {
+      status: response.status,
+      allow: allowHeader,
+      body: responseBody,
+    });
 
     if (!response.ok) {
       const errorMessage = `Zernio API error: ${response.status} - ${responseBody}`;
-      console.error("[ZernioWhatsApp] Erro na API:", errorMessage);
+      if (allowHeader) {
+        console.warn(`[ZernioWhatsApp] Métodos aceitos pelo endpoint: ${allowHeader}`);
+      }
       return { success: false, error: errorMessage };
     }
 
