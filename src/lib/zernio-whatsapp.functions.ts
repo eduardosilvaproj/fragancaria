@@ -131,15 +131,24 @@ export async function sendZernioWhatsAppTemplate({
     }
 
     // Passo 2: Adicionar destinatário (phones: array de strings E.164)
+    // A Meta pode exigir variáveis como objeto {"1": val, "2": val} ou array [val1, val2]
+    const variablesObj = Object.fromEntries(
+      templateParams.map((p, i) => [String(i + 1), p.text])
+    );
+    const variablesArr = templateParams.map((p) => p.text);
+
     const recipientsUrl = `https://zernio.com/api/v1/broadcasts/${broadcastId}/recipients`;
+
+    // Tentamos enviar um payload robusto que atenda tanto mapeamento por chave quanto array posicional se suportado
     const recipientsPayload = {
       phones: [normalizedPhone],
-      variables: Object.fromEntries(
-        templateParams.map((p, i) => [String(i + 1), p.text])
-      ),
+      variables: variablesObj,
+      // Alguns gateways aceitam values ou parameters diretamente
+      parameters: variablesArr,
     };
 
-    console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários:", { url: recipientsUrl, payload: recipientsPayload });
+    console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários (Payload completo):", JSON.stringify({ url: recipientsUrl, payload: recipientsPayload }, null, 2));
+
     const recRes = await fetch(recipientsUrl, {
       method: "POST",
       headers,
