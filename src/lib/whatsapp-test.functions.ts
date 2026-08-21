@@ -20,7 +20,7 @@ export const sendTestWhatsApp = createServerFn({ method: "POST" })
 
       // Segurança: exige autenticação administrativa com papel de config
       const admin = await requireAdmin();
-      await requireRole(ADMIN_AREA_ROLES.settings);
+      await requireRole(ADMIN_AREA_ROLES.storeSettings);
 
       console.log(`[sendTestWhatsApp] Iniciando teste para ${phone} com template ${templateName}`);
 
