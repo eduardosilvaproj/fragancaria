@@ -47,16 +47,19 @@ export const sendTestWhatsApp = createServerFn({ method: "POST" })
         { phone, templateName, params: templateParams },
         { success: res.success, error: res.error }
       );
+
       return {
         success: res.success,
+        error: res.error || null,
         response: res,
         timestamp: new Date().toISOString(),
       };
     } catch (err: unknown) {
-      console.error("[sendTestWhatsApp] Exceção:", err);
+      const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao testar WhatsApp";
+      console.error("[sendTestWhatsApp] Exceção:", errorMessage);
       return {
         success: false,
-        error: err instanceof Error ? err.message : "Erro desconhecido ao testar WhatsApp",
+        error: errorMessage,
         timestamp: new Date().toISOString(),
       };
     }

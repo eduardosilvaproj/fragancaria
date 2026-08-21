@@ -104,12 +104,15 @@ export async function sendZernioWhatsAppTemplate({
     console.log("[ZernioWhatsApp] Resposta da API:", response.status, responseBody);
 
     if (!response.ok) {
-      return { success: false, error: `Zernio API error: ${response.status} - ${responseBody}` };
+      const errorMessage = `Zernio API error: ${response.status} - ${responseBody}`;
+      console.error("[ZernioWhatsApp] Erro na API:", errorMessage);
+      return { success: false, error: errorMessage };
     }
 
     return { success: true };
-  } catch (err: any) {
-    console.error("[ZernioWhatsApp] Exceção ao enviar mensagem:", err);
-    return { success: false, error: err?.message || "Internal error" };
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao enviar mensagem";
+    console.error("[ZernioWhatsApp] Exceção ao enviar mensagem:", errorMessage);
+    return { success: false, error: errorMessage };
   }
 }
