@@ -64,13 +64,26 @@ function buildWhatsAppPayload(order: WhatsAppOrderRow, trackingCode?: string) {
 async function sendTransactionalWhatsApp(orderId: string, field: WhatsAppSentField, trackingCode?: string): Promise<void> {
   try {
     const enabled = await isWhatsAppEnabled();
-    if (!enabled) return;
+    if (!enabled) {
+      console.log(`[OrderWhatsApp] Envio ignorado para ${orderId}: WhatsApp desativado nas configurações.`);
+      return;
+    }
 
     const order = await claimWhatsAppSend(orderId, field);
-    if (!order) return;
+    if (!order) {
+      console.log(`[OrderWhatsApp] Envio ignorado para ${orderId} (${field}): já enviado anteriormente (idempotência) ou pedido não encontrado.`);
+      return;
+    }
 
     const phone = order.customer_phone;
     if (!phone) {
+      console.warn(`[OrderWhatsApp] Falha no envio para ${orderId}: cliente sem número de telefone cadastrado.`);
+      await markWhatsAppSendFailed(orderId, field);
+      return;
+    }
+
+    if (field === "whatsapp_sent_shipped" && !trackingCode) {
+      console.warn(`[OrderWhatsApp] Falha no envio de pedido enviado para ${orderId}: código de rastreio ausente.`);
       await markWhatsAppSendFailed(orderId, field);
       return;
     }
@@ -84,10 +97,14 @@ async function sendTransactionalWhatsApp(orderId: string, field: WhatsAppSentFie
     });
 
     if (!res.success) {
+      console.error(`[OrderWhatsApp] Erro ao disparar template ${payload.templateName} para ${orderId}:`, res.error);
       await markWhatsAppSendFailed(orderId, field);
+    } else {
+      console.log(`[OrderWhatsApp] Sucesso ao disparar ${payload.templateName} para ${orderId} (${phone}).`);
     }
-  } catch (err) {
-    console.error("[OrderWhatsApp] Erro ao enviar WhatsApp transacional:", err);
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido";
+    console.error(`[OrderWhatsApp] Exceção crítica ao processar envio para ${orderId}:`, errorMessage);
   }
 }
 
