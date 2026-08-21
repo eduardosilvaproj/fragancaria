@@ -116,9 +116,18 @@ export async function sendZernioWhatsAppTemplate({
     }
 
     const broadcast = JSON.parse(createBody);
-    const broadcastId = broadcast?.id;
+    console.log("[ZernioWhatsApp] JSON parseado do Broadcast criado:", JSON.stringify(broadcast, null, 2));
+
+    const broadcastId =
+      broadcast?.id ||
+      broadcast?._id ||
+      broadcast?.broadcast?.id ||
+      broadcast?.broadcast?._id ||
+      broadcast?.data?.id ||
+      broadcast?.data?._id;
+
     if (!broadcastId) {
-      return { success: false, error: "Broadcast criado com sucesso, mas ID não retornado pela Zernio" };
+      return { success: false, error: `Broadcast criado com sucesso, mas ID não encontrado no retorno: ${createBody}` };
     }
 
     // Passo 2: Adicionar destinatário com as variáveis (parâmetros posicionais: "1", "2", "3")
