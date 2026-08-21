@@ -9,6 +9,13 @@ import {
   type NfeSettings,
 } from "@/lib/nfe.functions";
 import { backfillOrdersIbge } from "@/lib/orders-backfill.functions";
+import {
+  CST_ICMS_OPTIONS,
+  CSOSN_OPTIONS,
+  CST_PIS_COFINS_OPTIONS,
+  ORIGEM_MERCADORIA_OPTIONS,
+  MODALIDADE_FRETE_OPTIONS,
+} from "@/components/admin/fiscal-options";
 
 export function NfeSection() {
   const queryClient = useQueryClient();
@@ -45,20 +52,21 @@ export function NfeSection() {
     cfop_padrao: "",
     cst_icms_padrao: "",
     csosn_padrao: "",
-    origem_padrao: "",
+    origem_padrao: "" as number | "",
     icms_aliquota: "" as string | number,
     pis_aliquota: "" as string | number,
     cofins_aliquota: "" as string | number,
     cst_pis_cofins_padrao: "",
     unidade_padrao: "",
     cest_padrao: "",
-    modalidade_frete: "",
+    modalidade_frete: "" as number | "",
     cst_ibscbs_padrao: "",
     cclasstrib_padrao: "",
     aliquota_ibs_estadual: "" as string | number,
     aliquota_ibs_municipal: "" as string | number,
     aliquota_cbs: "" as string | number,
     codigo_beneficio_fiscal_padrao: "",
+    crt: 3,
   });
 
   useEffect(() => {
@@ -85,14 +93,15 @@ export function NfeSection() {
         cfop_padrao: settings.cfop_padrao || "",
         cst_icms_padrao: settings.cst_icms_padrao || "",
         csosn_padrao: settings.csosn_padrao || "",
-        origem_padrao: settings.origem_padrao !== undefined && settings.origem_padrao !== null ? String(settings.origem_padrao) : "",
+        origem_padrao: settings.origem_padrao !== undefined && settings.origem_padrao !== null ? Number(settings.origem_padrao) : "",
         icms_aliquota: settings.icms_aliquota ?? "",
         pis_aliquota: settings.pis_aliquota ?? "",
         cofins_aliquota: settings.cofins_aliquota ?? "",
         cst_pis_cofins_padrao: settings.cst_pis_cofins_padrao || "",
         unidade_padrao: settings.unidade_padrao || "",
         cest_padrao: settings.cest_padrao || "",
-        modalidade_frete: settings.modalidade_frete !== undefined && settings.modalidade_frete !== null ? String(settings.modalidade_frete) : "",
+        modalidade_frete: settings.modalidade_frete !== undefined && settings.modalidade_frete !== null ? Number(settings.modalidade_frete) : "",
+        crt: settings.crt ?? 3,
         cst_ibscbs_padrao: settings.cst_ibscbs_padrao || "",
         cclasstrib_padrao: settings.cclasstrib_padrao || "",
         aliquota_ibs_estadual: settings.aliquota_ibs_estadual ?? "",
@@ -149,14 +158,15 @@ export function NfeSection() {
       cfop_padrao: form.cfop_padrao,
       cst_icms_padrao: form.cst_icms_padrao,
       csosn_padrao: form.csosn_padrao,
-      origem_padrao: form.origem_padrao !== "" ? Number(form.origem_padrao) : null,
+      origem_padrao: form.origem_padrao === "" ? null : form.origem_padrao,
       icms_aliquota: form.icms_aliquota !== "" ? Number(form.icms_aliquota) : null,
       pis_aliquota: form.pis_aliquota !== "" ? Number(form.pis_aliquota) : null,
       cofins_aliquota: form.cofins_aliquota !== "" ? Number(form.cofins_aliquota) : null,
       cst_pis_cofins_padrao: form.cst_pis_cofins_padrao,
       unidade_padrao: form.unidade_padrao,
       cest_padrao: form.cest_padrao,
-      modalidade_frete: form.modalidade_frete === "" ? null : Number(form.modalidade_frete),
+      modalidade_frete: form.modalidade_frete === "" ? null : form.modalidade_frete,
+      crt: form.crt,
       cst_ibscbs_padrao: form.cst_ibscbs_padrao || null,
       cclasstrib_padrao: form.cclasstrib_padrao || null,
       aliquota_ibs_estadual: form.aliquota_ibs_estadual === "" ? null : Number(form.aliquota_ibs_estadual),
@@ -456,41 +466,74 @@ export function NfeSection() {
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
                 CST ICMS Padrão *
               </label>
-              <input
-                type="text"
+              <select
                 value={form.cst_icms_padrao}
                 onChange={(e) => setField("cst_icms_padrao", e.target.value)}
-                placeholder="00"
-                maxLength={3}
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
+              >
+                <option value="">Selecione</option>
+                {CST_ICMS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                CSOSN Padrão
-              </label>
-              <input
-                type="text"
-                value={form.csosn_padrao}
-                onChange={(e) => setField("csosn_padrao", e.target.value)}
-                placeholder="101"
-                maxLength={4}
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
+              {Number(form.crt) === 1 || Number(form.crt) === 2 ? (
+                <>
+                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                    CSOSN Padrão
+                  </label>
+                  <select
+                    value={form.csosn_padrao}
+                    onChange={(e) => setField("csosn_padrao", e.target.value)}
+                    className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  >
+                    <option value="">Selecione</option>
+                    {CSOSN_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              ) : (
+                <>
+                  <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
+                    CST ICMS Padrão *
+                  </label>
+                  <select
+                    value={form.cst_icms_padrao}
+                    onChange={(e) => setField("cst_icms_padrao", e.target.value)}
+                    className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  >
+                    <option value="">Selecione</option>
+                    {CST_ICMS_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
+                  </select>
+                </>
+              )}
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
                 Origem da Mercadoria (0-8)
               </label>
-              <input
-                type="number"
+              <select
                 value={form.origem_padrao}
-                onChange={(e) => setField("origem_padrao", e.target.value)}
-                placeholder="0"
-                min={0}
-                max={8}
+                onChange={(e) => setField("origem_padrao", e.target.value === "" ? "" : Number(e.target.value))}
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
+              >
+                <option value="">Selecione</option>
+                {ORIGEM_MERCADORIA_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
@@ -535,14 +578,18 @@ export function NfeSection() {
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
                 CST PIS/COFINS Padrão
               </label>
-              <input
-                type="text"
+              <select
                 value={form.cst_pis_cofins_padrao}
                 onChange={(e) => setField("cst_pis_cofins_padrao", e.target.value)}
-                placeholder="01"
-                maxLength={3}
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
+              >
+                <option value="">Selecione</option>
+                {CST_PIS_COFINS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
@@ -576,11 +623,15 @@ export function NfeSection() {
               </label>
               <select
                 value={form.modalidade_frete}
-                onChange={(e) => setField("modalidade_frete", e.target.value)}
+                onChange={(e) => setField("modalidade_frete", e.target.value === "" ? "" : Number(e.target.value))}
                 className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
               >
-                <option value={0}>0 - CIF (remetente paga)</option>
-                <option value={1}>1 - FOB (destinatário paga)</option>
+                <option value="">Selecione</option>
+                {MODALIDADE_FRETE_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

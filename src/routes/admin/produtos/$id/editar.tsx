@@ -5,8 +5,15 @@ import { useServerFn } from "@tanstack/react-start";
 import { ArrowLeft, Loader2, Package, Calculator } from "lucide-react";
 import { getProductForAdmin, updateProduct } from "@/lib/products-admin.functions";
 import { listCategories } from "@/lib/categories-admin.functions";
+import { getNfeSettings } from "@/lib/nfe.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { VariationsEditor, type VariationForm } from "@/components/admin/VariationsEditor";
+import {
+  CST_ICMS_OPTIONS,
+  CSOSN_OPTIONS,
+  CST_PIS_COFINS_OPTIONS,
+  ORIGEM_MERCADORIA_OPTIONS,
+} from "@/components/admin/fiscal-options";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/produtos/$id/editar")({
@@ -114,6 +121,13 @@ function EditarProduto() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [notFound, setNotFound] = useState(false);
+
+  const getNfeSettingsFn = useServerFn(getNfeSettings);
+  const { data: nfeSettingsData } = useQuery({
+    queryKey: ["nfe-settings"],
+    queryFn: () => getNfeSettingsFn({}),
+  });
+  const currentCrt = nfeSettingsData?.success && nfeSettingsData.data ? (nfeSettingsData.data.crt ?? 3) : 3;
 
   const { data: categories = [] } = useQuery({
     queryKey: ["admin-categories"],
@@ -717,28 +731,39 @@ function EditarProduto() {
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
               />
             </div>
-            <div>
-              <label className="block text-xs text-[#8A938E] mb-1">CST ICMS</label>
-              <input
-                type="text"
-                value={form.cstIcms}
-                onChange={(e) => set("cstIcms", e.target.value)}
-                placeholder="00"
-                maxLength={3}
-                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-xs text-[#8A938E] mb-1">CSOSN (Simples)</label>
-              <input
-                type="text"
-                value={form.csosn}
-                onChange={(e) => set("csosn", e.target.value)}
-                placeholder="102"
-                maxLength={3}
-                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
-              />
-            </div>
+            {currentCrt === 1 || currentCrt === 2 ? (
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">CSOSN (Simples)</label>
+                <select
+                  value={form.csosn}
+                  onChange={(e) => set("csosn", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+                >
+                  <option value="">Selecione</option>
+                  {CSOSN_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">CST ICMS</label>
+                <select
+                  value={form.cstIcms}
+                  onChange={(e) => set("cstIcms", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+                >
+                  <option value="">Selecione</option>
+                  {CST_ICMS_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div>
               <label className="block text-xs text-[#8A938E] mb-1">Origem Mercadoria</label>
               <select
@@ -747,27 +772,27 @@ function EditarProduto() {
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
               >
                 <option value="">Padrão da Loja</option>
-                <option value="0">0 - Nacional</option>
-                <option value="1">1 - Estrangeira (importação direta)</option>
-                <option value="2">2 - Estrangeira (mercado interno)</option>
-                <option value="3">3 - Nacional (conteúdo importação &gt; 40%)</option>
-                <option value="4">4 - Nacional (processos básicos)</option>
-                <option value="5">5 - Nacional (conteúdo importação &lt;= 40%)</option>
-                <option value="6">6 - Estrangeira (importação direta sem similar)</option>
-                <option value="7">7 - Estrangeira (mercado interno sem similar)</option>
-                <option value="8">8 - Nacional (conteúdo importação &gt;= 70%)</option>
+                {ORIGEM_MERCADORIA_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
               </select>
             </div>
             <div>
               <label className="block text-xs text-[#8A938E] mb-1">CST PIS/COFINS</label>
-              <input
-                type="text"
+              <select
                 value={form.cstPisCofins}
                 onChange={(e) => set("cstPisCofins", e.target.value)}
-                placeholder="01"
-                maxLength={2}
-                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
-              />
+                className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+              >
+                <option value="">Selecione</option>
+                {CST_PIS_COFINS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-xs text-[#8A938E] mb-1">Unidade</label>
