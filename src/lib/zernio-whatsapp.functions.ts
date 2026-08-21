@@ -67,29 +67,35 @@ export async function sendZernioWhatsAppTemplate({
   }
 
   try {
-    const response = await fetch("https://zernio.com/api/v1/inbox/conversations", {
+    const url = "https://zernio.com/api/v1/whatsapp/templates/send";
+    const payload = {
+      platform: "whatsapp",
+      accountId,
+      recipient: {
+        phone: normalizedPhone,
+      },
+      templateName,
+      templateLanguage: "pt_BR",
+      templateParams,
+      category,
+    };
+
+    console.log("[ZernioWhatsApp] Enviando payload:", { url, payload });
+
+    const response = await fetch(url, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${apiKey}`,
       },
-      body: JSON.stringify({
-        platform: "whatsapp",
-        accountId,
-        recipient: {
-          phone: normalizedPhone,
-        },
-        templateName,
-        templateLanguage: "pt_BR",
-        templateParams,
-        category,
-      }),
+      body: JSON.stringify(payload),
     });
 
+    const responseBody = await response.text();
+    console.log("[ZernioWhatsApp] Resposta da API:", response.status, responseBody);
+
     if (!response.ok) {
-      const errText = await response.text();
-      console.error("[ZernioWhatsApp] Erro na API da Zernio:", response.status, errText);
-      return { success: false, error: `Zernio API error: ${response.status}` };
+      return { success: false, error: `Zernio API error: ${response.status} - ${responseBody}` };
     }
 
     return { success: true };
