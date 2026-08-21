@@ -502,6 +502,17 @@ export async function runGenerateOrderLabelCore(
     return { success: false, error: updateOrderError.message };
   }
 
+  // Disparar WhatsApp de pedido enviado se houver código de rastreio
+  if (compraResult.trackingCode) {
+    try {
+      const { sendPedidoEnviadoWhatsApp } = await import("@/lib/order-whatsapp.functions");
+      await sendPedidoEnviadoWhatsApp(orderRow.id, compraResult.trackingCode);
+      console.log(`[GenerateOrderLabel] WhatsApp de pedido enviado disparado com sucesso para o pedido ${orderRow.id}`);
+    } catch (wsErr) {
+      console.warn(`[GenerateOrderLabel] Falha ao disparar WhatsApp de pedido enviado (não bloqueia):`, wsErr);
+    }
+  }
+
   return {
     success: true,
     data: {
