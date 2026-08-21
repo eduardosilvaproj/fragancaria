@@ -15,6 +15,8 @@ type WhatsAppSentField = "whatsapp_sent_approved" | "whatsapp_sent_shipped";
 
 async function claimWhatsAppSend(orderId: string, field: WhatsAppSentField) {
   const now = new Date().toISOString();
+  console.log(`[OrderWhatsApp] Tentando reivindicar ${field} para o pedido ${orderId} com timestamp ${now}`);
+
   const { data, error } = await supabaseAdmin
     .from("orders")
     .update({ [field]: now } as any)
@@ -23,7 +25,12 @@ async function claimWhatsAppSend(orderId: string, field: WhatsAppSentField) {
     .select("id, total, customer_name, customer_phone, whatsapp_sent_approved, whatsapp_sent_shipped")
     .maybeSingle();
 
-  if (error) throw error;
+  if (error) {
+    console.error(`[OrderWhatsApp] Erro ao reivindicar ${field} para ${orderId}:`, error.message, error.details, error.hint);
+    throw error;
+  }
+
+  console.log(`[OrderWhatsApp] Resultado da reivindicação para ${orderId} (${field}):`, data ? "SUCESSO (reivindicado)" : "JÁ REIVINDICADO ANTERIORMENTE ou NENHUMA LINHA ATUALIZADA");
   return (data as WhatsAppOrderRow | null) ?? null;
 }
 
