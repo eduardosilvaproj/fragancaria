@@ -66,21 +66,64 @@ export async function sendZernioWhatsAppTemplate({
     return { success: false, error: "Invalid phone number" };
   }
 
-  // Buscar credenciais da Zernio (API Key / Account ID) nas configurações ou env
+  // Buscar credenciais da Zernio (API Key / Account ID / Profile ID)
   const apiKey = process.env.ZERNIO_API_KEY;
   const accountId = process.env.ZERNIO_WHATSAPP_ACCOUNT_ID;
+  const profileId = process.env.ZERNIO_WHATSAPP_PROFILE_ID;
 
-  if (!apiKey || !accountId) {
-    console.warn("[ZernioWhatsApp] ZERNIO_API_KEY ou ZERNIO_WHATSAPP_ACCOUNT_ID ausentes.");
-    return { success: false, error: "Zernio credentials missing" };
+  if (!apiKey || !accountId || !profileId) {
+    const missing = [];
+    if (!apiKey) missing.push("ZERNIO_API_KEY");
+    if (!accountId) missing.push("ZERNIO_WHATSAPP_ACCOUNT_ID");
+    if (!profileId) missing.push("ZERNIO_WHATSAPP_PROFILE_ID");
+    const errText = `Zernio credentials missing: ${missing.join(", ")}`;
+    console.warn(`[ZernioWhatsApp] ${errText}`);
+    return { success: false, error: errText };
   }
 
   try {
-    // Endpoint oficial Zernio para envio de template (broadcast): inicia conversa nova
-    // e dispensa conversationId. Documentação: https://docs.zernio.com/platforms/whatsapp
-    const url = "https://zernio.com/api/v1/broadcasts/create-broadcast";
-    const payload = {
+    const headers = {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    };
+
+    // Passo 1: Criar o Broadcast
+    const createUrl = "https://zernio.com/api/v1/broadcasts";
+    const createPayload = {
+      profileId,
       accountId,
+      platform: "whatsapp",
+      name: `Transacional_${templateName}_${Date.now()}`,
+      template: {
+        name: templateName,
+        language: "pt_BR",
+      },
+      category,
+    };
+
+    console.log("[ZernioWhatsApp] Passo 1/3 - Criando broadcast:", { url: createUrl, payload: createPayload });
+    const createRes = await fetch(createUrl, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(createPayload),
+    });
+
+    const createBody = await createRes.text();
+    console.log("[ZernioWhatsApp] Resposta Criar Broadcast:", createRes.status, createBody);
+
+    if (!createRes.ok) {
+      return { success: false, error: `Passo 1 (Criar) falhou: ${createRes.status} - ${createBody}` };
+    }
+
+    const broadcast = JSON.parse(createBody);
+    const broadcastId = broadcast?.id;
+    if (!broadcastId) {
+      return { success: false, error: "Broadcast criado com sucesso, mas ID não retornado pela Zernio" };
+    }
+
+    // Passo 2: Adicionar destinatário com as variáveis (parâmetros posicionais: "1", "2", "3")
+    const recipientsUrl = `https://zernio.com/api/v1/broadcasts/${broadcastId}/recipients`;
+    const recipientsPayload = {
       recipients: [
         {
           phone: normalizedPhone,
@@ -89,44 +132,41 @@ export async function sendZernioWhatsAppTemplate({
           ),
         },
       ],
-      template: {
-        name: templateName,
-        language: "pt_BR",
-      },
-      category,
     };
 
-    console.log("[ZernioWhatsApp] Enviando payload:", { url, payload });
-
-    const response = await fetch(url, {
+    console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários:", { url: recipientsUrl, payload: recipientsPayload });
+    const recRes = await fetch(recipientsUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify(payload),
+      headers,
+      body: JSON.stringify(recipientsPayload),
     });
 
-    const allowHeader = response.headers.get("allow");
-    const responseBody = await response.text();
-    console.log("[ZernioWhatsApp] Resposta da API:", {
-      status: response.status,
-      allow: allowHeader,
-      body: responseBody,
+    const recBody = await recRes.text();
+    console.log("[ZernioWhatsApp] Resposta Adicionar Destinatários:", recRes.status, recBody);
+
+    if (!recRes.ok) {
+      return { success: false, error: `Passo 2 (Destinatários) falhou: ${recRes.status} - ${recBody}` };
+    }
+
+    // Passo 3: Enviar o Broadcast
+    const sendUrl = `https://zernio.com/api/v1/broadcasts/${broadcastId}/send`;
+    console.log("[ZernioWhatsApp] Passo 3/3 - Disparando broadcast:", { url: sendUrl });
+    const sendRes = await fetch(sendUrl, {
+      method: "POST",
+      headers,
     });
 
-    if (!response.ok) {
-      const errorMessage = `Zernio API error: ${response.status} - ${responseBody}`;
-      if (allowHeader) {
-        console.warn(`[ZernioWhatsApp] Métodos aceitos pelo endpoint: ${allowHeader}`);
-      }
-      return { success: false, error: errorMessage };
+    const sendBody = await sendRes.text();
+    console.log("[ZernioWhatsApp] Resposta Disparar Broadcast:", sendRes.status, sendBody);
+
+    if (!sendRes.ok) {
+      return { success: false, error: `Passo 3 (Disparo) falhou: ${sendRes.status} - ${sendBody}` };
     }
 
     return { success: true };
   } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao enviar mensagem";
-    console.error("[ZernioWhatsApp] Exceção ao enviar mensagem:", errorMessage);
+    const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao enviar broadcast";
+    console.error("[ZernioWhatsApp] Exceção no fluxo de broadcast:", errorMessage);
     return { success: false, error: errorMessage };
   }
 }
