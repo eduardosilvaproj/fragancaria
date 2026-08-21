@@ -87,7 +87,7 @@ export async function sendZernioWhatsAppTemplate({
       "Authorization": `Bearer ${apiKey}`,
     };
 
-    // Passo 1: Criar o Broadcast
+    // Passo 1: Criar o Broadcast com o template e os parâmetros no corpo (componentes body)
     const createUrl = "https://zernio.com/api/v1/broadcasts";
     const createPayload = {
       profileId,
@@ -97,11 +97,17 @@ export async function sendZernioWhatsAppTemplate({
       template: {
         name: templateName,
         language: "pt_BR",
+        components: [
+          {
+            type: "body",
+            parameters: templateParams,
+          },
+        ],
       },
       category,
     };
 
-    console.log("[ZernioWhatsApp] Passo 1/3 - Criando broadcast:", { url: createUrl, payload: createPayload });
+    console.log("[ZernioWhatsApp] Passo 1/3 - Criando broadcast (Corpo exato):", JSON.stringify({ url: createUrl, payload: createPayload }, null, 2));
     const createRes = await fetch(createUrl, {
       method: "POST",
       headers,
@@ -130,16 +136,13 @@ export async function sendZernioWhatsAppTemplate({
       return { success: false, error: `Broadcast criado com sucesso, mas ID não encontrado no retorno: ${createBody}` };
     }
 
-    // Passo 2: Adicionar destinatário com as variáveis exatas (1, 2, 3)
+    // Passo 2: Adicionar destinatário contendo SOMENTE phones (sem variáveis)
     const recipientsUrl = `https://zernio.com/api/v1/broadcasts/${broadcastId}/recipients`;
     const recipientsPayload = {
       phones: [normalizedPhone],
-      variables: Object.fromEntries(
-        templateParams.map((p, i) => [String(i + 1), p.text])
-      ),
     };
 
-    console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários:", JSON.stringify({ url: recipientsUrl, payload: recipientsPayload }, null, 2));
+    console.log("[ZernioWhatsApp] Passo 2/3 - Adicionando destinatários (Corpo exato):", JSON.stringify({ url: recipientsUrl, payload: recipientsPayload }, null, 2));
 
     const recRes = await fetch(recipientsUrl, {
       method: "POST",
