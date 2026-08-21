@@ -314,6 +314,8 @@ export type Database = {
           utm_campaign: string | null
           utm_content: string | null
           utm_term: string | null
+          whatsapp_sent_approved: string | null
+          whatsapp_sent_shipped: string | null
         }
         Insert: {
           id?: string
@@ -373,6 +375,8 @@ export type Database = {
           utm_campaign?: string | null
           utm_content?: string | null
           utm_term?: string | null
+          whatsapp_sent_approved?: string | null
+          whatsapp_sent_shipped?: string | null
         }
         Update: {
           id?: string | null
@@ -432,6 +436,8 @@ export type Database = {
           utm_campaign?: string | null
           utm_content?: string | null
           utm_term?: string | null
+          whatsapp_sent_approved?: string | null
+          whatsapp_sent_shipped?: string | null
         }
         Relationships: []
       }
@@ -733,6 +739,9 @@ export type Database = {
           blocked_reason: string | null
           loyalty_points: number
           loyalty_tier: string
+          whatsapp_opt_in: boolean | null
+          whatsapp_opt_in_at: string | null
+          whatsapp_opt_in_source: string | null
         }
         Insert: {
           id?: string
@@ -749,6 +758,9 @@ export type Database = {
           blocked_reason?: string | null
           loyalty_points?: number
           loyalty_tier?: string
+          whatsapp_opt_in?: boolean | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_in_source?: string | null
         }
         Update: {
           id?: string | null
@@ -765,6 +777,9 @@ export type Database = {
           blocked_reason?: string | null
           loyalty_points?: number | null
           loyalty_tier?: string | null
+          whatsapp_opt_in?: boolean | null
+          whatsapp_opt_in_at?: string | null
+          whatsapp_opt_in_source?: string | null
         }
         Relationships: []
       }
