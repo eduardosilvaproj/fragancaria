@@ -21,17 +21,26 @@ export function normalizePhoneToE164(phone: string | null | undefined): string |
 
 export async function isWhatsAppEnabled(): Promise<boolean> {
   try {
-    const { data } = await (supabaseAdmin as any)
+    const { data, error } = await (supabaseAdmin as any)
       .from("store_settings")
-      .select("value")
-      .eq("key", "whatsapp_notifications_enabled")
+      .select("whatsapp_notifications_enabled")
       .maybeSingle();
 
-    if (!data) return false;
-    // Pode estar armazenado como booleano ou string "true"
-    return data.value === true || data.value === "true";
-  } catch {
-    return false;
+    if (error) {
+      console.error("[ZernioWhatsApp] Falha ao ler configuração de WhatsApp:", error.message);
+      throw new Error("Failed to read WhatsApp settings");
+    }
+
+    if (!data) {
+      console.warn("[ZernioWhatsApp] Configuração de WhatsApp não encontrada — usando default (habilitado).");
+      return true; // Default seguro: habilitado
+    }
+
+    // Coluna booleana explícita
+    return data.whatsapp_notifications_enabled === true;
+  } catch (err: any) {
+    console.error("[ZernioWhatsApp] Exceção ao verificar configuração:", err);
+    throw err; // Não silenciar — quem chama decide como tratar
   }
 }
 
