@@ -30,8 +30,17 @@ async function claimWhatsAppSend(orderId: string, field: WhatsAppSentField) {
     throw error;
   }
 
-  console.log(`[OrderWhatsApp] Resultado da reivindicação para ${orderId} (${field}):`, data ? "SUCESSO (reivindicado)" : "JÁ REIVINDICADO ANTERIORMENTE ou NENHUMA LINHA ATUALIZADA");
-  return (data as WhatsAppOrderRow | null) ?? null;
+  if (!data) {
+    console.warn(`[OrderWhatsApp] Reivindicação não aplicada para ${orderId} (${field}): linha já tinha valor ou não foi atualizada.`);
+    return null;
+  }
+
+  console.log(`[OrderWhatsApp] Reivindicação aplicada para ${orderId} (${field}):`, {
+    id: data.id,
+    whatsapp_sent_approved: data.whatsapp_sent_approved,
+    whatsapp_sent_shipped: data.whatsapp_sent_shipped,
+  });
+  return data as WhatsAppOrderRow;
 }
 
 async function markWhatsAppSendFailed(orderId: string, field: WhatsAppSentField) {
