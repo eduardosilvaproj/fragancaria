@@ -121,6 +121,7 @@ export const Route = createFileRoute("/api/public/mp-webhook")({
               commission_amount: commissionAmount,
               status: "confirmed",
               confirmed_at: params.confirmedAt,
+              order_number: params.orderNumber,
             });
             if (error && !error.message?.includes("duplicate key")) throw error;
           },

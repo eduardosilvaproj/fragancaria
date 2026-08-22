@@ -192,9 +192,10 @@ export const useAffiliateStore = create<AffiliateState>()(
       loadDashboard: async () => {
         try {
           const summary = await affiliateService.getDashboardSummary();
-          set({ dashboardSummary: summary });
-        } catch (error) {
+          set({ dashboardSummary: summary, error: null });
+        } catch (error: any) {
           console.error('Erro ao carregar dashboard:', error);
+          set({ error: error?.message || 'Erro ao carregar resumo do dashboard' });
         }
       },
 

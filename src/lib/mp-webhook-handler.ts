@@ -32,6 +32,7 @@ export type WebhookOrder = PaymentSnapshotOrder & {
   subtotal?: number | null;
   discount?: number | null;
   total?: number | null;
+  order_number?: string | null;
 };
 
 export type WebhookUpdate = {
@@ -60,8 +61,8 @@ export type MpWebhookDependencies = {
     orderTotal: number;
     commissionRate: number;
     commissionBase: number;
-    /** Momento da aprovação do pagamento. Base da contagem do prazo de liberação. */
     confirmedAt: string;
+    orderNumber?: string | null;
   }) => Promise<void>;
   /**
    * Envia "Pedido Confirmado" quando o pagamento é aprovado. Opcional: se não
@@ -251,6 +252,7 @@ export async function handleMpWebhookRequest(
         commissionRate: rate,
         commissionBase,
         confirmedAt,
+        orderNumber: existing.order_number ?? null,
       }).catch((err) => {
         log.error("[mp-webhook] falha ao criar affiliate_sale (ignorada)", { orderId: existing.id, err });
       });

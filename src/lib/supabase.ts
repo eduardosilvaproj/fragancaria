@@ -257,7 +257,7 @@ export const affiliateService = {
       .from('affiliate_dashboard_summary')
       .select('*')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
     if (error) throw error;
     return data;
