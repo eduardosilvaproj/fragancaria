@@ -136,7 +136,7 @@ function ProductPage() {
     : 0;
 
   // SEO schemas
-  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://fragranciaria.com";
+  const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://www.fragranciaria.com";
 
   const productSchema = generateProductSchema({
     id: p.id,
@@ -516,7 +516,7 @@ function ProductPage() {
               {/* Pergunte à Fran */}
               <div className="mt-6 pt-6 border-t border-[#E0D8C7]">
                 <button
-                  onClick={() => openFranChat(`Olá! Tenho uma dúvida sobre o produto "${p.name}" (https://fragranciaria.com/produto/${p.id}). Poderia me ajudar?`)}
+                  onClick={() => openFranChat(`Olá! Tenho uma dúvida sobre o produto "${p.name}" (https://www.fragranciaria.com/produto/${p.id}). Poderia me ajudar?`)}
                   className="w-full flex items-center justify-center gap-3 py-4 bg-[#F8F6F0] border border-[#E0D8C7] text-[#0F3A3E] text-[13px] font-medium hover:bg-[#F0EBE0] transition-colors"
                 >
                   <svg className="w-5 h-5 text-[#B07B1E]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

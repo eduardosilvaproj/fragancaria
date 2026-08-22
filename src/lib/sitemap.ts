@@ -1,6 +1,6 @@
 import { fetchActiveProducts } from "./products.functions";
 
-const BASE_URL = "https://fragranciaria.com";
+const BASE_URL = "https://www.fragranciaria.com";
 
 interface SitemapUrl {
   loc: string;

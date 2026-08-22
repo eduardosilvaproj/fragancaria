@@ -176,7 +176,7 @@ export const affiliateAuth = {
   async signInWithGoogle() {
     const redirectUrl = typeof window !== 'undefined'
       ? `${window.location.origin}/afiliado/dashboard`
-      : 'https://fragranciaria.com/afiliado/dashboard';
+      : 'https://www.fragranciaria.com/afiliado/dashboard';
 
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -193,8 +193,9 @@ export const affiliateAuth = {
    * Recuperar senha
    */
   async resetPassword(email: string) {
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://www.fragranciaria.com';
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `https://fragranciaria.com/afiliado/nova-senha`,
+      redirectTo: `${origin}/afiliado/nova-senha`,
     });
     if (error) throw error;
   },

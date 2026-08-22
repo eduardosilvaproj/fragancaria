@@ -16,7 +16,7 @@ export const Route = createFileRoute("/beneficio/")({
       { title: "Benefício Exclusivo | Fragranciaria" },
       { name: "description", content: "10% OFF na sua primeira compra na Fragranciaria. Produtos originais com nota fiscal e atendimento com a Fran." },
       { name: "robots", content: "noindex,follow" },
-      { rel: "canonical", href: "https://fragranciaria.com/beneficio" },
+      { rel: "canonical", href: "https://www.fragranciaria.com/beneficio" },
     ],
     links: [],
   }),
