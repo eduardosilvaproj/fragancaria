@@ -174,10 +174,14 @@ export const affiliateAuth = {
    * Login com Google OAuth
    */
   async signInWithGoogle() {
+    const redirectUrl = typeof window !== 'undefined'
+      ? `${window.location.origin}/afiliado/dashboard`
+      : 'https://fragranciaria.com/afiliado/dashboard';
+
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `https://fragranciaria.com/afiliado/dashboard`,
+        redirectTo: redirectUrl,
       },
     });
 
