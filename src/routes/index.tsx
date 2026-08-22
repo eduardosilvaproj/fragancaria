@@ -161,11 +161,10 @@ function IndexEditorial() {
                 Explorar Coleções
               </Link>
               <Link
-                to="/produtos"
-                search={{ productType: "Tratamento" }}
-                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto"
+                to="/afiliado/login"
+                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto font-medium"
               >
-                Tratamentos capilares
+                Já sou afiliado / Entrar
               </Link>
             </div>
           </div>
