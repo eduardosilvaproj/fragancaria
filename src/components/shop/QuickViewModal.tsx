@@ -223,7 +223,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
 
                 {/* Description */}
                 {product.description && (
-                  <p className="text-[14px] text-[#51635F] leading-[1.6] mt-6 line-clamp-4">
+                  <p className="text-[14px] text-[#51635F] leading-[1.6] mt-6 whitespace-pre-line">
                     {product.description}
                   </p>
                 )}

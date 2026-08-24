@@ -234,7 +234,7 @@ export const listProductsForAdmin = createServerFn({ method: "GET" })
       if (data.status === "out_of_stock") query = query.eq("quantity", 0);
       if (data.search && data.search.trim()) {
         const term = data.search.replace(/[%_]/g, (c) => "\\" + c).trim();
-        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%`);
+        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%,ean_barcode.ilike.%${term}%`);
       }
 
       const { data: rows, error, count } = await query;
