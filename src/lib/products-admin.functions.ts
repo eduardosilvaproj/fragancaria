@@ -177,12 +177,7 @@ function inputToRow(data: ProductInput) {
     unidade: data.unidade ?? null,
     cfop_venda_pj_dentro: data.cfopVendaPjDentro ?? null,
     cfop_venda_pj_fora: data.cfopVendaPjFora ?? null,
-    cfop_venda_pf_dentro: data.cfopVendaPfDentro ?? null,
     cfop_venda_pf_fora: data.cfopVendaPfFora ?? null,
-    cfop_devolucao_pj_dentro: data.cfopDevolucaoPjDentro ?? null,
-    cfop_devolucao_pj_fora: data.cfopDevolucaoPjFora ?? null,
-    cfop_devolucao_pf_dentro: data.cfopDevolucaoPfDentro ?? null,
-    cfop_devolucao_pf_fora: data.cfopDevolucaoPfFora ?? null,
     // IBS/CBS (Reforma Tributária)
     cst_ibscbs: data.cstIbscbs ?? null,
     cclasstrib: data.cclassTrib ?? null,
@@ -338,6 +333,9 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.origem !== undefined) patch.origem = p.origem;
       if (p.cstPisCofins !== undefined) patch.cst_pis_cofins = p.cstPisCofins;
       if (p.unidade !== undefined) patch.unidade = p.unidade;
+      if (p.cfopVendaPjDentro !== undefined) patch.cfop_venda_pj_dentro = p.cfopVendaPjDentro;
+      if (p.cfopVendaPjFora !== undefined) patch.cfop_venda_pj_fora = p.cfopVendaPjFora;
+      if (p.cfopVendaPfFora !== undefined) patch.cfop_venda_pf_fora = p.cfopVendaPfFora;
       if (p.cstIbscbs !== undefined) patch.cst_ibscbs = p.cstIbscbs;
       if (p.cclassTrib !== undefined) patch.cclasstrib = p.cclassTrib;
       if (p.aliquotaIbsEstadual !== undefined) patch.aliquota_ibs_estadual = p.aliquotaIbsEstadual;

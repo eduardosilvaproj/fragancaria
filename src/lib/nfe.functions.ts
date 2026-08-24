@@ -429,22 +429,15 @@ export const getNfePreview = createServerFn({ method: "POST" })
       };
 
       const resolveCfop = (item: Record<string, unknown>): string | undefined => {
-        const source = isCPF
-          ? isWithinState
-            ? item.cfop_venda_pf_dentro
-            : item.cfop_venda_pf_fora
-          : isWithinState
-            ? item.cfop_venda_pj_dentro
+        if (isDevolucao) {
+          return isWithinState ? "1202" : "2202";
+        }
+        const source = isWithinState
+          ? item.cfop_venda_pj_dentro
+          : isCPF
+            ? item.cfop_venda_pf_fora
             : item.cfop_venda_pj_fora;
-        const devolucaoSource = isCPF
-          ? isWithinState
-            ? item.cfop_devolucao_pf_dentro
-            : item.cfop_devolucao_pf_fora
-          : isWithinState
-            ? item.cfop_devolucao_pj_dentro
-            : item.cfop_devolucao_pj_fora;
-        const value = isDevolucao ? devolucaoSource : source;
-        const v = value == null ? "" : String(value).trim();
+        const v = source == null ? "" : String(source).trim();
         return v || undefined;
       };
 
@@ -604,22 +597,15 @@ export const emitNFe = createServerFn({ method: "POST" })
       // CFOP é resolvido pela combinação operação × tipo de destinatário × UF,
       // usando as 8 colunas contextuais gravadas no snapshot do item.
       const resolveCfop = (item: Record<string, unknown>): string | undefined => {
-        const source = isCPF
-          ? isWithinState
-            ? item.cfop_venda_pf_dentro
-            : item.cfop_venda_pf_fora
-          : isWithinState
-            ? item.cfop_venda_pj_dentro
+        if (isDevolucao) {
+          return isWithinState ? "1202" : "2202";
+        }
+        const source = isWithinState
+          ? item.cfop_venda_pj_dentro
+          : isCPF
+            ? item.cfop_venda_pf_fora
             : item.cfop_venda_pj_fora;
-        const devolucaoSource = isCPF
-          ? isWithinState
-            ? item.cfop_devolucao_pf_dentro
-            : item.cfop_devolucao_pf_fora
-          : isWithinState
-            ? item.cfop_devolucao_pj_dentro
-            : item.cfop_devolucao_pj_fora;
-        const value = isDevolucao ? devolucaoSource : source;
-        const v = value == null ? "" : String(value).trim();
+        const v = source == null ? "" : String(source).trim();
         return v || undefined;
       };
 

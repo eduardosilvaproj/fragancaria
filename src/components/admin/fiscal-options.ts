@@ -60,15 +60,9 @@ export const CST_PIS_COFINS_OPTIONS = [
   { value: "99", label: "99 - Outras operações" },
 ];
 
-// CFOPs extraídos exatamente do arquivo de referência da contadora (tabelas-fiscais-referencia.csv).
-// A linha não resolvida (6403_ou_6404_ou_6405) permanece em branco no formulário e fora deste dropdown fixo conforme instrução.
+// CFOPs de saída estritos para os 3 campos do redesenho (vendas)
 export const CFOP_OPTIONS = [
-  { value: "5102", label: "5102 - Venda de mercadoria adquirida ou recebida de terceiros - dentro do estado" },
-  { value: "6102", label: "6102 - Venda de mercadoria adquirida ou recebida de terceiros - fora do estado" },
-  { value: "6108", label: "6108 - Venda de mercadoria adquirida ou recebida de terceiros, destinada a não contribuinte" },
-  { value: "5405", label: "5405 - Venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, na condição de contribuinte substituído" },
-  { value: "1202", label: "1202 - Devolução de venda de mercadoria adquirida ou recebida de terceiros - dentro do estado" },
-  { value: "2202", label: "2202 - Devolução de venda de mercadoria adquirida ou recebida de terceiros - fora do estado" },
-  { value: "1411", label: "1411 - Devolução de venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária" },
-  { value: "2411", label: "2411 - Devolução de venda de mercadoria adquirida ou recebida de terceiros em operação com mercadoria sujeita ao regime de substituição tributária, fora do estado" },
+  { value: "5102", label: "5.102 — Venda de mercadoria adquirida ou recebida de terceiros (dentro do estado)" },
+  { value: "6102", label: "6.102 — Venda de mercadoria adquirida ou recebida de terceiros (fora do estado - PJ contribuinte)" },
+  { value: "6108", label: "6.108 — Venda de mercadoria adquirida ou recebida de terceiros, destinada a não contribuinte (fora do estado)" },
 ];
