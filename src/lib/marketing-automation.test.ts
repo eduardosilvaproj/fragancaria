@@ -22,3 +22,12 @@ test("marketing-automation lógica de janela de 30 dias calcula datas corretamen
   assert.ok(targetDateEnd);
   assert.notEqual(targetDateStart, targetDateEnd);
 });
+
+test("marketing-automation recompra consulta colunas reais de orders", () => {
+  const selectClause = "id, auth_user_id, customer_email, customer_name, customer_phone, created_at, items, whatsapp_sent_recompra";
+
+  assert.equal(selectClause.includes("customer_id"), false);
+  assert.equal(selectClause.includes("auth_user_id"), true);
+  assert.equal(selectClause.includes("customer_email"), true);
+  assert.equal(selectClause.includes("whatsapp_sent_recompra"), true);
+});

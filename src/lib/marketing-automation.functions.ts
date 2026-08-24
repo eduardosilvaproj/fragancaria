@@ -15,7 +15,7 @@ export async function runReorderReminders(): Promise<{ processed: number; errors
 
     const { data: orders, error: ordersError } = await (supabaseAdmin
       .from("orders") as any)
-      .select("id, customer_id, customer_name, customer_phone, created_at, items, whatsapp_sent_recompra")
+      .select("id, auth_user_id, customer_email, customer_name, customer_phone, created_at, items, whatsapp_sent_recompra")
       .in("status", ["shipped", "delivered"])
       .is("whatsapp_sent_recompra", null)
       .gte("created_at", targetDateStart)
@@ -29,16 +29,15 @@ export async function runReorderReminders(): Promise<{ processed: number; errors
     for (const order of orders as any[]) {
       if (!order.customer_phone) continue;
 
-      // Se houver customer_id, valida se o cliente tem opt-in
-      if (order.customer_id) {
-        const { data: customer } = await (supabaseAdmin
-          .from("customers") as any)
-          .select("whatsapp_opt_in")
-          .eq("id", order.customer_id)
-          .maybeSingle();
+      const customerQuery = (supabaseAdmin.from("customers") as any).select("whatsapp_opt_in");
+      const customerResult = order.auth_user_id
+        ? await customerQuery.eq("auth_user_id", order.auth_user_id).maybeSingle()
+        : order.customer_email
+          ? await customerQuery.eq("email", order.customer_email).maybeSingle()
+          : { data: null };
 
-        if (customer && customer.whatsapp_opt_in === false) continue;
-      }
+      const customer = customerResult?.data;
+      if (customer && customer.whatsapp_opt_in === false) continue;
 
       // Tenta o claim atômico da recompra para este pedido
       const { data: claimed, error: claimErr } = await (supabaseAdmin.rpc as any)("claim_marketing_send", {
