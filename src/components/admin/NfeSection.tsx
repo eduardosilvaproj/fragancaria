@@ -44,12 +44,6 @@ export function NfeSection() {
     certificado_path: "",
     modalidade_frete: "" as number | "",
     crt: 3,
-    cst_ibscbs_padrao: "",
-    cclasstrib_padrao: "",
-    aliquota_ibs_estadual: "" as string | number,
-    aliquota_ibs_municipal: "" as string | number,
-    aliquota_cbs: "" as string | number,
-    codigo_beneficio_fiscal_padrao: "",
   });
 
   useEffect(() => {
@@ -74,12 +68,6 @@ export function NfeSection() {
         certificado_path: settings.certificado_path || "",
         modalidade_frete: settings.modalidade_frete !== undefined && settings.modalidade_frete !== null ? Number(settings.modalidade_frete) : "",
         crt: settings.crt ?? 3,
-        cst_ibscbs_padrao: settings.cst_ibscbs_padrao || "",
-        cclasstrib_padrao: settings.cclasstrib_padrao || "",
-        aliquota_ibs_estadual: settings.aliquota_ibs_estadual ?? "",
-        aliquota_ibs_municipal: settings.aliquota_ibs_municipal ?? "",
-        aliquota_cbs: settings.aliquota_cbs ?? "",
-        codigo_beneficio_fiscal_padrao: settings.codigo_beneficio_fiscal_padrao || "",
       });
     }
   }, [settings]);
@@ -128,12 +116,6 @@ export function NfeSection() {
       },
       modalidade_frete: form.modalidade_frete === "" ? null : form.modalidade_frete,
       crt: form.crt,
-      cst_ibscbs_padrao: form.cst_ibscbs_padrao || null,
-      cclasstrib_padrao: form.cclasstrib_padrao || null,
-      aliquota_ibs_estadual: form.aliquota_ibs_estadual === "" ? null : Number(form.aliquota_ibs_estadual),
-      aliquota_ibs_municipal: form.aliquota_ibs_municipal === "" ? null : Number(form.aliquota_ibs_municipal),
-      aliquota_cbs: form.aliquota_cbs === "" ? null : Number(form.aliquota_cbs),
-      codigo_beneficio_fiscal_padrao: form.codigo_beneficio_fiscal_padrao || null,
     });
   };
 
@@ -398,102 +380,6 @@ export function NfeSection() {
           </div>
         </div>
 
-        {/* IBS / CBS — Reforma Tributária */}
-        <div className="border-t border-[#E9E1D2] pt-6">
-          <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1">
-            IBS / CBS — Reforma Tributária
-          </h4>
-          <p className="text-xs text-[#8A938E] mb-4">
-            Em 2026 as alíquotas de teste são IBS estadual 0,1%, IBS municipal 0% e CBS 0,9%.
-            O CST e o cClassTrib dependem do enquadramento — preencha quem cuida da parte fiscal.
-            Se estes campos estiverem vazios, o grupo ibscbs não é enviado e a nota sai sem eles.
-          </p>
-          <div className="grid md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                CST IBS/CBS
-              </label>
-              <input
-                type="text"
-                value={form.cst_ibscbs_padrao}
-                onChange={(e) => setField("cst_ibscbs_padrao", e.target.value)}
-                placeholder="000"
-                maxLength={3}
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                cClassTrib
-              </label>
-              <input
-                type="text"
-                value={form.cclasstrib_padrao}
-                onChange={(e) => setField("cclasstrib_padrao", e.target.value)}
-                placeholder="000001"
-                maxLength={6}
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                Alíquota IBS Estadual (%)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.aliquota_ibs_estadual}
-                onChange={(e) => setField("aliquota_ibs_estadual", e.target.value)}
-                placeholder="0.1"
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                Alíquota IBS Municipal (%)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.aliquota_ibs_municipal}
-                onChange={(e) => setField("aliquota_ibs_municipal", e.target.value)}
-                placeholder="0"
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                Alíquota CBS (%)
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                value={form.aliquota_cbs}
-                onChange={(e) => setField("aliquota_cbs", e.target.value)}
-                placeholder="0.9"
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[#8A938E] mb-1.5">
-                Código Benefício Fiscal (cBenef)
-              </label>
-              <input
-                type="text"
-                value={form.codigo_beneficio_fiscal_padrao}
-                onChange={(e) => setField("codigo_beneficio_fiscal_padrao", e.target.value)}
-                placeholder="SP070130"
-                maxLength={15}
-                className="w-full bg-[#F5F3EE] rounded-lg px-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-[#B07B1E]"
-              />
-            </div>
-          </div>
-          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
-            <strong>Reforma Tributária (NT 2025.002-RTC):</strong> os campos acima são enviados como grupo <code>ibscbs</code> no payload da nota.
-            Se deixados em branco, o grupo não é enviado — a nota sai sem IBS/CBS (válido para homologação/testes).
-            Em produção com CRT 3, a SEFAZ pode rejeitar a nota se o grupo não estiver preenchido.
-          </div>
-        </div>
 
         {/* Certificado */}
         <div className="border-t border-[#E9E1D2] pt-6">
