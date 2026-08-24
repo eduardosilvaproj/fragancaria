@@ -943,11 +943,13 @@ function AdminProdutos() {
                           <Image className="h-5 w-5 text-[#8A938E]" />
                         )}
                       </div>
-                      <div>
-                        <p className="font-medium text-[#0F3A3E] line-clamp-1">
+                      <div className="min-w-0 max-w-[28rem]">
+                        <p className="font-medium text-[#0F3A3E] whitespace-normal break-words leading-snug">
                           {product.name}
                         </p>
-                        <p className="text-xs text-[#B07B1E]">{product.brand}</p>
+                        <p className="text-xs text-[#B07B1E] whitespace-normal break-words">
+                          {product.brand}
+                        </p>
                       </div>
                     </div>
                   </td>
