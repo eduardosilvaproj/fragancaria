@@ -53,12 +53,7 @@ interface FormState {
   unidade: string;
   cfopVendaPjDentro: string;
   cfopVendaPjFora: string;
-  cfopVendaPfDentro: string;
   cfopVendaPfFora: string;
-  cfopDevolucaoPjDentro: string;
-  cfopDevolucaoPjFora: string;
-  cfopDevolucaoPfDentro: string;
-  cfopDevolucaoPfFora: string;
   // IBS/CBS (Reforma Tributária)
   cstIbscbs: string;
   cclassTrib: string;
@@ -105,14 +100,9 @@ const EMPTY_FORM: FormState = {
   origem: "",
   cstPisCofins: "",
   unidade: "",
-  cfopVendaPjDentro: "",
-  cfopVendaPjFora: "",
-  cfopVendaPfDentro: "",
-  cfopVendaPfFora: "",
-  cfopDevolucaoPjDentro: "",
-  cfopDevolucaoPjFora: "",
-  cfopDevolucaoPfDentro: "",
-  cfopDevolucaoPfFora: "",
+  cfopVendaPjDentro: "5102",
+  cfopVendaPjFora: "6102",
+  cfopVendaPfFora: "6108",
   cstIbscbs: "",
   cclassTrib: "",
   aliquotaIbsEstadual: "",
@@ -197,14 +187,9 @@ function EditarProduto() {
         origem: p.origem != null ? String(p.origem) : "",
         cstPisCofins: p.cst_pis_cofins ?? "",
         unidade: p.unidade ?? "",
-        cfopVendaPjDentro: p.cfop_venda_pj_dentro ?? "",
-        cfopVendaPjFora: p.cfop_venda_pj_fora ?? "",
-        cfopVendaPfDentro: p.cfop_venda_pf_dentro ?? "",
-        cfopVendaPfFora: p.cfop_venda_pf_fora ?? "",
-        cfopDevolucaoPjDentro: p.cfop_devolucao_pj_dentro ?? "",
-        cfopDevolucaoPjFora: p.cfop_devolucao_pj_fora ?? "",
-        cfopDevolucaoPfDentro: p.cfop_devolucao_pf_dentro ?? "",
-        cfopDevolucaoPfFora: p.cfop_devolucao_pf_fora ?? "",
+        cfopVendaPjDentro: p.cfop_venda_pj_dentro ?? "5102",
+        cfopVendaPjFora: p.cfop_venda_pj_fora ?? "6102",
+        cfopVendaPfFora: p.cfop_venda_pf_fora ?? "6108",
         cstIbscbs: p.cst_ibscbs ?? "",
         cclassTrib: p.cclasstrib ?? "",
         aliquotaIbsEstadual: p.aliquota_ibs_estadual != null ? String(p.aliquota_ibs_estadual) : "",
@@ -324,12 +309,7 @@ function EditarProduto() {
             unidade: form.unidade.trim() || null,
             cfopVendaPjDentro: form.cfopVendaPjDentro.trim() || null,
             cfopVendaPjFora: form.cfopVendaPjFora.trim() || null,
-            cfopVendaPfDentro: form.cfopVendaPfDentro.trim() || null,
             cfopVendaPfFora: form.cfopVendaPfFora.trim() || null,
-            cfopDevolucaoPjDentro: form.cfopDevolucaoPjDentro.trim() || null,
-            cfopDevolucaoPjFora: form.cfopDevolucaoPjFora.trim() || null,
-            cfopDevolucaoPfDentro: form.cfopDevolucaoPfDentro.trim() || null,
-            cfopDevolucaoPfFora: form.cfopDevolucaoPfFora.trim() || null,
             cstIbscbs: form.cstIbscbs.trim() || null,
             cclassTrib: form.cclassTrib.trim() || null,
             aliquotaIbsEstadual: form.aliquotaIbsEstadual !== "" ? Number(form.aliquotaIbsEstadual) : null,
@@ -841,18 +821,22 @@ function EditarProduto() {
           </div>
 
           <div className="mt-4 pt-4 border-t border-[#E9E1D2]">
-            <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-medium mb-3">
-              CFOP Contextual por Operação
+            <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-medium mb-1">
+              CFOP Contextual por Operação (Saídas)
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <p className="text-[11px] text-[#8A938E] mb-3">
+              Configure os CFOPs de venda deste produto. Devoluções de venda são automáticas (1202 dentro de SP / 2202 fora de SP) conforme orientação da contabilidade.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Venda PJ dentro do estado</label>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda dentro do estado (SP - PJ ou PF) *</label>
                 <select
                   value={form.cfopVendaPjDentro}
                   onChange={(e) => set("cfopVendaPjDentro", e.target.value)}
                   className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
                 >
-                  <option value="">Selecione CFOP (Venda PJ Interno)</option>
+                  <option value="">Selecione CFOP</option>
                   {CFOP_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -861,13 +845,14 @@ function EditarProduto() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Venda PJ fora do estado</label>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda fora do estado (PJ contribuinte) *</label>
                 <select
                   value={form.cfopVendaPjFora}
                   onChange={(e) => set("cfopVendaPjFora", e.target.value)}
                   className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
                 >
-                  <option value="">Selecione CFOP (Venda PJ Externo)</option>
+                  <option value="">Selecione CFOP</option>
                   {CFOP_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}
@@ -876,88 +861,14 @@ function EditarProduto() {
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Venda PF dentro do estado</label>
-                <select
-                  value={form.cfopVendaPfDentro}
-                  onChange={(e) => set("cfopVendaPfDentro", e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
-                >
-                  <option value="">Selecione CFOP (Venda PF Interno)</option>
-                  {CFOP_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Venda PF fora do estado</label>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda fora do estado (PF / não contribuinte) *</label>
                 <select
                   value={form.cfopVendaPfFora}
                   onChange={(e) => set("cfopVendaPfFora", e.target.value)}
                   className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
                 >
-                  <option value="">Selecione CFOP (Venda PF Externo)</option>
-                  {CFOP_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Devolução PJ dentro do estado</label>
-                <select
-                  value={form.cfopDevolucaoPjDentro}
-                  onChange={(e) => set("cfopDevolucaoPjDentro", e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
-                >
-                  <option value="">Selecione CFOP (Devolucao PJ Interno)</option>
-                  {CFOP_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Devolução PJ fora do estado</label>
-                <select
-                  value={form.cfopDevolucaoPjFora}
-                  onChange={(e) => set("cfopDevolucaoPjFora", e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
-                >
-                  <option value="">Selecione CFOP (Devolucao PJ Externo)</option>
-                  {CFOP_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Devolução PF dentro do estado</label>
-                <select
-                  value={form.cfopDevolucaoPfDentro}
-                  onChange={(e) => set("cfopDevolucaoPfDentro", e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
-                >
-                  <option value="">Selecione CFOP (Devolucao PF Interno)</option>
-                  {CFOP_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {opt.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs text-[#8A938E] mb-1">Devolução PF fora do estado</label>
-                <select
-                  value={form.cfopDevolucaoPfFora}
-                  onChange={(e) => set("cfopDevolucaoPfFora", e.target.value)}
-                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
-                >
-                  <option value="">Selecione CFOP (Devolucao PF Externo)</option>
+                  <option value="">Selecione CFOP</option>
                   {CFOP_OPTIONS.map((opt) => (
                     <option key={opt.value} value={opt.value}>
                       {opt.label}

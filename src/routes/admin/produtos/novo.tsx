@@ -9,6 +9,7 @@ import { getNfeSettings } from "@/lib/nfe.functions";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { VariationsEditor, type VariationForm } from "@/components/admin/VariationsEditor";
 import {
+  CFOP_OPTIONS,
   CST_ICMS_OPTIONS,
   CSOSN_OPTIONS,
   CST_PIS_COFINS_OPTIONS,
@@ -50,6 +51,9 @@ interface FormState {
   origem: string;
   cstPisCofins: string;
   unidade: string;
+  cfopVendaPjDentro: string;
+  cfopVendaPjFora: string;
+  cfopVendaPfFora: string;
   // IBS/CBS (Reforma Tributária)
   cstIbscbs: string;
   cclassTrib: string;
@@ -92,6 +96,9 @@ const EMPTY_FORM: FormState = {
   origem: "",
   cstPisCofins: "",
   unidade: "",
+  cfopVendaPjDentro: "5102",
+  cfopVendaPjFora: "6102",
+  cfopVendaPfFora: "6108",
   cstIbscbs: "",
   cclassTrib: "",
   aliquotaIbsEstadual: "",
@@ -175,6 +182,9 @@ function NovoProduto() {
           origem: form.origem !== "" ? Number(form.origem) : null,
           cstPisCofins: form.cstPisCofins.trim() || null,
           unidade: form.unidade.trim() || null,
+          cfopVendaPjDentro: form.cfopVendaPjDentro.trim() || null,
+          cfopVendaPjFora: form.cfopVendaPjFora.trim() || null,
+          cfopVendaPfFora: form.cfopVendaPfFora.trim() || null,
           cstIbscbs: form.cstIbscbs.trim() || null,
           cclassTrib: form.cclassTrib.trim() || null,
           aliquotaIbsEstadual: form.aliquotaIbsEstadual !== "" ? Number(form.aliquotaIbsEstadual) : null,
@@ -533,6 +543,65 @@ function NovoProduto() {
                 maxLength={6}
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm"
               />
+            </div>
+          </div>
+          {/* CFOP Contextual por Operação */}
+          <div className="mt-4 pt-4 border-t border-[#E9E1D2]">
+            <h4 className="text-[10px] uppercase tracking-wider text-[#51635F] font-medium mb-1">
+              CFOP Contextual por Operação (Saídas)
+            </h4>
+            <p className="text-[11px] text-[#8A938E] mb-3">
+              Configure os CFOPs de venda deste produto. Devoluções de venda são automáticas (1202 dentro de SP / 2202 fora de SP) conforme orientação da contabilidade.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda dentro do estado (SP - PJ ou PF) *</label>
+                <select
+                  value={form.cfopVendaPjDentro}
+                  onChange={(e) => set("cfopVendaPjDentro", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
+                >
+                  <option value="">Selecione CFOP</option>
+                  {CFOP_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda fora do estado (PJ contribuinte) *</label>
+                <select
+                  value={form.cfopVendaPjFora}
+                  onChange={(e) => set("cfopVendaPjFora", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
+                >
+                  <option value="">Selecione CFOP</option>
+                  {CFOP_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-[#8A938E] mb-1">Venda fora do estado (PF / não contribuinte) *</label>
+                <select
+                  value={form.cfopVendaPfFora}
+                  onChange={(e) => set("cfopVendaPfFora", e.target.value)}
+                  className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
+                  required
+                >
+                  <option value="">Selecione CFOP</option>
+                  {CFOP_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           {/* IBS / CBS — Reforma Tributária */}
