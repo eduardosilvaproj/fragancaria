@@ -75,9 +75,10 @@ import { Route as AfiliadoDashboardIndexRouteImport } from './routes/afiliado/da
 import { Route as AdminProdutosIndexRouteImport } from './routes/admin/produtos/index'
 import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-conta/pedidos/$orderId'
 import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/zernio-webhook'
-import { Route as ApiPublicWhatsappWebhookRouteImport } from './routes/api/public/whatsapp-webhook'
+import { Route as ApiPublicZernioStatusWebhookRouteImport } from './routes/api/public/zernio-status-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
+import { Route as ApiCronMarketingAutomationRouteImport } from './routes/api/cron/marketing-automation'
 import { Route as ApiAdminEtiquetaRouteImport } from './routes/api/admin/etiqueta'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
@@ -424,10 +425,10 @@ const ApiPublicZernioWebhookRoute = ApiPublicZernioWebhookRouteImport.update({
   path: '/api/public/zernio-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiPublicWhatsappWebhookRoute =
-  ApiPublicWhatsappWebhookRouteImport.update({
-    id: '/api/public/whatsapp-webhook',
-    path: '/api/public/whatsapp-webhook',
+const ApiPublicZernioStatusWebhookRoute =
+  ApiPublicZernioStatusWebhookRouteImport.update({
+    id: '/api/public/zernio-status-webhook',
+    path: '/api/public/zernio-status-webhook',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
@@ -440,6 +441,12 @@ const ApiDebugFeaturedRoute = ApiDebugFeaturedRouteImport.update({
   path: '/api/debug/featured',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronMarketingAutomationRoute =
+  ApiCronMarketingAutomationRouteImport.update({
+    id: '/api/cron/marketing-automation',
+    path: '/api/cron/marketing-automation',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAdminEtiquetaRoute = ApiAdminEtiquetaRouteImport.update({
   id: '/api/admin/etiqueta',
   path: '/api/admin/etiqueta',
@@ -545,9 +552,10 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
@@ -620,9 +628,10 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos': typeof AdminProdutosIndexRoute
@@ -700,9 +709,10 @@ export interface FileRoutesById {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
-  '/api/public/whatsapp-webhook': typeof ApiPublicWhatsappWebhookRoute
+  '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
   '/minha-conta/pedidos/$orderId': typeof MinhaContaPedidosOrderIdRoute
   '/admin/produtos/': typeof AdminProdutosIndexRoute
@@ -781,9 +791,10 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
-    | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
@@ -856,9 +867,10 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
-    | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos'
@@ -935,9 +947,10 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
-    | '/api/public/whatsapp-webhook'
+    | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
     | '/minha-conta/pedidos/$orderId'
     | '/admin/produtos/'
@@ -983,9 +996,10 @@ export interface RootRouteChildren {
   ProdutoIdRoute: typeof ProdutoIdRoute
   BeneficioIndexRoute: typeof BeneficioIndexRoute
   ApiAdminEtiquetaRoute: typeof ApiAdminEtiquetaRoute
+  ApiCronMarketingAutomationRoute: typeof ApiCronMarketingAutomationRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
-  ApiPublicWhatsappWebhookRoute: typeof ApiPublicWhatsappWebhookRoute
+  ApiPublicZernioStatusWebhookRoute: typeof ApiPublicZernioStatusWebhookRoute
   ApiPublicZernioWebhookRoute: typeof ApiPublicZernioWebhookRoute
 }
 
@@ -1453,11 +1467,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicZernioWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/whatsapp-webhook': {
-      id: '/api/public/whatsapp-webhook'
-      path: '/api/public/whatsapp-webhook'
-      fullPath: '/api/public/whatsapp-webhook'
-      preLoaderRoute: typeof ApiPublicWhatsappWebhookRouteImport
+    '/api/public/zernio-status-webhook': {
+      id: '/api/public/zernio-status-webhook'
+      path: '/api/public/zernio-status-webhook'
+      fullPath: '/api/public/zernio-status-webhook'
+      preLoaderRoute: typeof ApiPublicZernioStatusWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/mp-webhook': {
@@ -1472,6 +1486,13 @@ declare module '@tanstack/react-router' {
       path: '/api/debug/featured'
       fullPath: '/api/debug/featured'
       preLoaderRoute: typeof ApiDebugFeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/marketing-automation': {
+      id: '/api/cron/marketing-automation'
+      path: '/api/cron/marketing-automation'
+      fullPath: '/api/cron/marketing-automation'
+      preLoaderRoute: typeof ApiCronMarketingAutomationRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/etiqueta': {
@@ -1688,9 +1709,10 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoIdRoute: ProdutoIdRoute,
   BeneficioIndexRoute: BeneficioIndexRoute,
   ApiAdminEtiquetaRoute: ApiAdminEtiquetaRoute,
+  ApiCronMarketingAutomationRoute: ApiCronMarketingAutomationRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
-  ApiPublicWhatsappWebhookRoute: ApiPublicWhatsappWebhookRoute,
+  ApiPublicZernioStatusWebhookRoute: ApiPublicZernioStatusWebhookRoute,
   ApiPublicZernioWebhookRoute: ApiPublicZernioWebhookRoute,
 }
 export const routeTree = rootRouteImport

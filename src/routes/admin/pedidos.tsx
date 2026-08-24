@@ -27,7 +27,7 @@ import {
 } from "@/lib/orders-admin.functions";
 import type { AdminOrderList, AdminOrderRow } from "@/lib/orders-admin.functions";
 import { generateOrderLabel } from "@/lib/logistics.functions";
-import { emitNFe, getDanfePdf } from "@/lib/nfe.functions";
+import { emitNFe, getDanfePdf, getNfePreview } from "@/lib/nfe.functions";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/pedidos")({
@@ -72,6 +72,16 @@ function PedidosPage() {
   const [generatingLabel, setGeneratingLabel] = useState(false);
   const [emittingNfe, setEmittingNfe] = useState(false);
   const [printingDanfe, setPrintingDanfe] = useState(false);
+
+  // Estados para o Modal de Prévia Fiscal (Fase 2)
+  const [nfeModalOpen, setNfeModalOpen] = useState(false);
+  const [nfeTipoOp, setNfeTipoOp] = useState<"venda" | "devolucao">("venda");
+  const [nfeLoadingPreview, setNfeLoadingPreview] = useState(false);
+  const [nfePreviewData, setNfePreviewData] = useState<any>(null);
+  const [nfeEditItems, setNfeEditItems] = useState<any[]>([]);
+  const [nfeReducaoBase, setNfeReducaoBase] = useState<string>("");
+  const [nfeIndicadorIe, setNfeIndicadorIe] = useState<number>(9);
+  const [nfeConsumidorFinal, setNfeConsumidorFinal] = useState<number>(1);
   const [reconciliationOpen, setReconciliationOpen] = useState(false);
   const [reconciling, setReconciling] = useState(false);
   const [reconciliation, setReconciliation] = useState({
@@ -282,16 +292,92 @@ function PedidosPage() {
     }
   };
 
-  const handleEmitNfe = async () => {
+  const openNfeModal = async (tipoOp: "venda" | "devolucao") => {
     if (!selectedOrder) return;
+    setNfeTipoOp(tipoOp);
+    setNfeModalOpen(true);
+    setNfeLoadingPreview(true);
+    setNfePreviewData(null);
+    setNfeEditItems([]);
+    setNfeReducaoBase("");
+    try {
+      const result = await getNfePreview({ data: { orderId: selectedOrder.id, tipoOperacao: tipoOp } });
+      if (result.success && result.data) {
+        setNfePreviewData(result.data);
+        setNfeEditItems(result.data.items || []);
+        if (result.data.indicadorIE !== undefined) setNfeIndicadorIe(result.data.indicadorIE);
+        if (result.data.consumidorFinal !== undefined) setNfeConsumidorFinal(result.data.consumidorFinal);
+        if (tipoOp === "devolucao") {
+          toast.info("Prévia de devolução carregada.");
+        }
+      } else {
+        setNfeModalOpen(false);
+        toast.error(result.error || "Erro ao montar prévia da NF-e");
+      }
+    } catch (e) {
+      setNfeModalOpen(false);
+      toast.error("Erro ao montar prévia da NF-e");
+    } finally {
+      setNfeLoadingPreview(false);
+    }
+  };
+
+  const confirmEmitNfe = async () => {
+    if (!selectedOrder || !nfePreviewData) return;
+
+    // Validações de formato e obrigatoriedade de IBS/CBS nos itens editados antes de transmitir
+    for (let i = 0; i < nfeEditItems.length; i++) {
+      const item = nfeEditItems[i];
+      const itemName = item.descricao || `Item #${i + 1}`;
+
+      // Valida CST IBS/CBS
+      if (!item.cstIbscbs) {
+        toast.error(`CST IBS/CBS é obrigatório para o item "${itemName}" (Vigente desde 03/08/2026).`, { duration: 6000 });
+        return;
+      }
+      const cstClean = String(item.cstIbscbs).trim();
+      if (!/^\d{3}$/.test(cstClean)) {
+        toast.error(`CST IBS/CBS do item "${itemName}" deve ter exatamente 3 dígitos numéricos (ex: 000).`, { duration: 6000 });
+        return;
+      }
+
+      // Valida Enquadramento / cClassTrib
+      if (!item.cClassTrib) {
+        toast.error(`Código de Enquadramento IBS/CBS é obrigatório para o item "${itemName}".`, { duration: 6000 });
+        return;
+      }
+      const classClean = String(item.cClassTrib).trim();
+      if (!/^\d{6}$/.test(classClean)) {
+        toast.error(`Código de Enquadramento do item "${itemName}" deve ter exatamente 6 dígitos numéricos (ex: 000001).`, { duration: 6000 });
+        return;
+      }
+
+      // Valida Alíquotas de IBS/CBS
+      if (item.aliquotaIbsEstadual === undefined || item.aliquotaIbsEstadual === null || isNaN(Number(item.aliquotaIbsEstadual))) {
+        toast.error(`Alíquota IBS Estadual é obrigatória para o item "${itemName}".`, { duration: 6000 });
+        return;
+      }
+      if (item.aliquotaCbs === undefined || item.aliquotaCbs === null || isNaN(Number(item.aliquotaCbs))) {
+        toast.error(`Alíquota CBS é obrigatória para o item "${itemName}".`, { duration: 6000 });
+        return;
+      }
+    }
+
     setEmittingNfe(true);
     try {
-      const result = await emitNFe({ data: { orderId: selectedOrder.id } });
+      const result = await emitNFe({
+        data: {
+          orderId: selectedOrder.id,
+          tipoOperacao: nfeTipoOp,
+          itensEditados: nfeEditItems,
+          reducaoBaseIcms: nfeReducaoBase ? Number(nfeReducaoBase) : undefined,
+          indicadorIE: Number(nfeIndicadorIe),
+          consumidorFinal: Number(nfeConsumidorFinal),
+        },
+      });
       if (result.success && result.data) {
-        toast.success(
-          `NF-e emitida! Chave: ${result.data.nfeKey.slice(0, 20)}...`,
-          { duration: 8000 }
-        );
+        toast.success(`NF-e emitida! Chave: ${result.data.nfeKey.slice(0, 20)}...`, { duration: 8000 });
+        setNfeModalOpen(false);
         fetchOrders();
       } else {
         toast.error(result.error || "Erro ao emitir NF-e");
@@ -663,15 +749,24 @@ function PedidosPage() {
                       NF-e {selectedOrder.nfeNumber ? `#${selectedOrder.nfeNumber}` : ""} — {selectedOrder.nfeStatus}
                     </span>
                   ) : !["cancelled", "refunded"].includes(selectedOrder.status || "") && (
-                    <button
-                      onClick={handleEmitNfe}
-                      disabled={emittingNfe}
-                      className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5"
-                    >
-                      {emittingNfe && <RefreshCw className="w-3 h-3 animate-spin" />}
-                      <FileText className="w-3 h-3" />
-                      Emitir NF-e
-                    </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => openNfeModal("venda")}
+                        disabled={emittingNfe}
+                        className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 flex items-center gap-1.5 font-medium"
+                      >
+                        <FileText className="w-3 h-3" />
+                        Emitir NF-e (Venda)
+                      </button>
+                      <button
+                        onClick={() => openNfeModal("devolucao")}
+                        disabled={emittingNfe}
+                        className="px-3 py-1.5 text-xs bg-amber-600 text-white rounded hover:bg-amber-700 disabled:opacity-50 flex items-center gap-1.5 font-medium"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Emitir Devolução
+                      </button>
+                    </div>
                   )}
 
                   {selectedOrder.nfeKey && selectedOrder.nfeDanfeUrl && (
@@ -1001,6 +1096,265 @@ function PedidosPage() {
           </div>
         </div>
       )}
+      {nfeModalOpen && selectedOrder && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-hidden bg-white rounded-lg shadow-xl flex flex-col">
+            <div className="px-6 py-4 border-b border-[#E9E1D2] flex items-center justify-between">
+              <div>
+                <h3 className="font-serif text-xl text-[#0F3A3E]">Prévia da NF-e</h3>
+                <p className="text-xs text-[#51635F]">
+                  {nfeTipoOp === "devolucao" ? "Devolução" : "Venda"} para o pedido #{selectedOrder.id.slice(0, 8).toUpperCase()}
+                </p>
+              </div>
+              <button onClick={() => setNfeModalOpen(false)} className="p-1 hover:bg-[#F8F4EA] rounded">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-auto p-6 space-y-6">
+              {nfeLoadingPreview ? (
+                <div className="text-sm text-[#51635F]">Montando prévia fiscal...</div>
+              ) : nfePreviewData ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                    <div className="border border-[#E9E1D2] p-3 rounded">
+                      <div className="text-[10px] uppercase text-[#8A938E] mb-1">Destino</div>
+                      <div className="text-[#0F3A3E] font-medium">{nfePreviewData.destName}</div>
+                      <div className="text-[#51635F]">{nfePreviewData.isCNPJ ? "CNPJ" : "CPF"}</div>
+                    </div>
+                    <div className="border border-[#E9E1D2] p-3 rounded">
+                      <div className="text-[10px] uppercase text-[#8A938E] mb-1">CFOP / UF</div>
+                      <div className="text-[#0F3A3E] font-medium">{nfePreviewData.destUf} x {nfePreviewData.emitUf}</div>
+                      <div className="text-[#51635F]">{nfeTipoOp}</div>
+                    </div>
+                    <div className="border border-[#E9E1D2] p-3 rounded">
+                      <div className="text-[10px] uppercase text-[#8A938E] mb-1">Frete</div>
+                      <div className="text-[#0F3A3E] font-medium">{nfePreviewData.shippingPrice?.toFixed(2)}</div>
+                      <div className="text-[#51635F]">Desconto {nfePreviewData.discount?.toFixed(2)}</div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {nfePreviewData.isCNPJ && (
+                      <div className="border border-[#E9E1D2] rounded p-4 bg-[#F8F4EA]">
+                        <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1.5">
+                          Redução de base do ICMS (%)
+                        </label>
+                        <input
+                          value={nfeReducaoBase}
+                          onChange={(e) => setNfeReducaoBase(e.target.value)}
+                          type="number"
+                          step="0.01"
+                          className="w-full max-w-xs px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+                          placeholder="0.00"
+                        />
+                        <p className="mt-2 text-xs text-[#51635F]">
+                          TODO: este valor ainda não é enviado para a notaas.
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="border border-[#E9E1D2] rounded p-4 bg-[#F8F4EA] space-y-3 md:col-span-2">
+                      <div className="text-xs font-semibold text-[#0F3A3E] uppercase tracking-wider">Parâmetros de Cabeçalho (Editáveis)</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1">
+                            Indicador IE (destinatário)
+                          </label>
+                          <select
+                            value={nfeIndicadorIe}
+                            onChange={(e) => setNfeIndicadorIe(Number(e.target.value))}
+                            className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+                          >
+                            <option value={1}>1 - Contribuinte ICMS</option>
+                            <option value={2}>2 - Contribuinte Isento</option>
+                            <option value={9}>9 - Não Contribuinte</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#51635F] font-semibold mb-1">
+                            Consumidor Final
+                          </label>
+                          <select
+                            value={nfeConsumidorFinal}
+                            onChange={(e) => setNfeConsumidorFinal(Number(e.target.value))}
+                            className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white"
+                          >
+                            <option value={0}>0 - Não (Revenda / Produção)</option>
+                            <option value={1}>1 - Sim (Consumidor Final)</option>
+                          </select>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-[#51635F]">
+                        Nota: CNPJ assume revenda por padrão (consumidorFinal = 0, indicadorIE = 1). Caso seja compra para uso/consumo interno, ajuste acima.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    {nfeEditItems.map((item, idx) => (
+                      <div key={item.id || idx} className="border border-[#E9E1D2] rounded p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="md:col-span-2">
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Descrição</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.descricao || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], descricao: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CFOP</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cfop || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], cfop: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">NCM</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.ncm || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], ncm: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Qtd</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="1" value={item.quantidade || 1} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], quantidade: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Valor unitário</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.valorUnitario || 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], valorUnitario: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Unidade</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.unidade || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], unidade: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CST/CSOSN</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cst || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], cst: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Origem</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="1" value={item.origem ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], origem: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Aliq. ICMS</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaIcms ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaIcms: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Aliq. PIS</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaPis ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaPis: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Aliq. COFINS</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaCofins ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaCofins: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">CST IBS/CBS</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cstIbscbs || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], cstIbscbs: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">Enquadramento</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cClassTrib || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], cClassTrib: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">Aliq. IBS Est.</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaIbsEstadual ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaIbsEstadual: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">Aliq. IBS Mun.</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaIbsMunicipal ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaIbsMunicipal: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">Aliq. CBS</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.aliquotaCbs ?? 0} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], aliquotaCbs: Number(e.target.value) };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] uppercase tracking-wider text-[#B07B1E] mb-1">Cód. Benefício</label>
+                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.codigoBeneficioFiscal || ""} onChange={(e) => {
+                            const next = [...nfeEditItems];
+                            next[idx] = { ...next[idx], codigoBeneficioFiscal: e.target.value };
+                            setNfeEditItems(next);
+                          }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
+            <div className="px-6 py-4 border-t border-[#E9E1D2] flex items-center justify-end gap-3 bg-[#FAF8F4]">
+              <button
+                onClick={() => setNfeModalOpen(false)}
+                className="px-4 py-2 text-sm border border-[#E9E1D2] hover:bg-[#F8F4EA] transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmEmitNfe}
+                disabled={emittingNfe || nfeLoadingPreview || !nfePreviewData}
+                className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+              >
+                {emittingNfe && <RefreshCw className="w-3 h-3 animate-spin" />}
+                Confirmar e emitir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     {/* Etiqueta Modal */}
       {labelModalOpen && labelOrder && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">

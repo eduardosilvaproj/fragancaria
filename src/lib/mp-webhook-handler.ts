@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import { canTransition } from "@/lib/order-state";
 import { getMissingPaymentSnapshotFields, type PaymentSnapshotOrder } from "@/lib/order-payment-snapshot";
-import { sendVendaAprovadaWhatsApp } from "@/lib/order-whatsapp.functions";
+import { sendVendaAprovadaWhatsApp, sendPartnersSaleAlertWhatsApp } from "@/lib/order-whatsapp.functions";
 
 export const mpWebhookCorsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -282,10 +282,17 @@ export async function handleMpWebhookRequest(
       });
     }
 
-    // Disparo do WhatsApp de venda aprovada
+    // Disparo do WhatsApp de venda aprovada e alerta aos sócios
     if (acabouDeSerAprovado) {
       sendVendaAprovadaWhatsApp(existing.id).catch((err) => {
         log.error("[mp-webhook] falha ao enviar WhatsApp de venda aprovada (ignorada)", {
+          orderId: existing.id,
+          err,
+        });
+      });
+
+      sendPartnersSaleAlertWhatsApp(existing.id).catch((err) => {
+        log.error("[mp-webhook] falha ao enviar alerta de venda para os sócios (ignorada)", {
           orderId: existing.id,
           err,
         });

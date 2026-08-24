@@ -53,6 +53,15 @@ export type FranChatResult =
   | { success: false; error: string }
   | { success: false; error: "human_mode"; resposta: string };
 
+export function isAdminPhone(phone?: string | null): boolean {
+  if (!phone) return false;
+  const rawAdminPhones = process.env.WHATSAPP_ADMIN_PHONES || "";
+  const admins = rawAdminPhones.split(",").map((s) => s.replace(/\D/g, "")).filter(Boolean);
+  const cleanPhone = phone.replace(/\D/g, "");
+  if (admins.length === 0) return false;
+  return admins.includes(cleanPhone) || admins.some((adm) => cleanPhone.endsWith(adm) || adm.endsWith(cleanPhone));
+}
+
 const TOOLS = [
   {
     name: "searchProducts",
@@ -136,6 +145,33 @@ const TOOLS = [
     input_schema: {
       type: "object" as const,
       properties: {},
+    },
+  },
+];
+
+const ADMIN_TOOLS = [
+  {
+    name: "adminGetOrderDetails",
+    description:
+      "EXCLUSIVO PARA SÓCIOS/ADMINS: consulta detalhes completos de qualquer pedido pelo ID ou order_number, incluindo cliente, status, pagamentos, itens e endereço de entrega.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        orderId: { type: "string", description: "ID ou número do pedido (ex: ORD-12345)." },
+      },
+      required: ["orderId"],
+    },
+  },
+  {
+    name: "adminGetInventory",
+    description:
+      "EXCLUSIVO PARA SÓCIOS/ADMINS: consulta estoque, preço, custo e margem de produtos por nome ou ID, incluindo itens inativos se necessário.",
+    input_schema: {
+      type: "object" as const,
+      properties: {
+        query: { type: "string", description: "Nome ou ID do produto." },
+      },
+      required: ["query"],
     },
   },
 ];
@@ -239,18 +275,29 @@ export const chatWithFran = createServerFn({ method: "POST" })
 
       const client = new Anthropic({ apiKey });
 
-      // Monta system prompt com instrução de canal
+      const userIsAdmin = isAdminPhone(data.senderPhone);
+      const activeTools: any[] = [...TOOLS];
+      if (userIsAdmin) {
+        activeTools.push(...ADMIN_TOOLS);
+      }
+
+      // Monta system prompt com instrução de canal e de admin se aplicável
       const channelInstruction =
         data.channel === "instagram"
           ? "Você está atendendo por mensagem direta no Instagram. A pessoa NÃO está no site. Quando fizer sentido, convide para [www.fragranciaria.com](https://www.fragranciaria.com)."
           : data.channel === "whatsapp"
             ? "Você está atendendo por WhatsApp. A pessoa NÃO está no site. Seja prática e cordial, como em uma conversa de app de mensagens."
             : "Você está atendendo pelo chat do site.";
+
+      const adminInstruction = userIsAdmin
+        ? "\n\n[MODO ADMIN ATIVADO]: Este usuário é um sócio/administrador da Fragranciaria autenticado pelo telefone. Você tem acesso exclusivo a ferramentas para consultar detalhes completos de qualquer pedido (adminGetOrderDetails) e verificar estoque, custo, margem e inventário de produtos (adminGetInventory). Responda com precisão e clareza aos dados internos solicitados."
+        : "";
+
       const system = [
-        { type: "text" as const, text: `${FRAN_SYSTEM_PROMPT}\n\n${channelInstruction}`, cache_control: { type: "ephemeral" as const } },
+        { type: "text" as const, text: `${FRAN_SYSTEM_PROMPT}\n\n${channelInstruction}${adminInstruction}`, cache_control: { type: "ephemeral" as const } },
       ];
-      const tools = TOOLS.map((tool, i) =>
-        i === TOOLS.length - 1 ? { ...tool, cache_control: { type: "ephemeral" as const } } : tool,
+      const tools = activeTools.map((tool, i) =>
+        i === activeTools.length - 1 ? { ...tool, cache_control: { type: "ephemeral" as const } } : tool,
       );
 
       // messages interno carrega os round-trips de tool; o cliente só vê texto.
@@ -329,7 +376,22 @@ export const chatWithFran = createServerFn({ method: "POST" })
               console.log(`[fran-chat] quoteShipping input: toCep=${args.toCep}, productIds=${JSON.stringify(args.productIds)}`);
               const produtos = await buscarProdutosParaCotacao(supabaseAdmin, args.productIds);
               result = await quoteShipping(args.toCep, produtos);
-            } else if (block.name === "getRecentOrdersByPhone") {
+            } else if (block.name === "adminGetOrderDetails") {
+              if (!isAdminPhone(data.senderPhone)) {
+                result = { error: "Acesso negado: ferramenta exclusiva para sócios e administradores." };
+              } else {
+                const args = block.input as { orderId: string };
+                const { adminGetOrderDetails } = await import("./admin-tools");
+                result = await adminGetOrderDetails(supabaseAdmin, args.orderId);
+              }
+            } else if (block.name === "adminGetInventory") {
+              if (!isAdminPhone(data.senderPhone)) {
+                result = { error: "Acesso negado: ferramenta exclusiva para sócios e administradores." };
+              } else {
+                const args = block.input as { query: string };
+                const { adminGetInventory } = await import("./admin-tools");
+                result = await adminGetInventory(supabaseAdmin, args.query);
+              }
               // SEGURANÇA: o telefone NUNCA vem do modelo. O tool não aceita
               // parâmetro de identificação; o servidor injeta o telefone do
               // remetente da conversa (senderPhone) no momento da execução.

@@ -38,17 +38,6 @@ export type NfeSettings = {
   ambiente_sefaz: "homologacao" | "producao";
   estado_uf: string;
   nfe_serie: number;
-  ncm_padrao?: string;
-  cfop_padrao?: string;
-  cst_icms_padrao?: string;
-  csosn_padrao?: string;
-  origem_padrao?: string;
-  icms_aliquota?: number;
-  pis_aliquota?: number;
-  cofins_aliquota?: number;
-  cst_pis_cofins_padrao?: string;
-  unidade_padrao?: string;
-  cest_padrao?: string;
   modalidade_frete?: number;
   crt?: number;
   webservice_url?: string;
@@ -216,17 +205,6 @@ export const getNfeSettings = createServerFn({ method: "GET" }).handler(
               ambiente_sefaz: (data as any).ambiente_sefaz || "homologacao",
               estado_uf: (data as any).estado_uf || "",
               nfe_serie: (data as any).nfe_serie || 1,
-              ncm_padrao: (data as any).ncm_padrao ?? undefined,
-              cfop_padrao: (data as any).cfop_padrao ?? undefined,
-              cst_icms_padrao: (data as any).cst_icms_padrao ?? undefined,
-              csosn_padrao: (data as any).csosn_padrao ?? undefined,
-              origem_padrao: (data as any).origem_padrao ?? undefined,
-              icms_aliquota: (data as any).icms_aliquota ?? undefined,
-              pis_aliquota: (data as any).pis_aliquota ?? undefined,
-              cofins_aliquota: (data as any).cofins_aliquota ?? undefined,
-              cst_pis_cofins_padrao: (data as any).cst_pis_cofins_padrao ?? undefined,
-              unidade_padrao: (data as any).unidade_padrao ?? undefined,
-              cest_padrao: (data as any).cest_padrao ?? undefined,
               modalidade_frete: (data as any).modalidade_frete ?? undefined,
               crt: (data as any).crt ?? undefined,
               webservice_url: (data as any).webservice_url ?? undefined,
@@ -274,21 +252,10 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
         ambiente_sefaz: z.enum(["homologacao", "producao"]).default("homologacao"),
         estado_uf: z.string().length(2),
         nfe_serie: z.number().int().positive().default(1),
-        cest_padrao: z.string().max(20).optional(),
         modalidade_frete: z.number().int().nullable().optional(),
         crt: z.number().int().nullable().optional(),
         webservice_url: z.string().optional(),
         certificado_path: z.string().optional(),
-        ncm_padrao: z.string().max(10).optional(),
-        cfop_padrao: z.string().max(4).optional(),
-        cst_icms_padrao: z.string().max(3).optional(),
-        csosn_padrao: z.string().max(3).optional(),
-        origem_padrao: z.number().int().min(0).max(8).nullable().optional(),
-        cst_pis_cofins_padrao: z.string().max(2).optional(),
-        icms_aliquota: z.number().nonnegative().optional(),
-        pis_aliquota: z.number().nonnegative().optional(),
-        cofins_aliquota: z.number().nonnegative().optional(),
-        unidade_padrao: z.string().max(5).optional(),
         cst_ibscbs_padrao: z.string().max(3).optional().nullable(),
         cclasstrib_padrao: z.string().max(6).optional().nullable(),
         aliquota_ibs_estadual: z.number().nonnegative().optional().nullable(),
@@ -326,17 +293,6 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
           ambiente_sefaz: data.ambiente_sefaz,
           estado_uf: data.estado_uf,
           nfe_serie: data.nfe_serie || 15,
-          ncm_padrao: data.ncm_padrao || null,
-          cfop_padrao: data.cfop_padrao || null,
-          cst_icms_padrao: data.cst_icms_padrao || null,
-          csosn_padrao: data.csosn_padrao || null,
-          origem_padrao: data.origem_padrao || null,
-          icms_aliquota: data.icms_aliquota ?? null,
-          pis_aliquota: data.pis_aliquota ?? null,
-          cofins_aliquota: data.cofins_aliquota ?? null,
-          cst_pis_cofins_padrao: data.cst_pis_cofins_padrao || null,
-          unidade_padrao: data.unidade_padrao || null,
-          cest_padrao: data.cest_padrao || null,
           modalidade_frete: data.modalidade_frete ?? null,
           crt: data.crt ?? null,
           webservice_url: data.webservice_url || null,
@@ -392,9 +348,165 @@ export const saveNfeSettings = createServerFn({ method: "POST" })
 // EMITIR NF-E VIA NOTAAS
 // =====================================================
 
+export const getNfePreview = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ orderId: z.string().uuid(), tipoOperacao: z.enum(["venda", "devolucao"]) }).parse(d))
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const db = supabaseAdmin as any;
+
+      const { data: settingsRaw, error: settingsError } = await db
+        .from("nfe_settings")
+        .select("*")
+        .eq("id", "main")
+        .single();
+
+      if (settingsError || !settingsRaw) {
+        return { success: false, error: "Configurações NF-e não encontradas." };
+      }
+
+      const settings = {
+        cnpj: settingsRaw.cnpj,
+        inscricao_estadual: settingsRaw.inscricao_estadual,
+        inscricao_municipal: settingsRaw.inscricao_municipal,
+        razao_social: settingsRaw.razao_social,
+        nome_fantasia: settingsRaw.nome_fantasia,
+        endereco: (settingsRaw.endereco as NfeEndereco) || { logradouro: "", numero: "", bairro: "", cidade: "", uf: "", cep: "" },
+        ambiente_sefaz: settingsRaw.ambiente_sefaz || "homologacao",
+        estado_uf: settingsRaw.estado_uf,
+        nfe_serie: settingsRaw.nfe_serie || 1,
+        modalidade_frete: settingsRaw.modalidade_frete ?? 0,
+        crt: settingsRaw.crt ?? 3,
+      };
+
+      const { data: order, error: orderError } = await db
+        .from("orders")
+        .select("*, items, shipping_address")
+        .eq("id", data.orderId)
+        .single();
+
+      if (orderError || !order) {
+        return { success: false, error: "Pedido não encontrado" };
+      }
+
+      const items = (order.items as Array<Record<string, unknown>>) || [];
+      if (items.length === 0) {
+        return { success: false, error: "Pedido sem itens para faturar" };
+      }
+
+      const emitAddr = settings.endereco;
+      const shippingAddr = order.shipping_address as Record<string, string> | null;
+      const destDoc = order.customer_cpf || order.customer_document || "";
+      const destDocClean = destDoc.replace(/\D/g, "");
+      const isCPF = destDocClean.length <= 11;
+      const isCNPJ = !isCPF && destDocClean.length > 0;
+      const destName = String(order.customer_name || "Consumidor");
+      const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
+      const emitUf = String(settings.estado_uf || "SP").toUpperCase();
+      const isWithinState = destUf === emitUf;
+      const tipoOperacao = data.tipoOperacao;
+      if (tipoOperacao !== "venda" && tipoOperacao !== "devolucao") {
+        return { success: false, error: "tipoOperacao é obrigatório e deve ser 'venda' ou 'devolucao'." };
+      }
+      const isDevolucao = tipoOperacao === "devolucao";
+
+      const resolveAliquotaIcms = (item: Record<string, unknown>): number => {
+        const prodAliq = Number(item.aliquota_icms) || 0;
+        if (isDevolucao || isWithinState || isCPF) {
+          return prodAliq;
+        }
+        const origemNum = Number(item.origem ?? 0);
+        if ([1, 2, 6, 7].includes(origemNum)) {
+          return 4;
+        }
+        const sulSudesteExcetoEs = ["PR", "SC", "RS", "RJ", "MG"];
+        if (sulSudesteExcetoEs.includes(destUf)) {
+          return 12;
+        }
+        return 7;
+      };
+
+      const resolveCfop = (item: Record<string, unknown>): string | undefined => {
+        const source = isCPF
+          ? isWithinState
+            ? item.cfop_venda_pf_dentro
+            : item.cfop_venda_pf_fora
+          : isWithinState
+            ? item.cfop_venda_pj_dentro
+            : item.cfop_venda_pj_fora;
+        const devolucaoSource = isCPF
+          ? isWithinState
+            ? item.cfop_devolucao_pf_dentro
+            : item.cfop_devolucao_pf_fora
+          : isWithinState
+            ? item.cfop_devolucao_pj_dentro
+            : item.cfop_devolucao_pj_fora;
+        const value = isDevolucao ? devolucaoSource : source;
+        const v = value == null ? "" : String(value).trim();
+        return v || undefined;
+      };
+
+      const previewItems = items.map((item: any, idx: number) => {
+        const itemName = String(item.title || item.name || `Item #${idx + 1}`);
+        const cfop = resolveCfop(item);
+        if (!cfop) {
+          throw new Error(`CFOP não configurado para este cenário — pendente de definição fiscal (Item: "${itemName}").`);
+        }
+        return {
+          id: item.id || item.product_id || `item-${idx}`,
+          descricao: itemName,
+          ncm: item.ncm || "",
+          cfop,
+          quantidade: Number(item.quantity) || 1,
+          valorUnitario: Number(item.price) || 0,
+          valorTotal: (Number(item.quantity) || 1) * (Number(item.price) || 0),
+          unidade: item.unidade || "UN",
+          cst: item.cst_icms || item.csosn || "",
+          origem: item.origem !== undefined && item.origem !== null ? Number(item.origem) : 0,
+          aliquotaIcms: resolveAliquotaIcms(item),
+          aliquotaPis: Number(item.aliquota_pis) || 0,
+          aliquotaCofins: Number(item.aliquota_cofins) || 0,
+          cest: item.cest || "",
+          cstIbscbs: item.cst_ibscbs || "",
+          cClassTrib: item.cclasstrib || "",
+          aliquotaIbsEstadual: Number(item.aliquota_ibs_estadual) || 0,
+          aliquotaIbsMunicipal: Number(item.aliquota_ibs_municipal) || 0,
+          aliquotaCbs: Number(item.aliquota_cbs) || 0,
+          codigoBeneficioFiscal: item.codigo_beneficio_fiscal || "",
+        };
+      });
+
+      return {
+        success: true,
+        data: {
+          orderId: order.id,
+          tipoOperacao,
+          isCNPJ,
+          destName,
+          destDoc: destDocClean,
+          destUf,
+          emitUf,
+          items: previewItems,
+          shippingPrice: Number(order.shipping_price) || 0,
+          discount: Number(order.discount) || 0,
+          indicadorIE: isCNPJ ? 1 : 9,
+          consumidorFinal: isCNPJ ? 0 : 1,
+        },
+      };
+    } catch (e: any) {
+      return { success: false, error: e?.message || "Erro ao gerar prévia fiscal" };
+    }
+  });
+
 export const emitNFe = createServerFn({ method: "POST" })
-  .validator((d: unknown) => z.object({ orderId: z.string().uuid() }).parse(d))
+  .validator((d: unknown) => z.object({ orderId: z.string().uuid(), tipoOperacao: z.enum(["venda", "devolucao"]), itensEditados: z.array(z.any()).optional(), reducaoBaseIcms: z.number().optional(), indicadorIE: z.number().optional(), consumidorFinal: z.number().optional() }).parse(d))
   .handler(async ({ data }): Promise<NfeResult> => {
+    const tipoOperacao = data.tipoOperacao;
+    if (tipoOperacao !== "venda" && tipoOperacao !== "devolucao") {
+      return { success: false, error: "tipoOperacao é obrigatório e deve ser 'venda' ou 'devolucao'." };
+    }
     try {
       const { requireAdmin } = await import("@/lib/admin-auth");
       await requireAdmin();
@@ -438,17 +550,6 @@ export const emitNFe = createServerFn({ method: "POST" })
         ambiente_sefaz: settingsRaw.ambiente_sefaz || "homologacao",
         estado_uf: settingsRaw.estado_uf,
         nfe_serie: settingsRaw.nfe_serie || 1,
-        ncm_padrao: settingsRaw.ncm_padrao ?? undefined,
-        cfop_padrao: settingsRaw.cfop_padrao ?? undefined,
-        cst_icms_padrao: settingsRaw.cst_icms_padrao ?? undefined,
-        csosn_padrao: settingsRaw.csosn_padrao ?? undefined,
-        origem_padrao: settingsRaw.origem_padrao ?? undefined,
-        icms_aliquota: settingsRaw.icms_aliquota ?? undefined,
-        pis_aliquota: settingsRaw.pis_aliquota ?? undefined,
-        cofins_aliquota: settingsRaw.cofins_aliquota ?? undefined,
-        cst_pis_cofins_padrao: settingsRaw.cst_pis_cofins_padrao ?? undefined,
-        unidade_padrao: settingsRaw.unidade_padrao ?? undefined,
-        cest_padrao: settingsRaw.cest_padrao ?? undefined,
         modalidade_frete: settingsRaw.modalidade_frete ?? undefined,
         crt: settingsRaw.crt ?? undefined,
       };
@@ -457,42 +558,6 @@ export const emitNFe = createServerFn({ method: "POST" })
         return {
           success: false,
           error: "Dados do emitente incompletos. Configure CNPJ, IE e Razão Social.",
-        };
-      }
-
-      // Parâmetros fiscais padrão vêm de nfe_settings. Sem eles não há como
-      // montar os itens (NCM, CST, ICMS, PIS, COFINS, unidade) — recusa em vez
-      // de emitir com valores errados.
-      const padrao = {
-        ncm: settings.ncm_padrao,
-        cfop: settings.cfop_padrao,
-        cstIcms: settings.cst_icms_padrao,
-        origem: settings.origem_padrao,
-        cstPisCofins: settings.cst_pis_cofins_padrao,
-        icms: settings.icms_aliquota,
-        pis: settings.pis_aliquota,
-        cofins: settings.cofins_aliquota,
-        unidade: settings.unidade_padrao,
-        cest: settings.cest_padrao,
-        crt: settings.crt,
-      };
-      const faltantes = (
-        [
-          ["NCM padrão", padrao.ncm],
-          ["CFOP padrão", padrao.cfop],
-          ["CST ICMS padrão", padrao.cstIcms],
-          ["Origem mercadoria padrão", padrao.origem],
-          ["CST PIS/COFINS padrão", padrao.cstPisCofins],
-          ["Alíquota ICMS", padrao.icms],
-          ["Alíquota PIS", padrao.pis],
-          ["Alíquota COFINS", padrao.cofins],
-          ["Unidade padrão", padrao.unidade],
-        ] as const
-      ).filter(([, v]) => v === undefined || v === null || v === "");
-      if (faltantes.length > 0) {
-        return {
-          success: false,
-          error: `Parâmetros fiscais padrão incompletos em Configurações > NF-e: ${faltantes.map(([n]) => n).join(", ")}.`,
         };
       }
 
@@ -529,83 +594,114 @@ export const emitNFe = createServerFn({ method: "POST" })
       const destDoc = order.customer_cpf || order.customer_document || "";
       const destDocClean = destDoc.replace(/\D/g, "");
       const isCPF = destDocClean.length <= 11;
+      const isCNPJ = !isCPF && destDocClean.length > 0;
       const destName = String(order.customer_name || "Consumidor");
+      const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
+      const emitUf = String(settings.estado_uf || "SP").toUpperCase();
+      const isWithinState = destUf === emitUf;
+      const isDevolucao = (tipoOperacao as "venda" | "devolucao") === "devolucao";
 
-      // Lê dados fiscais primariamente do SNAPSHOT gravado em order.items, com fallback nas settings globais
-      const notaasItemsOrErrors = items.map((item: any, idx: number) => {
-        const qtd = Number(item.quantity) || 1;
-        const vUn = Number(item.price) || 0;
+      // CFOP é resolvido pela combinação operação × tipo de destinatário × UF,
+      // usando as 8 colunas contextuais gravadas no snapshot do item.
+      const resolveCfop = (item: Record<string, unknown>): string | undefined => {
+        const source = isCPF
+          ? isWithinState
+            ? item.cfop_venda_pf_dentro
+            : item.cfop_venda_pf_fora
+          : isWithinState
+            ? item.cfop_venda_pj_dentro
+            : item.cfop_venda_pj_fora;
+        const devolucaoSource = isCPF
+          ? isWithinState
+            ? item.cfop_devolucao_pf_dentro
+            : item.cfop_devolucao_pf_fora
+          : isWithinState
+            ? item.cfop_devolucao_pj_dentro
+            : item.cfop_devolucao_pj_fora;
+        const value = isDevolucao ? devolucaoSource : source;
+        const v = value == null ? "" : String(value).trim();
+        return v || undefined;
+      };
+
+      const resolveAliquotaIcms = (item: Record<string, unknown>): number => {
+        const prodAliq = Number(item.aliquota_icms) || 0;
+        if (isDevolucao || isWithinState || isCPF) {
+          return prodAliq;
+        }
+        const origemNum = Number(item.origem ?? 0);
+        if ([1, 2, 6, 7].includes(origemNum)) {
+          return 4;
+        }
+        const sulSudesteExcetoEs = ["PR", "SC", "RS", "RJ", "MG"];
+        if (sulSudesteExcetoEs.includes(destUf)) {
+          return 12;
+        }
+        return 7;
+      };
+
+      // Se houver itens editados no modal, usa eles; caso contrário, usa o snapshot padrão.
+      const sourceItems = Array.isArray(data.itensEditados) && data.itensEditados.length > 0 ? data.itensEditados : items;
+
+      // TODO: Guardamos a redução de base do ICMS informada pelo usuário, mas não enviamos para
+      // a notaas ainda pois a especificação do campo pRedBC/redução na API da notaas está pendente de suporte.
+      const reducaoBaseIcms = data.reducaoBaseIcms;
+      if (reducaoBaseIcms !== undefined && reducaoBaseIcms !== null) {
+        console.log("[nfe] Redução de base de ICMS informada no modal:", reducaoBaseIcms);
+      }
+
+      const notaasItemsOrErrors = sourceItems.map((item: any, idx: number) => {
+        const qtd = Number(item.quantidade ?? item.quantity) || 1;
+        const vUn = Number(item.valorUnitario ?? item.price) || 0;
         const vTotal = qtd * vUn;
         const rawId = String(item.id || item.product_id || "");
         const prodId = rawId.split("::")[0];
 
-        const ncm = item.ncm || settings.ncm_padrao;
-        const cfop = item.cfop || settings.cfop_padrao;
+        const ncm = item.ncm;
+        const cfop = item.cfop || resolveCfop(item);
         const isSimples = Number(settings.crt) === 1;
-        const cstVal = isSimples
-          ? (item.csosn || settings.csosn_padrao)
-          : (item.cst_icms || settings.cst_icms_padrao);
-        const cest = item.cest || settings.cest_padrao;
-        const origem =
-          item.origem !== undefined && item.origem !== null && item.origem !== ""
-            ? item.origem
-            : settings.origem_padrao;
-        const unidade = item.unidade || settings.unidade_padrao;
-        const cstPis = item.cst_pis_cofins || settings.cst_pis_cofins_padrao;
-        const rawIcms =
-          item.aliquota_icms !== undefined &&
-          item.aliquota_icms !== null &&
-          item.aliquota_icms !== ""
-            ? item.aliquota_icms
-            : settings.icms_aliquota;
-
-        const rawPis =
-          item.aliquota_pis !== undefined && item.aliquota_pis !== null && item.aliquota_pis !== ""
-            ? item.aliquota_pis
-            : settings.pis_aliquota;
-
-        const rawCofins =
-          item.aliquota_cofins !== undefined &&
-          item.aliquota_cofins !== null &&
-          item.aliquota_cofins !== ""
-            ? item.aliquota_cofins
-            : settings.cofins_aliquota;
-
-        const itemName = String(item.title || item.name || `Item #${idx + 1}`);
+        const cstVal = item.cst || (isSimples ? item.csosn : item.cst_icms);
+        const cest = item.cest;
+        const origem = item.origem;
+        const unidade = item.unidade;
+        const cstPis = item.cst_pis_cofins || "01";
+        const rawIcms = item.aliquotaIcms ?? resolveAliquotaIcms(item);
+        const rawPis = item.aliquotaPis ?? item.aliquota_pis;
+        const rawCofins = item.aliquotaCofins ?? item.aliquota_cofins;
+        const itemName = String(item.descricao || item.title || item.name || `Item #${idx + 1}`);
         if (!ncm) {
           return {
             success: false,
-            error: `NCM não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `NCM não configurado para o item "${itemName}".`,
           };
         }
         if (!cfop) {
           return {
             success: false,
-            error: `CFOP não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `CFOP contextual não configurado para o item "${itemName}".`,
           };
         }
         if (!cstVal) {
           return {
             success: false,
-            error: `${isSimples ? "CSOSN" : "CST ICMS"} não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `${isSimples ? "CSOSN" : "CST ICMS"} não configurado para o item "${itemName}".`,
           };
         }
         if (origem === undefined || origem === null || origem === "" || isNaN(Number(origem))) {
           return {
             success: false,
-            error: `Origem da mercadoria não configurada para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `Origem da mercadoria não configurada para o item "${itemName}".`,
           };
         }
         if (!unidade) {
           return {
             success: false,
-            error: `Unidade não configurada para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `Unidade não configurada para o item "${itemName}".`,
           };
         }
         if (!cstPis) {
           return {
             success: false,
-            error: `CST PIS/COFINS não configurado para o item "${itemName}" nem nos parâmetros globais.`,
+            error: `CST PIS/COFINS não configurado para o item "${itemName}".`,
           };
         }
         if (rawIcms === undefined || rawIcms === null || rawIcms === "" || isNaN(Number(rawIcms)) || Number(rawIcms) < 0) {
@@ -622,33 +718,40 @@ export const emitNFe = createServerFn({ method: "POST" })
         const aliquotaPis = Number(rawPis);
         const aliquotaCofins = Number(rawCofins);
 
-        const cstIbscbs = item.cst_ibscbs || settings.cst_ibscbs_padrao;
-        const cClassTrib = item.cclasstrib || settings.cclasstrib_padrao;
-        const rawIbsEst = item.aliquota_ibs_estadual ?? settings.aliquota_ibs_estadual;
-        const rawIbsMun = item.aliquota_ibs_municipal ?? settings.aliquota_ibs_municipal;
-        const rawCbs = item.aliquota_cbs ?? settings.aliquota_cbs;
-        const cBenef = item.codigo_beneficio_fiscal || settings.codigo_beneficio_fiscal_padrao;
+        const cstIbscbs = item.cstIbscbs ?? item.cst_ibscbs;
+        const cClassTrib = item.cClassTrib ?? item.cclasstrib;
+        const rawIbsEst = item.aliquotaIbsEstadual ?? item.aliquota_ibs_estadual;
+        const rawIbsMun = item.aliquotaIbsMunicipal ?? item.aliquota_ibs_municipal;
+        const rawCbs = item.aliquotaCbs ?? item.aliquota_cbs;
+        const cBenef = item.codigoBeneficioFiscal ?? item.codigo_beneficio_fiscal;
 
-        // DECISÃO: IBS/CBS NÃO entra no bloco de faltantes que trava a emissão por ora.
-        // Se preenchido, vai no payload; se vazio, não vai.
-        // TODO: Tornar obrigatório (bloqueando a emissão) assim que a contadora definir os valores em produção.
-        let ibscbsObj: Record<string, unknown> | undefined = undefined;
-        if (
-          cstIbscbs &&
-          cClassTrib &&
-          rawIbsEst !== undefined &&
-          rawIbsEst !== null &&
-          rawCbs !== undefined &&
-          rawCbs !== null
-        ) {
-          ibscbsObj = {
-            cst: String(cstIbscbs),
-            cClassTrib: String(cClassTrib),
-            aliquotaIbsEstadual: Number(rawIbsEst),
-            aliquotaIbsMunicipal: rawIbsMun !== undefined && rawIbsMun !== null ? Number(rawIbsMun) : 0,
-            aliquotaCbs: Number(rawCbs),
-          };
+        // VALIDAÇÃO OBRIGATÓRIA DE IBS/CBS PARA REGIME NORMAL (Vigente desde 03/08/2026)
+        if (!cstIbscbs) {
+          return { success: false, error: `CST IBS/CBS obrigatório e ausente no item "${itemName}".` };
         }
+        if (!/^\d{3}$/.test(String(cstIbscbs).trim())) {
+          return { success: false, error: `CST IBS/CBS do item "${itemName}" deve ter exatamente 3 dígitos numéricos (ex: 000).` };
+        }
+        if (!cClassTrib) {
+          return { success: false, error: `Código de Enquadramento IBS/CBS obrigatório e ausente no item "${itemName}".` };
+        }
+        if (!/^\d{6}$/.test(String(cClassTrib).trim())) {
+          return { success: false, error: `Código de Enquadramento do item "${itemName}" deve ter exatamente 6 dígitos numéricos (ex: 000001).` };
+        }
+        if (rawIbsEst === undefined || rawIbsEst === null || isNaN(Number(rawIbsEst))) {
+          return { success: false, error: `Alíquota IBS Estadual obrigatória e ausente no item "${itemName}".` };
+        }
+        if (rawCbs === undefined || rawCbs === null || isNaN(Number(rawCbs))) {
+          return { success: false, error: `Alíquota CBS obrigatória e ausente no item "${itemName}".` };
+        }
+
+        let ibscbsObj: Record<string, unknown> | undefined = {
+          cst: String(cstIbscbs).trim(),
+          cClassTrib: String(cClassTrib).trim(),
+          aliquotaIbsEstadual: Number(rawIbsEst),
+          aliquotaIbsMunicipal: rawIbsMun !== undefined && rawIbsMun !== null ? Number(rawIbsMun) : 0,
+          aliquotaCbs: Number(rawCbs),
+        };
 
         return {
           descricao: itemName,
@@ -708,13 +811,21 @@ export const emitNFe = createServerFn({ method: "POST" })
         };
       }
 
+      // Nota: Regra assume que todo CNPJ compra para revenda (consumidorFinal = 0, indicadorIE = 1).
+      // Caso um CNPJ compre para uso/consumo interno, o operador pode corrigir manualmente no modal.
+      const defaultConsumidorFinal = isCNPJ ? 0 : 1;
+      const defaultIndicadorIE = isCNPJ ? 1 : 9;
+
+      const consumidorFinal = data.consumidorFinal !== undefined && data.consumidorFinal !== null ? Number(data.consumidorFinal) : defaultConsumidorFinal;
+      const indicadorIE = data.indicadorIE !== undefined && data.indicadorIE !== null ? Number(data.indicadorIE) : defaultIndicadorIE;
+
       const payload: Record<string, unknown> = {
         modelo: 55,
         naturezaOperacao: "Venda de mercadoria",
         destinoOperacao: 1,
         tipoOperacao: 1,
         finalidade: 1,
-        consumidorFinal: 1,
+        consumidorFinal,
         presencaComprador: 2,
         indicadorIntermediador: 0,
         tipoEmissao: 1,
@@ -741,7 +852,7 @@ export const emitNFe = createServerFn({ method: "POST" })
         dest: {
           ...(isCPF ? { cpf: destDocClean.padStart(11, "0") } : { cnpj: formatCNPJ(destDocClean) }),
           nome: destName,
-          indicadorIE: 9, // 9=não contribuinte
+          indicadorIE,
           endereco: {
             logradouro: shippingAddr?.street || "",
             numero: shippingAddr?.number || "SN",

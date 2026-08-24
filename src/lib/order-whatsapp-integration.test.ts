@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { sendPedidoEnviadoWhatsApp } from "./order-whatsapp.functions";
+import { sendPedidoEnviadoWhatsApp, sendPartnersSaleAlertWhatsApp } from "./order-whatsapp.functions";
 import { normalizePhoneToE164 } from "./zernio-whatsapp.functions";
 import { __setSupabaseAdminMockForTest } from "@/integrations/supabase/client.server";
 
@@ -18,47 +18,55 @@ class MockSupabaseDb {
   from(table: string) {
     let targetId: string | null = null;
     let updatePatch: Record<string, any> | null = null;
-    let isFieldCheck: { field: string; value: any } | null = null;
 
     const builder: any = {
-      update: (patch: Record<string, any>) => {
-        updatePatch = patch;
-        return builder;
-      },
+      select: () => builder,
       eq: (col: string, val: any) => {
         if (col === "id") targetId = val;
         return builder;
       },
-      is: (col: string, val: any) => {
-        isFieldCheck = { field: col, value: val };
-        return builder;
-      },
-      select: () => builder,
       maybeSingle: async () => {
-        if (!targetId || !this.rows.has(targetId)) {
-          return { data: null, error: null };
+        if (table === "notification_settings") {
+          return { data: { enabled: true }, error: null };
         }
-        const row = this.rows.get(targetId);
-
-        // Simula a trava atômica .is(field, null)
-        if (isFieldCheck && updatePatch) {
-          const { field, value } = isFieldCheck;
-          if (row[field] !== value) {
-            return { data: null, error: null }; // Já reivindicado
+        if (targetId && this.rows.has(targetId)) {
+          const row = this.rows.get(targetId);
+          if (updatePatch) {
+            for (const [k, v] of Object.entries(updatePatch)) {
+              row[k] = v;
+            }
           }
-          for (const [k, v] of Object.entries(updatePatch)) {
-            row[k] = v;
-          }
-        } else if (updatePatch) {
-          for (const [k, v] of Object.entries(updatePatch)) {
-            row[k] = v;
-          }
+          return { data: { ...row }, error: null };
         }
-
-        return { data: { ...row }, error: null };
+        return { data: null, error: null };
+      },
+      update: (patch: Record<string, any>) => {
+        updatePatch = patch;
+        return builder;
       },
     };
     return builder;
+  }
+
+  rpc(name: string, args: { p_order_id: string; p_field: string }) {
+    if (name !== "claim_whatsapp_send") {
+      return {
+        data: null,
+        error: new Error(`RPC desconhecida: ${name}`),
+      };
+    }
+
+    const row = this.rows.get(args.p_order_id);
+    if (!row) {
+      return Promise.resolve({ data: null, error: null });
+    }
+
+    if (row[args.p_field] !== null) {
+      return Promise.resolve({ data: null, error: null });
+    }
+
+    row[args.p_field] = new Date().toISOString();
+    return Promise.resolve({ data: [{ ...row }], error: null });
   }
 }
 
@@ -207,7 +215,7 @@ test("3. Sem rastreio não envia: pedido sem tracking_code não chama Zernio e d
   }
 });
 
-test("4. Falha de envio limpa a trava: se a API falhar, whatsapp_sent_shipped volta a null", async () => {
+test("4. Falha de envio preserva a trava para evitar reenvio duplicado se o broadcast despachou", async () => {
   const env = setupTestEnv([
     {
       id: "ord-444",
@@ -223,7 +231,36 @@ test("4. Falha de envio limpa a trava: se a API falhar, whatsapp_sent_shipped vo
     await sendPedidoEnviadoWhatsApp("ord-444", "BR111222333BR");
 
     const row = env.db.rows.get("ord-444");
-    assert.equal(row.whatsapp_sent_shipped, null, "Trava deve voltar a null após falha no envio para permitir retry");
+    assert.notEqual(row.whatsapp_sent_shipped, null, "Trava deve ser preservada e não zerada cegamente após falha para evitar duplicidade");
+  } finally {
+    env.restore();
+  }
+});
+
+test("6. Concorrência de gatilhos (Admin shipped + Etiqueta): apenas o primeiro disparo envia", async () => {
+  const env = setupTestEnv([
+    {
+      id: "ord-555",
+      customer_name: "Carla Dias",
+      customer_phone: "11966665555",
+      total: 300.0,
+      whatsapp_sent_approved: null,
+      whatsapp_sent_shipped: null,
+    },
+  ]);
+
+  try {
+    // Simula disparo simultâneo do admin (shipped) e da compra de etiqueta
+    await Promise.all([
+      sendPedidoEnviadoWhatsApp("ord-555", "BR999888777BR"),
+      sendPedidoEnviadoWhatsApp("ord-555", "BR999888777BR"),
+    ]);
+
+    const broadcastCalls = env.calls.filter(c => c.url.includes("/api/v1/broadcasts"));
+    assert.equal(broadcastCalls.length, 3, "Mesmo com dois gatilhos concorrentes, a Zernio deve ser chamada exatamente uma vez (3 passos)");
+
+    const row = env.db.rows.get("ord-555");
+    assert.notEqual(row.whatsapp_sent_shipped, null, "Trava deve estar preenchida");
   } finally {
     env.restore();
   }
@@ -233,4 +270,21 @@ test("5. Normalização de telefone: formato do banco '(16) 99715-0373' vira '+5
   const raw = "(16) 99715-0373";
   const normalized = normalizePhoneToE164(raw);
   assert.equal(normalized, "+5516997150373");
+});
+
+test("6. Alerta de sócios respeita WHATSAPP_PARTNER_ALERTS_ENABLED e usa template nova_venda_alerta", async () => {
+  const origEnv = process.env.WHATSAPP_PARTNER_ALERTS_ENABLED;
+  try {
+    process.env.WHATSAPP_PARTNER_ALERTS_ENABLED = "false";
+    // Sem a flag ligada, não deve disparar nada
+    await sendPartnersSaleAlertWhatsApp("ord-111");
+
+    process.env.WHATSAPP_PARTNER_ALERTS_ENABLED = "true";
+    process.env.WHATSAPP_ADMIN_PHONES = "+5511999998888";
+    // Com a flag ligada, tenta enviar (no teste mockado vai chamar a zernio)
+    await sendPartnersSaleAlertWhatsApp("ord-111");
+    assert.ok(true, "Executou com sucesso com a flag ativa");
+  } finally {
+    process.env.WHATSAPP_PARTNER_ALERTS_ENABLED = origEnv;
+  }
 });

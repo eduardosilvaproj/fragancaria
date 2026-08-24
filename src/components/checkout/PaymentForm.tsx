@@ -791,6 +791,7 @@ function PixForm({
             firstName: customer.firstName,
             lastName: customer.lastName,
             phone: customer.phone,
+            whatsappOptIn: customer.whatsapp_opt_in,
             identification: { type: "CPF", number: customer.cpf },
             address: shippingAddress
               ? {
@@ -948,6 +949,7 @@ function BoletoForm({
             firstName: customer.firstName,
             lastName: customer.lastName,
             phone: customer.phone,
+            whatsappOptIn: customer.whatsapp_opt_in,
             identification: { type: "CPF", number: customer.cpf },
             address: shippingAddress
               ? {

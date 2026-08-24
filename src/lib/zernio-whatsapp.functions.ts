@@ -54,7 +54,7 @@ export async function sendZernioWhatsAppTemplate({
   templateName: string;
   templateParams: Array<{ type: "text"; text: string }>;
   category?: "utility" | "marketing";
-}): Promise<{ success: boolean; error?: string }> {
+}): Promise<{ success: boolean; error?: string; broadcastId?: string; messageId?: string }> {
   const enabled = await isWhatsAppEnabled();
   if (!enabled) {
     console.log("[ZernioWhatsApp] Envio desativado por configuração (whatsapp_notifications_enabled = false).");
@@ -172,7 +172,20 @@ export async function sendZernioWhatsAppTemplate({
       return { success: false, error: `Passo 3 (Disparo) falhou: ${sendRes.status} - ${sendBody}` };
     }
 
-    return { success: true };
+    let messageId: string | undefined;
+    try {
+      const parsed = JSON.parse(sendBody);
+      messageId =
+        parsed?.message?.id ||
+        parsed?.messageId ||
+        parsed?.id ||
+        parsed?.data?.message?.id ||
+        parsed?.data?.id;
+    } catch {
+      // Resposta não-JSON ou sem message id explícito; seguimos com broadcastId
+    }
+
+    return { success: true, broadcastId: String(broadcastId), messageId };
   } catch (err: unknown) {
     const errorMessage = err instanceof Error ? err.message : "Erro desconhecido ao enviar broadcast";
     console.error("[ZernioWhatsApp] Exceção no fluxo de broadcast:", errorMessage);
