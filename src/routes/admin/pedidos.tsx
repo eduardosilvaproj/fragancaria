@@ -1211,21 +1211,17 @@ function PedidosPage() {
                           </div>
                           <div>
                             <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CFOP</label>
-                            {/* Mostrar CFOP resolvido se vier do cadastro e não foi alterado */}
-                            {cfopDoCadastro && !cfopAlteradoManualmente && (
-                              <span className="w-full px-3 py-2 border border-[#E9E1D2] text-sm text-[#51635F] bg-[#F7F9FA] readonly>
+                            {cfopDoCadastro && !cfopAlteradoManualmente ? (
+                              <span className="w-full px-3 py-2 border border-[#E9E1D2] text-sm text-[#51635F] bg-[#F7F9FA] block">
                                 {cfopResolvido || ""}
                               </span>
-                            )}
-                            {/* Campo editável se não vier do cadastro ou foi alterado */}
-                            {!cfopDoCadastro || cfopAlteradoManualmente ? (
+                            ) : (
                               <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cfop || ""} onChange={(e) => {
                                 const next = [...nfeEditItems];
                                 next[idx] = { ...next[idx], cfop: e.target.value, cfop_origem: "manual" };
                                 setNfeEditItems(next);
                               }} />
-                            ) : null}
-                            {/* Indicador visual de CFOP não resolvido */}
+                            )}
                             {!cfopResolvido && !cfopAlteradoManualmente && (
                               <span className="text-xs text-red-600 block mt-1">CFOP não resolvido — operação × tipo destinatário × UF</span>
                             )}
@@ -1351,7 +1347,8 @@ function PedidosPage() {
                           }} />
                         </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </>
               ) : null}

@@ -402,7 +402,7 @@ export const getNfePreview = createServerFn({ method: "POST" })
       const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
 
       const items = rawItems.map((item: any) => {
-        const prod = productsMap.get(item.product_id) || {};
+        const prod = (productsMap.get(item.product_id) || {}) as Record<string, any>;
         return {
           ...item,
           ncm: prod.ncm ?? item.ncm,
@@ -615,7 +615,7 @@ export const emitNFe = createServerFn({ method: "POST" })
       const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
 
       const items = rawItems.map((item: any) => {
-        const prod = productsMap.get(item.product_id) || {};
+        const prod = (productsMap.get(item.product_id) || {}) as Record<string, any>;
         return {
           ...item,
           ncm: prod.ncm ?? item.ncm,
