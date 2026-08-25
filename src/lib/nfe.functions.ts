@@ -397,28 +397,28 @@ export const getNfePreview = createServerFn({ method: "POST" })
       }
 
       // Buscar dados fiscais atualizados do produto no catálogo (garantindo que se o pedido for antigo, pega os dados atuais)
-      const productIds = rawItems.map((i: any) => i.product_id).filter(Boolean);
+      const productIds = rawItems.map((i: any) => i.product_id || i.product_Id || i.id).filter(Boolean);
       const { data: productsData } = await db.from("products").select("*").in("id", productIds);
       const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
 
       const items = rawItems.map((item: any) => {
-        const prod = (productsMap.get(item.product_id) || {}) as Record<string, any>;
+        const prod = (productsMap.get(item.product_id) || productsMap.get(item.product_Id) || productsMap.get(item.id) || {}) as Record<string, any>;
         return {
           ...item,
-          ncm: prod.ncm ?? item.ncm,
-          cest: prod.cest ?? item.cest,
-          unidade: prod.unidade ?? item.unidade,
-          cst_icms: prod.cst_icms ?? item.cst_icms,
-          csosn: prod.csosn ?? item.csosn,
-          origem: prod.origem ?? item.origem,
-          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs,
-          cclasstrib: prod.cclasstrib ?? item.cclasstrib,
-          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual,
-          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal,
-          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs,
-          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro,
-          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora,
-          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora,
+          ncm: prod.ncm ?? item.ncm ?? '33049900',
+          cest: prod.cest ?? item.cest ?? '',
+          unidade: prod.unidade ?? item.unidade ?? 'UN',
+          cst_icms: prod.cst_icms ?? item.cst_icms ?? '00',
+          csosn: prod.csosn ?? item.csosn ?? '',
+          origem: prod.origem ?? item.origem ?? 0,
+          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs ?? '000',
+          cclasstrib: prod.cclasstrib ?? item.cclasstrib ?? '000001',
+          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual ?? 0.1,
+          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal ?? 0.0,
+          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs ?? 0.9,
+          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro ?? '5102',
+          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora ?? '6102',
+          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora ?? '6108',
         };
       });
 
@@ -480,6 +480,8 @@ export const getNfePreview = createServerFn({ method: "POST" })
           descricao: itemName,
           ncm: item.ncm || "",
           cfop,
+          cfop_resolvido: cfop,
+          cfop_origem: "cadastro",
           quantidade: Number(item.quantity) || 1,
           valorUnitario: Number(item.price) || 0,
           valorTotal: (Number(item.quantity) || 1) * (Number(item.price) || 0),
@@ -610,28 +612,28 @@ export const emitNFe = createServerFn({ method: "POST" })
       }
 
       // Buscar dados fiscais atualizados do produto no catálogo (garantindo que se o pedido for antigo, pega os dados atuais)
-      const productIds = rawItems.map((i: any) => i.product_id).filter(Boolean);
+      const productIds = rawItems.map((i: any) => i.product_id || i.product_Id || i.id).filter(Boolean);
       const { data: productsData } = await db.from("products").select("*").in("id", productIds);
       const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
 
       const items = rawItems.map((item: any) => {
-        const prod = (productsMap.get(item.product_id) || {}) as Record<string, any>;
+        const prod = (productsMap.get(item.product_id) || productsMap.get(item.product_Id) || productsMap.get(item.id) || {}) as Record<string, any>;
         return {
           ...item,
-          ncm: prod.ncm ?? item.ncm,
-          cest: prod.cest ?? item.cest,
-          unidade: prod.unidade ?? item.unidade,
-          cst_icms: prod.cst_icms ?? item.cst_icms,
-          csosn: prod.csosn ?? item.csosn,
-          origem: prod.origem ?? item.origem,
-          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs,
-          cclasstrib: prod.cclasstrib ?? item.cclasstrib,
-          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual,
-          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal,
-          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs,
-          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro,
-          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora,
-          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora,
+          ncm: prod.ncm ?? item.ncm ?? '33049900',
+          cest: prod.cest ?? item.cest ?? '',
+          unidade: prod.unidade ?? item.unidade ?? 'UN',
+          cst_icms: prod.cst_icms ?? item.cst_icms ?? '00',
+          csosn: prod.csosn ?? item.csosn ?? '',
+          origem: prod.origem ?? item.origem ?? 0,
+          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs ?? '000',
+          cclasstrib: prod.cclasstrib ?? item.cclasstrib ?? '000001',
+          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual ?? 0.1,
+          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal ?? 0.0,
+          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs ?? 0.9,
+          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro ?? '5102',
+          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora ?? '6102',
+          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora ?? '6108',
         };
       });
 
