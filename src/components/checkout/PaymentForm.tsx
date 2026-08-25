@@ -17,7 +17,7 @@ import { useCheckoutStore } from "@/stores/checkoutStore";
 import { PAYMENT_METHODS, INSTALLMENTS_OPTIONS, type PaymentMethodId } from "@/config/mercadopago";
 import { calculateDiscount, calculateOrderTotal, applyCouponToShipping } from "@/lib/commerce-config";
 import { useServerFn } from "@tanstack/react-start";
-import { createPayment } from "@/lib/payments.functions";
+import { createPayment, getPublicOrderStatus } from "@/lib/payments.functions";
 import { getAffiliateCode } from "@/lib/affiliateTracking";
 
 // Mercado Pago Public Key - necessário para tokenizar cartões
@@ -492,12 +492,26 @@ function CardForm({
         throw new Error(errorMsg);
       }
 
+      const brandToMpId: Record<CardBrand, string> = {
+        visa: "visa",
+        mastercard: "master",
+        amex: "amex",
+        elo: "elo",
+        hipercard: "hipercard",
+        unknown: "",
+      };
+      const paymentMethodId = brandToMpId[cardBrand];
+      if (!paymentMethodId) {
+        throw new Error("Bandeira do cartão não identificada ou inválida. Verifique o número digitado.");
+      }
+
       const res: any = await createPaymentFn({
         data: {
           method: "credit_card",
           amount: Number(total.toFixed(2)),
           description: "Pedido Fragranciaria",
           token,
+          paymentMethodId,
           installments: card.installments,
           payer: {
             email: customer.email,
@@ -768,12 +782,50 @@ function PixForm({
   const [trackingToken, setTrackingToken] = useState<string | null>(null);
   const [trackingTokenFormatted, setTrackingTokenFormatted] = useState<string | null>(null);
   const [seconds, setSeconds] = useState(30 * 60);
+  const checkStatusFn = useServerFn(getPublicOrderStatus);
 
   useEffect(() => {
     if (!code) return;
     const t = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000);
     return () => clearInterval(t);
   }, [code]);
+
+  // Polling a cada 5 segundos para verificar confirmação do Pix
+  useEffect(() => {
+    if (!orderId || !code) return;
+    let pollCount = 0;
+    const maxPolls = 180; // 180 * 5s = 900s (15 minutos)
+
+    const interval = setInterval(async () => {
+      pollCount++;
+      if (pollCount > maxPolls) {
+        clearInterval(interval);
+        return;
+      }
+      try {
+        const res: any = await checkStatusFn({ data: { orderId } });
+        if (res.success && res.data) {
+          const st = res.data.status;
+          const pst = res.data.paymentStatus;
+          if (st === "approved" || st === "paid" || pst === "approved" || pst === "paid") {
+            clearInterval(interval);
+            toast.success("Pagamento via PIX confirmado com sucesso!");
+            onDone({
+              orderId,
+              status: "approved",
+              pixCode: code ?? undefined,
+              trackingToken: trackingToken ?? undefined,
+              trackingTokenFormatted: trackingTokenFormatted ?? undefined,
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("[PixPolling] erro ao checar status:", err);
+      }
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [orderId, code]);
 
   const generate = async () => {
     if (!customer) {

@@ -1159,3 +1159,23 @@ export const savePaymentSettings = createServerFn({ method: "POST" })
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
+
+export const getPublicOrderStatus = createServerFn({ method: "POST" })
+  .validator((d: unknown) => z.object({ orderId: z.string() }).parse(d))
+  .handler(async ({ data }) => {
+    try {
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { data: row, error } = await supabaseAdmin
+        .from("orders")
+        .select("id, status, payment_status")
+        .eq("id", data.orderId)
+        .maybeSingle();
+
+      if (error || !row) {
+        return { success: false, error: error?.message || "Pedido não encontrado" };
+      }
+      return { success: true, data: { status: row.status, paymentStatus: row.payment_status } };
+    } catch (e: any) {
+      return { success: false, error: e?.message || "Erro ao consultar status" };
+    }
+  });
