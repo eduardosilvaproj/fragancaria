@@ -496,6 +496,7 @@ function CardForm({
       try {
         const bin = cardNumber.slice(0, 6);
         const methods = await mpRef.current.getPaymentMethods({ bin });
+        console.log("[MP] resposta getPaymentMethods:", methods);
         const method = methods && methods.length > 0 ? methods[0] : null;
         paymentMethodId = method?.id;
       } catch (e) {
