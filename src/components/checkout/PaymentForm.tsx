@@ -515,6 +515,7 @@ function CardForm({
                   city: shippingAddress.city,
                   state: shippingAddress.state,
                   complement: shippingAddress.complement,
+                  ibgeCode: shippingAddress.ibgeCode || undefined,
                 }
               : undefined,
           },
@@ -802,6 +803,7 @@ function PixForm({
                   city: shippingAddress.city,
                   state: shippingAddress.state,
                   complement: shippingAddress.complement,
+                  ibgeCode: shippingAddress.ibgeCode || undefined,
                 }
               : undefined,
           },
@@ -960,6 +962,7 @@ function BoletoForm({
                   city: shippingAddress.city,
                   state: shippingAddress.state,
                   complement: shippingAddress.complement,
+                  ibgeCode: shippingAddress.ibgeCode || undefined,
                 }
               : undefined,
           },
