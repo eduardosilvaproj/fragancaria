@@ -497,8 +497,8 @@ function CardForm({
         const bin = cardNumber.slice(0, 6);
         const methods = await mpRef.current.getPaymentMethods({ bin });
         console.log("[MP] resposta getPaymentMethods:", methods);
-        const method = methods && methods.length > 0 ? methods[0] : null;
-        paymentMethodId = method?.id;
+        const result = methods?.results && methods.results.length > 0 ? methods.results[0] : null;
+        paymentMethodId = result?.id;
       } catch (e) {
         console.warn("[MP] falha ao consultar bandeira via bin:", e);
       }
