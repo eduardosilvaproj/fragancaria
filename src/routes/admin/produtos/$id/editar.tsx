@@ -187,7 +187,7 @@ function EditarProduto() {
         origem: p.origem != null ? String(p.origem) : "",
         cstPisCofins: p.cst_pis_cofins ?? "",
         unidade: p.unidade ?? "UN",
-        cfopVendaPjDentro: p.cfop_venda_pj_dentro ?? "5102",
+        cfopVendaPjDentro: p.cfop_venda_dentro ?? p.cfop_venda_pj_dentro ?? "5102",
         cfopVendaPjFora: p.cfop_venda_pj_fora ?? "6102",
         cfopVendaPfFora: p.cfop_venda_pf_fora ?? "6108",
         cstIbscbs: p.cst_ibscbs ?? "000",

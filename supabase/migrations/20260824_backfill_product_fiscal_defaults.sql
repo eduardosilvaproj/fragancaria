@@ -1,8 +1,8 @@
 -- 20260824_backfill_product_fiscal_defaults.sql
--- Backfill de campos fiscais nulos ou zerados em public.products com os valores padrão aprovados:
+-- Backfill de campos fiscais nulos ou zerados em public.products com os valores da LC 214/2025 para 2026:
 -- ncm                    = '33049900' (sem pontuação)
 -- unidade                = 'UN'
--- cfop_venda_pj_dentro   = '5102'
+-- cfop_venda_dentro      = '5102' (renomeado de cfop_venda_pj_dentro, usado para PJ e PF)
 -- cfop_venda_pj_fora     = '6102'
 -- cfop_venda_pf_fora     = '6108'
 -- cst_ibscbs             = '000'
@@ -15,7 +15,7 @@ UPDATE public.products
 SET
   ncm = COALESCE(ncm, '33049900'),
   unidade = COALESCE(unidade, 'UN'),
-  cfop_venda_pj_dentro = COALESCE(cfop_venda_pj_dentro, '5102'),
+  cfop_venda_dentro = COALESCE(cfop_venda_dentro, '5102'),
   cfop_venda_pj_fora = COALESCE(cfop_venda_pj_fora, '6102'),
   cfop_venda_pf_fora = COALESCE(cfop_venda_pf_fora, '6108'),
   cst_ibscbs = COALESCE(cst_ibscbs, '000'),
@@ -26,11 +26,10 @@ SET
 WHERE
   ncm IS NULL
   OR unidade IS NULL
-  OR cfop_venda_pj_dentro IS NULL
+  OR cfop_venda_dentro IS NULL
   OR cfop_venda_pj_fora IS NULL
   OR cfop_venda_pf_fora IS NULL
   OR cst_ibscbs IS NULL
   OR cclasstrib IS NULL
   OR aliquota_ibs_estadual IS NULL OR aliquota_ibs_estadual = 0
-  OR aliquota_ibs_municipal IS NULL
   OR aliquota_cbs IS NULL OR aliquota_cbs = 0;

@@ -1191,56 +1191,77 @@ function PedidosPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {nfeEditItems.map((item, idx) => (
-                      <div key={item.id || idx} className="border border-[#E9E1D2] rounded p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <div className="md:col-span-2">
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Descrição</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.descricao || ""} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], descricao: e.target.value };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CFOP</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cfop || ""} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], cfop: e.target.value };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">NCM</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.ncm || ""} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], ncm: e.target.value };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Qtd</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="1" value={item.quantidade || 1} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], quantidade: Number(e.target.value) };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Valor unitário</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.valorUnitario || 0} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], valorUnitario: Number(e.target.value) };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
-                        <div>
-                          <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Unidade</label>
-                          <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.unidade || ""} onChange={(e) => {
-                            const next = [...nfeEditItems];
-                            next[idx] = { ...next[idx], unidade: e.target.value };
-                            setNfeEditItems(next);
-                          }} />
-                        </div>
+                    {nfeEditItems.map((item, idx) => {
+                      // Determinar CFOP resolvido pelo cenário
+                      const cfopResolvido = item.cfop_resolvido || "";
+                      // Verificar se o CFOP veio do cadastro do produto (definido via cenário)
+                      const cfopDoCadastro = item.cfop_origem === "cadastro";
+                      // Flag de alteração manual
+                      const cfopAlteradoManualmente = item.cfop_origem === "manual";
+
+                      return (
+                        <div key={item.id || idx} className="border border-[#E9E1D2] rounded p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                          <div className="md:col-span-2">
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Descrição</label>
+                            <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.descricao || ""} onChange={(e) => {
+                              const next = [...nfeEditItems];
+                              next[idx] = { ...next[idx], descricao: e.target.value };
+                              setNfeEditItems(next);
+                            }} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CFOP</label>
+                            {/* Mostrar CFOP resolvido se vier do cadastro e não foi alterado */}
+                            {cfopDoCadastro && !cfopAlteradoManualmente && (
+                              <span className="w-full px-3 py-2 border border-[#E9E1D2] text-sm text-[#51635F] bg-[#F7F9FA] readonly>
+                                {cfopResolvido || ""}
+                              </span>
+                            )}
+                            {/* Campo editável se não vier do cadastro ou foi alterado */}
+                            {!cfopDoCadastro || cfopAlteradoManualmente ? (
+                              <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cfop || ""} onChange={(e) => {
+                                const next = [...nfeEditItems];
+                                next[idx] = { ...next[idx], cfop: e.target.value, cfop_origem: "manual" };
+                                setNfeEditItems(next);
+                              }} />
+                            ) : null}
+                            {/* Indicador visual de CFOP não resolvido */}
+                            {!cfopResolvido && !cfopAlteradoManualmente && (
+                              <span className="text-xs text-red-600 block mt-1">CFOP não resolvido — operação × tipo destinatário × UF</span>
+                            )}
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">NCM</label>
+                            <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.ncm || ""} onChange={(e) => {
+                              const next = [...nfeEditItems];
+                              next[idx] = { ...next[idx], ncm: e.target.value };
+                              setNfeEditItems(next);
+                            }} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Qtd</label>
+                            <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="1" value={item.quantidade || 1} onChange={(e) => {
+                              const next = [...nfeEditItems];
+                              next[idx] = { ...next[idx], quantidade: Number(e.target.value) };
+                              setNfeEditItems(next);
+                            }} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Valor unitário</label>
+                            <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" type="number" step="0.01" value={item.valorUnitario || 0} onChange={(e) => {
+                              const next = [...nfeEditItems];
+                              next[idx] = { ...next[idx], valorUnitario: Number(e.target.value) };
+                              setNfeEditItems(next);
+                            }} />
+                          </div>
+                          <div>
+                            <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">Unidade</label>
+                            <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.unidade || ""} onChange={(e) => {
+                              const next = [...nfeEditItems];
+                              next[idx] = { ...next[idx], unidade: e.target.value };
+                              setNfeEditItems(next);
+                            }} />
+                          </div>
                         <div>
                           <label className="block text-[10px] uppercase tracking-wider text-[#8A938E] mb-1">CST/CSOSN</label>
                           <input className="w-full px-3 py-2 border border-[#E9E1D2] text-sm" value={item.cst || ""} onChange={(e) => {

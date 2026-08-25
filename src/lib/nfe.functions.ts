@@ -391,10 +391,36 @@ export const getNfePreview = createServerFn({ method: "POST" })
         return { success: false, error: "Pedido não encontrado" };
       }
 
-      const items = (order.items as Array<Record<string, unknown>>) || [];
-      if (items.length === 0) {
+      const rawItems = (order.items as Array<Record<string, unknown>>) || [];
+      if (rawItems.length === 0) {
         return { success: false, error: "Pedido sem itens para faturar" };
       }
+
+      // Buscar dados fiscais atualizados do produto no catálogo (garantindo que se o pedido for antigo, pega os dados atuais)
+      const productIds = rawItems.map((i: any) => i.product_id).filter(Boolean);
+      const { data: productsData } = await db.from("products").select("*").in("id", productIds);
+      const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
+
+      const items = rawItems.map((item: any) => {
+        const prod = productsMap.get(item.product_id) || {};
+        return {
+          ...item,
+          ncm: prod.ncm ?? item.ncm,
+          cest: prod.cest ?? item.cest,
+          unidade: prod.unidade ?? item.unidade,
+          cst_icms: prod.cst_icms ?? item.cst_icms,
+          csosn: prod.csosn ?? item.csosn,
+          origem: prod.origem ?? item.origem,
+          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs,
+          cclasstrib: prod.cclasstrib ?? item.cclasstrib,
+          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual,
+          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal,
+          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs,
+          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro,
+          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora,
+          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora,
+        };
+      });
 
       const emitAddr = settings.endereco;
       const shippingAddr = order.shipping_address as Record<string, string> | null;
@@ -402,6 +428,8 @@ export const getNfePreview = createServerFn({ method: "POST" })
       const destDocClean = destDoc.replace(/\D/g, "");
       const isCPF = destDocClean.length <= 11;
       const isCNPJ = !isCPF && destDocClean.length > 0;
+      const destIe = String(order.customer_ie || order.customer_inscricao_estadual || "").trim();
+      const isContribuinte = isCNPJ && destIe !== "" && destIe.toUpperCase() !== "ISENTO";
       const destName = String(order.customer_name || "Consumidor");
       const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
       const emitUf = String(settings.estado_uf || "SP").toUpperCase();
@@ -433,10 +461,10 @@ export const getNfePreview = createServerFn({ method: "POST" })
           return isWithinState ? "1202" : "2202";
         }
         const source = isWithinState
-          ? item.cfop_venda_pj_dentro
-          : isCPF
-            ? item.cfop_venda_pf_fora
-            : item.cfop_venda_pj_fora;
+          ? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro
+          : isContribuinte
+            ? item.cfop_venda_pj_fora
+            : item.cfop_venda_pf_fora;
         const v = source == null ? "" : String(source).trim();
         return v || undefined;
       };
@@ -576,10 +604,36 @@ export const emitNFe = createServerFn({ method: "POST" })
         return { success: false, error: "Pedido precisa estar pago para emitir NF-e" };
       }
 
-      const items = (order.items as Array<Record<string, unknown>>) || [];
-      if (items.length === 0) {
+      const rawItems = (order.items as Array<Record<string, unknown>>) || [];
+      if (rawItems.length === 0) {
         return { success: false, error: "Pedido sem itens para faturar" };
       }
+
+      // Buscar dados fiscais atualizados do produto no catálogo (garantindo que se o pedido for antigo, pega os dados atuais)
+      const productIds = rawItems.map((i: any) => i.product_id).filter(Boolean);
+      const { data: productsData } = await db.from("products").select("*").in("id", productIds);
+      const productsMap = new Map((productsData || []).map((p: any) => [p.id, p]));
+
+      const items = rawItems.map((item: any) => {
+        const prod = productsMap.get(item.product_id) || {};
+        return {
+          ...item,
+          ncm: prod.ncm ?? item.ncm,
+          cest: prod.cest ?? item.cest,
+          unidade: prod.unidade ?? item.unidade,
+          cst_icms: prod.cst_icms ?? item.cst_icms,
+          csosn: prod.csosn ?? item.csosn,
+          origem: prod.origem ?? item.origem,
+          cst_ibscbs: prod.cst_ibscbs ?? item.cst_ibscbs,
+          cclasstrib: prod.cclasstrib ?? item.cclasstrib,
+          aliquota_ibs_estadual: prod.aliquota_ibs_estadual ?? item.aliquota_ibs_estadual,
+          aliquota_ibs_municipal: prod.aliquota_ibs_municipal ?? item.aliquota_ibs_municipal,
+          aliquota_cbs: prod.aliquota_cbs ?? item.aliquota_cbs,
+          cfop_venda_dentro: prod.cfop_venda_dentro ?? prod.cfop_venda_pj_dentro ?? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro,
+          cfop_venda_pj_fora: prod.cfop_venda_pj_fora ?? item.cfop_venda_pj_fora,
+          cfop_venda_pf_fora: prod.cfop_venda_pf_fora ?? item.cfop_venda_pf_fora,
+        };
+      });
 
       // 3. Monta payload para a notaas
       const emitAddr = settings.endereco;
@@ -588,6 +642,8 @@ export const emitNFe = createServerFn({ method: "POST" })
       const destDocClean = destDoc.replace(/\D/g, "");
       const isCPF = destDocClean.length <= 11;
       const isCNPJ = !isCPF && destDocClean.length > 0;
+      const destIe = String(order.customer_ie || order.customer_inscricao_estadual || "").trim();
+      const isContribuinte = isCNPJ && destIe !== "" && destIe.toUpperCase() !== "ISENTO";
       const destName = String(order.customer_name || "Consumidor");
       const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
       const emitUf = String(settings.estado_uf || "SP").toUpperCase();
@@ -595,16 +651,16 @@ export const emitNFe = createServerFn({ method: "POST" })
       const isDevolucao = (tipoOperacao as "venda" | "devolucao") === "devolucao";
 
       // CFOP é resolvido pela combinação operação × tipo de destinatário × UF,
-      // usando as 8 colunas contextuais gravadas no snapshot do item.
+      // usando as colunas contextuais gravadas no snapshot do item.
       const resolveCfop = (item: Record<string, unknown>): string | undefined => {
         if (isDevolucao) {
           return isWithinState ? "1202" : "2202";
         }
         const source = isWithinState
-          ? item.cfop_venda_pj_dentro
-          : isCPF
-            ? item.cfop_venda_pf_fora
-            : item.cfop_venda_pj_fora;
+          ? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro
+          : isContribuinte
+            ? item.cfop_venda_pj_fora
+            : item.cfop_venda_pf_fora;
         const v = source == null ? "" : String(source).trim();
         return v || undefined;
       };
