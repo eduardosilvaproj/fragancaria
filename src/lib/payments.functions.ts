@@ -220,7 +220,7 @@ export const createPayment = createServerFn({ method: "POST" })
         .in("id", productIds);
       if (prodErr) {
         console.error("[createPayment] falha ao buscar produtos:", prodErr);
-        return { success: false, error: `Erro ao carregar dados dos produtos: ${prodErr.message}` };
+        return { success: false, error: "Não foi possível processar o pedido agora. Tente novamente em instantes." };
       }
       const priceById = new Map(
         (prodRows ?? []).map((p: any) => [
