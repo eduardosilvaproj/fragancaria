@@ -215,10 +215,13 @@ export const createPayment = createServerFn({ method: "POST" })
       const { data: prodRows, error: prodErr } = await admin
         .from("products")
         .select(
-          "id, price, is_active, cost, target_margin, ncm, ean_barcode, cst_icms, csosn, origem, cst_pis_cofins, unidade, cest, cst_ibscbs, cclasstrib, aliquota_ibs_estadual, aliquota_ibs_municipal, aliquota_cbs, codigo_beneficio_fiscal, cfop_venda_pj_dentro, cfop_venda_pj_fora, cfop_venda_pf_dentro, cfop_venda_pf_fora, cfop_devolucao_pj_dentro, cfop_devolucao_pj_fora, cfop_devolucao_pf_dentro, cfop_devolucao_pf_fora",
+          "id, price, is_active, cost, target_margin, ncm, ean_barcode, cst_icms, csosn, origem, cst_pis_cofins, unidade, cest, cst_ibscbs, cclasstrib, aliquota_ibs_estadual, aliquota_ibs_municipal, aliquota_cbs, codigo_beneficio_fiscal, cfop, cfop_venda_dentro, cfop_venda_pj_fora, cfop_venda_pf_fora",
         )
         .in("id", productIds);
-      if (prodErr) return { success: false, error: "Falha ao validar preços dos produtos." };
+      if (prodErr) {
+        console.error("[createPayment] falha ao buscar produtos:", prodErr);
+        return { success: false, error: `Erro ao carregar dados dos produtos: ${prodErr.message}` };
+      }
       const priceById = new Map(
         (prodRows ?? []).map((p: any) => [
           p.id,
@@ -241,14 +244,10 @@ export const createPayment = createServerFn({ method: "POST" })
             aliquotaIbsMunicipal: p.aliquota_ibs_municipal != null ? Number(p.aliquota_ibs_municipal) : null,
             aliquotaCbs: p.aliquota_cbs != null ? Number(p.aliquota_cbs) : null,
             codigoBeneficioFiscal: p.codigo_beneficio_fiscal,
-            cfopVendaPjDentro: p.cfop_venda_pj_dentro,
+            cfop: p.cfop,
+            cfopVendaDentro: p.cfop_venda_dentro,
             cfopVendaPjFora: p.cfop_venda_pj_fora,
-            cfopVendaPfDentro: p.cfop_venda_pf_dentro,
             cfopVendaPfFora: p.cfop_venda_pf_fora,
-            cfopDevolucaoPjDentro: p.cfop_devolucao_pj_dentro,
-            cfopDevolucaoPjFora: p.cfop_devolucao_pj_fora,
-            cfopDevolucaoPfDentro: p.cfop_devolucao_pf_dentro,
-            cfopDevolucaoPfFora: p.cfop_devolucao_pf_fora,
           },
         ]),
       );
@@ -544,14 +543,10 @@ export const createPayment = createServerFn({ method: "POST" })
                 aliquota_ibs_municipal: p?.aliquotaIbsMunicipal ?? null,
                 aliquota_cbs: p?.aliquotaCbs ?? null,
                 codigo_beneficio_fiscal: p?.codigoBeneficioFiscal ?? null,
-                cfop_venda_pj_dentro: p?.cfopVendaPjDentro ?? null,
+                cfop: p?.cfop ?? null,
+                cfop_venda_dentro: p?.cfopVendaDentro ?? null,
                 cfop_venda_pj_fora: p?.cfopVendaPjFora ?? null,
-                cfop_venda_pf_dentro: p?.cfopVendaPfDentro ?? null,
                 cfop_venda_pf_fora: p?.cfopVendaPfFora ?? null,
-                cfop_devolucao_pj_dentro: p?.cfopDevolucaoPjDentro ?? null,
-                cfop_devolucao_pj_fora: p?.cfopDevolucaoPjFora ?? null,
-                cfop_devolucao_pf_dentro: p?.cfopDevolucaoPfDentro ?? null,
-                cfop_devolucao_pf_fora: p?.cfopDevolucaoPfFora ?? null,
               };
             }),
             auth_user_id: data.userId ?? null,

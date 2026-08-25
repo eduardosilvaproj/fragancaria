@@ -461,7 +461,7 @@ export const getNfePreview = createServerFn({ method: "POST" })
           return isWithinState ? "1202" : "2202";
         }
         const source = isWithinState
-          ? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro
+          ? item.cfop_venda_dentro
           : isContribuinte
             ? item.cfop_venda_pj_fora
             : item.cfop_venda_pf_fora;
@@ -659,7 +659,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           return isWithinState ? "1202" : "2202";
         }
         const source = isWithinState
-          ? item.cfop_venda_dentro ?? item.cfop_venda_pj_dentro
+          ? item.cfop_venda_dentro
           : isContribuinte
             ? item.cfop_venda_pj_fora
             : item.cfop_venda_pf_fora;

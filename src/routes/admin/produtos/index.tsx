@@ -196,7 +196,8 @@ function parseCsv(text: string): Record<string, unknown>[] {
 }
 
 // Número de produtos por página
-const ITEMS_PER_PAGE = 20;
+const pageSize = 50;
+const ITEMS_PER_PAGE = pageSize;
 
 // Limite de ids por chamada de enrichProductsBatch. Precisa casar com o
 // max() do EnrichBatchSchema em product-enrich.functions.ts — passar disso
@@ -241,6 +242,7 @@ function AdminProdutos() {
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 50;
   const [viewingProduct, setViewingProduct] = useState<AdminProduct | null>(null);
   const [importing, setImporting] = useState(false);
   const [showEnrichModal, setShowEnrichModal] = useState(false);
@@ -250,66 +252,50 @@ function AdminProdutos() {
   const [enrichFields, setEnrichFields] = useState<("images" | "tags")[]>(["tags"]);
   const [enriching, setEnriching] = useState(false);
 
-  // Carrega todos os produtos do banco (via server fn / service role).
-  // Pagina em lotes de 200; para ~434 itens são 3 chamadas. Filtro e
-  // paginação continuam client-side sobre o array completo.
-  const { data: allProducts = [], isLoading, refetch } = useQuery({
-    queryKey: ["admin-products"],
+  // Carrega produtos paginados do servidor com filtros e busca
+  const { data: queryResult, isLoading, refetch } = useQuery({
+    queryKey: ["admin-products", currentPage, searchQuery, selectedStatus, selectedBrand, selectedCategory],
     queryFn: async () => {
-      const acc: AdminProduct[] = [];
-      let offset = 0;
-      for (;;) {
-        const res = await listFn({ data: { limit: 200, offset } });
-        if (!res.success) throw new Error(res.error);
-        acc.push(...res.data.products.map(rowToAdmin));
-        if (res.data.products.length < 200) break;
-        offset += 200;
-      }
-      return acc;
+      const res = await listFn({
+        data: {
+          limit: pageSize,
+          offset: (currentPage - 1) * pageSize,
+          search: searchQuery || undefined,
+          status: selectedStatus !== "all" ? selectedStatus : undefined,
+          brand: selectedBrand !== "all" ? selectedBrand : undefined,
+          category: selectedCategory !== "all" ? selectedCategory : undefined,
+        },
+      });
+      if (!res.success) throw new Error(res.error);
+      return {
+        products: (res.data.products || []).map(rowToAdmin),
+        total: res.data.total || 0,
+      };
     },
     refetchOnWindowFocus: false,
-  });
+    keepPreviousData: true,
+  } as any);
 
-  // Lista única de marcas dos produtos reais
+  const allProducts: AdminProduct[] = (queryResult as any)?.products || [];
+  const totalProducts = (queryResult as any)?.total || 0;
+  const totalPages = Math.ceil(totalProducts / pageSize);
+
   const uniqueBrands = useMemo(() => {
-    const brands = [...new Set(allProducts.map(p => p.brand))].filter(Boolean).sort();
+    const brands = [...new Set(allProducts.map((p: AdminProduct) => p.brand))].filter(Boolean).sort() as string[];
     return brands;
   }, [allProducts]);
 
-  // Lista única de categorias dos produtos reais
   const uniqueCategories = useMemo(() => {
-    const categories = [...new Set(allProducts.map(p => p.category))].filter(Boolean).sort();
+    const categories = [...new Set(allProducts.map((p: AdminProduct) => p.category))].filter(Boolean).sort() as string[];
     return categories;
   }, [allProducts]);
 
-  const filteredProducts = useMemo(() => allProducts.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.brand.toLowerCase().includes(searchQuery.toLowerCase());
+  // Para o enriquecimento e botões em lote, precisamos de uma forma de buscar todos os ids ou ids filtrados se necessário,
+  // mas mantemos compatibilidade com os componentes existentes:
+  const filteredProducts = allProducts;
 
-    const matchesStatus =
-      selectedStatus === "all" ||
-      (selectedStatus === "active" && product.is_active) ||
-      (selectedStatus === "inactive" && !product.is_active) ||
-      (selectedStatus === "low_stock" && product.stock_status === "low_stock") ||
-      (selectedStatus === "out_of_stock" && product.stock_status === "out_of_stock");
-
-    const matchesBrand =
-      selectedBrand === "all" || product.brand === selectedBrand;
-
-    const matchesCategory =
-      selectedCategory === "all" || product.category === selectedCategory;
-
-    return matchesSearch && matchesStatus && matchesBrand && matchesCategory;
-  }), [allProducts, searchQuery, selectedStatus, selectedBrand, selectedCategory]);
-
-  // Paginação
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const paginatedProducts = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredProducts.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredProducts, currentPage]);
+  // Paginação já vem tratada no servidor
+  const paginatedProducts = allProducts;
 
   // Reset para página 1 quando filtros mudam
   const handleFilterChange = (setter: (val: string) => void) => (value: string) => {
@@ -327,7 +313,7 @@ function AdminProdutos() {
     if (selectedProducts.length === paginatedProducts.length) {
       setSelectedProducts([]);
     } else {
-      setSelectedProducts(paginatedProducts.map((p) => p.id));
+      setSelectedProducts(paginatedProducts.map((p: AdminProduct) => p.id));
     }
   };
 
@@ -716,7 +702,7 @@ function AdminProdutos() {
             Ativos
           </p>
           <p className="font-serif text-2xl text-emerald-600">
-            {allProducts.filter((p) => p.is_active).length}
+            {allProducts.filter((p: AdminProduct) => p.is_active).length}
           </p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4">
@@ -724,7 +710,7 @@ function AdminProdutos() {
             Estoque Baixo
           </p>
           <p className="font-serif text-2xl text-amber-600">
-            {allProducts.filter((p) => p.stock_status === "low_stock").length}
+            {allProducts.filter((p: AdminProduct) => p.stock_status === "low_stock").length}
           </p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4">
@@ -732,7 +718,7 @@ function AdminProdutos() {
             Sem Estoque
           </p>
           <p className="font-serif text-2xl text-red-600">
-            {allProducts.filter((p) => p.stock_status === "out_of_stock").length}
+            {allProducts.filter((p: AdminProduct) => p.stock_status === "out_of_stock").length}
           </p>
         </div>
       </div>
@@ -1036,10 +1022,7 @@ function AdminProdutos() {
         {/* Pagination */}
         <div className="p-4 border-t border-[#E9E1D2] flex items-center justify-between">
           <p className="text-sm text-[#51635F]">
-            Mostrando {((currentPage - 1) * ITEMS_PER_PAGE) + 1}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredProducts.length)} de {filteredProducts.length} produtos
-            {filteredProducts.length !== allProducts.length && (
-              <span className="text-[#8A938E]"> (filtrado de {allProducts.length} total)</span>
-            )}
+            Mostrando {totalProducts === 0 ? 0 : ((currentPage - 1) * pageSize) + 1}-{Math.min(currentPage * pageSize, totalProducts)} de {totalProducts} produtos
           </p>
           <div className="flex items-center gap-2">
             <button

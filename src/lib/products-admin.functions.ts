@@ -53,14 +53,10 @@ const productInput = z.object({
   origem: z.number().int().min(0).max(8).nullable().optional(),
   cstPisCofins: z.string().max(2).nullable().optional(),
   unidade: z.string().max(6).nullable().optional(),
-  cfopVendaPjDentro: z.string().max(4).nullable().optional(),
+  cfop: z.string().max(4).nullable().optional(),
+  cfopVendaDentro: z.string().max(4).nullable().optional(),
   cfopVendaPjFora: z.string().max(4).nullable().optional(),
-  cfopVendaPfDentro: z.string().max(4).nullable().optional(),
   cfopVendaPfFora: z.string().max(4).nullable().optional(),
-  cfopDevolucaoPjDentro: z.string().max(4).nullable().optional(),
-  cfopDevolucaoPjFora: z.string().max(4).nullable().optional(),
-  cfopDevolucaoPfDentro: z.string().max(4).nullable().optional(),
-  cfopDevolucaoPfFora: z.string().max(4).nullable().optional(),
   // IBS/CBS (Reforma Tributária)
   cstIbscbs: z.string().max(3).nullable().optional(),
   cclassTrib: z.string().max(6).nullable().optional(),
@@ -119,14 +115,10 @@ function inputToPatch(data: Partial<ProductInput>): Record<string, unknown> {
   if (data.origem !== undefined) patch.origem = data.origem;
   if (data.cstPisCofins !== undefined) patch.cst_pis_cofins = data.cstPisCofins;
   if (data.unidade !== undefined) patch.unidade = data.unidade;
-  if (data.cfopVendaPjDentro !== undefined) patch.cfop_venda_pj_dentro = data.cfopVendaPjDentro;
+  if (data.cfop !== undefined) patch.cfop = data.cfop;
+  if (data.cfopVendaDentro !== undefined) patch.cfop_venda_dentro = data.cfopVendaDentro;
   if (data.cfopVendaPjFora !== undefined) patch.cfop_venda_pj_fora = data.cfopVendaPjFora;
-  if (data.cfopVendaPfDentro !== undefined) patch.cfop_venda_pf_dentro = data.cfopVendaPfDentro;
   if (data.cfopVendaPfFora !== undefined) patch.cfop_venda_pf_fora = data.cfopVendaPfFora;
-  if (data.cfopDevolucaoPjDentro !== undefined) patch.cfop_devolucao_pj_dentro = data.cfopDevolucaoPjDentro;
-  if (data.cfopDevolucaoPjFora !== undefined) patch.cfop_devolucao_pj_fora = data.cfopDevolucaoPjFora;
-  if (data.cfopDevolucaoPfDentro !== undefined) patch.cfop_devolucao_pf_dentro = data.cfopDevolucaoPfDentro;
-  if (data.cfopDevolucaoPfFora !== undefined) patch.cfop_devolucao_pf_fora = data.cfopDevolucaoPfFora;
   if (data.cstIbscbs !== undefined) patch.cst_ibscbs = data.cstIbscbs;
   if (data.cclassTrib !== undefined) patch.cclasstrib = data.cclassTrib;
   if (data.aliquotaIbsEstadual !== undefined) patch.aliquota_ibs_estadual = data.aliquotaIbsEstadual;
@@ -175,7 +167,8 @@ function inputToRow(data: ProductInput) {
     origem: data.origem ?? null,
     cst_pis_cofins: data.cstPisCofins ?? null,
     unidade: data.unidade ?? null,
-    cfop_venda_pj_dentro: data.cfopVendaPjDentro ?? null,
+    cfop: data.cfop ?? null,
+    cfop_venda_dentro: data.cfopVendaDentro ?? null,
     cfop_venda_pj_fora: data.cfopVendaPjFora ?? null,
     cfop_venda_pf_fora: data.cfopVendaPfFora ?? null,
     // IBS/CBS (Reforma Tributária)
@@ -218,7 +211,7 @@ export const listProductsForAdmin = createServerFn({ method: "GET" })
 
       let query = supabaseAdmin
         .from("products")
-        .select("*", { count: "exact" })
+        .select("id, name, price, original_price, quantity, is_active, in_stock, images, sku, brand, category, weight_grams, weight_source, height_cm, width_cm, length_cm", { count: "exact" })
         .order("updated_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -333,7 +326,8 @@ export const updateProduct = createServerFn({ method: "POST" })
       if (p.origem !== undefined) patch.origem = p.origem;
       if (p.cstPisCofins !== undefined) patch.cst_pis_cofins = p.cstPisCofins;
       if (p.unidade !== undefined) patch.unidade = p.unidade;
-      if (p.cfopVendaPjDentro !== undefined) patch.cfop_venda_pj_dentro = p.cfopVendaPjDentro;
+      if (p.cfop !== undefined) patch.cfop = p.cfop;
+      if (p.cfopVendaDentro !== undefined) patch.cfop_venda_dentro = p.cfopVendaDentro;
       if (p.cfopVendaPjFora !== undefined) patch.cfop_venda_pj_fora = p.cfopVendaPjFora;
       if (p.cfopVendaPfFora !== undefined) patch.cfop_venda_pf_fora = p.cfopVendaPfFora;
       if (p.cstIbscbs !== undefined) patch.cst_ibscbs = p.cstIbscbs;

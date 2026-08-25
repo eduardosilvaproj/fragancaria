@@ -51,7 +51,8 @@ interface FormState {
   origem: string;
   cstPisCofins: string;
   unidade: string;
-  cfopVendaPjDentro: string;
+  cfop: string;
+  cfopVendaDentro: string;
   cfopVendaPjFora: string;
   cfopVendaPfFora: string;
   // IBS/CBS (Reforma Tributária)
@@ -100,7 +101,8 @@ const EMPTY_FORM: FormState = {
   origem: "",
   cstPisCofins: "",
   unidade: "",
-  cfopVendaPjDentro: "5102",
+  cfop: "5102",
+  cfopVendaDentro: "5102",
   cfopVendaPjFora: "6102",
   cfopVendaPfFora: "6108",
   cstIbscbs: "",
@@ -187,7 +189,8 @@ function EditarProduto() {
         origem: p.origem != null ? String(p.origem) : "",
         cstPisCofins: p.cst_pis_cofins ?? "",
         unidade: p.unidade ?? "UN",
-        cfopVendaPjDentro: p.cfop_venda_dentro ?? p.cfop_venda_pj_dentro ?? "5102",
+        cfop: p.cfop ?? "5102",
+        cfopVendaDentro: p.cfop_venda_dentro ?? "5102",
         cfopVendaPjFora: p.cfop_venda_pj_fora ?? "6102",
         cfopVendaPfFora: p.cfop_venda_pf_fora ?? "6108",
         cstIbscbs: p.cst_ibscbs ?? "000",
@@ -307,7 +310,8 @@ function EditarProduto() {
             origem: form.origem !== "" ? Number(form.origem) : null,
             cstPisCofins: form.cstPisCofins.trim() || null,
             unidade: form.unidade.trim() || null,
-            cfopVendaPjDentro: form.cfopVendaPjDentro.trim() || null,
+            cfop: form.cfop.trim() || null,
+            cfopVendaDentro: form.cfopVendaDentro.trim() || null,
             cfopVendaPjFora: form.cfopVendaPjFora.trim() || null,
             cfopVendaPfFora: form.cfopVendaPfFora.trim() || null,
             cstIbscbs: form.cstIbscbs.trim() || null,
@@ -831,8 +835,8 @@ function EditarProduto() {
               <div>
                 <label className="block text-xs text-[#8A938E] mb-1">Venda dentro do estado (SP - PJ ou PF) *</label>
                 <select
-                  value={form.cfopVendaPjDentro}
-                  onChange={(e) => set("cfopVendaPjDentro", e.target.value)}
+                  value={form.cfopVendaDentro}
+                  onChange={(e) => set("cfopVendaDentro", e.target.value)}
                   className="w-full px-3 py-2 border border-[#E9E1D2] text-sm bg-white outline-none focus:ring-1 focus:ring-[#B07B1E]"
                   required
                 >

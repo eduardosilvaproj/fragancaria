@@ -260,7 +260,7 @@ export const createAdminUser = createServerFn({ method: "POST" })
           void (async () => {
             try {
               const { sendAdminWelcomeEmail } = await import("@/lib/email.functions");
-              const base = process.env.PUBLIC_URL || "https://www.fragancaria.com";
+              const base = process.env.PUBLIC_URL || "https://www.fragranciaria.com";
               const roleLabel = ROLE_LABELS[data.role] || data.role;
               await sendAdminWelcomeEmail({
                 email,

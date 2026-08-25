@@ -51,18 +51,18 @@ const resolveCfopMock = ({
 }) => {
   const source = isCPF
     ? isWithinState
-      ? item.cfop_venda_pf_dentro
+      ? item.cfop_venda_dentro
       : item.cfop_venda_pf_fora
     : isWithinState
-      ? item.cfop_venda_pj_dentro
+      ? item.cfop_venda_dentro
       : item.cfop_venda_pj_fora;
   const devolucaoSource = isCPF
     ? isWithinState
-      ? item.cfop_devolucao_pf_dentro
-      : item.cfop_devolucao_pf_fora
+      ? "1202"
+      : "2202"
     : isWithinState
-      ? item.cfop_devolucao_pj_dentro
-      : item.cfop_devolucao_pj_fora;
+      ? "1202"
+      : "2202";
   const value = isDevolucao ? devolucaoSource : source;
   return value ? String(value).trim() : undefined;
 };
@@ -90,14 +90,10 @@ const validateIbsCbsMock = (item: Record<string, any>) => {
 };
 
 const itemMock = {
-  cfop_venda_pf_dentro: "5102",
+  cfop: "5102",
+  cfop_venda_dentro: "5102",
   cfop_venda_pf_fora: "6108",
-  cfop_venda_pj_dentro: "5102",
   cfop_venda_pj_fora: "6102",
-  cfop_devolucao_pf_dentro: "1202",
-  cfop_devolucao_pf_fora: "2202",
-  cfop_devolucao_pj_dentro: "1202",
-  cfop_devolucao_pj_fora: "2202",
 };
 
 test("resolução CFOP venda PF dentro do estado", () => {
