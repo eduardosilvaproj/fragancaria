@@ -1146,17 +1146,17 @@ function EnrichmentModal({
     // sem escrever uma única imagem.
     imagensPedidas: number;
     imagensEscritas: number;
+    jaCompleto: number;
+    semRetornoDaFonte: number;
   } | null>(null);
 
   // Importar server fn fora do handler
   const enrichBatchFn = useServerFn(enrichProductsBatch);
 
   // Produtos sem foto, sem tags ou sem peso (precisam de enriquecimento)
-  // A API do ML vai buscar esses dados automaticamente
+  // A API do ML tenta por id; ids não-MLB caem no fallback por nome.
   const productsNeedingEnrichment = useMemo(() => {
-    // Por ora, enriquecer todos os produtos que têm ID do ML
-    // já que a busca é gratuita e pode trazer muitos dados úteis
-    return allProducts.filter((p) => p.id.startsWith("MLB"));
+    return allProducts;
   }, [allProducts]);
 
   const handleEnrich = async () => {
@@ -1181,6 +1181,8 @@ function EnrichmentModal({
     // bloco posterior falhar.
     let processed = 0;
     let updated = 0;
+    let jaCompleto = 0;
+    let semRetornoDaFonte = 0;
     let blocosOk = 0;
     let imagensPedidas = 0;
     let imagensEscritas = 0;
@@ -1198,6 +1200,8 @@ function EnrichmentModal({
         if (res?.success) {
           processed += res.processed;
           updated += res.updated;
+          jaCompleto += res.jaCompleto ?? 0;
+          semRetornoDaFonte += res.semRetornoDaFonte ?? 0;
           imagensPedidas += res.imagens?.pedidas ?? 0;
           imagensEscritas += res.imagens?.escritas ?? 0;
           if (res.errors?.length) errors.push(...res.errors);
@@ -1220,6 +1224,8 @@ function EnrichmentModal({
     setResult({
       processed,
       updated,
+      jaCompleto,
+      semRetornoDaFonte,
       errors,
       blocosOk,
       blocosTotal: blocos.length,
@@ -1299,8 +1305,11 @@ function EnrichmentModal({
                   <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-4" />
                   <p className="text-lg font-medium text-[#0F3A3E] mb-2 text-center">Concluído!</p>
                   <p className="text-sm text-[#51635F] text-center">
-                    {result.updated} de {result.processed} produtos atualizados
+                    Processados: <strong>{result.processed}</strong> | Atualizados: <strong>{result.updated}</strong>
                     {result.blocosTotal > 1 && ` (${result.blocosTotal} blocos)`}
+                  </p>
+                  <p className="text-xs text-[#8A938E] text-center mt-1">
+                    Já completos: <strong>{result.jaCompleto}</strong> | Sem retorno da fonte: <strong>{result.semRetornoDaFonte}</strong>
                   </p>
                 </>
               )}
@@ -1374,7 +1383,7 @@ function EnrichmentModal({
           ) : (
             <>
               <p className="text-sm text-[#51635F] mb-4">
-                Enrichecer <strong>{productsNeedingEnrichment.length}</strong> produtos que estão sem foto ou tags.
+                Enriquecer <strong>{productsNeedingEnrichment.length}</strong> produtos do catálogo (todos os ids, incluindo EAN/UPC, serão tentados).
               </p>
 
               <div className="space-y-3 mb-6">

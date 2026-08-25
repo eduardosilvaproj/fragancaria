@@ -276,7 +276,9 @@ function estimateDimensionsByCategory(
 }
 
 /**
- * Busca dados completos de um produto no Mercado Livre pelo ID
+ * Busca dados completos de um produto no Mercado Livre pelo ID.
+ * Aceita qualquer formato de id; ids que não sejam MLB retornam null
+ * sem bater na API.
  */
 async function fetchMLProductData(mlId: string): Promise<{
   imageUrl: string | null;
@@ -493,12 +495,11 @@ export const enrichProduct = createServerFn({ method: "POST" })
         let imageUrl: string | null = null;
         let mlData: { imageUrl: string | null; allImages: string[]; weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
-        // Primeiro tenta buscar pelo ID do ML
-        if (product.id.startsWith("MLB")) {
-          mlData = await fetchMLProductData(product.id);
-          if (mlData) {
-            imageUrl = mlData.imageUrl;
-          }
+        // Primeiro tenta buscar pelo ID do ML (mesmo produtos com EAN/UPC
+        // podem ter sido originados de anúncio, então não filtramos por formato).
+        mlData = await fetchMLProductData(product.id);
+        if (mlData) {
+          imageUrl = mlData.imageUrl;
         }
 
         // Fallback: busca por nome
@@ -566,6 +567,8 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
     success: boolean;
     processed: number;
     updated: number;
+    jaCompleto: number;
+    semRetornoDaFonte: number;
     errors: string[];
     imagens: { pedidas: number; escritas: number };
   }> => {
@@ -577,11 +580,9 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
 
       let processed = 0;
       let updated = 0;
+      let jaCompleto = 0;
+      let semRetornoDaFonte = 0;
       const errors: string[] = [];
-      // Contados separadamente de `updated`: um produto que recebeu só tags e
-      // dimensões conta como atualizado, e antes isso fazia o lote terminar
-      // verde mesmo sem escrever UMA imagem — o sintoma que motivou este
-      // rastreamento.
       let imagensPedidas = 0;
       let imagensEscritas = 0;
 
@@ -602,6 +603,7 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
           }
 
           const updates: Record<string, unknown> = {};
+          let hasExternalImages = true;
 
           // Gerar tags
           if (data.fields.includes("tags")) {
@@ -619,10 +621,9 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
           if (data.fields.includes("images") || data.fields.includes("dimensions")) {
             let mlData: { imageUrl: string | null; allImages: string[]; weight: number | null; height: number | null; width: number | null; length: number | null } | null = null;
 
-            // Primeiro tenta buscar pelo ID do ML
-            if (product.id.startsWith("MLB")) {
-              mlData = await fetchMLProductData(product.id);
-            }
+            // Primeiro tenta buscar pelo ID do ML (não filtra por formato de id;
+            // ids não-MLB retornam null dentro da função sem bater na API).
+            mlData = await fetchMLProductData(product.id);
 
             // Fallback: busca por nome se não tem imagens do ML
             if (!mlData?.allImages.length && data.fields.includes("images")) {
@@ -637,6 +638,10 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
                   length: null,
                 };
               }
+            }
+
+            if (!mlData?.allImages || mlData.allImages.length === 0) {
+              hasExternalImages = false;
             }
 
             // Atualizar imagens - adicionar TODAS as imagens do ML
@@ -672,17 +677,26 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
             }
           }
 
-          if (Object.keys(updates).length > 0) {
-            const { error } = await supabaseAdmin
-              .from("products")
-              .update(updates as any)
-              .eq("id", id);
+          if (Object.keys(updates).length === 0) {
+            jaCompleto++;
+            continue;
+          }
 
-            if (error) {
-              errors.push(`ID ${id}: ${error.message}`);
-            } else {
-              updated++;
-            }
+          if (data.fields.includes("images") && !hasExternalImages) {
+            semRetornoDaFonte++;
+          }
+
+          console.log(`[enrich] patching id=${id}`, Object.keys(updates).join(","));
+
+          const { error } = await supabaseAdmin
+            .from("products")
+            .update(updates as any)
+            .eq("id", id);
+
+          if (error) {
+            errors.push(`ID ${id}: ${error.message}`);
+          } else {
+            updated++;
           }
         } catch (e: any) {
           errors.push(`ID ${id}: ${e.message}`);
@@ -703,14 +717,22 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
         );
       }
 
-      return { success: true, processed, updated, errors, imagens: { pedidas: imagensPedidas, escritas: imagensEscritas } };
+      return {
+        success: true,
+        processed,
+        updated,
+        jaCompleto,
+        semRetornoDaFonte,
+        errors,
+        imagens: { pedidas: imagensPedidas, escritas: imagensEscritas },
+      };
     } catch (e: any) {
       const vazio = { pedidas: 0, escritas: 0 };
       if (e?.status === 401 || e?.status === 403) {
-        return { success: false, processed: 0, updated: 0, errors: ["Não autorizado"], imagens: vazio };
+        return { success: false, processed: 0, updated: 0, jaCompleto: 0, semRetornoDaFonte: 0, errors: ["Não autorizado"], imagens: vazio };
       }
       console.error("[enrich] enrichProductsBatch error:", e);
-      return { success: false, processed: 0, updated: 0, errors: [e?.message || "Erro desconhecido"], imagens: vazio };
+      return { success: false, processed: 0, updated: 0, jaCompleto: 0, semRetornoDaFonte: 0, errors: [e?.message || "Erro desconhecido"], imagens: vazio };
     }
   });
 
