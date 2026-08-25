@@ -30,6 +30,7 @@ import {
   importProducts,
   exportProducts,
   applyGlobalMargin,
+  getProductsStats,
 } from "@/lib/products-admin.functions";
 import { enrichProductsBatch } from "@/lib/product-enrich.functions";
 import { suggestProductImagesBatch } from "@/lib/product-image-suggestions.functions";
@@ -275,6 +276,18 @@ function AdminProdutos() {
     refetchOnWindowFocus: false,
     keepPreviousData: true,
   } as any);
+
+  // Carrega estatísticas totais filtradas do servidor (sem paginação)
+  const statsFn = useServerFn(getProductsStats);
+  const { data: stats } = useQuery({
+    queryKey: ["products-stats", searchQuery, selectedStatus, selectedBrand, selectedCategory],
+    queryFn: () => statsFn({ data: {
+        search: searchQuery,
+        status: selectedStatus !== "all" ? selectedStatus : undefined,
+        brand: selectedBrand !== "all" ? selectedBrand : undefined,
+        category: selectedCategory !== "all" ? selectedCategory : undefined,
+    } }),
+  });
 
   const allProducts: AdminProduct[] = (queryResult as any)?.products || [];
   const totalProducts = (queryResult as any)?.total || 0;
@@ -694,7 +707,7 @@ function AdminProdutos() {
             Total
           </p>
           <p className="font-serif text-2xl text-[#0F3A3E]">
-            {allProducts.length}
+            {stats?.data?.total ?? 0}
           </p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4">
@@ -702,7 +715,7 @@ function AdminProdutos() {
             Ativos
           </p>
           <p className="font-serif text-2xl text-emerald-600">
-            {allProducts.filter((p: AdminProduct) => p.is_active).length}
+            {stats?.data?.active ?? 0}
           </p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4">
@@ -710,7 +723,7 @@ function AdminProdutos() {
             Estoque Baixo
           </p>
           <p className="font-serif text-2xl text-amber-600">
-            {allProducts.filter((p: AdminProduct) => p.stock_status === "low_stock").length}
+            {stats?.data?.lowStock ?? 0}
           </p>
         </div>
         <div className="bg-white border border-[#E9E1D2] p-4">
@@ -718,7 +731,7 @@ function AdminProdutos() {
             Sem Estoque
           </p>
           <p className="font-serif text-2xl text-red-600">
-            {allProducts.filter((p: AdminProduct) => p.stock_status === "out_of_stock").length}
+            {stats?.data?.outOfStock ?? 0}
           </p>
         </div>
       </div>

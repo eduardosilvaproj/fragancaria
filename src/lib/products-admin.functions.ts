@@ -735,3 +735,101 @@ export const exportProducts = createServerFn({ method: "GET" }).handler(async ()
     return { success: false as const, error: e?.message || "erro" };
   }
 });
+
+export const getProductsStats = createServerFn({ method: "GET" })
+  .validator((d: unknown) =>
+    z
+      .object({
+        search: z.string().optional(),
+        category: z.string().optional(),
+        brand: z.string().optional(),
+        status: z.enum(["all", "active", "inactive", "low_stock", "out_of_stock"]).optional(),
+      })
+      .parse(d),
+  )
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+      // Query base para count total
+      let query = supabaseAdmin
+        .from("products")
+        .select("*", { count: "exact", head: true });
+
+      if (data.category) query = query.eq("category", data.category);
+      if (data.brand) query = query.eq("brand", data.brand);
+      if (data.status === "active") query = query.eq("is_active", true);
+      if (data.status === "inactive") query = query.eq("is_active", false);
+      if (data.status === "out_of_stock") query = query.eq("quantity", 0);
+      if (data.search && data.search.trim()) {
+        const term = data.search.replace(/[%_]/g, (c) => "\\" + c).trim();
+        query = query.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%,ean_barcode.ilike.%${term}%`);
+      }
+
+      const { count: total, error: totalError } = await query;
+      if (totalError) return { success: false as const, error: totalError.message };
+
+      // Count de ativos
+      let activeQuery = supabaseAdmin
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .eq("is_active", true);
+
+      if (data.category) activeQuery = activeQuery.eq("category", data.category);
+      if (data.brand) activeQuery = activeQuery.eq("brand", data.brand);
+      if (data.search && data.search.trim()) {
+        const term = data.search.replace(/[%_]/g, (c) => "\\" + c).trim();
+        activeQuery = activeQuery.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%,ean_barcode.ilike.%${term}%`);
+      }
+
+      const { count: active, error: activeError } = await activeQuery;
+      if (activeError) return { success: false as const, error: activeError.message };
+
+      // Count de estoque baixo (quantity <= 5 e in_stock = true)
+      let lowStockQuery = supabaseAdmin
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .lte("quantity", 5)
+        .eq("in_stock", true);
+
+      if (data.category) lowStockQuery = lowStockQuery.eq("category", data.category);
+      if (data.brand) lowStockQuery = lowStockQuery.eq("brand", data.brand);
+      if (data.search && data.search.trim()) {
+        const term = data.search.replace(/[%_]/g, (c) => "\\" + c).trim();
+        lowStockQuery = lowStockQuery.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%,ean_barcode.ilike.%${term}%`);
+      }
+
+      const { count: lowStock, error: lowStockError } = await lowStockQuery;
+      if (lowStockError) return { success: false as const, error: lowStockError.message };
+
+      // Count de sem estoque (quantity = 0 ou in_stock = false)
+      let outOfStockQuery = supabaseAdmin
+        .from("products")
+        .select("*", { count: "exact", head: true })
+        .or("quantity.eq.0,in_stock.eq.false");
+
+      if (data.category) outOfStockQuery = outOfStockQuery.eq("category", data.category);
+      if (data.brand) outOfStockQuery = outOfStockQuery.eq("brand", data.brand);
+      if (data.search && data.search.trim()) {
+        const term = data.search.replace(/[%_]/g, (c) => "\\" + c).trim();
+        outOfStockQuery = outOfStockQuery.or(`name.ilike.%${term}%,sku.ilike.%${term}%,brand.ilike.%${term}%,ean_barcode.ilike.%${term}%`);
+      }
+
+      const { count: outOfStock, error: outOfStockError } = await outOfStockQuery;
+      if (outOfStockError) return { success: false as const, error: outOfStockError.message };
+
+      return {
+        success: true as const,
+        data: {
+          total: total ?? 0,
+          active: active ?? 0,
+          lowStock: lowStock ?? 0,
+          outOfStock: outOfStock ?? 0,
+        },
+      };
+    } catch (e: any) {
+      return { success: false as const, error: e?.message || "erro" };
+    }
+  });
