@@ -664,6 +664,8 @@ export const enrichProductsBatch = createServerFn({ method: "POST" })
 
               if (!product.weight_grams) {
                 updates.weight_grams = mlData?.weight ? Math.round(mlData.weight) : estimated?.weight || 250;
+                // Marca como estimado se o valor veio do fallback ou da estimativa por categoria
+                updates.weight_source = 'estimado';
               }
               if (!product.height_cm) {
                 updates.height_cm = mlData?.height || estimated?.height || 15;
