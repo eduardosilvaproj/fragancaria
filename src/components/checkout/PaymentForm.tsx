@@ -492,17 +492,17 @@ function CardForm({
         throw new Error(errorMsg);
       }
 
-      const brandToMpId: Record<CardBrand, string> = {
-        visa: "visa",
-        mastercard: "master",
-        amex: "amex",
-        elo: "elo",
-        hipercard: "hipercard",
-        unknown: "",
-      };
-      const paymentMethodId = brandToMpId[cardBrand];
+      let paymentMethodId: string | undefined;
+      try {
+        const bin = cardNumber.slice(0, 6);
+        const methods = await mpRef.current.getPaymentMethods({ bin });
+        const method = methods && methods.length > 0 ? methods[0] : null;
+        paymentMethodId = method?.id;
+      } catch (e) {
+        console.warn("[MP] falha ao consultar bandeira via bin:", e);
+      }
       if (!paymentMethodId) {
-        throw new Error("Bandeira do cartão não identificada ou inválida. Verifique o número digitado.");
+        throw new Error("Bandeira do cartão não identificada. Verifique o número digitado.");
       }
 
       const res: any = await createPaymentFn({
