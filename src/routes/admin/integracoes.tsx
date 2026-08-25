@@ -57,7 +57,13 @@ function AdminIntegracoes() {
   // --- Teste de WhatsApp ---
   const sendTestWhatsAppFn = useServerFn(sendTestWhatsApp);
   const [testPhone, setTestPhone] = useState("");
-  const [testTemplate, setTestTemplate] = useState<"venda_aprovada" | "pedido_enviado">("venda_aprovada");
+  const [testTemplate, setTestTemplate] = useState<
+    | "venda_aprovada"
+    | "pedido_enviado"
+    | "nova_venda_alerta"
+    | "recompra_sugestao"
+    | "aniversario_cupom"
+  >("venda_aprovada");
   const [testParams, setTestParams] = useState({
     venda_aprovada: {
       param1: "Gabriel Dias",
@@ -68,6 +74,20 @@ function AdminIntegracoes() {
       param1: "Gabriel Dias",
       param2: "PED-98745",
       param3: "BR987654321BR",
+    },
+    nova_venda_alerta: {
+      param1: "PED-98745",
+      param2: "Gabriel Dias",
+      param3: "R$ 189,90",
+    },
+    recompra_sugestao: {
+      param1: "Gabriel Dias",
+      param2: "Oud Wood Intense",
+    },
+    aniversario_cupom: {
+      param1: "Gabriel Dias",
+      param2: "15%",
+      param3: "31/12/2026",
     },
   });
   const [rawResponse, setRawResponse] = useState<string | null>(null);
@@ -80,8 +100,8 @@ function AdminIntegracoes() {
           phone: testPhone,
           templateName: testTemplate,
           param1: p.param1,
-          param2: p.param2,
-          param3: p.param3,
+          param2: "param2" in p ? p.param2 : undefined,
+          param3: "param3" in p ? p.param3 : undefined,
         },
       });
     },
@@ -216,6 +236,9 @@ function AdminIntegracoes() {
               >
                 <option value="venda_aprovada">venda_aprovada (3 variáveis)</option>
                 <option value="pedido_enviado">pedido_enviado (3 variáveis)</option>
+                <option value="nova_venda_alerta">nova_venda_alerta (3 variáveis)</option>
+                <option value="recompra_sugestao">recompra_sugestao (2 variáveis)</option>
+                <option value="aniversario_cupom">aniversario_cupom (3 variáveis)</option>
               </select>
             </div>
 
@@ -223,7 +246,7 @@ function AdminIntegracoes() {
               <p className="text-xs font-semibold uppercase tracking-wider text-[#51635F]">Variáveis do Template</p>
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{1}'} Nome do Cliente
+                  {'{1}'} {testTemplate === "nova_venda_alerta" ? "Número do Pedido" : testTemplate === "recompra_sugestao" ? "Nome do Cliente" : testTemplate === "aniversario_cupom" ? "Nome do Cliente" : "Nome do Cliente"}
                 </label>
                 <input
                   type="text"
@@ -239,7 +262,7 @@ function AdminIntegracoes() {
               </div>
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{2}'} ID do Pedido
+                  {'{2}'} {testTemplate === "nova_venda_alerta" ? "Nome do Cliente" : testTemplate === "recompra_sugestao" ? "Nome do Produto" : testTemplate === "aniversario_cupom" ? "Desconto" : "ID do Pedido"}
                 </label>
                 <input
                   type="text"
@@ -253,9 +276,10 @@ function AdminIntegracoes() {
                   }
                 />
               </div>
+              {testTemplate !== "recompra_sugestao" && (
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{3}'} {testTemplate === "venda_aprovada" ? "Valor Total" : "Código de Rastreio"}
+                  {'{3}'} {testTemplate === "venda_aprovada" ? "Valor Total" : testTemplate === "pedido_enviado" ? "Código de Rastreio" : testTemplate === "nova_venda_alerta" ? "Valor Total" : testTemplate === "aniversario_cupom" ? "Data de Validade" : ""}
                 </label>
                 <input
                   type="text"
@@ -269,6 +293,7 @@ function AdminIntegracoes() {
                   }
                 />
               </div>
+              )}
             </div>
 
             <button

@@ -8,8 +8,8 @@ export const sendTestWhatsApp = createServerFn({ method: "POST" })
       phone: z.string().min(1, "Telefone obrigatório"),
       templateName: z.string().default("venda_aprovada"),
       param1: z.string().min(1, "Variável 1 obrigatória"),
-      param2: z.string().min(1, "Variável 2 obrigatória"),
-      param3: z.string().min(1, "Variável 3 obrigatória"),
+      param2: z.string().optional(),
+      param3: z.string().optional(),
     }).parse(d)
   )
   .handler(async ({ data: { phone, templateName, param1, param2, param3 } }) => {
@@ -26,8 +26,8 @@ export const sendTestWhatsApp = createServerFn({ method: "POST" })
 
       const templateParams = [
         { type: "text" as const, text: param1 },
-        { type: "text" as const, text: param2 },
-        { type: "text" as const, text: param3 },
+        ...(param2 ? [{ type: "text" as const, text: param2 }] : []),
+        ...(param3 ? [{ type: "text" as const, text: param3 }] : []),
       ];
 
       // Chamada direta para capturar o resultado bruto / erro
