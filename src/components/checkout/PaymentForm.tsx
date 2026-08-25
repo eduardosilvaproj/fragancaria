@@ -495,10 +495,13 @@ function CardForm({
       let paymentMethodId: string | undefined;
       try {
         const bin = cardNumber.slice(0, 6);
-        const methods = await mpRef.current.getPaymentMethods({ bin });
-        console.log("[MP] resposta getPaymentMethods:", methods);
-        const result = methods?.results && methods.results.length > 0 ? methods.results[0] : null;
-        paymentMethodId = result?.id;
+        const res = await mpRef.current.getPaymentMethods({ bin });
+        console.log("[MP] resposta getPaymentMethods:", res);
+        if (res && res.paging && res.paging.total >= 1 && res.results && res.results.length > 0) {
+          paymentMethodId = res.results[0].id;
+        } else if (Array.isArray(res) && res.length > 0) {
+          paymentMethodId = res[0].id;
+        }
       } catch (e) {
         console.warn("[MP] falha ao consultar bandeira via bin:", e);
       }
