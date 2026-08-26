@@ -876,7 +876,20 @@ export const emitNFe = createServerFn({ method: "POST" })
         console.log("[nfe] Redução de base de ICMS informada no modal:", reducaoBaseIcms);
       }
 
-      const notaasItemsOrErrors = sourceItems.map((item: any, idx: number) => {
+      // Rateia frete e desconto proporcionalmente ANTES do map que monta os itens do schema,
+      // para que freteProporcional esteja disponível no cálculo de vBCUFDest do DIFAL.
+      const shippingPrice = Number(order.shipping_price) || 0;
+      const discount = Number(order.discount) || 0;
+      const totalProd = sourceItems.reduce((s, i: any) => s + Number((Number(i.quantidade ?? i.quantity) || 1) * (Number(i.valorUnitario ?? i.price) || 0)), 0);
+      const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
+      const itemsBase = sourceItems.map((i: any) => ({
+        ...i,
+        valorTotal: Number((Number(i.quantidade ?? i.quantity) || 1) * (Number(i.valorUnitario ?? i.price) || 0)),
+      }));
+      const itemsComFrete = distributeShipping(itemsBase, shippingPrice);
+      const itemsComTudo = distributeDiscount(itemsComFrete, discount);
+
+      const notaasItemsOrErrors = itemsComTudo.map((item: any, idx: number) => {
         const qtd = Number(item.quantidade ?? item.quantity) || 1;
         const vUn = Number(item.valorUnitario ?? item.price) || 0;
         const vTotal = qtd * vUn;
@@ -1031,23 +1044,8 @@ export const emitNFe = createServerFn({ method: "POST" })
       const itemError = notaasItemsOrErrors.find((i: any) => i && !("descricao" in i));
       if (itemError) return itemError as NfeResult;
 
-      const baseItems = notaasItemsOrErrors as Array<{
-        descricao: string;
-        valorTotal: number;
-        [k: string]: unknown;
-      }>;
-
-      const totalProd = baseItems.reduce((s, i) => s + i.valorTotal, 0);
-      const shippingPrice = Number(order.shipping_price) || 0;
-      const discount = Number(order.discount) || 0;
-      const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
-
-      // Rateia o frete proporcionalmente entre os itens para compor a base vBCUFDest
-      const itemsComFrete = distributeShipping(baseItems, shippingPrice);
-      // Desconto (cupom) é declarado por item na notaas (items[].desconto —
-      // não existe desconto na raiz). Utiliza distributeDiscount para rateio
-      // proporcional com ajuste de resíduo de centavos no último item.
-      const notaasItemsFinal = distributeDiscount(itemsComFrete, discount);
+      const notaasItemsFinal = notaasItemsOrErrors as Array<Record<string, unknown>>;
+      const itemsParaEnvio = notaasItemsFinal.map(({ freteProporcional, ...rest }) => rest);
 
       if (
         settings.modalidade_frete === null ||
@@ -1103,7 +1101,7 @@ export const emitNFe = createServerFn({ method: "POST" })
             cep: formatCEP(shippingAddr?.zipCode || shippingAddr?.cep || ""),
           },
         },
-        items: notaasItemsFinal,
+        items: itemsParaEnvio,
         pagamentos: [{ tipoPagamento: paymentType(order.payment_method), valor: totalNf }],
         transporte: {
           modalidadeFrete: Number(settings.modalidade_frete),
@@ -1133,7 +1131,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: String(emitRes.status),
-            nfe_erro_motivo: String(`${errBody} | PAYLOAD: ${JSON.stringify(payload)}`).slice(0, 4000),
+            nfe_erro_motivo: errBody.slice(0, 500),
           } as never)
           .eq("id", data.orderId);
         return {
@@ -1189,7 +1187,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: cStat,
-            nfe_erro_motivo: String(`${errMsg} | PAYLOAD: ${JSON.stringify(payload)}`).slice(0, 4000),
+            nfe_erro_motivo: String(errMsg).slice(0, 500),
           } as never)
           .eq("id", data.orderId);
         return { success: false, error: `notaas rejeitou: ${errMsg}` };
