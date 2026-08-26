@@ -191,6 +191,54 @@ export function resolveIdDest(destUf: string | null | undefined, emitUf: string)
   }
 }
 
+/**
+ * Tabela de parâmetros DIFAL/ICMS por UF de destino.
+ * Preenchida inicialmente com os valores confirmados pela contadora para Bahia.
+ */
+const DEST_PARAMS: Record<string, { pICMSUFDest: number; pFCPUFDest: number }> = {
+  BA: { pICMSUFDest: 25, pFCPUFDest: 2 },
+};
+
+/**
+ * Calcula os campos do grupo ICMSUFDest (DIFAL) para um item NF-e.
+ */
+export function calculateICMSUFDest(params: {
+  vBCUFDest: number;
+  idDest: number | null;
+  consumidorFinal: number | undefined;
+  destUf: string;
+  pICMSInter: number;
+}): { vBCUFDest: number; vICMSUFDest: number; vFCPUFDest: number } | undefined {
+  const { vBCUFDest, idDest, consumidorFinal, destUf, pICMSInter } = params;
+
+  // Só aplica quando: interestadual (2) E consumidor final não contribuinte (1)
+  if (idDest !== 2 || consumidorFinal !== 1) {
+    return undefined;
+  }
+
+  const ufConfig = DEST_PARAMS[destUf.toUpperCase()];
+  if (!ufConfig) {
+    return undefined;
+  }
+
+  const base = Number(vBCUFDest.toFixed(2));
+  const pDest = ufConfig.pICMSUFDest;
+  const pFcp = ufConfig.pFCPUFDest;
+
+  // vICMSUFDest = base × (pICMSUFDest − pICMSInter) / 100
+  const aliqDifal = Math.max(0, pDest - pICMSInter);
+  const vICMSUFDest = Number(((base * aliqDifal) / 100).toFixed(2));
+
+  // vFCPUFDest = base × pFCPUFDest / 100
+  const vFCPUFDest = Number(((base * pFcp) / 100).toFixed(2));
+
+  return {
+    vBCUFDest: base,
+    vICMSUFDest,
+    vFCPUFDest,
+  };
+}
+
 // =====================================================
 // OBTER CONFIGURAÇÕES NF-E
 // =====================================================
@@ -829,6 +877,9 @@ export const emitNFe = createServerFn({ method: "POST" })
         const aliquotaIcms = Number(rawIcms);
         const aliquotaPis = Number(rawPis);
         const aliquotaCofins = Number(rawCofins);
+        // Aliquota interestadual já conhecida (vindo de resolveAliquotaIcms):
+        // 7% para BR/SP->Norte/Nordeste/excl. ES; 12% para SP->Sudeste excl. RJ/MG; 4% importado
+        const pICMSInter = resolveAliquotaIcms(item);
 
         const cstIbscbs = item.cstIbscbs ?? item.cst_ibscbs;
         const cClassTrib = item.cClassTrib ?? item.cclasstrib;
@@ -836,6 +887,15 @@ export const emitNFe = createServerFn({ method: "POST" })
         const rawIbsMun = item.aliquotaIbsMunicipal ?? item.aliquota_ibs_municipal;
         const rawCbs = item.aliquotaCbs ?? item.aliquota_cbs;
         const cBenef = item.codigoBeneficioFiscal ?? item.codigo_beneficio_fiscal;
+
+        // Cálculo do grupo ICMSUFDest (DIFAL) para itens de NF-e interestadual
+        const icmsUfDest = calculateICMSUFDest({
+          vBCUFDest: vTotal,
+          idDest,
+          consumidorFinal,
+          destUf,
+          pICMSInter,
+        });
 
         // VALIDAÇÃO OBRIGATÓRIA DE IBS/CBS PARA REGIME NORMAL (Vigente desde 03/08/2026)
         if (!cstIbscbs) {
@@ -883,6 +943,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           cstPis,
           ...(cBenef ? { codigoBeneficioFiscal: String(cBenef) } : {}),
           ...(ibscbsObj ? { ibscbs: ibscbsObj } : {}),
+          ...(icmsUfDest ? { icmsUfDest } : {}),
         };
       });
 

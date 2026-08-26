@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distributeDiscount, resolveIdDest } from "./nfe.functions";
+import { distributeDiscount, resolveIdDest, calculateICMSUFDest } from "./nfe.functions";
 
 test("distribui desconto de R$ 10,00 em 3 itens iguais de R$ 33,33 (resíduo no último)", () => {
   const items = [
@@ -62,6 +62,73 @@ test("idDest nulo: UF destino ausente retorna null", () => {
 test("idDest prioridade: EX vence UF diferente", () => {
   // Destino EX tem prioridade sobre qualquer outra UF diferente
   assert.equal(resolveIdDest("EX", "RJ"), 3);
+});
+
+// Testes para calculateICMSUFDest (Fase 5 - DIFAL)
+
+test("calcula ICMSUFDest: venda interestadual PF não contribuinte", () => {
+  // SP -> BA: pICMSInter=7, pICMSUFDest=25, pFCPUFDest=2
+  // vBC=31.00 → vICMSUFDest = 31 × (25-7)/100 = 31 × 18/100 = 5.58
+  // vFCPUFDest = 31 × 2/100 = 0.62
+  const result = calculateICMSUFDest({
+    vBCUFDest: 31.00,
+    idDest: 2,
+    consumidorFinal: 1,
+    destUf: "BA",
+    pICMSInter: 7,
+  });
+  assert.deepStrictEqual(result, {
+    vBCUFDest: 31.00,
+    vICMSUFDest: 5.58,
+    vFCPUFDest: 0.62,
+  });
+});
+
+test("não calcula ICMSUFDest: operação interna (idDest=1)", () => {
+  const result = calculateICMSUFDest({
+    vBCUFDest: 31.00,
+    idDest: 1,
+    consumidorFinal: 1,
+    destUf: "BA",
+    pICMSInter: 7,
+  });
+  assert.strictEqual(result, undefined);
+});
+
+test("não calcula ICMSUFDest: consumidor final CNPJ (0)", () => {
+  const result = calculateICMSUFDest({
+    vBCUFDest: 31.00,
+    idDest: 2,
+    consumidorFinal: 0,
+    destUf: "BA",
+    pICMSInter: 7,
+  });
+  assert.strictEqual(result, undefined);
+});
+
+test("não calcula ICMSUFDest: UF sem configuração", () => {
+  const result = calculateICMSUFDest({
+    vBCUFDest: 31.00,
+    idDest: 2,
+    consumidorFinal: 1,
+    destUf: "RJ", // sem configuração RJ na DEST_PARAMS
+    pICMSInter: 7,
+  });
+  assert.strictEqual(result, undefined);
+});
+
+test("usa configuração BA confirmada pela contadora", () => {
+  // BA: pICMSUFDest=25, pFCPUFDest=2
+  // vBC=32.33 (base confirmada com frete) → vICMSUFDest = 32.33 × (25-7)/100 = 32.33 × 18/100 = 5.8194 ≈ 5.82
+  const result = calculateICMSUFDest({
+    vBCUFDest: 32.33,
+    idDest: 2,
+    consumidorFinal: 1,
+    destUf: "BA",
+    pICMSInter: 7,
+  });
+  assert.strictEqual(result!.vICMSUFDest, 5.82);
+  assert.strictEqual(result!.vFCPUFDest, 0.65);
 });
 // Testes para validação e resolução de CFOP + IBS/CBS (Fase 2)
 const resolveCfopMock = ({
