@@ -1030,6 +1030,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           ...(cBenef ? { codigoBeneficioFiscal: String(cBenef) } : {}),
           ...(ibscbsObj ? { ibscbs: ibscbsObj } : {}),
           ...(icmsUfDest ? { icmsUfDest } : {}),
+          ...(item.desconto ? { desconto: item.desconto } : {}),
         };
       });
 

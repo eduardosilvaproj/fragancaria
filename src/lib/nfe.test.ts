@@ -158,7 +158,7 @@ test("payload de itens não contém campos auxiliares (freteProporcional)", () =
 
   itemsParaEnvio.forEach(item => {
     assert.strictEqual((item as any).freteProporcional, undefined);
-    assert.strictEqual(typeof (item as any).desconto, 'number');
+    assert.ok(typeof (item as any).desconto === 'number', "Desconto deve estar presente no item");
   });
 });
 // Testes para validação e resolução de CFOP + IBS/CBS (Fase 2)
