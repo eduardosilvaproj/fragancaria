@@ -1133,7 +1133,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: String(emitRes.status),
-            nfe_erro_motivo: errBody.slice(0, 500),
+            nfe_erro_motivo: String(`${errBody} | PAYLOAD: ${JSON.stringify(payload)}`).slice(0, 4000),
           } as never)
           .eq("id", data.orderId);
         return {
@@ -1189,7 +1189,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: cStat,
-            nfe_erro_motivo: String(errMsg).slice(0, 500),
+            nfe_erro_motivo: String(`${errMsg} | PAYLOAD: ${JSON.stringify(payload)}`).slice(0, 4000),
           } as never)
           .eq("id", data.orderId);
         return { success: false, error: `notaas rejeitou: ${errMsg}` };
