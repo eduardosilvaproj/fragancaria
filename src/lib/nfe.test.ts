@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distributeDiscount, resolveIdDest, calculateICMSUFDest } from "./nfe.functions";
+import { distributeDiscount, resolveIdDest, calculateICMSUFDest, resolveAliquotaInter } from "./nfe.functions";
 
 test("distribui desconto de R$ 10,00 em 3 itens iguais de R$ 33,33 (resíduo no último)", () => {
   const items = [
@@ -79,6 +79,9 @@ test("calcula ICMSUFDest: venda interestadual PF não contribuinte", () => {
   });
   assert.deepStrictEqual(result, {
     vBCUFDest: 31.00,
+    pICMSUFDest: 25,
+    pICMSInter: 7,
+    pICMSInterPart: 100,
     vICMSUFDest: 5.58,
     vFCPUFDest: 0.62,
   });
@@ -115,6 +118,19 @@ test("não calcula ICMSUFDest: UF sem configuração", () => {
     pICMSInter: 7,
   });
   assert.strictEqual(result, undefined);
+});
+
+test("resolveAliquotaInter não sofre de curto-circuito de CPF e retorna 7% para BA", () => {
+  const itemCpfNacional = { origem: 0, aliquota_icms: 18 };
+  const itemSP = { origem: 0, aliquota_icms: 12 };
+  const itemImportado = { origem: 1, aliquota_icms: 10 };
+  const itemSudesteExcl = { origem: 0, aliquota_icms: 18 };
+
+  assert.strictEqual(resolveAliquotaInter(itemCpfNacional, "BA"), 7);
+  assert.strictEqual(resolveAliquotaInter(itemSP, "BA"), 7);
+  assert.strictEqual(resolveAliquotaInter(itemImportado, "BA"), 4);
+  assert.strictEqual(resolveAliquotaInter(itemSudesteExcl, "BA"), 7);
+  assert.strictEqual(resolveAliquotaInter(itemSudesteExcl, "SP"), 7);
 });
 
 test("usa configuração BA confirmada pela contadora", () => {

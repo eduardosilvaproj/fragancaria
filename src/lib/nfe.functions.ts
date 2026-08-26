@@ -161,6 +161,35 @@ export function distributeDiscount<T extends { valorTotal: number }>(
   });
 }
 
+/**
+ * Distribui o valor total do frete proporcionalmente entre os itens.
+ * O último item absorve o resíduo de centavos, garantindo soma EXATA ao frete do pedido.
+ */
+export function distributeShipping<T extends { valorTotal: number }>(
+  items: readonly T[],
+  shippingPrice: number,
+): Array<T & { freteProporcional?: number }> {
+  if (shippingPrice <= 0 || items.length === 0) return items as Array<T & { freteProporcional?: number }>;
+
+  const totalProd = items.reduce((s, i) => s + i.valorTotal, 0);
+  if (totalProd <= 0) return items as Array<T & { freteProporcional?: number }>;
+
+  let allocatedShipping = 0;
+  return items.map((item, idx) => {
+    let itemShipping = 0;
+    if (idx === items.length - 1) {
+      itemShipping = Number((shippingPrice - allocatedShipping).toFixed(2));
+    } else {
+      itemShipping = Number(((item.valorTotal / totalProd) * shippingPrice).toFixed(2));
+      allocatedShipping += itemShipping;
+    }
+    return {
+      ...item,
+      freteProporcional: itemShipping,
+    };
+  });
+}
+
 // =====================================================
 // RESOLVER idDest (identificador de destino da NF-e)
 // =====================================================
@@ -192,8 +221,28 @@ export function resolveIdDest(destUf: string | null | undefined, emitUf: string)
 }
 
 /**
+ * Deriva a alíquota interestadual (pICMSInter) baseada estritamente na origem do produto
+ * e na UF de destino, SEM o curto-circuito de isCPF/isDevolucao/isWithinState (essencial para DIFAL).
+ * - Origem importada (1, 2, 6, 7) → 4%
+ * - Destino no Sul/Sudeste exceto ES (PR, SC, RS, RJ, MG) → 12%
+ * - Demais UFs → 7%
+ */
+export function resolveAliquotaInter(item: Record<string, unknown>, destUf: string): number {
+  const origemNum = Number(item.origem ?? 0);
+  if ([1, 2, 6, 7].includes(origemNum)) {
+    return 4;
+  }
+  const sulSudesteExcetoEs = ["PR", "SC", "RS", "RJ", "MG"];
+  if (sulSudesteExcetoEs.includes(destUf.toUpperCase())) {
+    return 12;
+  }
+  return 7;
+}
+
+/**
  * Tabela de parâmetros DIFAL/ICMS por UF de destino.
- * Preenchida inicialmente com os valores confirmados pela contadora para Bahia.
+ * NOTA DE ARQUITETURA: Os parâmetros estão fixos em objeto pois a tabela dinâmica via UI
+ * ainda não foi implementada; novas UFs além da Bahia exigirão ajuste nesta constante.
  */
 const DEST_PARAMS: Record<string, { pICMSUFDest: number; pFCPUFDest: number }> = {
   BA: { pICMSUFDest: 25, pFCPUFDest: 2 },
@@ -208,7 +257,14 @@ export function calculateICMSUFDest(params: {
   consumidorFinal: number | undefined;
   destUf: string;
   pICMSInter: number;
-}): { vBCUFDest: number; vICMSUFDest: number; vFCPUFDest: number } | undefined {
+}): {
+  vBCUFDest: number;
+  pICMSUFDest: number;
+  pICMSInter: number;
+  pICMSInterPart: number;
+  vICMSUFDest: number;
+  vFCPUFDest: number;
+} | undefined {
   const { vBCUFDest, idDest, consumidorFinal, destUf, pICMSInter } = params;
 
   // Só aplica quando: interestadual (2) E consumidor final não contribuinte (1)
@@ -224,9 +280,11 @@ export function calculateICMSUFDest(params: {
   const base = Number(vBCUFDest.toFixed(2));
   const pDest = ufConfig.pICMSUFDest;
   const pFcp = ufConfig.pFCPUFDest;
+  const pInter = Number(pICMSInter.toFixed(2));
+  const pInterPart = 100; // 100% de partilha para o destino desde 2019
 
   // vICMSUFDest = base × (pICMSUFDest − pICMSInter) / 100
-  const aliqDifal = Math.max(0, pDest - pICMSInter);
+  const aliqDifal = Math.max(0, pDest - pInter);
   const vICMSUFDest = Number(((base * aliqDifal) / 100).toFixed(2));
 
   // vFCPUFDest = base × pFCPUFDest / 100
@@ -234,6 +292,9 @@ export function calculateICMSUFDest(params: {
 
   return {
     vBCUFDest: base,
+    pICMSUFDest: pDest,
+    pICMSInter: pInter,
+    pICMSInterPart: pInterPart,
     vICMSUFDest,
     vFCPUFDest,
   };
@@ -749,6 +810,13 @@ export const emitNFe = createServerFn({ method: "POST" })
         };
       }
 
+      // consumidorFinal e indicadorIE resolvidos ANTES do loop dos itens — evita TDZ
+      // (eram declarados depois do .map e causavam "Cannot access before initialization")
+      const defaultConsumidorFinal = isCNPJ ? 0 : 1;
+      const defaultIndicadorIE = isCNPJ ? 1 : 9;
+      const consumidorFinal = data.consumidorFinal !== undefined && data.consumidorFinal !== null ? Number(data.consumidorFinal) : defaultConsumidorFinal;
+      const indicadorIE = data.indicadorIE !== undefined && data.indicadorIE !== null ? Number(data.indicadorIE) : defaultIndicadorIE;
+
       const isDevolucao = (tipoOperacao as "venda" | "devolucao") === "devolucao";
 
       // CFOP é resolvido pela combinação operação × tipo de destinatário × UF,
@@ -877,9 +945,11 @@ export const emitNFe = createServerFn({ method: "POST" })
         const aliquotaIcms = Number(rawIcms);
         const aliquotaPis = Number(rawPis);
         const aliquotaCofins = Number(rawCofins);
-        // Aliquota interestadual já conhecida (vindo de resolveAliquotaIcms):
-        // 7% para BR/SP->Norte/Nordeste/excl. ES; 12% para SP->Sudeste excl. RJ/MG; 4% importado
-        const pICMSInter = resolveAliquotaIcms(item);
+        // pICMSInter: alíquota interestadual específica para o grupo DIFAL.
+        // Usar resolveAliquotaInter (não resolveAliquotaIcms) — esta última curto-circuita
+        // para a alíquota do cadastro do produto em vendas a CPF, e toda venda PF interestadual
+        // (DIFAL) cai nesse curto-circuito, gerando pICMSInter errado.
+        const pICMSInter = resolveAliquotaInter(item, destUf);
 
         const cstIbscbs = item.cstIbscbs ?? item.cst_ibscbs;
         const cClassTrib = item.cClassTrib ?? item.cclasstrib;
@@ -888,9 +958,12 @@ export const emitNFe = createServerFn({ method: "POST" })
         const rawCbs = item.aliquotaCbs ?? item.aliquota_cbs;
         const cBenef = item.codigoBeneficioFiscal ?? item.codigo_beneficio_fiscal;
 
-        // Cálculo do grupo ICMSUFDest (DIFAL) para itens de NF-e interestadual
+        // Cálculo do grupo ICMSUFDest (DIFAL) para itens de NF-e interestadual.
+        // vBCUFDest = valorTotal do item + frete proporcional (rateado pelo distributeShipping).
+        const freteProporcional = Number((item as any).freteProporcional || 0);
+        const vBCUFDest = Number((vTotal + freteProporcional).toFixed(2));
         const icmsUfDest = calculateICMSUFDest({
-          vBCUFDest: vTotal,
+          vBCUFDest,
           idDest,
           consumidorFinal,
           destUf,
@@ -969,10 +1042,12 @@ export const emitNFe = createServerFn({ method: "POST" })
       const discount = Number(order.discount) || 0;
       const totalNf = Number((totalProd + shippingPrice - discount).toFixed(2));
 
+      // Rateia o frete proporcionalmente entre os itens para compor a base vBCUFDest
+      const itemsComFrete = distributeShipping(baseItems, shippingPrice);
       // Desconto (cupom) é declarado por item na notaas (items[].desconto —
       // não existe desconto na raiz). Utiliza distributeDiscount para rateio
       // proporcional com ajuste de resíduo de centavos no último item.
-      const notaasItemsFinal = distributeDiscount(baseItems, discount);
+      const notaasItemsFinal = distributeDiscount(itemsComFrete, discount);
 
       if (
         settings.modalidade_frete === null ||
@@ -983,14 +1058,6 @@ export const emitNFe = createServerFn({ method: "POST" })
           error: "Modalidade de frete não configurada em Configurações > NF-e.",
         };
       }
-
-      // Nota: Regra assume que todo CNPJ compra para revenda (consumidorFinal = 0, indicadorIE = 1).
-      // Caso um CNPJ compre para uso/consumo interno, o operador pode corrigir manualmente no modal.
-      const defaultConsumidorFinal = isCNPJ ? 0 : 1;
-      const defaultIndicadorIE = isCNPJ ? 1 : 9;
-
-      const consumidorFinal = data.consumidorFinal !== undefined && data.consumidorFinal !== null ? Number(data.consumidorFinal) : defaultConsumidorFinal;
-      const indicadorIE = data.indicadorIE !== undefined && data.indicadorIE !== null ? Number(data.indicadorIE) : defaultIndicadorIE;
 
       const payload: Record<string, unknown> = {
         modelo: 55,
