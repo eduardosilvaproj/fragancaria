@@ -1125,13 +1125,14 @@ export const emitNFe = createServerFn({ method: "POST" })
 
       if (!emitRes.ok) {
         const errBody = await emitRes.text().catch(() => "");
+        const redactedPayload = JSON.stringify({ ...payload, emit: undefined, dest: undefined });
         // Persistir rejeição no pedido
         await db
           .from("orders")
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: String(emitRes.status),
-            nfe_erro_motivo: errBody.slice(0, 500),
+            nfe_erro_motivo: String(`${errBody} | PAYLOAD: ${redactedPayload}`).slice(0, 4000),
           } as never)
           .eq("id", data.orderId);
         return {
@@ -1181,13 +1182,14 @@ export const emitNFe = createServerFn({ method: "POST" })
       if (nfeResult.status === "error") {
         const errMsg = nfeResult.xMotivo || nfeResult.errorMessage || "Erro desconhecido na notaas";
         const cStat = nfeResult.cStat ? String(nfeResult.cStat) : null;
+        const redactedPayload = JSON.stringify({ ...payload, emit: undefined, dest: undefined });
         // Persistir rejeição da SEFAZ no pedido
         await db
           .from("orders")
           .update({
             nfe_status: "rejeitada",
             nfe_erro_codigo: cStat,
-            nfe_erro_motivo: String(errMsg).slice(0, 500),
+            nfe_erro_motivo: String(`${errMsg} | PAYLOAD: ${redactedPayload}`).slice(0, 4000),
           } as never)
           .eq("id", data.orderId);
         return { success: false, error: `notaas rejeitou: ${errMsg}` };
