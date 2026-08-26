@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distributeDiscount, distributeShipping, resolveIdDest, calculateICMSUFDest, resolveAliquotaInter } from "./nfe.functions";
+import { distributeDiscount, distributeShipping, resolveIdDest, resolveDifalOverrides, resolveAliquotaInter } from "./nfe.functions";
 
 test("distribui desconto de R$ 10,00 em 3 itens iguais de R$ 33,33 (resíduo no último)", () => {
   const items = [
@@ -64,59 +64,29 @@ test("idDest prioridade: EX vence UF diferente", () => {
   assert.equal(resolveIdDest("EX", "RJ"), 3);
 });
 
-// Testes para calculateICMSUFDest (Fase 5 - DIFAL)
+// Testes para resolveDifalOverrides (Fase 6 - DIFAL overrides flat fields)
 
-test("calcula ICMSUFDest: venda interestadual PF não contribuinte", () => {
-  // SP -> BA: pICMSInter=7, pICMSUFDest=25, pFCPUFDest=2
-  // vBC=31.00 → vICMSUFDest = 31 × (25-7)/100 = 31 × 18/100 = 5.58
-  // vFCPUFDest = 31 × 2/100 = 0.62
-  const result = calculateICMSUFDest({
-    vBCUFDest: 31.00,
-    idDest: 2,
-    consumidorFinal: 1,
-    destUf: "BA",
-    pICMSInter: 7,
-  });
-  assert.deepStrictEqual(result, {
-    vBCUFDest: 31.00,
-    pICMSUFDest: 25,
-    pICMSInter: 7,
-    pICMSInterPart: 100,
-    vICMSUFDest: 5.58,
-    vFCPUFDest: 0.62,
-  });
+test("resolveDifalOverrides: Bahia NCM 3305 retorna 25 e 2", () => {
+  const overrides = [
+    { uf: "BA", ncm_prefix: "3305", aliquota_icms_uf_dest: 25, percentual_fcp_uf_dest: 2 },
+  ];
+  const result = resolveDifalOverrides("BA", "3305.90.00", overrides);
+  assert.deepStrictEqual(result, { aliquotaIcmsUfDest: 25, percentualFcpUfDest: 2 });
 });
 
-test("não calcula ICMSUFDest: operação interna (idDest=1)", () => {
-  const result = calculateICMSUFDest({
-    vBCUFDest: 31.00,
-    idDest: 1,
-    consumidorFinal: 1,
-    destUf: "BA",
-    pICMSInter: 7,
-  });
+test("resolveDifalOverrides: UF sem configuração retorna undefined", () => {
+  const overrides = [
+    { uf: "BA", ncm_prefix: "3305", aliquota_icms_uf_dest: 25, percentual_fcp_uf_dest: 2 },
+  ];
+  const result = resolveDifalOverrides("RJ", "3305.90.00", overrides);
   assert.strictEqual(result, undefined);
 });
 
-test("não calcula ICMSUFDest: consumidor final CNPJ (0)", () => {
-  const result = calculateICMSUFDest({
-    vBCUFDest: 31.00,
-    idDest: 2,
-    consumidorFinal: 0,
-    destUf: "BA",
-    pICMSInter: 7,
-  });
-  assert.strictEqual(result, undefined);
-});
-
-test("não calcula ICMSUFDest: UF sem configuração", () => {
-  const result = calculateICMSUFDest({
-    vBCUFDest: 31.00,
-    idDest: 2,
-    consumidorFinal: 1,
-    destUf: "RJ", // sem configuração RJ na DEST_PARAMS
-    pICMSInter: 7,
-  });
+test("resolveDifalOverrides: NCM não corresponde ao prefixo", () => {
+  const overrides = [
+    { uf: "BA", ncm_prefix: "3305", aliquota_icms_uf_dest: 25, percentual_fcp_uf_dest: 2 },
+  ];
+  const result = resolveDifalOverrides("BA", "6204.00.00", overrides);
   assert.strictEqual(result, undefined);
 });
 
@@ -131,20 +101,6 @@ test("resolveAliquotaInter não sofre de curto-circuito de CPF e retorna 7% para
   assert.strictEqual(resolveAliquotaInter(itemImportado, "BA"), 4);
   assert.strictEqual(resolveAliquotaInter(itemSudesteExcl, "BA"), 7);
   assert.strictEqual(resolveAliquotaInter(itemSudesteExcl, "SP"), 7);
-});
-
-test("usa configuração BA confirmada pela contadora", () => {
-  // BA: pICMSUFDest=25, pFCPUFDest=2
-  // vBC=32.33 (base confirmada com frete) → vICMSUFDest = 32.33 × (25-7)/100 = 32.33 × 18/100 = 5.8194 ≈ 5.82
-  const result = calculateICMSUFDest({
-    vBCUFDest: 32.33,
-    idDest: 2,
-    consumidorFinal: 1,
-    destUf: "BA",
-    pICMSInter: 7,
-  });
-  assert.strictEqual(result!.vICMSUFDest, 5.82);
-  assert.strictEqual(result!.vFCPUFDest, 0.65);
 });
 
 test("payload de itens não contém campos auxiliares (freteProporcional)", () => {

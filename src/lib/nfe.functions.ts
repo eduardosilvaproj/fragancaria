@@ -49,6 +49,7 @@ export type NfeSettings = {
   aliquota_ibs_municipal?: number;
   aliquota_cbs?: number;
   codigo_beneficio_fiscal_padrao?: string;
+  difal_overrides?: any[];
 };
 
 export type NfeEndereco = {
@@ -240,63 +241,20 @@ export function resolveAliquotaInter(item: Record<string, unknown>, destUf: stri
 }
 
 /**
- * Tabela de parâmetros DIFAL/ICMS por UF de destino.
- * NOTA DE ARQUITETURA: Os parâmetros estão fixos em objeto pois a tabela dinâmica via UI
- * ainda não foi implementada; novas UFs além da Bahia exigirão ajuste nesta constante.
+ * Resolve alíquotas de DIFAL (ICMS e FCP) baseado em configuração dinâmica por UF e NCM.
  */
-const DEST_PARAMS: Record<string, { pICMSUFDest: number; pFCPUFDest: number }> = {
-  BA: { pICMSUFDest: 25, pFCPUFDest: 2 },
-};
-
-/**
- * Calcula os campos do grupo ICMSUFDest (DIFAL) para um item NF-e.
- */
-export function calculateICMSUFDest(params: {
-  vBCUFDest: number;
-  idDest: number | null;
-  consumidorFinal: number | undefined;
-  destUf: string;
-  pICMSInter: number;
-}): {
-  vBCUFDest: number;
-  pICMSUFDest: number;
-  pICMSInter: number;
-  pICMSInterPart: number;
-  vICMSUFDest: number;
-  vFCPUFDest: number;
-} | undefined {
-  const { vBCUFDest, idDest, consumidorFinal, destUf, pICMSInter } = params;
-
-  // Só aplica quando: interestadual (2) E consumidor final não contribuinte (1)
-  if (idDest !== 2 || consumidorFinal !== 1) {
-    return undefined;
-  }
-
-  const ufConfig = DEST_PARAMS[destUf.toUpperCase()];
-  if (!ufConfig) {
-    return undefined;
-  }
-
-  const base = Number(vBCUFDest.toFixed(2));
-  const pDest = ufConfig.pICMSUFDest;
-  const pFcp = ufConfig.pFCPUFDest;
-  const pInter = Number(pICMSInter.toFixed(2));
-  const pInterPart = 100; // 100% de partilha para o destino desde 2019
-
-  // vICMSUFDest = base × (pICMSUFDest − pICMSInter) / 100
-  const aliqDifal = Math.max(0, pDest - pInter);
-  const vICMSUFDest = Number(((base * aliqDifal) / 100).toFixed(2));
-
-  // vFCPUFDest = base × pFCPUFDest / 100
-  const vFCPUFDest = Number(((base * pFcp) / 100).toFixed(2));
-
+export function resolveDifalOverrides(
+  uf: string,
+  ncm: string,
+  difalOverrides: any[]
+): { aliquotaIcmsUfDest?: number; percentualFcpUfDest?: number } | undefined {
+  if (!Array.isArray(difalOverrides)) return undefined;
+  // Procura regra por UF e NCM (ex: NCM inicia com "3305")
+  const rule = difalOverrides.find(r => r.uf === uf.toUpperCase() && ncm.startsWith(r.ncm_prefix));
+  if (!rule) return undefined;
   return {
-    vBCUFDest: base,
-    pICMSUFDest: pDest,
-    pICMSInter: pInter,
-    pICMSInterPart: pInterPart,
-    vICMSUFDest,
-    vFCPUFDest,
+    aliquotaIcmsUfDest: rule.aliquota_icms_uf_dest,
+    percentualFcpUfDest: rule.percentual_fcp_uf_dest,
   };
 }
 
@@ -518,6 +476,7 @@ export const getNfePreview = createServerFn({ method: "POST" })
         nfe_serie: settingsRaw.nfe_serie || 1,
         modalidade_frete: settingsRaw.modalidade_frete ?? 0,
         crt: settingsRaw.crt ?? 3,
+        difal_overrides: settingsRaw.difal_overrides || [],
       };
 
       const { data: order, error: orderError } = await db
@@ -971,18 +930,6 @@ export const emitNFe = createServerFn({ method: "POST" })
         const rawCbs = item.aliquotaCbs ?? item.aliquota_cbs;
         const cBenef = item.codigoBeneficioFiscal ?? item.codigo_beneficio_fiscal;
 
-        // Cálculo do grupo ICMSUFDest (DIFAL) para itens de NF-e interestadual.
-        // vBCUFDest = valorTotal do item + frete proporcional (rateado pelo distributeShipping).
-        const freteProporcional = Number((item as any).freteProporcional || 0);
-        const vBCUFDest = Number((vTotal + freteProporcional).toFixed(2));
-        const icmsUfDest = calculateICMSUFDest({
-          vBCUFDest,
-          idDest,
-          consumidorFinal,
-          destUf,
-          pICMSInter,
-        });
-
         // VALIDAÇÃO OBRIGATÓRIA DE IBS/CBS PARA REGIME NORMAL (Vigente desde 03/08/2026)
         if (!cstIbscbs) {
           return { success: false, error: `CST IBS/CBS obrigatório e ausente no item "${itemName}".` };
@@ -1011,6 +958,25 @@ export const emitNFe = createServerFn({ method: "POST" })
           aliquotaCbs: Number(rawCbs),
         };
 
+        // DIFAL overrides (flat fields) para operações interestaduais para consumidor final não contribuinte
+        const difalItemFields: Record<string, unknown> = {};
+        if (idDest === 2 && consumidorFinal === 1) {
+          const overrides = resolveDifalOverrides(destUf, ncm, settings.difal_overrides || []);
+          if (overrides) {
+            if (overrides.aliquotaIcmsUfDest !== undefined) {
+              difalItemFields.aliquotaIcmsUfDest = overrides.aliquotaIcmsUfDest;
+            }
+            if (overrides.percentualFcpUfDest !== undefined) {
+              difalItemFields.percentualFcpUfDest = overrides.percentualFcpUfDest;
+            }
+          }
+          // aliquotaInterestadual só quando diferir do padrão (calculada por resolveAliquotaInter)
+          const pInter = resolveAliquotaInter(item, destUf);
+          if (pInter !== aliquotaIcms) {
+            difalItemFields.aliquotaInterestadual = pInter;
+          }
+        }
+
         return {
           descricao: itemName,
           ncm,
@@ -1029,7 +995,7 @@ export const emitNFe = createServerFn({ method: "POST" })
           cstPis,
           ...(cBenef ? { codigoBeneficioFiscal: String(cBenef) } : {}),
           ...(ibscbsObj ? { ibscbs: ibscbsObj } : {}),
-          ...(icmsUfDest ? { icmsUfDest } : {}),
+          ...difalItemFields,
           ...(item.desconto ? { desconto: item.desconto } : {}),
         };
       });
