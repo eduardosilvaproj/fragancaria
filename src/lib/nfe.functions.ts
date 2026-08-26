@@ -162,6 +162,36 @@ export function distributeDiscount<T extends { valorTotal: number }>(
 }
 
 // =====================================================
+// RESOLVER idDest (identificador de destino da NF-e)
+// =====================================================
+
+/**
+ * Deriva o idDest baseado nas UFs do emitente vs destinatário, conforme regra SEFAZ:
+ * - 1 = operação interna (UF iguais)
+ * - 2 = operação interestadual (UFs diferentes)
+ * - 3 = operação com exterior (UF = "EX")
+ *
+ * @param destUf UF do destinatário (ex: "SP", "RJ", "BA", "EX")
+ * @param emitUf UF do emitente (ex: "SP")
+ * @returns O idDest correspondente (1, 2 ou 3), ou null se UF destino não informada
+ */
+export function resolveIdDest(destUf: string | null | undefined, emitUf: string): number | null {
+  if (!destUf) {
+    return null; // UF destino não informada — o chamador deve bloquear a emissão
+  }
+  const dest = destUf.toUpperCase();
+  const emit = emitUf.toUpperCase();
+
+  if (dest === emit) {
+    return 1; // operação interna
+  } else if (dest === "EX") {
+    return 3; // operação com exterior
+  } else {
+    return 2; // operação interestadual
+  }
+}
+
+// =====================================================
 // OBTER CONFIGURAÇÕES NF-E
 // =====================================================
 
@@ -434,6 +464,16 @@ export const getNfePreview = createServerFn({ method: "POST" })
       const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
       const emitUf = String(settings.estado_uf || "SP").toUpperCase();
       const isWithinState = destUf === emitUf;
+      const idDest = resolveIdDest(destUf, emitUf);
+
+      // Bloquear se UF destino ausente — o resolveIdDest retorna null
+      if (!destUf) {
+        return {
+          success: false,
+          error: "Não é possível emitir NF-e: UF do destinatário não informada. Informe a UF do destinatário para derivar o idDest.",
+        };
+      }
+
       const tipoOperacao = data.tipoOperacao;
       if (tipoOperacao !== "venda" && tipoOperacao !== "devolucao") {
         return { success: false, error: "tipoOperacao é obrigatório e deve ser 'venda' ou 'devolucao'." };
@@ -511,6 +551,7 @@ export const getNfePreview = createServerFn({ method: "POST" })
           destDoc: destDocClean,
           destUf,
           emitUf,
+          idDest,
           items: previewItems,
           shippingPrice: Number(order.shipping_price) || 0,
           discount: Number(order.discount) || 0,
@@ -650,6 +691,16 @@ export const emitNFe = createServerFn({ method: "POST" })
       const destUf = String(shippingAddr?.state || settings.estado_uf || "").toUpperCase();
       const emitUf = String(settings.estado_uf || "SP").toUpperCase();
       const isWithinState = destUf === emitUf;
+      const idDest = resolveIdDest(destUf, emitUf);
+
+      // Bloquear se UF destino ausente — o resolveIdDest retorna null
+      if (!destUf) {
+        return {
+          success: false,
+          error: "Não é possível emitir NF-e: UF do destinatário não informada. Informe a UF do destinatário para derivar o idDest.",
+        };
+      }
+
       const isDevolucao = (tipoOperacao as "venda" | "devolucao") === "devolucao";
 
       // CFOP é resolvido pela combinação operação × tipo de destinatário × UF,
@@ -701,7 +752,7 @@ export const emitNFe = createServerFn({ method: "POST" })
         const prodId = rawId.split("::")[0];
 
         const ncm = item.ncm;
-        const cfop = item.cfop || resolveCfop(item);
+        const cfop = resolveCfop(item);
         const isSimples = Number(settings.crt) === 1;
         const cstVal = item.cst || (isSimples ? item.csosn : item.cst_icms);
         const cest = item.cest;
@@ -866,7 +917,7 @@ export const emitNFe = createServerFn({ method: "POST" })
       const payload: Record<string, unknown> = {
         modelo: 55,
         naturezaOperacao: "Venda de mercadoria",
-        destinoOperacao: 1,
+        destinoOperacao: idDest,
         tipoOperacao: 1,
         finalidade: 1,
         consumidorFinal,
@@ -931,6 +982,15 @@ export const emitNFe = createServerFn({ method: "POST" })
 
       if (!emitRes.ok) {
         const errBody = await emitRes.text().catch(() => "");
+        // Persistir rejeição no pedido
+        await db
+          .from("orders")
+          .update({
+            nfe_status: "rejeitada",
+            nfe_erro_codigo: String(emitRes.status),
+            nfe_erro_motivo: errBody.slice(0, 500),
+          } as never)
+          .eq("id", data.orderId);
         return {
           success: false,
           error: `notaas rejeitou (${emitRes.status}): ${errBody.slice(0, 300)}`,
@@ -977,6 +1037,16 @@ export const emitNFe = createServerFn({ method: "POST" })
 
       if (nfeResult.status === "error") {
         const errMsg = nfeResult.xMotivo || nfeResult.errorMessage || "Erro desconhecido na notaas";
+        const cStat = nfeResult.cStat ? String(nfeResult.cStat) : null;
+        // Persistir rejeição da SEFAZ no pedido
+        await db
+          .from("orders")
+          .update({
+            nfe_status: "rejeitada",
+            nfe_erro_codigo: cStat,
+            nfe_erro_motivo: String(errMsg).slice(0, 500),
+          } as never)
+          .eq("id", data.orderId);
         return { success: false, error: `notaas rejeitou: ${errMsg}` };
       }
 

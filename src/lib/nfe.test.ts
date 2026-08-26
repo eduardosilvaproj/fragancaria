@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distributeDiscount } from "./nfe.functions";
+import { distributeDiscount, resolveIdDest } from "./nfe.functions";
 
 test("distribui desconto de R$ 10,00 em 3 itens iguais de R$ 33,33 (resíduo no último)", () => {
   const items = [
@@ -37,6 +37,32 @@ test("sem desconto ou itens vazios não altera os itens", () => {
   assert.deepEqual(distributedEmpty, []);
 });
 
+// Testes para resolveIdDest (Fase 3)
+
+test("idDest interna: UF destino igual à emitente retorna 1", () => {
+  assert.equal(resolveIdDest("SP", "SP"), 1);
+  assert.equal(resolveIdDest("RJ", "RJ"), 1);
+});
+
+test("idDest interestadual: UF dest diferente da emitente retorna 2", () => {
+  assert.equal(resolveIdDest("BA", "SP"), 2);
+  assert.equal(resolveIdDest("RJ", "SP"), 2);
+});
+
+test("idDest exterior: UF = 'EX' retorna 3", () => {
+  assert.equal(resolveIdDest("EX", "SP"), 3);
+});
+
+test("idDest nulo: UF destino ausente retorna null", () => {
+  assert.equal(resolveIdDest(null, "SP"), null);
+  assert.equal(resolveIdDest(undefined, "SP"), null);
+  assert.equal(resolveIdDest("", "SP"), null);
+});
+
+test("idDest prioridade: EX vence UF diferente", () => {
+  // Destino EX tem prioridade sobre qualquer outra UF diferente
+  assert.equal(resolveIdDest("EX", "RJ"), 3);
+});
 // Testes para validação e resolução de CFOP + IBS/CBS (Fase 2)
 const resolveCfopMock = ({
   isCPF,
