@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { distributeDiscount, resolveIdDest, calculateICMSUFDest, resolveAliquotaInter } from "./nfe.functions";
+import { distributeDiscount, distributeShipping, resolveIdDest, calculateICMSUFDest, resolveAliquotaInter } from "./nfe.functions";
 
 test("distribui desconto de R$ 10,00 em 3 itens iguais de R$ 33,33 (resíduo no último)", () => {
   const items = [
@@ -145,6 +145,21 @@ test("usa configuração BA confirmada pela contadora", () => {
   });
   assert.strictEqual(result!.vICMSUFDest, 5.82);
   assert.strictEqual(result!.vFCPUFDest, 0.65);
+});
+
+test("payload de itens não contém campos auxiliares (freteProporcional)", () => {
+  const items = [
+    { valorTotal: 100 },
+    { valorTotal: 200 },
+  ];
+  const itemsComFrete = distributeShipping(items, 30);
+  const itemsComTudo = distributeDiscount(itemsComFrete, 10);
+  const itemsParaEnvio = itemsComTudo.map(({ freteProporcional, ...rest }) => rest);
+
+  itemsParaEnvio.forEach(item => {
+    assert.strictEqual((item as any).freteProporcional, undefined);
+    assert.strictEqual(typeof (item as any).desconto, 'number');
+  });
 });
 // Testes para validação e resolução de CFOP + IBS/CBS (Fase 2)
 const resolveCfopMock = ({
