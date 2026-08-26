@@ -734,8 +734,24 @@ export const emitNFe = createServerFn({ method: "POST" })
         return 7;
       };
 
-      // Se houver itens editados no modal, usa eles; caso contrário, usa o snapshot padrão.
-      const sourceItems = Array.isArray(data.itensEditados) && data.itensEditados.length > 0 ? data.itensEditados : items;
+      // Se houver itens editados no modal, mescla-os com o snapshot base (casando por ID
+      // normalizado). O item editado tem precedência, mas herda as colunas contextuais
+      // (cfop_venda_dentro/pj_fora/pf_fora, IBS/CBS, etc.) que o preview não expõe.
+      const normalizeItemId = (id: unknown): string =>
+        String(id || "").split("::")[0].trim();
+
+      const sourceItems = Array.isArray(data.itensEditados) && data.itensEditados.length > 0
+        ? data.itensEditados.map((ed: any) => {
+            const edId = normalizeItemId(ed.id || ed.product_id);
+            const base = items.find((i: any) => normalizeItemId(i.id || i.product_id) === edId);
+            if (!base) {
+              throw new Error(
+                `Item editado "${ed.descricao || ed.id || ""}" não corresponde a nenhum item do pedido. Abortando emissão.`,
+              );
+            }
+            return { ...base, ...ed };
+          })
+        : items;
 
       // TODO: Guardamos a redução de base do ICMS informada pelo usuário, mas não enviamos para
       // a notaas ainda pois a especificação do campo pRedBC/redução na API da notaas está pendente de suporte.
@@ -752,7 +768,8 @@ export const emitNFe = createServerFn({ method: "POST" })
         const prodId = rawId.split("::")[0];
 
         const ncm = item.ncm;
-        const cfop = resolveCfop(item);
+        // CFOP manual (do modal) tem precedência; caso contrário resolve pelo cenário UF×tipo
+        const cfop = item.cfop || resolveCfop(item);
         const isSimples = Number(settings.crt) === 1;
         const cstVal = item.cst || (isSimples ? item.csosn : item.cst_icms);
         const cest = item.cest;
