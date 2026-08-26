@@ -179,12 +179,22 @@ export async function handleMpWebhookRequest(
       return json({ received: true, orderFound: false });
     }
 
-    if (existing.payment_id === paymentId && existing.payment_status === payment.status) {
-      log.log("[mp-webhook] reentrega ignorada", { paymentId, status: payment.status });
-      return json({ received: true, deduplicated: true });
-    }
-
     const mapped = mapMpStatus(payment);
+
+    if (existing.payment_id === paymentId && existing.payment_status === payment.status) {
+      // Só considera reentrega se o status do pedido já refletir o pagamento.
+      // Exemplo: se o pagamento é approved e o pedido já está paid/processing/shipped/delivered,
+      // então é uma reentrega segura. Se o pedido ainda está pending, não deduplicar para evitar
+      // bloquear a transição inicial (ex: cartão de crédito síncrono).
+      const statusReflectsPayment = mapped.paymentStatus === "approved"
+        ? (existing.status === "paid" || existing.status === "processing" || existing.status === "shipped" || existing.status === "delivered")
+        : true; // Para outros status de pagamento, manter comportamento atual
+
+      if (statusReflectsPayment) {
+        log.log("[mp-webhook] reentrega ignorada", { paymentId, status: payment.status });
+        return json({ received: true, deduplicated: true });
+      }
+    }
     const now = (deps.now ?? (() => new Date().toISOString()))();
     const history = Array.isArray(existing.status_history) ? [...existing.status_history] : [];
     const snapshot = { ...existing, payment_id: paymentId };

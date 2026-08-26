@@ -342,3 +342,28 @@ test("evento não-payment é logado e responde 200", async () => {
   assert.equal(updates.length, 0);
   assert.deepEqual(logs, [["[mp-webhook] evento não tratado", { type: "merchant_order", id: 123 }]]);
 });
+
+test("pedido com payment_status: approved mas status: pending vira paid com webhook approved", async () => {
+  const order: WebhookOrder = {
+    id: "order-pending-approved",
+    status: "pending",
+    payment_status: "approved",
+    payment_id: "777",
+    status_history: [],
+    ...completeSnapshot,
+  };
+  const { deps, updates } = makeDeps(order, {
+    id: 777,
+    status: "approved",
+    external_reference: "order-pending-approved",
+  });
+
+  const res = await handleMpWebhookRequest(makeRequest({ type: "payment", data: { id: 777 } }), deps);
+  const json = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.equal(json.pendingSnapshot, false);
+  assert.equal(json.deduplicated, undefined); // Não deve ser deduplicado!
+  assert.equal(updates.length, 1);
+  assert.equal(updates[0].patch.status, "paid");
+});
