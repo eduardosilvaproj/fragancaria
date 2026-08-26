@@ -684,6 +684,7 @@ export const emitNFe = createServerFn({ method: "POST" })
         nfe_serie: settingsRaw.nfe_serie || 1,
         modalidade_frete: settingsRaw.modalidade_frete ?? undefined,
         crt: settingsRaw.crt ?? undefined,
+        difal_overrides: settingsRaw.difal_overrides || [],
       };
 
       if (!settings.cnpj || !settings.inscricao_estadual || !settings.razao_social) {
