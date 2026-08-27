@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { useCartStore } from "@/stores/cartStore";
 import { useCheckoutStore } from "@/stores/checkoutStore";
 import { trackBeginCheckout } from "@/lib/analytics";
+import { marketingTracking } from "@/lib/marketing-tracking";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { CheckoutSteps } from "@/components/checkout/CheckoutSteps";
 import { CheckoutSummary } from "@/components/checkout/CheckoutSummary";
@@ -35,6 +36,16 @@ function CheckoutPage() {
         price: i.price,
         quantity: i.quantity,
       })));
+
+      // Marketing HQ Tracking - Checkout Start
+      void import("@/lib/marketing-tracking-helper").then((mod) => {
+        mod.trackCheckoutStart(items.map((i) => ({
+          productId: i.productId || i.id,
+          sku: i.productId || i.id,
+          quantity: i.quantity,
+          price: i.price,
+        })));
+      });
     }
   }, [items, step, navigate]);
 

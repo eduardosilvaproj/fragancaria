@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
@@ -10,6 +11,7 @@ import { generateOrganizationSchema, generateWebsiteSchema } from "@/lib/seo";
 import { LojaFisicaSection } from "@/components/store/LojaFisicaSection";
 import { getPublicStoreConfig, type StoreConfig } from "@/lib/store-settings.functions";
 import { TrustBadges } from "@/components/shop/TrustBadges";
+import { marketingTracking } from "@/lib/marketing-tracking";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -89,6 +91,11 @@ const NEEDS = [
 
 function IndexEditorial() {
   const { slots, storeConfig } = Route.useLoaderData();
+
+  // Marketing HQ Tracking - Page View
+  useEffect(() => {
+    marketingTracking.trackPageView();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans overflow-x-hidden">

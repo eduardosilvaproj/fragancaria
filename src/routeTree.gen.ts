@@ -79,6 +79,7 @@ import { Route as ApiPublicZernioStatusWebhookRouteImport } from './routes/api/p
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
 import { Route as ApiCronMarketingAutomationRouteImport } from './routes/api/cron/marketing-automation'
+import { Route as ApiAdminEtiquetaZplRouteImport } from './routes/api/admin/etiqueta-zpl'
 import { Route as ApiAdminEtiquetaRouteImport } from './routes/api/admin/etiqueta'
 import { Route as AfiliadoDashboardVendasRouteImport } from './routes/afiliado/dashboard/vendas'
 import { Route as AfiliadoDashboardPagamentosRouteImport } from './routes/afiliado/dashboard/pagamentos'
@@ -447,6 +448,11 @@ const ApiCronMarketingAutomationRoute =
     path: '/api/cron/marketing-automation',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminEtiquetaZplRoute = ApiAdminEtiquetaZplRouteImport.update({
+  id: '/api/admin/etiqueta-zpl',
+  path: '/api/admin/etiqueta-zpl',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminEtiquetaRoute = ApiAdminEtiquetaRouteImport.update({
   id: '/api/admin/etiqueta',
   path: '/api/admin/etiqueta',
@@ -552,6 +558,7 @@ export interface FileRoutesByFullPath {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
@@ -628,6 +635,7 @@ export interface FileRoutesByTo {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
@@ -709,6 +717,7 @@ export interface FileRoutesById {
   '/afiliado/dashboard/pagamentos': typeof AfiliadoDashboardPagamentosRoute
   '/afiliado/dashboard/vendas': typeof AfiliadoDashboardVendasRoute
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
+  '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
@@ -791,6 +800,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
@@ -867,6 +877,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
@@ -947,6 +958,7 @@ export interface FileRouteTypes {
     | '/afiliado/dashboard/pagamentos'
     | '/afiliado/dashboard/vendas'
     | '/api/admin/etiqueta'
+    | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
     | '/api/public/mp-webhook'
@@ -996,6 +1008,7 @@ export interface RootRouteChildren {
   ProdutoIdRoute: typeof ProdutoIdRoute
   BeneficioIndexRoute: typeof BeneficioIndexRoute
   ApiAdminEtiquetaRoute: typeof ApiAdminEtiquetaRoute
+  ApiAdminEtiquetaZplRoute: typeof ApiAdminEtiquetaZplRoute
   ApiCronMarketingAutomationRoute: typeof ApiCronMarketingAutomationRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
@@ -1495,6 +1508,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronMarketingAutomationRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/etiqueta-zpl': {
+      id: '/api/admin/etiqueta-zpl'
+      path: '/api/admin/etiqueta-zpl'
+      fullPath: '/api/admin/etiqueta-zpl'
+      preLoaderRoute: typeof ApiAdminEtiquetaZplRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/etiqueta': {
       id: '/api/admin/etiqueta'
       path: '/api/admin/etiqueta'
@@ -1709,6 +1729,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProdutoIdRoute: ProdutoIdRoute,
   BeneficioIndexRoute: BeneficioIndexRoute,
   ApiAdminEtiquetaRoute: ApiAdminEtiquetaRoute,
+  ApiAdminEtiquetaZplRoute: ApiAdminEtiquetaZplRoute,
   ApiCronMarketingAutomationRoute: ApiCronMarketingAutomationRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,

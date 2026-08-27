@@ -13,6 +13,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useRecentlyViewedStore } from "@/stores/recentlyViewedStore";
 import { useFranChatStore } from "@/stores/franChatStore";
 import { trackViewItem, trackMetaViewContent } from "@/lib/analytics";
+import { marketingTracking } from "@/lib/marketing-tracking";
 import { MAX_INSTALLMENTS } from "@/config/mercadopago";
 import { toast } from "sonner";
 import {
@@ -80,6 +81,14 @@ function ProductPage() {
         name: product.name,
         price: product.price,
         category: product.category || undefined,
+      });
+
+      // Marketing HQ Tracking
+      marketingTracking.trackProductView(product.id, product.sku || product.id, {
+        name: product.name,
+        price: product.price,
+        brand: product.brand,
+        category: product.category,
       });
     }
   }, [product, addToRecentlyViewed]);
@@ -197,6 +206,12 @@ function ProductPage() {
     toast.success("Adicionado ao carrinho!", {
       description: `${quantity}x ${p.name}`,
     });
+
+    // Marketing HQ Tracking
+    void import("@/lib/marketing-tracking-helper").then((mod) => {
+      mod.trackAddToCart(p.id, p.sku || p.id, quantity, p.price);
+    });
+
     setTimeout(() => setIsAdding(false), 1500);
   };
 

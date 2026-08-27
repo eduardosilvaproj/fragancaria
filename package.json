@@ -12,7 +12,7 @@
     "types:refresh": "npm run types:fetch && npm run types:generate",
     "preview": "vite preview",
     "start": "node start.js",
-    "test:unit": "tsx --test src/lib/affiliate-payout.test.ts src/lib/commerce-config.test.ts src/lib/cotar-frete.test.ts src/lib/generate-order-label-core.test.ts src/lib/mp-webhook-handler.test.ts src/lib/order-payment-reconciliation.test.ts src/lib/order-state.test.ts src/lib/search-normalize.test.ts src/lib/coupon-resolve.test.ts src/lib/shipping-label-pdf.test.ts src/lib/financeiro.test.ts src/lib/nfe.test.ts src/lib/order-whatsapp-integration.test.ts src/lib/zernio-status-webhook.test.ts src/lib/marketing-automation.test.ts src/lib/agent/fran-chat.test.ts",
+    "test:unit": "tsx --test src/lib/affiliate-payout.test.ts src/lib/commerce-config.test.ts src/lib/cotar-frete.test.ts src/lib/generate-order-label-core.test.ts src/lib/mp-webhook-handler.test.ts src/lib/order-payment-reconciliation.test.ts src/lib/order-state.test.ts src/lib/search-normalize.test.ts src/lib/coupon-resolve.test.ts src/lib/shipping-label-pdf.test.ts src/lib/shipping-label-zpl.test.ts src/lib/financeiro.test.ts src/lib/nfe.test.ts src/lib/order-whatsapp-integration.test.ts src/lib/zernio-status-webhook.test.ts src/lib/marketing-automation.test.ts src/lib/agent/fran-chat.test.ts",
     "lint": "eslint .",
     "format": "prettier --write ."
   },

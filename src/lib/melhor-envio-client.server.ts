@@ -115,6 +115,10 @@ export type BuscarPdfEtiquetaResult =
   | { ok: true; pdf: Uint8Array }
   | { ok: false; erro: string };
 
+export type BuscarZplEtiquetaResult =
+  | { ok: true; zpl: string }
+  | { ok: false; erro: string };
+
 export type ImprimirEtiquetasResult =
   | { ok: true; url: string }
   | { ok: false; erro: string };
@@ -551,6 +555,62 @@ export async function buscarPdfEtiqueta(
     return {
       ok: false,
       erro: e instanceof Error ? e.message : "Erro desconhecido ao buscar PDF da etiqueta.",
+    };
+  }
+}
+
+/**
+ * Baixa o ZPL de UMA etiqueta ja comprada. Nao compra, nao gera: e leitura, nao
+ * debita saldo.
+ *
+ * Segue o mesmo padrao de buscarPdfEtiqueta(), mas buscando do endpoint ZPL:
+ * GET /api/v2/me/imprimir/zpl/{id} -> ["<url pre-assinada do S3>"] ou `{ url: "..." }`
+ */
+export async function buscarZplEtiqueta(
+  shipmentIdExternal: string,
+): Promise<BuscarZplEtiquetaResult> {
+  if (!shipmentIdExternal) {
+    return { ok: false, erro: "Envio sem id externo do Melhor Envio." };
+  }
+
+  try {
+    const resposta = await melhorEnvioRequest<unknown>(
+      `/api/v2/me/imprimir/zpl/${encodeURIComponent(shipmentIdExternal)}`,
+      { method: "GET" },
+    );
+
+    const url = Array.isArray(resposta)
+      ? resposta.find((item): item is string => typeof item === "string" && item.length > 0)
+      : typeof (resposta as { url?: unknown })?.url === "string"
+        ? ((resposta as { url: string }).url)
+        : undefined;
+
+    if (!url) {
+      return { ok: false, erro: "Melhor Envio nao retornou URL do ZPL da etiqueta." };
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 20000);
+    try {
+      const response = await fetch(url, { signal: controller.signal });
+      if (!response.ok) {
+        return {
+          ok: false,
+          erro: `Download do ZPL da etiqueta respondeu ${response.status}.`,
+        };
+      }
+      const text = await response.text();
+      if (!text || text.trim().length === 0) {
+        return { ok: false, erro: "ZPL da etiqueta veio vazio." };
+      }
+      return { ok: true, zpl: text };
+    } finally {
+      clearTimeout(timeout);
+    }
+  } catch (e) {
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro desconhecido ao buscar ZPL da etiqueta.",
     };
   }
 }

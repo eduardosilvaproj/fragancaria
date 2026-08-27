@@ -6,6 +6,7 @@ import { useCheckoutStore } from "@/stores/checkoutStore";
 import { useCartStore } from "@/stores/cartStore";
 import { PAYMENT_METHODS } from "@/config/mercadopago";
 import { trackPurchase } from "@/lib/analytics";
+import { marketingTracking } from "@/lib/marketing-tracking";
 
 // Só aceitamos UUIDs reais do Supabase. O `payment_id` do Mercado Pago é
 // numérico (ex: 165965290803) e quebra o `.eq("id", ...)` na rota
@@ -43,6 +44,13 @@ export function OrderConfirmation() {
           quantity: i.quantity,
         })),
       });
+
+      // Marketing HQ Tracking - Purchase
+      // REMOVIDO: O evento PURCHASE_COMPLETED agora é registrado automaticamente
+      // pelo backend via trigger em public.orders quando payment_status = 'approved'
+      // ou status = 'paid'. Isso garante que os valores financeiros vêm exclusivamente
+      // de public.orders e public.order_items, não do navegador.
+      // O frontend não deve registrar eventos financeiros.
     }
   }, [paymentData, items]);
 

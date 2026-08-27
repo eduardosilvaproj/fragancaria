@@ -450,6 +450,59 @@ function AdminLogistica() {
     printLabelsMutation.mutate(pendentesDeImpressao.map((s) => s.shipment_id!));
   };
 
+  const handlePrintLabelsZpl = async () => {
+    if (pendentesDeImpressao.length === 0) {
+      toast.warning("Nenhuma etiqueta comprada aguardando impressão");
+      return;
+    }
+    const ids = pendentesDeImpressao.map((s) => s.shipment_id!);
+    try {
+      const res = await fetch(`/api/admin/etiqueta-zpl?ids=${ids.join(",")}`);
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({ error: "Erro desconhecido" }));
+        const failList: Array<{ label: string; erro: string }> = errJson.failed ?? [];
+        setLabelWarning({
+          tipo: "erro",
+          texto: errJson.error || `Erro HTTP ${res.status}`,
+          falhas: failList,
+        });
+        toast.error(errJson.error || "Erro ao baixar ZPL");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `etiquetas-${ids.length}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+
+      const falhasBase64 = res.headers.get("X-Etiquetas-Falhas");
+      if (falhasBase64) {
+        try {
+          const decoded = JSON.parse(atob(falhasBase64));
+          setLabelWarning({
+            tipo: "parcial",
+            texto: `Atenção: algumas etiquetas falharam e foram omitidas do ZPL.`,
+            falhas: decoded,
+          });
+          toast.error("Impressão parcial: verifique os avisos na tela.");
+        } catch {
+          // ignora erro de decode
+        }
+      } else {
+        setLabelWarning(null);
+        toast.success("Arquivo ZPL baixado com sucesso!");
+      }
+      queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
+    } catch (e: any) {
+      toast.error(e?.message || "Erro de rede ao baixar ZPL");
+    }
+  };
+
   const handleStatusChange = (id: string, newStatus: string) => {
     updateStatusMutation.mutate({ id, status: newStatus });
   };
@@ -564,6 +617,21 @@ function AdminLogistica() {
               <FileText className="h-4 w-4" />
             )}
             A4
+          </button>
+          {/* ZPL direto para a Zebra — baixa o arquivo ZPL cru. */}
+          <button
+            onClick={handlePrintLabelsZpl}
+            disabled={pendentesDeImpressao.length === 0}
+            title={
+              pendentesDeImpressao.length === 0
+                ? "Nenhuma etiqueta comprada aguardando impressão"
+                : `Baixa ${pendentesDeImpressao.length} etiqueta(s) em ZPL para a Zebra`
+            }
+            className="flex items-center gap-2 px-4 py-2 text-sm bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Printer className="h-4 w-4" />
+            ZPL (Zebra)
+            {pendentesDeImpressao.length > 0 && ` (${pendentesDeImpressao.length})`}
           </button>
         </div>
       </div>
