@@ -12,13 +12,8 @@ create table if not exists public.whatsapp_inbound_buffer (
   created_at timestamptz not null default now()
 );
 
--- Índice para busca rápida por telefone
+-- Índices da whatsapp_inbound_buffer
 create index if not exists idx_whatsapp_inbound_buffer_phone on public.whatsapp_inbound_buffer(phone);
-
--- Índice para busca do worker: flush_at <= now() e processing_since null
-create index if not exists idx_whatsapp_flush_state_flush_at on public.whatsapp_flush_state(flush_at);
-
--- Índice para garantir unicidade de message_id (idempotência)
 create unique index if not exists idx_whatsapp_inbound_buffer_message_id on public.whatsapp_inbound_buffer(message_id);
 
 -- Tabela de estado por telefone: controla quando processar
@@ -28,6 +23,9 @@ create table if not exists public.whatsapp_flush_state (
   processing_since timestamptz null,
   created_at timestamptz not null default now()
 );
+
+-- Índices da whatsapp_flush_state
+create index if not exists idx_whatsapp_flush_state_flush_at on public.whatsapp_flush_state(flush_at);
 
 -- Função para atualizar flush_at com teto de 40s
 create or replace function public.update_flush_at(phone text)
@@ -73,35 +71,15 @@ begin
 end;
 $$ language plpgsql;
 
--- Grant de permissões para o papel authenticated (RLS)
--- Permite que a função de processamento leia e escreva nas tabelas
+-- RLS habilitado, mas SEM policies para 'authenticated'
+-- Estas tabelas são escritas/ lidas APENAS pelo worker server-side (service_role).
+-- O service_role bypassa RLS automaticamente. Não há acesso do navegador (frontend).
+-- Se policies fossem criadas para 'authenticated', vazariam superfície de ataque
+-- sem necessidade: o frontend nunca lê/escreve whatsapp_inbound_buffer nem whatsapp_flush_state.
 alter table public.whatsapp_inbound_buffer enable row level security;
-
-create policy "Allow authenticated users to insert into whatsapp_inbound_buffer"
-  on public.whatsapp_inbound_buffer
-  for insert
-  to authenticated
-  with check (true);
-
-create policy "Allow authenticated users to select from whatsapp_inbound_buffer"
-  on public.whatsapp_inbound_buffer
-  for select
-  to authenticated
-  using (true);
-
-create policy "Allow authenticated users to update whatsapp_inbound_buffer"
-  on public.whatsapp_inbound_buffer
-  for update
-  to authenticated
-  with check (true);
-
 alter table public.whatsapp_flush_state enable row level security;
 
-create policy "Allow authenticated users to insert/update whatsapp_flush_state"
-  on public.whatsapp_flush_state
-  for all
-  to authenticated
-  with check (true);
+-- Nenhuma policy para 'authenticated' — acesso somente via service_role (server worker).
 
 comment on table public.whatsapp_inbound_buffer is 'Buffer de mensagens recebidas do WhatsApp/Zernio antes de processamento em lote.';
 comment on table public.whatsapp_flush_state is 'Estado de processamento por telefone para controle de rajadas.';
