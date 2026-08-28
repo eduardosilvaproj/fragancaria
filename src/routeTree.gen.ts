@@ -77,6 +77,7 @@ import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-con
 import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/zernio-webhook'
 import { Route as ApiPublicZernioStatusWebhookRouteImport } from './routes/api/public/zernio-status-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as ApiMarketingTrackRouteImport } from './routes/api/marketing/track'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
 import { Route as ApiCronMarketingAutomationRouteImport } from './routes/api/cron/marketing-automation'
 import { Route as ApiAdminEtiquetaZplRouteImport } from './routes/api/admin/etiqueta-zpl'
@@ -437,6 +438,11 @@ const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketingTrackRoute = ApiMarketingTrackRouteImport.update({
+  id: '/api/marketing/track',
+  path: '/api/marketing/track',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDebugFeaturedRoute = ApiDebugFeaturedRouteImport.update({
   id: '/api/debug/featured',
   path: '/api/debug/featured',
@@ -561,6 +567,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -638,6 +645,7 @@ export interface FileRoutesByTo {
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -720,6 +728,7 @@ export interface FileRoutesById {
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -803,6 +812,7 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
+    | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -880,6 +890,7 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
+    | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -961,6 +972,7 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
     | '/api/debug/featured'
+    | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -1011,6 +1023,7 @@ export interface RootRouteChildren {
   ApiAdminEtiquetaZplRoute: typeof ApiAdminEtiquetaZplRoute
   ApiCronMarketingAutomationRoute: typeof ApiCronMarketingAutomationRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
+  ApiMarketingTrackRoute: typeof ApiMarketingTrackRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicZernioStatusWebhookRoute: typeof ApiPublicZernioStatusWebhookRoute
   ApiPublicZernioWebhookRoute: typeof ApiPublicZernioWebhookRoute
@@ -1494,6 +1507,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/marketing/track': {
+      id: '/api/marketing/track'
+      path: '/api/marketing/track'
+      fullPath: '/api/marketing/track'
+      preLoaderRoute: typeof ApiMarketingTrackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/debug/featured': {
       id: '/api/debug/featured'
       path: '/api/debug/featured'
@@ -1732,6 +1752,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminEtiquetaZplRoute: ApiAdminEtiquetaZplRoute,
   ApiCronMarketingAutomationRoute: ApiCronMarketingAutomationRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
+  ApiMarketingTrackRoute: ApiMarketingTrackRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicZernioStatusWebhookRoute: ApiPublicZernioStatusWebhookRoute,
   ApiPublicZernioWebhookRoute: ApiPublicZernioWebhookRoute,

@@ -173,23 +173,32 @@ async function trackEvent(eventType: EventType, options: {
     // Extrair parâmetros UTM
     const { source, medium, campaign, content, term } = extractUtmParams();
 
-    // Registrar evento no backend
-    await supabase.rpc('track_event', {
-      p_session_id: session.sessionId,
-      p_anonymous_user_id: session.anonymousUserId,
-      p_customer_id: session.customerId,
-      p_event_type: eventType,
-      p_product_id: productId,
-      p_sku: sku,
-      p_source: source,
-      p_medium: medium,
-      p_campaign: campaign,
-      p_content: content,
-      p_term: term,
-      p_device_type: session.deviceType,
-      p_page_url: pageUrl,
-      p_referrer: referrer,
-      p_metadata: metadata,
+    // Registrar evento no backend via endpoint server-side
+    const payload = {
+      session_id: session.sessionId,
+      anonymous_user_id: session.anonymousUserId,
+      customer_id: session.customerId,
+      event_type: eventType,
+      product_id: productId ? String(productId) : null,
+      sku: sku ? String(sku) : null,
+      source,
+      medium,
+      campaign,
+      content,
+      term,
+      device_type: session.deviceType,
+      page_url: pageUrl,
+      referrer,
+      metadata,
+    };
+
+    // Fire-and-forget fetch to avoid blocking render or user interactions
+    fetch('/api/marketing/track', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).catch(() => {
+      // Fail silently on client side — tracking failure never breaks UX
     });
 
     // Log para debug
