@@ -15,7 +15,7 @@ const phoneSchema = z.string().min(10).max(15);
  */
 async function processPhoneBatch(phone: string): Promise<void> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-  const { chatWithFran } = await import("@/lib/agent/fran-chat.functions");
+  const { chatWithFranCore } = await import("@/lib/agent/fran-chat.functions");
   const { sendZernioMessage } = await import("../routes/api/public/zernio-webhook");
 
   // 1. Busca mensagens não processadas ordenadas por timestamp
@@ -72,14 +72,15 @@ async function processPhoneBatch(phone: string): Promise<void> {
   // 5. Chama o modelo UMA vez
   let reply: string;
   try {
-    const result = await chatWithFran({
-      data: {
+    const result = await chatWithFranCore(
+      {
         mensagem: combinedText,
         historico,
         channel: "whatsapp",
         senderPhone: phone,
       },
-    });
+      { ip: "whatsapp-worker" }
+    );
 
     if (!result.success) {
       console.error(`[whatsapp-buffer-worker] ${phone}: Fran erro:`, result.error);
@@ -128,48 +129,55 @@ async function processPhoneBatch(phone: string): Promise<void> {
 }
 
 /**
- * Worker principal: roda a cada 2s e processa telefones com flush_at <= now()
+ * Lógica pura do worker, utilizável fora de contexto de request HTTP.
+ */
+export async function runWhatsAppBufferWorkerLogic(): Promise<{ processed: number; errors: number }> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  // 1. Busca telefones com flush_at <= now() e processing_since null
+  const { data: phones, error: phoneError } = await (supabaseAdmin as any)
+    .from("whatsapp_flush_state")
+    .select("phone")
+    .lte("flush_at", new Date().toISOString())
+    .is("processing_since", null);
+
+  if (phoneError || !phones || phones.length === 0) {
+    return { processed: 0, errors: 0 };
+  }
+
+  let processed = 0;
+  let errors = 0;
+
+  // 2. Processa cada telefone em paralelo (até 5 por vez para evitar sobrecarga)
+  const batchSize = 5;
+  for (let i = 0; i < phones.length; i += batchSize) {
+    const batch = phones.slice(i, i + batchSize);
+    const promises = batch.map((p: any) =>
+      (supabaseAdmin as any)
+        .from("whatsapp_flush_state")
+        .update({ processing_since: new Date().toISOString() })
+        .eq("phone", p.phone)
+        .then(() => processPhoneBatch(p.phone))
+        .then(() => {
+          processed += 1;
+        })
+        .catch((err: any) => {
+          console.error(`[whatsapp-buffer-worker] erro no lote para ${p.phone}:`, err);
+          errors += 1;
+        }),
+    );
+    await Promise.all(promises);
+  }
+
+  return { processed, errors };
+}
+
+/**
+ * Worker principal encapsulado em ServerFn (para chamadas RPC via TanStack Start).
  */
 export const runWhatsAppBufferWorker = createServerFn({ method: "POST" })
   .handler(async (): Promise<{ processed: number; errors: number }> => {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-
-    // 1. Busca telefones com flush_at <= now() e processing_since null
-    const { data: phones, error: phoneError } = await (supabaseAdmin as any)
-      .from("whatsapp_flush_state")
-      .select("phone")
-      .lte("flush_at", new Date().toISOString())
-      .is("processing_since", null);
-
-    if (phoneError || !phones || phones.length === 0) {
-      return { processed: 0, errors: 0 };
-    }
-
-    let processed = 0;
-    let errors = 0;
-
-    // 2. Processa cada telefone em paralelo (até 5 por vez para evitar sobrecarga)
-    const batchSize = 5;
-    for (let i = 0; i < phones.length; i += batchSize) {
-      const batch = phones.slice(i, i + batchSize);
-      const promises = batch.map((p: any) =>
-        (supabaseAdmin as any)
-          .from("whatsapp_flush_state")
-          .update({ processing_since: new Date().toISOString() })
-          .eq("phone", p.phone)
-          .then(() => processPhoneBatch(p.phone))
-          .then(() => {
-            processed += 1;
-          })
-          .catch((err: any) => {
-            console.error(`[whatsapp-buffer-worker] erro no lote para ${p.phone}:`, err);
-            errors += 1;
-          }),
-      );
-      await Promise.all(promises);
-    }
-
-    return { processed, errors };
+    return runWhatsAppBufferWorkerLogic();
   });
 
 /**
@@ -205,7 +213,7 @@ export function startWhatsAppBufferWorker(): boolean {
  */
 export async function runWhatsAppBufferWorkerJob(): Promise<void> {
   try {
-    const result = await runWhatsAppBufferWorker({});
+    const result = await runWhatsAppBufferWorkerLogic();
     if (result.processed > 0 || result.errors > 0) {
       console.log(`[whatsapp-buffer-worker] processados=${result.processed}, erros=${result.errors}`);
     }

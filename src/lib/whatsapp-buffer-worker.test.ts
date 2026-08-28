@@ -40,3 +40,10 @@ test("Webhook identifica duplicatas e retorna 200 (idempotência simulada)", asy
   assert.equal(res1.duplicated, true);
   assert.equal(res2.duplicated, true);
 });
+
+test("runWhatsAppBufferWorkerJob roda fora de contexto de request sem lançar exceção", async () => {
+  const { runWhatsAppBufferWorkerJob } = await import("./whatsapp-buffer-worker");
+  await assert.doesNotReject(async () => {
+    await runWhatsAppBufferWorkerJob();
+  });
+});

@@ -40,6 +40,8 @@ const inputSchema = z.object({
   senderPhone: z.string().optional(),
 });
 
+export type FranChatInput = z.infer<typeof inputSchema>;
+
 export type FranHistoryItem = z.infer<typeof historyItemSchema>;
 
 export type FranChatResult =
@@ -176,19 +178,19 @@ const ADMIN_TOOLS = [
   },
 ];
 
-export const chatWithFran = createServerFn({ method: "POST" })
-  .validator((d: unknown) => inputSchema.parse(d))
-  .handler(async ({ data }): Promise<FranChatResult> => {
+// ---------------------------------------------------------------------------
+// chatWithFranCore — lógica de negócio puro (sem dependência de AsyncLocalStorage
+// nem getRequestHeader). Pode ser chamada de background workers / intervalos
+// que não têm um contexto de request HTTP.
+// ---------------------------------------------------------------------------
+export async function chatWithFranCore(data: FranChatInput, options: { ip: string }): Promise<FranChatResult> {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return { success: false, error: "ANTHROPIC_API_KEY não configurada no servidor." };
     }
 
     // Rate-limit por IP (teto duro de custo — 30 chamadas / 10 min)
-    const ip =
-      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
-      getRequestHeader("x-real-ip") ||
-      "unknown";
+    const { ip } = options;
     const rl = rateLimit(`fran:${ip}`, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
     if (!rl.allowed) {
       return {
@@ -457,7 +459,17 @@ export const chatWithFran = createServerFn({ method: "POST" })
         ],
       };
     } catch (err) {
-      console.error("[chatWithFran] erro:", err instanceof Error ? err.message : err);
+      console.error("[chatWithFranCore] erro:", err instanceof Error ? err.message : err);
       return { success: false, error: err instanceof Error ? err.message : "erro desconhecido" };
     }
+}
+
+export const chatWithFran = createServerFn({ method: "POST" })
+  .validator((d: unknown) => inputSchema.parse(d))
+  .handler(async ({ data }): Promise<FranChatResult> => {
+    const ip =
+      getRequestHeader("x-forwarded-for")?.split(",")[0]?.trim() ||
+      getRequestHeader("x-real-ip") ||
+      "unknown";
+    return chatWithFranCore(data, { ip });
   });
