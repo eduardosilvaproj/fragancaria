@@ -170,14 +170,14 @@ export function getAdminPhones(): string[] {
 
 /**
  * Dispara alerta de venda aprovada para os sócios/admins configurados.
- * Utiliza o template dedicado "nova_venda_alerta" (requer aprovação prévia pela Meta).
+ * Utiliza o template dedicado "alerta_nova_venda" (requer aprovação prévia pela Meta).
  * O envio permanece inativo por padrão até que WHATSAPP_PARTNER_ALERTS_ENABLED seja "true".
  */
 export async function sendPartnersSaleAlertWhatsApp(orderId: string): Promise<void> {
   try {
     // Guarda de ativação: inativo por padrão até que a Meta aprove o template
     if (process.env.WHATSAPP_PARTNER_ALERTS_ENABLED !== "true") {
-      console.log(`[OrderWhatsApp] Alerta de sócios ignorado para ${orderId}: WHATSAPP_PARTNER_ALERTS_ENABLED não está ativo (aguardando aprovação da Meta do template 'nova_venda_alerta').`);
+      console.log(`[OrderWhatsApp] Alerta de sócios ignorado para ${orderId}: WHATSAPP_PARTNER_ALERTS_ENABLED não está ativo (aguardando aprovação da Meta do template 'alerta_nova_venda').`);
       return;
     }
 
@@ -202,7 +202,7 @@ export async function sendPartnersSaleAlertWhatsApp(orderId: string): Promise<vo
 
       const res = await sendZernioWhatsAppTemplate({
         phone: cleanPhone,
-        templateName: "nova_venda_alerta",
+        templateName: "alerta_nova_venda",
         templateParams: [
           { type: "text", text: shortId },
           { type: "text", text: customerName },

@@ -60,7 +60,7 @@ function AdminIntegracoes() {
   const [testTemplate, setTestTemplate] = useState<
     | "venda_aprovada"
     | "pedido_enviado"
-    | "nova_venda_alerta"
+    | "alerta_nova_venda"
     | "recompra_sugestao"
     | "aniversario_cupom"
   >("venda_aprovada");
@@ -75,7 +75,7 @@ function AdminIntegracoes() {
       param2: "PED-98745",
       param3: "BR987654321BR",
     },
-    nova_venda_alerta: {
+    alerta_nova_venda: {
       param1: "PED-98745",
       param2: "Gabriel Dias",
       param3: "R$ 189,90",
@@ -236,7 +236,7 @@ function AdminIntegracoes() {
               >
                 <option value="venda_aprovada">venda_aprovada (3 variáveis)</option>
                 <option value="pedido_enviado">pedido_enviado (3 variáveis)</option>
-                <option value="nova_venda_alerta">nova_venda_alerta (3 variáveis)</option>
+                <option value="alerta_nova_venda">alerta_nova_venda (3 variáveis)</option>
                 <option value="recompra_sugestao">recompra_sugestao (2 variáveis)</option>
                 <option value="aniversario_cupom">aniversario_cupom (3 variáveis)</option>
               </select>
@@ -246,7 +246,7 @@ function AdminIntegracoes() {
               <p className="text-xs font-semibold uppercase tracking-wider text-[#51635F]">Variáveis do Template</p>
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{1}'} {testTemplate === "nova_venda_alerta" ? "Número do Pedido" : testTemplate === "recompra_sugestao" ? "Nome do Cliente" : testTemplate === "aniversario_cupom" ? "Nome do Cliente" : "Nome do Cliente"}
+                  {'{1}'} {testTemplate === "alerta_nova_venda" ? "Número do Pedido" : testTemplate === "recompra_sugestao" ? "Nome do Cliente" : testTemplate === "aniversario_cupom" ? "Nome do Cliente" : "Nome do Cliente"}
                 </label>
                 <input
                   type="text"
@@ -262,7 +262,7 @@ function AdminIntegracoes() {
               </div>
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{2}'} {testTemplate === "nova_venda_alerta" ? "Nome do Cliente" : testTemplate === "recompra_sugestao" ? "Nome do Produto" : testTemplate === "aniversario_cupom" ? "Desconto" : "ID do Pedido"}
+                  {'{2}'} {testTemplate === "alerta_nova_venda" ? "Nome do Cliente" : testTemplate === "recompra_sugestao" ? "Nome do Produto" : testTemplate === "aniversario_cupom" ? "Desconto" : "ID do Pedido"}
                 </label>
                 <input
                   type="text"
@@ -279,7 +279,7 @@ function AdminIntegracoes() {
               {testTemplate !== "recompra_sugestao" && (
               <div>
                 <label className="block text-[10px] text-[#8A938E] mb-1">
-                  {'{3}'} {testTemplate === "venda_aprovada" ? "Valor Total" : testTemplate === "pedido_enviado" ? "Código de Rastreio" : testTemplate === "nova_venda_alerta" ? "Valor Total" : testTemplate === "aniversario_cupom" ? "Data de Validade" : ""}
+                  {'{3}'} {testTemplate === "venda_aprovada" ? "Valor Total" : testTemplate === "pedido_enviado" ? "Código de Rastreio" : testTemplate === "alerta_nova_venda" ? "Valor Total" : testTemplate === "aniversario_cupom" ? "Data de Validade" : ""}
                 </label>
                 <input
                   type="text"

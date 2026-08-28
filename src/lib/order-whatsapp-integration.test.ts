@@ -272,7 +272,7 @@ test("5. Normalização de telefone: formato do banco '(16) 99715-0373' vira '+5
   assert.equal(normalized, "+5516997150373");
 });
 
-test("6. Alerta de sócios respeita WHATSAPP_PARTNER_ALERTS_ENABLED e usa template nova_venda_alerta", async () => {
+test("6. Alerta de sócios respeita WHATSAPP_PARTNER_ALERTS_ENABLED e usa template alerta_nova_venda", async () => {
   const origEnv = process.env.WHATSAPP_PARTNER_ALERTS_ENABLED;
   try {
     process.env.WHATSAPP_PARTNER_ALERTS_ENABLED = "false";
