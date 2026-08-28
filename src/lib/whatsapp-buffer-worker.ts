@@ -174,27 +174,29 @@ export const runWhatsAppBufferWorker = createServerFn({ method: "POST" })
 
 /**
  * Inicia o worker de buffer do WhatsApp no topo do processo servidor.
- * - Guarda contra dupla inicialização via flag globalThis.__whatsappBufferStarted
+ * - Guarda contra dupla inicialização armazenando o handle do intervalo em globalThis.__whatsappBufferInterval
  * - Apenas inicia se WHATSAPP_BUFFER_ENABLED === "true"
+ * - Loga o valor lido da env e o ID do intervalo criado
  * Deve ser chamada uma vez em src/server.ts
  */
 export function startWhatsAppBufferWorker(): boolean {
-  if (process.env.WHATSAPP_BUFFER_ENABLED !== "true") {
+  const envValue = process.env.WHATSAPP_BUFFER_ENABLED;
+  if (envValue !== "true") {
     if (process.env.NODE_ENV !== "test") {
-      console.log("[whatsapp-buffer-worker] desativado (WHATSAPP_BUFFER_ENABLED != true)");
+      console.log(`[whatsapp-buffer-worker] desligado por env (WHATSAPP_BUFFER_ENABLED="${envValue}")`);
     }
     return false;
   }
 
-  const g = globalThis as { __whatsappBufferStarted?: boolean };
-  if (g.__whatsappBufferStarted) {
-    console.log("[whatsapp-buffer-worker] já inicializado — ignorando dupla inicialização");
+  const g = globalThis as { __whatsappBufferInterval?: NodeJS.Timeout };
+  if (g.__whatsappBufferInterval) {
+    console.log(`[whatsapp-buffer-worker] já inicializado — ignorando dupla inicialização (intervalo ativo)`);
     return false;
   }
-  g.__whatsappBufferStarted = true;
 
-  setInterval(runWhatsAppBufferWorkerJob, 2000);
-  console.log("[whatsapp-buffer-worker] iniciado (intervalo 2s)");
+  const intervalHandle = setInterval(runWhatsAppBufferWorkerJob, 2000);
+  g.__whatsappBufferInterval = intervalHandle;
+  console.log(`[whatsapp-buffer-worker] iniciado (intervalo 2s, id=${(intervalHandle as any)[Symbol.for('nodejs.util.inspect.custom')]?.() || 'unknown'})`);
   return true;
 }
 

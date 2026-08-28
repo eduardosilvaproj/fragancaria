@@ -12,18 +12,13 @@ import ws from "ws";
 import "./lib/error-capture";
 
 // Inicia worker de buffer de rajadas do WhatsApp (server-only).
-// Guarda dupla inicialização via globalThis. Desativado por padrão.
 // start.js na raiz carrega dist/server/server.js, portanto este side effect
 // roda no processo principal do servidor.
-const whatsappBufferGlobal = globalThis as { __whatsappBufferStarted?: boolean };
-if (!whatsappBufferGlobal.__whatsappBufferStarted && process.env.WHATSAPP_BUFFER_ENABLED === "true") {
-  whatsappBufferGlobal.__whatsappBufferStarted = true;
-  import("./lib/whatsapp-buffer-worker").then(({ startWhatsAppBufferWorker }) => {
-    startWhatsAppBufferWorker();
-  }).catch((err) => {
-    console.error("[server] falha ao iniciar whatsapp-buffer-worker:", err);
-  });
-}
+import("./lib/whatsapp-buffer-worker").then(({ startWhatsAppBufferWorker }) => {
+  startWhatsAppBufferWorker();
+}).catch((err) => {
+  console.error("[server] falha ao iniciar whatsapp-buffer-worker:", err);
+});
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
