@@ -14,5 +14,9 @@
   "sync_orders_to_auth_user": {
     "Args": {},
     "Returns": "void"
+  },
+  "update_flush_at": {
+    "Args": { "phone": "string" },
+    "Returns": "string"
   }
 }

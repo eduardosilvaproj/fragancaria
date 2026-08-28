@@ -27,7 +27,7 @@ function verifySignature(rawBody: string, signatureHeader: string | null): boole
   }
 }
 
-async function sendZernioMessage(
+export async function sendZernioMessage(
   conversationId: string,
   accountId: string,
   message: string,
@@ -313,9 +313,6 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
         // =============================================================
         const conversationId = msg.conversationId;
         const accountId = payload.account?.id;
-        // Define o canal a partir da plataforma da mensagem. O Instagram usa
-        // participantName do perfil; o WhatsApp pode vir com número — usamos
-        // fallback legível para cada caso.
         const channel = msg.platform === "whatsapp" ? "whatsapp" : "instagram";
         const participantName =
           payload.conversation?.participantName ||
@@ -332,7 +329,6 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
 
         if (existingConv) {
           convRowId = existingConv.id;
-          // Atualiza last_message (ainda sem o texto, será atualizado após insert)
           await (supabaseAdmin as any)
             .from("conversations")
             .update({
@@ -381,7 +377,6 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
           });
 
         if (msgError) {
-          // Unique violation = já processada (idempotência)
           if (msgError.code === "23505") {
             return new Response(JSON.stringify({ received: true }), {
               status: 200,
@@ -404,31 +399,50 @@ export const Route = createFileRoute("/api/public/zernio-webhook")({
         }
 
         // =============================================================
-        // 3. Responde 200 IMEDIATAMENTE
+        // 3. BUFFER DE RAJADAS (WhatsApp) / PROCESSAMENTO IMEDIATO (Outros)
         // =============================================================
-        const response = new Response(JSON.stringify({ received: true }), {
+        if (channel === "whatsapp" && process.env.WHATSAPP_BUFFER_ENABLED === "true") {
+          const senderPhone = msg.sender?.phoneNumber || msg.from || "";
+          const cleanPhone = senderPhone.replace(/\D/g, "");
+          if (cleanPhone) {
+            // Insere no buffer whatsapp_inbound_buffer (ignorando message_id duplicado)
+            const { error: bufferError } = await (supabaseAdmin as any)
+              .from("whatsapp_inbound_buffer")
+              .insert({
+                phone: cleanPhone,
+                message_id: msg.id,
+                body: messageText || "[Anexo]",
+                message_ts: msg.timestamp ? new Date(msg.timestamp).toISOString() : new Date().toISOString(),
+              });
+
+            if (bufferError && bufferError.code !== "23505") {
+              console.error("[zernio-webhook] erro ao inserir no whatsapp_inbound_buffer:", bufferError);
+            } else {
+              // Atualiza o flush_at via RPC com teto de 40s
+              await (supabaseAdmin as any).rpc("update_flush_at", { phone: cleanPhone });
+            }
+          }
+        } else {
+          // Instagram ou outros canais continuam com processamento imediato
+          processFranResponse({
+            message: {
+              conversationId,
+              text: msg.text,
+              id: msg.id,
+              attachments: msg.attachments,
+              sender: msg.sender,
+            },
+            account: { id: accountId },
+            channel: channel,
+          }).catch((err) =>
+            console.error("[zernio-webhook] background error:", err),
+          );
+        }
+
+        return new Response(JSON.stringify({ received: true }), {
           status: 200,
           headers: { ...corsHeaders, "content-type": "application/json" },
         });
-
-        // =============================================================
-        // 4. Processa a Fran em background
-        // =============================================================
-        processFranResponse({
-          message: {
-            conversationId,
-            text: msg.text,
-            id: msg.id,
-            attachments: msg.attachments,
-            sender: msg.sender,
-          },
-          account: { id: accountId },
-          channel: channel,
-        }).catch((err) =>
-          console.error("[zernio-webhook] background error:", err),
-        );
-
-        return response;
       },
     },
   },
