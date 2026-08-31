@@ -11,5 +11,5 @@ jobs:
     steps:
       - name: Chamar endpoint de sincronização de rastreios
         run: |
-          curl -sS -f -X POST "${{ secrets.PUBLIC_SITE_URL }}/api/cron/sincronizar-rastreios" \
+          curl -sS -f -X GET "${{ secrets.PUBLIC_SITE_URL }}/api/cron/sincronizar-rastreios" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"
