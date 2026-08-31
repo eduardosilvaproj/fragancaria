@@ -27,7 +27,7 @@ import {
   getShipmentStats,
   createShipment,
   generateOrderLabel,
-  refreshTracking,
+  sincronizarRastreios,
   updateShipmentStatus,
   getShipmentLabel,
   getShipmentDeclaration,
@@ -88,7 +88,7 @@ function AdminLogistica() {
   // =====================================================
 
   // Server functions
-  const refreshFn = useServerFn(refreshTracking);
+  const refreshFn = useServerFn(sincronizarRastreios);
   const updateStatusFn = useServerFn(updateShipmentStatus);
   const getLabelFn = useServerFn(getShipmentLabel);
   const getDeclarationFn = useServerFn(getShipmentDeclaration);
@@ -101,12 +101,11 @@ function AdminLogistica() {
       return refreshFn({ data: ids ? { ids } : {} });
     },
     onSuccess: (result) => {
-      if (result?.success) {
+      if (result?.success && result.data) {
         toast.success(`Rastreios atualizados: ${result.data.updated} envios`);
         queryClient.invalidateQueries({ queryKey: ["admin-shipments"] });
         queryClient.invalidateQueries({ queryKey: ["admin-shipment-stats"] });
       } else {
-        console.log("Calling toast.error with:", result?.error || "Erro ao atualizar rastreios");
         toast.error(result?.error || "Erro ao atualizar rastreios");
       }
     },

@@ -614,3 +614,84 @@ export async function buscarZplEtiqueta(
     };
   }
 }
+
+// =====================================================
+// LEITURA DE RASTREIO EM LOTE
+// =====================================================
+
+export type MelhorEnvioRastreio = {
+  id: string;
+  protocol: string;
+  status: string;
+  tracking: string | null;
+  melhorenvio_tracking: string | null;
+  created_at: string | null;
+  paid_at: string | null;
+  generated_at: string | null;
+  posted_at: string | null;
+  delivered_at: string | null;
+  canceled_at: string | null;
+  expired_at: string | null;
+};
+
+export type ConsultarRastreioEmLoteResult =
+  | { ok: true; rastreios: Record<string, MelhorEnvioRastreio> }
+  | { ok: false; erro: string };
+
+/**
+ * Consulta rastreio em lote (leitura) para uma lista de shipment_id_external.
+ * Faz uma unica chamada POST /api/v2/me/shipment/tracking; a API aceita varios
+ * ids e devolve um objeto mapeando cada id ao seu status. Nunca debita saldo.
+ *
+ * Nunca lanca excecao: devolve { ok: false, erro } no mesmo padrao de cotar().
+ */
+export async function consultarRastreioEmLote(
+  shipmentIdsExternal: string[],
+): Promise<ConsultarRastreioEmLoteResult> {
+  const ids = shipmentIdsExternal.filter(
+    (id) => typeof id === "string" && id.trim().length > 0,
+  );
+  if (ids.length === 0) {
+    return { ok: false, erro: "Nenhum id de envio informado para rastreamento." };
+  }
+
+  try {
+    const resposta = await melhorEnvioRequest<Record<string, unknown>>(
+      "/api/v2/me/shipment/tracking",
+      {
+        method: "POST",
+        body: JSON.stringify({ orders: ids }),
+      },
+    );
+
+    // A API devolve um objeto onde cada chave e um shipment_id_external.
+    // Valores de status observados: "delivered", "canceled", "posted",
+    // "in_transit", "out_for_delivery", "expired".
+    const rastreios: Record<string, MelhorEnvioRastreio> = {};
+    for (const [id, raw] of Object.entries(resposta || {})) {
+      const r = raw as Record<string, unknown>;
+      rastreios[id] = {
+        id: String(r.id ?? id),
+        protocol: String(r.protocol ?? ""),
+        status: String(r.status ?? ""),
+        tracking: typeof r.tracking === "string" ? r.tracking : null,
+        melhorenvio_tracking:
+          typeof r.melhorenvio_tracking === "string" ? r.melhorenvio_tracking : null,
+        created_at: typeof r.created_at === "string" ? r.created_at : null,
+        paid_at: typeof r.paid_at === "string" ? r.paid_at : null,
+        generated_at: typeof r.generated_at === "string" ? r.generated_at : null,
+        posted_at: typeof r.posted_at === "string" ? r.posted_at : null,
+        delivered_at: typeof r.delivered_at === "string" ? r.delivered_at : null,
+        canceled_at: typeof r.canceled_at === "string" ? r.canceled_at : null,
+        expired_at: typeof r.expired_at === "string" ? r.expired_at : null,
+      };
+    }
+
+    return { ok: true, rastreios };
+  } catch (e) {
+    return {
+      ok: false,
+      erro: e instanceof Error ? e.message : "Erro desconhecido ao consultar rastreamento do Melhor Envio.",
+    };
+  }
+}

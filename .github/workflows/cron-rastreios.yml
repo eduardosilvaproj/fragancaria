@@ -1,0 +1,15 @@
+name: Sincronizar Rastreios Melhor Envio
+
+on:
+  schedule:
+    - cron: '0 */3 * * *' # A cada 3 horas
+  workflow_dispatch:
+
+jobs:
+  sincronizar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Chamar endpoint de sincronização de rastreios
+        run: |
+          curl -X POST "${{ secrets.PUBLIC_SITE_URL }}/api/cron/sincronizar-rastreios" \
+            -H "X-Cron-Secret: ${{ secrets.CRON_SECRET }}"

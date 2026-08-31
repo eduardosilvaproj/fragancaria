@@ -78,7 +78,9 @@ import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/
 import { Route as ApiPublicZernioStatusWebhookRouteImport } from './routes/api/public/zernio-status-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
 import { Route as ApiMarketingTrackRouteImport } from './routes/api/marketing/track'
+import { Route as ApiMarketingSessionRouteImport } from './routes/api/marketing/session'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
+import { Route as ApiCronSincronizarRastreiosRouteImport } from './routes/api/cron/sincronizar-rastreios'
 import { Route as ApiCronMarketingAutomationRouteImport } from './routes/api/cron/marketing-automation'
 import { Route as ApiAdminEtiquetaZplRouteImport } from './routes/api/admin/etiqueta-zpl'
 import { Route as ApiAdminEtiquetaRouteImport } from './routes/api/admin/etiqueta'
@@ -88,6 +90,7 @@ import { Route as AfiliadoDashboardLinksRouteImport } from './routes/afiliado/da
 import { Route as AfiliadoDashboardConfiguracoesRouteImport } from './routes/afiliado/dashboard/configuracoes'
 import { Route as AdminProdutosNovoRouteImport } from './routes/admin/produtos/novo'
 import { Route as AdminProdutosImagensRouteImport } from './routes/admin/produtos/imagens'
+import { Route as ApiMarketingSessionCustomerRouteImport } from './routes/api/marketing/session/customer'
 import { Route as AdminProdutosIdEditarRouteImport } from './routes/admin/produtos/$id/editar'
 
 const TrocasRoute = TrocasRouteImport.update({
@@ -443,11 +446,22 @@ const ApiMarketingTrackRoute = ApiMarketingTrackRouteImport.update({
   path: '/api/marketing/track',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiMarketingSessionRoute = ApiMarketingSessionRouteImport.update({
+  id: '/api/marketing/session',
+  path: '/api/marketing/session',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiDebugFeaturedRoute = ApiDebugFeaturedRouteImport.update({
   id: '/api/debug/featured',
   path: '/api/debug/featured',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronSincronizarRastreiosRoute =
+  ApiCronSincronizarRastreiosRouteImport.update({
+    id: '/api/cron/sincronizar-rastreios',
+    path: '/api/cron/sincronizar-rastreios',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCronMarketingAutomationRoute =
   ApiCronMarketingAutomationRouteImport.update({
     id: '/api/cron/marketing-automation',
@@ -496,6 +510,12 @@ const AdminProdutosImagensRoute = AdminProdutosImagensRouteImport.update({
   path: '/imagens',
   getParentRoute: () => AdminProdutosRoute,
 } as any)
+const ApiMarketingSessionCustomerRoute =
+  ApiMarketingSessionCustomerRouteImport.update({
+    id: '/customer',
+    path: '/customer',
+    getParentRoute: () => ApiMarketingSessionRoute,
+  } as any)
 const AdminProdutosIdEditarRoute = AdminProdutosIdEditarRouteImport.update({
   id: '/$id/editar',
   path: '/$id/editar',
@@ -566,7 +586,9 @@ export interface FileRoutesByFullPath {
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
+  '/api/cron/sincronizar-rastreios': typeof ApiCronSincronizarRastreiosRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
@@ -583,6 +605,7 @@ export interface FileRoutesByFullPath {
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
   '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
+  '/api/marketing/session/customer': typeof ApiMarketingSessionCustomerRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -644,7 +667,9 @@ export interface FileRoutesByTo {
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
+  '/api/cron/sincronizar-rastreios': typeof ApiCronSincronizarRastreiosRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
@@ -661,6 +686,7 @@ export interface FileRoutesByTo {
   '/minha-conta/pedidos': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil': typeof MinhaContaPerfilIndexRoute
   '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
+  '/api/marketing/session/customer': typeof ApiMarketingSessionCustomerRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -727,7 +753,9 @@ export interface FileRoutesById {
   '/api/admin/etiqueta': typeof ApiAdminEtiquetaRoute
   '/api/admin/etiqueta-zpl': typeof ApiAdminEtiquetaZplRoute
   '/api/cron/marketing-automation': typeof ApiCronMarketingAutomationRoute
+  '/api/cron/sincronizar-rastreios': typeof ApiCronSincronizarRastreiosRoute
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
+  '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
@@ -744,6 +772,7 @@ export interface FileRoutesById {
   '/minha-conta/pedidos/': typeof MinhaContaPedidosIndexRoute
   '/minha-conta/perfil/': typeof MinhaContaPerfilIndexRoute
   '/admin/produtos/$id/editar': typeof AdminProdutosIdEditarRoute
+  '/api/marketing/session/customer': typeof ApiMarketingSessionCustomerRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -811,7 +840,9 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta'
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
+    | '/api/cron/sincronizar-rastreios'
     | '/api/debug/featured'
+    | '/api/marketing/session'
     | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
@@ -828,6 +859,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos/'
     | '/minha-conta/perfil/'
     | '/admin/produtos/$id/editar'
+    | '/api/marketing/session/customer'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -889,7 +921,9 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta'
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
+    | '/api/cron/sincronizar-rastreios'
     | '/api/debug/featured'
+    | '/api/marketing/session'
     | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
@@ -906,6 +940,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos'
     | '/minha-conta/perfil'
     | '/admin/produtos/$id/editar'
+    | '/api/marketing/session/customer'
   id:
     | '__root__'
     | '/'
@@ -971,7 +1006,9 @@ export interface FileRouteTypes {
     | '/api/admin/etiqueta'
     | '/api/admin/etiqueta-zpl'
     | '/api/cron/marketing-automation'
+    | '/api/cron/sincronizar-rastreios'
     | '/api/debug/featured'
+    | '/api/marketing/session'
     | '/api/marketing/track'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
@@ -988,6 +1025,7 @@ export interface FileRouteTypes {
     | '/minha-conta/pedidos/'
     | '/minha-conta/perfil/'
     | '/admin/produtos/$id/editar'
+    | '/api/marketing/session/customer'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -1022,7 +1060,9 @@ export interface RootRouteChildren {
   ApiAdminEtiquetaRoute: typeof ApiAdminEtiquetaRoute
   ApiAdminEtiquetaZplRoute: typeof ApiAdminEtiquetaZplRoute
   ApiCronMarketingAutomationRoute: typeof ApiCronMarketingAutomationRoute
+  ApiCronSincronizarRastreiosRoute: typeof ApiCronSincronizarRastreiosRoute
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
+  ApiMarketingSessionRoute: typeof ApiMarketingSessionRouteWithChildren
   ApiMarketingTrackRoute: typeof ApiMarketingTrackRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicZernioStatusWebhookRoute: typeof ApiPublicZernioStatusWebhookRoute
@@ -1514,11 +1554,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiMarketingTrackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/marketing/session': {
+      id: '/api/marketing/session'
+      path: '/api/marketing/session'
+      fullPath: '/api/marketing/session'
+      preLoaderRoute: typeof ApiMarketingSessionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/debug/featured': {
       id: '/api/debug/featured'
       path: '/api/debug/featured'
       fullPath: '/api/debug/featured'
       preLoaderRoute: typeof ApiDebugFeaturedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/sincronizar-rastreios': {
+      id: '/api/cron/sincronizar-rastreios'
+      path: '/api/cron/sincronizar-rastreios'
+      fullPath: '/api/cron/sincronizar-rastreios'
+      preLoaderRoute: typeof ApiCronSincronizarRastreiosRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/cron/marketing-automation': {
@@ -1583,6 +1637,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/produtos/imagens'
       preLoaderRoute: typeof AdminProdutosImagensRouteImport
       parentRoute: typeof AdminProdutosRoute
+    }
+    '/api/marketing/session/customer': {
+      id: '/api/marketing/session/customer'
+      path: '/customer'
+      fullPath: '/api/marketing/session/customer'
+      preLoaderRoute: typeof ApiMarketingSessionCustomerRouteImport
+      parentRoute: typeof ApiMarketingSessionRoute
     }
     '/admin/produtos/$id/editar': {
       id: '/admin/produtos/$id/editar'
@@ -1719,6 +1780,17 @@ const AfiliadoDashboardRouteChildren: AfiliadoDashboardRouteChildren = {
 const AfiliadoDashboardRouteWithChildren =
   AfiliadoDashboardRoute._addFileChildren(AfiliadoDashboardRouteChildren)
 
+interface ApiMarketingSessionRouteChildren {
+  ApiMarketingSessionCustomerRoute: typeof ApiMarketingSessionCustomerRoute
+}
+
+const ApiMarketingSessionRouteChildren: ApiMarketingSessionRouteChildren = {
+  ApiMarketingSessionCustomerRoute: ApiMarketingSessionCustomerRoute,
+}
+
+const ApiMarketingSessionRouteWithChildren =
+  ApiMarketingSessionRoute._addFileChildren(ApiMarketingSessionRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRoute: AdminRouteWithChildren,
@@ -1751,7 +1823,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminEtiquetaRoute: ApiAdminEtiquetaRoute,
   ApiAdminEtiquetaZplRoute: ApiAdminEtiquetaZplRoute,
   ApiCronMarketingAutomationRoute: ApiCronMarketingAutomationRoute,
+  ApiCronSincronizarRastreiosRoute: ApiCronSincronizarRastreiosRoute,
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
+  ApiMarketingSessionRoute: ApiMarketingSessionRouteWithChildren,
   ApiMarketingTrackRoute: ApiMarketingTrackRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicZernioStatusWebhookRoute: ApiPublicZernioStatusWebhookRoute,

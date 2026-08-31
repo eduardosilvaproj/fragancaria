@@ -1317,3 +1317,400 @@ export const listPickingOrders = createServerFn({ method: "GET" })
       return { success: false as const, error: e?.message || "Erro desconhecido" };
     }
   });
+
+// =====================================================
+// SINCRONIZAÇÃO DE RASTREIO COM MELHOR ENVIO
+// =====================================================
+
+// Mapeamento de status do Melhor Envio para o vocabulário interno de shipping_quotes.status
+// Valores observados na API real: delivered, canceled, posted, in_transit, out_for_delivery, expired
+const ME_STATUS_TO_SHIPPING_QUOTE_STATUS: Record<string, string> = {
+  posted: "shipped",
+  in_transit: "in_transit",
+  out_for_delivery: "out_for_delivery",
+  delivered: "delivered",
+  canceled: "exception",
+  expired: "exception",
+};
+
+// Mapeamento de status do Melhor Envio para orders.status
+// Regras:
+// - delivered -> delivered
+// - posted -> shipped (se status atual for paid/processing)
+// - in_transit/out_for_delivery -> shipped (se status atual for shipped/in_transit/out_for_delivery)
+// - canceled -> NÃO altera orders.status (cancelar etiqueta != cancelar venda)
+// - expired -> NÃO altera orders.status
+const ME_STATUS_TO_ORDER_STATUS: Record<string, string | null> = {
+  posted: "shipped",
+  in_transit: "shipped",
+  out_for_delivery: "shipped",
+  delivered: "delivered",
+  canceled: null, // não altera orders.status
+  expired: null,  // não altera orders.status
+};
+
+// Status terminais para shipping_quotes (não precisam ser sincronizados)
+const TERMINAL_SHIPPING_QUOTE_STATUSES = new Set(["delivered", "cancelled", "exception"]);
+
+export type SincronizarRastreiosResult = {
+  success: boolean;
+  data?: {
+    total: number;
+    updated: number;
+    errors: Array<{ id: string; shipment_id_external: string; error: string }>;
+  };
+  error?: string;
+};
+
+export type SincronizarRastreiosOptions = {
+  /** Callback para notificação de entrega. Se omitido, não dispara notificação. */
+  onDelivered?: (params: {
+    orderId: string;
+    customerName: string;
+    customerEmail: string;
+    trackingCode: string | null;
+  }) => Promise<void>;
+};
+
+/**
+ * Núcleo testável de sincronização. Recebe `db` e `consultarRastreioEmLote`
+ * injetados para permitir testes com fake DB e fetch stubado.
+ */
+export async function runSincronizarRastreiosCore(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  db: any,
+  consultarRastreioEmLoteFn: (
+    ids: string[],
+  ) => Promise<{ ok: true; rastreios: Record<string, any> } | { ok: false; erro: string }>,
+  options: SincronizarRastreiosOptions = {},
+): Promise<SincronizarRastreiosResult> {
+  // Buscar envios com shipment_id_external preenchido e status não terminal
+  const { data: shipments, error: queryError } = await db
+    .from("shipping_quotes")
+    .select("id, order_id, shipment_id_external, status, tracking_code, shipped_at, delivered_at")
+    .not("shipment_id_external", "is", null)
+    .notIn("status", Array.from(TERMINAL_SHIPPING_QUOTE_STATUSES));
+
+  if (queryError) {
+    return { success: false as const, error: queryError.message };
+  }
+
+  if (!shipments || shipments.length === 0) {
+    return {
+      success: true as const,
+      data: { total: 0, updated: 0, errors: [] },
+    };
+  }
+
+  // Filtrar apenas envios com shipment_id_external válido
+  const validShipments = shipments.filter(
+    (s: Record<string, unknown>) =>
+      typeof s.shipment_id_external === "string" &&
+      s.shipment_id_external.trim().length > 0,
+  );
+
+  if (validShipments.length === 0) {
+    return {
+      success: true as const,
+      data: { total: shipments.length, updated: 0, errors: [] },
+    };
+  }
+
+  // Agrupar em lotes de 50 para a API
+  const BATCH_SIZE = 50;
+  const batches: string[][] = [];
+  for (let i = 0; i < validShipments.length; i += BATCH_SIZE) {
+    batches.push(
+      validShipments
+        .slice(i, i + BATCH_SIZE)
+        .map((s: Record<string, unknown>) => String(s.shipment_id_external)),
+    );
+  }
+
+  const errors: Array<{ id: string; shipment_id_external: string; error: string }> = [];
+  let updatedCount = 0;
+
+  // Processar cada lote
+  for (const batch of batches) {
+    const result = await consultarRastreioEmLoteFn(batch);
+
+    if (!result.ok) {
+      // Erro no lote inteiro - registrar para cada envio do lote
+      for (const id of batch) {
+        const shipment = validShipments.find(
+          (s: Record<string, unknown>) => String(s.shipment_id_external) === id,
+        );
+        if (shipment) {
+          errors.push({
+            id: String(shipment.id),
+            shipment_id_external: id,
+            error: result.erro,
+          });
+        }
+      }
+      continue;
+    }
+
+    // Processar cada rastreio do lote
+    for (const [shipmentIdExternal, rastreio] of Object.entries(result.rastreios)) {
+      let shipmentId = "unknown";
+      try {
+        const shipment = validShipments.find(
+          (s: Record<string, unknown>) => String(s.shipment_id_external) === shipmentIdExternal,
+        );
+
+        if (!shipment) {
+          errors.push({
+            id: "unknown",
+            shipment_id_external: shipmentIdExternal,
+            error: "Envio não encontrado no banco",
+          });
+          continue;
+        }
+
+        shipmentId = String(shipment.id);
+        const orderId = String(shipment.order_id);
+        const currentSQStatus = String(shipment.status);
+        const currentTrackingCode = shipment.tracking_code as string | null;
+
+        // Mapear status do Melhor Envio para shipping_quotes.status
+        const mappedSQStatus = ME_STATUS_TO_SHIPPING_QUOTE_STATUS[rastreio.status];
+        const newSQStatus = mappedSQStatus || currentSQStatus;
+
+        // Mapear status do Melhor Envio para orders.status
+        const mappedOrderStatus = ME_STATUS_TO_ORDER_STATUS[rastreio.status];
+        const newOrderStatus = mappedOrderStatus;
+
+        if (!mappedSQStatus && !mappedOrderStatus) {
+          console.warn(
+            `[sincronizarRastreios] Status desconhecido do Melhor Envio ignorado: shipmentId=${shipmentId} status=${rastreio.status}`,
+          );
+        }
+
+        // Determinar timestamps
+        const newShippedAt = rastreio.posted_at ? new Date(rastreio.posted_at).toISOString() : null;
+        const newDeliveredAt = rastreio.delivered_at ? new Date(rastreio.delivered_at).toISOString() : null;
+        const newTrackingCode = rastreio.tracking || currentTrackingCode;
+
+        // Atualizar shipping_quotes
+        const sqUpdatePayload: Record<string, unknown> = {
+          status: newSQStatus,
+        };
+
+        // Atualizar shipped_at se tivermos posted_at e shipped_at atual for nulo
+        if (newShippedAt && !shipment.shipped_at) {
+          sqUpdatePayload.shipped_at = newShippedAt;
+        }
+
+        // Atualizar delivered_at se tivermos delivered_at
+        if (newDeliveredAt) {
+          sqUpdatePayload.delivered_at = newDeliveredAt;
+        }
+
+        // Atualizar tracking_code se ainda for nulo
+        if (newTrackingCode && !currentTrackingCode) {
+          sqUpdatePayload.tracking_code = newTrackingCode;
+        }
+
+        // Verificar se precisa atualizar shipping_quotes
+        const needsSQUpdate =
+          newSQStatus !== currentSQStatus ||
+          sqUpdatePayload.shipped_at !== undefined ||
+          sqUpdatePayload.delivered_at !== undefined ||
+          sqUpdatePayload.tracking_code !== undefined;
+
+        if (needsSQUpdate) {
+          const { error: sqError } = await db
+            .from("shipping_quotes")
+            .update(sqUpdatePayload)
+            .eq("id", shipmentId);
+
+          if (sqError) {
+            errors.push({
+              id: shipmentId,
+              shipment_id_external: shipmentIdExternal,
+              error: sqError.message,
+            });
+            continue;
+          }
+        }
+
+        // Atualizar orders.status se houver mapeamento
+        if (newOrderStatus) {
+          // Buscar pedido atual para verificar status e histórico
+          const { data: order, error: orderError } = await db
+            .from("orders")
+            .select("status, status_history")
+            .eq("id", orderId)
+            .single();
+
+          if (orderError || !order) {
+            errors.push({
+              id: shipmentId,
+              shipment_id_external: shipmentIdExternal,
+              error: `Pedido ${orderId} não encontrado`,
+            });
+            continue;
+          }
+
+          const currentOrderStatus = String(order.status);
+          const statusHistory = (order.status_history as Array<Record<string, unknown>>) || [];
+
+          // Verificar se já está no status alvo (idempotência)
+          if (currentOrderStatus === newOrderStatus) {
+            // Verificar se já existe entrada no histórico para esta transição
+            const alreadyRecorded = statusHistory.some(
+              (entry: Record<string, unknown>) =>
+                String(entry.status) === newOrderStatus &&
+                String(entry.detail || "").includes("melhor_envio"),
+            );
+            if (!alreadyRecorded) {
+              // Adicionar entrada no histórico
+              const newHistory = [
+                ...statusHistory,
+                {
+                  at: new Date().toISOString(),
+                  status: newOrderStatus,
+                  detail: "melhor_envio",
+                },
+              ];
+              await db
+                .from("orders")
+                .update({ status_history: newHistory })
+                .eq("id", orderId);
+            }
+            updatedCount++;
+            continue;
+          }
+
+          // Verificar se a transição é válida (não rebaixar status)
+          const { canTransition } = await import("@/lib/order-state");
+          if (!canTransition(currentOrderStatus, newOrderStatus)) {
+            // Transição inválida - registrar no histórico como informação
+            const newHistory = [
+              ...statusHistory,
+              {
+                at: new Date().toISOString(),
+                status: currentOrderStatus,
+                detail: `melhor_envio_ignorado_${newOrderStatus}`,
+              },
+            ];
+            await db
+              .from("orders")
+              .update({ status_history: newHistory })
+              .eq("id", orderId);
+            continue;
+          }
+
+          // Atualizar orders.status e status_history
+          const newHistory = [
+            ...statusHistory,
+            {
+              at: new Date().toISOString(),
+              status: newOrderStatus,
+              detail: "melhor_envio",
+            },
+          ];
+
+          const { error: orderUpdateError } = await db
+            .from("orders")
+            .update({
+              status: newOrderStatus,
+              status_history: newHistory,
+            })
+            .eq("id", orderId);
+
+          if (orderUpdateError) {
+            errors.push({
+              id: shipmentId,
+              shipment_id_external: shipmentIdExternal,
+              error: orderUpdateError.message,
+            });
+            continue;
+          }
+
+          // Disparar notificação de entrega (atrás de callback, desligado por padrão)
+          if (options.onDelivered && newOrderStatus === "delivered") {
+            try {
+              const { data: orderData, error: fetchError } = await db
+                .from("orders")
+                .select("customer_name, customer_email")
+                .eq("id", orderId)
+                .single();
+              if (!fetchError && orderData) {
+                await options.onDelivered({
+                  orderId,
+                  customerName: String(orderData.customer_name || ""),
+                  customerEmail: String(orderData.customer_email || ""),
+                  trackingCode: newTrackingCode,
+                });
+              }
+            } catch (notifyErr) {
+              // Notificação falhou - não bloqueia a sincronização
+              console.warn(
+                `[sincronizarRastreios] Notificação de entrega falhou para pedido ${orderId}:`,
+                notifyErr,
+              );
+            }
+          }
+
+          updatedCount++;
+        }
+      } catch (e: unknown) {
+        errors.push({
+          id: shipmentId,
+          shipment_id_external: shipmentIdExternal,
+          error: e instanceof Error ? e.message : "Erro desconhecido",
+        });
+      }
+    }
+  }
+
+  return {
+    success: true as const,
+    data: {
+      total: validShipments.length,
+      updated: updatedCount,
+      errors,
+    },
+  };
+}
+
+export const sincronizarRastreios = createServerFn({ method: "POST" })
+  .validator((d: unknown) => (d ?? {}) as { ids?: string[] })
+  .handler(async ({ data }) => {
+    try {
+      const { requireAdmin } = await import("@/lib/admin-auth");
+      await requireAdmin();
+
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const db = supabaseAdmin as any;
+
+      const { consultarRastreioEmLote } = await import("@/lib/melhor-envio-client.server");
+
+      const NOTIFICAR_ENTREGUE_ENABLED = process.env.NOTIFICAR_ENTREGUE_ENABLED === "true";
+
+      const result = await runSincronizarRastreiosCore(db, consultarRastreioEmLote, {
+        onDelivered: NOTIFICAR_ENTREGUE_ENABLED
+          ? async ({ orderId, customerName, customerEmail, trackingCode }) => {
+              const { sendOrderStatusEmail } = await import("@/lib/email.functions");
+              await sendOrderStatusEmail({
+                orderId,
+                customerName,
+                customerEmail,
+                status: "delivered",
+                trackingCode,
+              });
+            }
+          : undefined,
+      });
+
+      return result;
+    } catch (e: any) {
+      if (e?.status === 401 || e?.status === 403) {
+        return { success: false as const, error: "Não autorizado" };
+      }
+      return { success: false as const, error: e?.message || "Erro desconhecido" };
+    }
+  });
