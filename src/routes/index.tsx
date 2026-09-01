@@ -5,6 +5,7 @@ import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
 import { getBannersAtivos, type SiteBanner } from "@/lib/site-banners.functions";
+import { getTopBrands, type BrandCount } from "@/lib/products.functions";
 import type { Product } from "@/data/products";
 import { ArrowRight, Link2 } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
@@ -23,7 +24,7 @@ export const Route = createFileRoute("/")({
     // existindo para o admin curar no VitrineManager, mas sairam da home
     // (ver HomeCarousels), entao buscar os 4 era varrer o catalogo 2x sem
     // ninguem consumir o resultado.
-    const [best, promo, loja, banners] = await Promise.all([
+    const [best, promo, loja, banners, brands] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
       listFeatured({ data: "on_sale" }),
       // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
@@ -32,6 +33,10 @@ export const Route = createFileRoute("/")({
       getPublicStoreConfig({}).catch(() => null),
       // .catch: se site_banners falhar (tabela ainda nao existe ou erro), a home nao cai
       getBannersAtivos().catch(() => null),
+      // .catch: se a contagem de marcas falhar (banco temporariamente
+      // inacessivel), cai no fallback hardcoded BRAND_MARQUEE_FALLBACK. A esteira
+      // de marcas nao trava a home.
+      getTopBrands({ data: { minCount: 20, limit: 8 } }).catch(() => ({ success: false, data: [], error: "fallback" })),
     ]);
     return {
       slots: {
@@ -40,6 +45,9 @@ export const Route = createFileRoute("/")({
       } as Partial<Record<Slot, Product[]>>,
       storeConfig: (loja?.success ? loja.data : null) as StoreConfig | null,
       banners: (banners?.success ? banners.data : []) as SiteBanner[],
+      // Lista pronta de marcas (brand + count) para o marquee e o menu do header.
+      // Se o servidor falhar, chega aqui [] e cada consumidor usa seu fallback.
+      brandCounts: (brands?.success ? brands.data : []) as BrandCount[],
     };
   },
   head: () => ({
@@ -68,8 +76,10 @@ export const Route = createFileRoute("/")({
   component: IndexEditorial,
 });
 
-// Marcas para o marquee
-const BRAND_MARQUEE = [
+// Marcas para o marquee — FALLBACK quando o servidor nao devolve a lista
+// (regra 4 do FASE 4: esteira renderiza a lista atual do codigo). A lista
+// real vem do loader SSR via getTopBrands (top 8 marcas com >= 20 ativos).
+const BRAND_MARQUEE_FALLBACK = [
   "L'Oréal Professionnel",
   "Kérastase",
   "Wella",
@@ -94,12 +104,20 @@ const NEEDS = [
 ];
 
 function IndexEditorial() {
-  const { slots, storeConfig, banners = [] } = Route.useLoaderData();
+  const { slots, storeConfig, banners = [], brandCounts = [] } = Route.useLoaderData();
 
   // Marketing HQ Tracking - Page View
   useEffect(() => {
     marketingTracking.trackPageView();
   }, []);
+
+  // Esteira de marcas: lista vinda do servidor via getTopBrands.
+  // Fallback (regra 4): se o servidor falhar ou retornar vazio, usa a
+  // constante fixa abaixo — a esteira nunca quebra.
+  const marqueeBrands: string[] =
+    brandCounts.length > 0
+      ? brandCounts.map((b) => b.brand)
+      : BRAND_MARQUEE_FALLBACK;
 
   // Mensagens do slot ticker — renderiza no AnnouncementMarquee acima do header.
   // Quando não há banners ativos no slot, banner.texto é null e o componente
@@ -277,7 +295,7 @@ function IndexEditorial() {
           <div className="flex gap-0 animate-[marquee_30s_linear_infinite]">
             {/* Duplicate for seamless loop */}
             <div className="flex gap-0">
-              {BRAND_MARQUEE.map((brand, i) => (
+              {marqueeBrands.map((brand, i) => (
                 <span
                   key={`a-${i}`}
                   className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"
@@ -289,7 +307,7 @@ function IndexEditorial() {
             </div>
             {/* Duplicate for seamless loop */}
             <div className="flex gap-0" aria-hidden="true">
-              {BRAND_MARQUEE.map((brand, i) => (
+              {marqueeBrands.map((brand, i) => (
                 <span
                   key={`b-${i}`}
                   className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"

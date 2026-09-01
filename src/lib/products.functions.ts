@@ -77,6 +77,68 @@ export const listActiveProducts = createServerFn({ method: "GET" }).handler(
   },
 );
 
+// Contagem de produtos ativos por marca. Server-side: deriva os 6-8 nomes
+// para o marquee da home e o menu do header sem o cliente ter que carregar
+// 699 produtos so para fazer .filter().length.
+//
+// Regra FASE 4: marca so entra se tiver >= 20 produtos ativos; maximo 8;
+// ordenado por volume desc. Sem RPC nova — projection enxuta (brand) sobre
+// a mesma tabela paginada de 1000 em 1000 (mesmo motivo de fetchActiveProducts:
+// PostgREST tem max-rows=1000 e nao avisa que truncou).
+//
+// Filtra brand null/vazio antes de agrupar para nao distorcer a contagem
+// (produto sem marca nunca deveria estar ativo, mas o filtro cobre o caso
+// sem precisar migrar schema).
+export type BrandCount = { brand: string; count: number };
+
+export async function fetchActiveBrandCounts(): Promise<BrandCount[]> {
+  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+  const counts: Record<string, number> = {};
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabaseAdmin
+      .from("products")
+      .select("brand")
+      .eq("is_active", true)
+      .not("brand", "is", null)
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    const lote = data ?? [];
+    for (const r of lote) {
+      const b = (r.brand ?? "").trim();
+      if (b) counts[b] = (counts[b] || 0) + 1;
+    }
+    if (lote.length < PAGE) break;
+  }
+
+  return Object.entries(counts).map(([brand, count]) => ({ brand, count }));
+}
+
+export const getTopBrands = createServerFn({ method: "GET" })
+  .validator((d: unknown) =>
+    z.object({
+      minCount: z.number().int().min(1).optional(),
+      limit: z.number().int().min(1).max(20).optional(),
+    }).parse(d),
+  )
+  .handler(
+    async ({ data }): Promise<{ success: boolean; data: BrandCount[]; error?: string }> => {
+      try {
+        const counts = await fetchActiveBrandCounts();
+        const min = data.minCount ?? 20;
+        const limit = data.limit ?? 8;
+        const top = counts
+          .filter((c) => c.count >= min)
+          .sort((a, b) => b.count - a.count)
+          .slice(0, limit);
+        return { success: true, data: top };
+      } catch (err: any) {
+        console.error("getTopBrands exception:", err?.message || err);
+        return { success: false, data: [], error: err?.message || "erro" };
+      }
+    },
+  );
+
 // Um produto ativo por id. Publico.
 export const getProductById = createServerFn({ method: "GET" })
   .validator((d: unknown) => z.object({ id: z.string().min(1) }).parse(d))

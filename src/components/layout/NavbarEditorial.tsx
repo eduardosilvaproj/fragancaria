@@ -1,4 +1,6 @@
 import { Link, useNavigate } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { Search, Heart, Menu, X, ShoppingBag, ChevronDown, ChevronRight, User, MessageCircle } from "lucide-react";
 import { CartDrawerEditorial } from "../shop/CartDrawerEditorial";
 import { SearchAutocomplete } from "../shop/SearchAutocomplete";
@@ -11,6 +13,7 @@ import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useProducts } from "@/hooks/useProducts";
 import { useStoreConfig } from "@/lib/use-store-config";
+import { getTopBrands, type BrandCount } from "@/lib/products.functions";
 import { whatsappLink } from "@/lib/store-contact";
 import type { Product } from "@/data/products";
 
@@ -60,7 +63,11 @@ const CATEGORIES: Array<{ label: string; productType: string }> = [
 // /produtos compara por igualdade sensível a acento.
 // Kérastase removida em 2026-09-01: 0 produtos ativos no catálogo (mesmo
 // motivo de Truss e Lowell, removidos anteriormente).
-const BRANDS: Array<{ label: string; vendor: string }> = [
+//
+// FALLBACK (regra 4 do FASE 4): se o servidor falhar ou a query falhar,
+// o menu de marcas usa esta lista fixa. A lista real vem de getTopBrands
+// server-side (cache 1h).
+const BRANDS_FALLBACK: Array<{ label: string; vendor: string }> = [
   { label: "Wella", vendor: "Wella" },
   { label: "L'Oréal", vendor: "L'Oréal" },
   { label: "Keune", vendor: "Keune" },
@@ -91,6 +98,33 @@ export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) =
   const { products, isLoading } = useProducts();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
+
+  // Busca top 8 marcas com >= 20 produtos ativos, cacheada por 1h (staleTime).
+  // Fallback: BRANDS_FALLBACK (lista atual). Se o server cair, a esteira
+  // usa a lista fixa sem quebrar.
+  const topBrandsFn = useServerFn(getTopBrands);
+  const brandCounts = useQuery<BrandCount[], Error>({
+    queryKey: ["top-brands"],
+    queryFn: async () => {
+      const res = await topBrandsFn({ data: { minCount: 20, limit: 8 } });
+      if (!res.success || !res.data) return [];
+      return res.data;
+    },
+    staleTime: 60 * 60 * 1000, // 1h — marca nao muda a cada recarregue
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const brandsFromServer = brandCounts.data?.map((b) => ({
+    label: b.brand,
+    vendor: b.brand,
+  })) ?? [];
+
+  // Enquanto a query do servidor esta carregando, mostra a lista fixa
+  // para a primeira pintura nao ficar vazia. Depois, substitui pelo
+  // resultado do servidor — se ele vier vazio ou falhar, mantem o fallback.
+  const brandsList = brandsFromServer.length > 0 ? brandsFromServer : BRANDS_FALLBACK;
 
   // CTA de atendimento — reaproveita o WhatsApp configurado na store_settings.
   // Link direto para o wa.me; se não houver número, o ícone não aparece.
@@ -216,7 +250,7 @@ export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) =
                     Marcas
                   </p>
                   <ul className="space-y-2.5">
-                    {BRANDS.map((brand) => (
+                    {brandsList.map((brand) => (
                       <li key={brand.label}>
                         <Link
                           to="/produtos"
@@ -276,7 +310,7 @@ export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) =
             <div className="absolute top-full left-1/2 -translate-x-1/2 pt-0 z-50 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200">
               <div className="bg-white border border-[#E0D8C7] shadow-xl min-w-[240px] p-5">
                 <ul className="space-y-2.5">
-                  {BRANDS.map((brand) => (
+                  {brandsList.map((brand) => (
                     <li key={brand.label}>
                       <Link
                         to="/produtos"
@@ -539,7 +573,7 @@ export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) =
                           className="overflow-hidden"
                         >
                           <ul className="mt-3 pl-4 space-y-3 border-l border-[#E0D8C7]">
-                            {BRANDS.map((brand) => (
+                            {brandsList.map((brand) => (
                               <li key={brand.label}>
                                 <Link
                                   to="/produtos"
