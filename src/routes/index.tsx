@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
+import { FaixaMeioSection } from "@/components/home/FaixaMeioSection";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
 import { getBannersAtivos, type SiteBanner } from "@/lib/site-banners.functions";
 import { getTopBrands, type BrandCount } from "@/lib/products.functions";
@@ -466,6 +467,9 @@ function IndexEditorial() {
 
         {/* ===== CARROSSÉIS DA VITRINE (bestsellers + novidades + promo + kits) ===== */}
         <HomeCarousels data={slots} />
+
+        {/* ===== FAIXA DO MEIO (banners lado a lado) ===== */}
+        <FaixaMeioSection banners={banners} />
 
         {/* ===== POR NECESSIDADE ===== */}
         <section className="py-16 md:py-[110px] px-6 md:px-14 bg-[#F3EEE3]">

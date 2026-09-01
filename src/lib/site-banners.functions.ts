@@ -71,7 +71,7 @@ export const getBannersAtivos = createServerFn({ method: "GET" })
     try {
       const now = new Date().toISOString();
       let query = (supabaseAdmin.from("site_banners" as any) as any)
-        .select("id, slot, ordem, kicker, titulo, subtitulo, cta_texto, cta_url, imagem_url, imagem_mobile_url, imagem_alt")
+        .select("id, slot, ordem, ativo, kicker, titulo, subtitulo, cta_texto, cta_url, cta2_texto, cta2_url, imagem_url, imagem_mobile_url, imagem_alt")
         .eq("ativo", true)
         .or(`inicia_em.is.null,inicia_em.lte.${now}`)
         .or(`termina_em.is.null,termina_em.gte.${now}`)
