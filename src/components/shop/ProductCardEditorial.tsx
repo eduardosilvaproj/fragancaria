@@ -80,6 +80,24 @@ export function ProductCardEditorial({
     setTimeout(() => setIsAdding(false), 1300);
   };
 
+  const handleBuyNow = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (variations && variations.length > 0) {
+      navigate({ to: `/produto/${id}` });
+      return;
+    }
+    addToCart({
+      id,
+      title,
+      price,
+      quantity: 1,
+      image,
+      vendor,
+    });
+    navigate({ to: "/carrinho" });
+  };
+
   const handleWishlist = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -246,19 +264,27 @@ export function ProductCardEditorial({
             em até {MAX_INSTALLMENTS}x no cartão
           </p>
 
-          {/* Add to Cart Button */}
-          <button
-            onClick={handleAddToCart}
-            disabled={isAdding}
-            className={cn(
-              "w-full mt-3 md:mt-4 py-3 md:py-3.5 text-[10px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] font-semibold transition-all duration-200",
-              isAdding
-                ? "bg-[#1c6b4a] text-white"
-                : "bg-[#0F3A3E] text-white hover:bg-[#16504F]"
-            )}
-          >
-            {isAdding ? "✓ Adicionado" : "Adicionar"}
-          </button>
+          {/* Actions */}
+          <div className="grid grid-cols-2 gap-2 mt-3 md:mt-4">
+            <button
+              onClick={handleAddToCart}
+              disabled={isAdding}
+              className={cn(
+                "py-2.5 md:py-3 text-[10px] md:text-[11px] uppercase tracking-[0.12em] font-semibold transition-all duration-200 border border-[#0F3A3E]",
+                isAdding
+                  ? "bg-[#1c6b4a] text-white border-[#1c6b4a]"
+                  : "bg-white text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white"
+              )}
+            >
+              {isAdding ? "✓ Adicionado" : "Adicionar"}
+            </button>
+            <button
+              onClick={handleBuyNow}
+              className="py-2.5 md:py-3 text-[10px] md:text-[11px] uppercase tracking-[0.12em] font-semibold bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-all duration-200"
+            >
+              Comprar agora
+            </button>
+          </div>
         </div>
       </article>
     </Link>
