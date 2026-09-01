@@ -91,16 +91,23 @@ const BRAND_MARQUEE_FALLBACK = [
   "Sebastian",
 ];
 
-// 8 Cards de necessidade - baseado nas categorias reais do catálogo
+// Cards de necessidade - baseado nas categorias reais do catalogo. Cada
+// productType precisa bater EXATAMENTE com products.category no banco:
+// a rota /produtos filtra com p.category === selectedCategory (case e
+// acento sensivel), entao divergencia devolve zero produtos.
+//
+// FASE 5 fix (2026-09-01): card "Tratamento" apontava para "Tratamento"
+// (singular) mas a categoria no banco e "Tratamentos" (plural) - o link
+// levava a 0 produtos. Card "Maquiagem" removido: tinha apenas 1 produto
+// ativo, o que e essencialmente tela vazia.
 const NEEDS = [
   { num: "01", title: "Shampoo", desc: "Limpeza profissional para todos os tipos.", image: "/images/needs/need-hidratacao.png", productType: "Shampoo" },
   { num: "02", title: "Condicionador", desc: "Desembaraça e prepara os fios.", image: "/images/needs/need-nutricao.png", productType: "Condicionador" },
   { num: "03", title: "Máscara", desc: "Tratamento intensivo e nutrição.", image: "/images/needs/need-reconstrucao.png", productType: "Máscara" },
   { num: "04", title: "Coloração", desc: "Cor, correção e manutenção.", image: "/images/needs/need-coloracao.png", productType: "Coloração" },
   { num: "05", title: "Finalizador", desc: "Definição, frizz e acabamento.", image: "/images/needs/need-finalizacao.png", productType: "Finalizador" },
-  { num: "06", title: "Tratamento", desc: "Ampolas, seruns e reparadores.", image: "/images/needs/need-tratamentos.png", productType: "Tratamento" },
-  { num: "07", title: "Maquiagem", desc: "Bruna Tavares e mais.", image: "/images/needs/need-protecao-solar.png", productType: "Maquiagem" },
-  { num: "08", title: "Óleo", desc: "Brilho e nutrição intensiva.", image: "/images/needs/need-corte.png", productType: "Óleo" },
+  { num: "06", title: "Tratamentos", desc: "Ampolas, seruns e reparadores.", image: "/images/needs/need-tratamentos.png", productType: "Tratamentos" },
+  { num: "07", title: "Óleo", desc: "Brilho e nutrição intensiva.", image: "/images/needs/need-corte.png", productType: "Óleo" },
 ];
 
 function IndexEditorial() {
