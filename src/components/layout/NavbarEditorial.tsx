@@ -324,7 +324,7 @@ export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) =
         </nav>
 
         {/* Actions — desktop */}
-        <div className="hidden lg:flex items-center gap-5 text-[#0F3A3E]">
+        <div className="hidden lg:flex items-center gap-5 ml-6 text-[#0F3A3E]">
           <button
             onClick={() => setIsSearchOpen(true)}
             className="cursor-pointer hover:text-[#B07B1E] transition-colors lg:hidden"
