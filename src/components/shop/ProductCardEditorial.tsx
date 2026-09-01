@@ -259,32 +259,30 @@ export function ProductCardEditorial({
             </span>
           </div>
 
-          {/* Parcelas — estimativa, sem afirmar juro zero. Ver MAX_INSTALLMENTS. */}
+          {/* Parcelas */}
           <p className="text-[10px] md:text-[12px] text-[#75827E] mt-1">
-            em até {MAX_INSTALLMENTS}x no cartão
+            em até {MAX_INSTALLMENTS}x sem juros
           </p>
 
-          {/* Actions */}
-          <div className="grid grid-cols-2 gap-2 mt-3 md:mt-4">
-            <button
-              onClick={handleAddToCart}
-              disabled={isAdding}
-              className={cn(
-                "py-2.5 md:py-3 text-[10px] md:text-[11px] uppercase tracking-[0.12em] font-semibold transition-all duration-200 border border-[#0F3A3E]",
-                isAdding
-                  ? "bg-[#1c6b4a] text-white border-[#1c6b4a]"
-                  : "bg-white text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white"
-              )}
-            >
-              {isAdding ? "✓ Adicionado" : "Adicionar"}
-            </button>
-            <button
-              onClick={handleBuyNow}
-              className="py-2.5 md:py-3 text-[10px] md:text-[11px] uppercase tracking-[0.12em] font-semibold bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-all duration-200"
-            >
-              Comprar agora
-            </button>
-          </div>
+          {/* Actions — empilhado: Comprar agora em cima, Adicionar embaixo */}
+          <button
+            onClick={handleBuyNow}
+            className="w-full mt-3 md:mt-4 py-3 md:py-3.5 text-[10px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] font-semibold bg-[#0F3A3E] text-white hover:bg-[#16504F] transition-all duration-200"
+          >
+            Comprar agora
+          </button>
+          <button
+            onClick={handleAddToCart}
+            disabled={isAdding}
+            className={cn(
+              "w-full mt-2 py-3 md:py-3.5 text-[10px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] font-semibold transition-all duration-200 border border-[#0F3A3E]",
+              isAdding
+                ? "bg-[#1c6b4a] text-white border-[#1c6b4a]"
+                : "bg-white text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white"
+            )}
+          >
+            {isAdding ? "✓ Adicionado" : "Adicionar"}
+          </button>
         </div>
       </article>
     </Link>

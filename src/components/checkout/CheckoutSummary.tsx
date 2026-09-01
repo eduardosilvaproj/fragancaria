@@ -153,10 +153,8 @@ export function CheckoutSummary() {
         <span className="text-sm uppercase tracking-wider text-[#0F3A3E]">Total</span>
         <span className="font-serif text-2xl text-[#0F3A3E]">{formatBRL(total)}</span>
       </div>
-      {/* Estimativa (total/N). O valor exato, com eventual juro, e o que o
-          Mercado Pago devolve na etapa de pagamento. */}
       <p className="text-xs text-[#51635F] text-right mt-1">
-        em até {MAX_INSTALLMENTS}x no cartão, a partir de {formatBRL(installmentValue)}/mês
+        em até {MAX_INSTALLMENTS}x sem juros de {formatBRL(installmentValue)}
       </p>
 
       <div className="mt-6 pt-5 border-t border-[#E9E1D2] space-y-2">

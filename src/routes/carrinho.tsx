@@ -325,7 +325,7 @@ function CarrinhoPage() {
                 </button>
 
                 <p className="text-[11px] text-[#9AA39F] text-center">
-                  em até {MAX_INSTALLMENTS}x no cartão
+                  em até {MAX_INSTALLMENTS}x sem juros
                 </p>
 
                 {/* Benefits */}

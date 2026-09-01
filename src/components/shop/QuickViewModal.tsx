@@ -218,7 +218,7 @@ export function QuickViewModal({ productId, isOpen, onClose }: QuickViewModalPro
 
                 {/* Installments */}
                 <p className="text-[13px] text-[#75827E] mt-1">
-                  em até {MAX_INSTALLMENTS}x no cartão
+                  em até {MAX_INSTALLMENTS}x sem juros
                 </p>
 
                 {/* Description */}

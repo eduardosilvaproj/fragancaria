@@ -81,7 +81,7 @@ function ComparePage() {
       }
       return "—";
     }},
-    { label: "Parcelamento", getValue: () => `em até ${MAX_INSTALLMENTS}x no cartão` },
+    { label: "Parcelamento", getValue: () => `em até ${MAX_INSTALLMENTS}x sem juros` },
   ];
 
   return (
