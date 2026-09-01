@@ -275,10 +275,10 @@ export function ProductCardEditorial({
             onClick={handleAddToCart}
             disabled={isAdding}
             className={cn(
-              "w-full mt-2 py-3 md:py-3.5 text-[10px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] font-semibold transition-all duration-200 border border-[#0F3A3E]",
+              "w-full mt-2 py-3 md:py-3.5 text-[10px] md:text-[11px] uppercase tracking-[0.12em] md:tracking-[0.16em] font-semibold transition-all duration-200 border border-[#b07b1e]",
               isAdding
                 ? "bg-[#1c6b4a] text-white border-[#1c6b4a]"
-                : "bg-white text-[#0F3A3E] hover:bg-[#0F3A3E] hover:text-white"
+                : "bg-white text-[#b07b1e] hover:bg-[#b07b1e] hover:text-white"
             )}
           >
             {isAdding ? "✓ Adicionado" : "Adicionar"}
