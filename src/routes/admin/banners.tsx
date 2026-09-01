@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
@@ -14,9 +14,12 @@ import {
   Loader2,
   Eye,
   Layers,
+  Upload,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ImageUploader } from "@/components/admin/ImageUploader";
+import { uploadProductImage, type UploadResult } from "@/lib/storage.functions";
 import {
   getAdminBanners,
   createBanner,
@@ -24,6 +27,20 @@ import {
   deleteBanner,
   type SiteBanner,
 } from "@/lib/site-banners.functions";
+
+// Medidas esperadas e limites por slot [largura, altura, max KB]
+// Medidas esperadas e limites por dispositivo e slot
+const SLOT_MEASUREMENTS = {
+  hero: {
+    desktop: { width: 1400, height: 920, maxSizeKB: 250 },
+    mobile: { width: 640, height: 900, maxSizeKB: 150 },
+  },
+  faixa_meio: {
+    desktop: { width: 1200, height: 500, maxSizeKB: 150 },
+    mobile: { width: 800, height: 600, maxSizeKB: 150 },
+  },
+  ticker: null,
+} as const;
 
 export const Route = createFileRoute("/admin/banners")({
   component: AdminBanners,
@@ -110,12 +127,14 @@ function AdminBanners() {
     setEditingBanner({
       slot: "hero",
       ordem: 0,
-      ativo: true,
+      ativo: false, // banner novo nasce INATIVO
       kicker: "",
       titulo: "",
       subtitulo: "",
       cta_texto: "",
       cta_url: "",
+      cta2_texto: "",
+      cta2_url: "",
       imagem_url: "",
       imagem_mobile_url: "",
       imagem_alt: "",
@@ -370,6 +389,97 @@ function BannerModal({
     termina_em: banner.termina_em ? String(banner.termina_em).slice(0, 16) : "",
   });
 
+  const uploadFn = useServerFn(uploadProductImage as any);
+  const [uploadingDesktop, setUploadingDesktop] = useState(false);
+  const [uploadingMobile, setUploadingMobile] = useState(false);
+
+  const slotMeasures = SLOT_MEASUREMENTS[form.slot as keyof typeof SLOT_MEASUREMENTS] || SLOT_MEASUREMENTS.hero;
+  const desktopMaxKB = slotMeasures === null ? 0 : slotMeasures.desktop.maxSizeKB;
+  const mobileMaxKB = slotMeasures === null ? 0 : slotMeasures.mobile.maxSizeKB;
+
+  function formatBytes(bytes: number) {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
+  }
+
+  async function handleFileSelected(file: File, type: "desktop" | "mobile") {
+    if (!file.type.startsWith("image/")) {
+      toast.error("O arquivo selecionado não é uma imagem válida.");
+      return;
+    }
+
+    // 1. Validação de peso
+    const limitKB = type === "desktop" ? desktopMaxKB : mobileMaxKB;
+    if (file.size > limitKB * 1024) {
+      toast.warning(
+        `Aviso: Arquivo com ${(file.size / 1024).toFixed(0)}KB excede o limite recomendado de ${limitKB}KB. O salvamento será permitido.`
+      );
+    }
+
+    // 2. Validação de proporção com tolerância de 10%
+    if (slotMeasures && slotMeasures.desktop) {
+      const [recW, recH] = [slotMeasures.desktop.width, slotMeasures.desktop.height];
+      const recRatio = recW / recH;
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const width = img.width;
+        const height = img.height;
+        const ratio = width / height;
+        const diff = Math.abs(ratio - recRatio) / recRatio;
+        if (diff > 0.1) {
+          toast.warning(
+            `Aviso: Proporção ${width}x${height} (razão ${ratio.toFixed(2)}) difere da recomendada ${recW}x${recH} (razão ${recRatio.toFixed(2)}) em mais de 10%. O salvamento será permitido.`
+          );
+        }
+        URL.revokeObjectURL(objectUrl);
+      };
+      img.src = objectUrl;
+    }
+
+    // 3. Executar upload
+    if (type === "desktop") setUploadingDesktop(true);
+    else setUploadingMobile(true);
+
+    try {
+      const base64 = await fileToBase64(file);
+      const result: any = await uploadFn({
+        data: {
+          base64,
+          filename: file.name,
+          folder: "banners",
+          contentType: file.type,
+        },
+      });
+
+      if (result?.success && result.data?.url) {
+        if (type === "desktop") {
+          setForm((prev) => ({ ...prev, imagem_url: result.data.url }));
+        } else {
+          setForm((prev) => ({ ...prev, imagem_mobile_url: result.data.url }));
+        }
+        toast.success("Upload realizado com sucesso!");
+      } else {
+        toast.error(result?.error || "Erro ao fazer upload da imagem");
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Erro ao fazer upload");
+    } finally {
+      if (type === "desktop") setUploadingDesktop(false);
+      else setUploadingMobile(false);
+    }
+  }
+
+  function fileToBase64(file: File): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     await onSave({
@@ -513,11 +623,125 @@ function BannerModal({
             </div>
           </div>
 
+          {/* Seção de Imagens — Upload (com validações de peso e proporção) ou URL colada */}
+          {form.slot !== "ticker" && (
+            <>
+              {/* Desktop Image */}
+              <div className="space-y-2 p-3 bg-[#F8F4EA]/50 border border-[#E9E1D2]">
+                <label className="block text-xs font-semibold text-[#0F3A3E]">
+                  Imagem Desktop {slotMeasures && `(${slotMeasures.desktop.width}x${slotMeasures.desktop.height} px • máx. ${slotMeasures.desktop.maxSizeKB} KB)`}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="URL da imagem desktop ou faça upload abaixo"
+                    value={form.imagem_url}
+                    onChange={(e) => setForm({ ...form, imagem_url: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-[#E9E1D2] text-xs bg-white focus:outline-none focus:border-[#B07B1E]"
+                  />
+                  <label className={cn(
+                    "px-3 py-2 bg-[#0F3A3E] text-white text-xs cursor-pointer hover:bg-[#16504F] transition-colors flex items-center gap-1 shrink-0",
+                    uploadingDesktop && "opacity-50 cursor-not-allowed"
+                  )}>
+                    {uploadingDesktop ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    <span>{uploadingDesktop ? "Enviando..." : "Enviar Arquivo"}</span>
+                    <input
+                      type="file"
+                      accept="image/webp,image/jpeg,image/png"
+                      className="hidden"
+                      disabled={uploadingDesktop}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelected(file, "desktop");
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {form.imagem_url && (
+                  <div className="relative w-32 h-16 border border-[#E9E1D2] bg-white overflow-hidden">
+                    <img src={form.imagem_url} alt="Preview Desktop" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, imagem_url: "" })}
+                      className="absolute top-1 right-1 p-0.5 bg-red-600 text-white text-[10px] rounded"
+                      title="Remover imagem"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {slotMeasures && (
+                  <p className="text-[11px] text-[#8A938E]">
+                    WebP preferido, JPG aceito, PNG só com transparência real.
+                  </p>
+                )}
+              </div>
+
+              {/* Mobile Image */}
+              <div className="space-y-2 p-3 bg-[#F8F4EA]/50 border border-[#E9E1D2]">
+                <label className="block text-xs font-semibold text-[#0F3A3E]">
+                  Imagem Celular / Mobile {slotMeasures && `(${slotMeasures.mobile.width}x${slotMeasures.mobile.height} px • máx. ${slotMeasures.mobile.maxSizeKB} KB)`}
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="URL da imagem mobile ou faça upload abaixo"
+                    value={form.imagem_mobile_url}
+                    onChange={(e) => setForm({ ...form, imagem_mobile_url: e.target.value })}
+                    className="flex-1 px-3 py-2 border border-[#E9E1D2] text-xs bg-white focus:outline-none focus:border-[#B07B1E]"
+                  />
+                  <label className={cn(
+                    "px-3 py-2 bg-[#0F3A3E] text-white text-xs cursor-pointer hover:bg-[#16504F] transition-colors flex items-center gap-1 shrink-0",
+                    uploadingMobile && "opacity-50 cursor-not-allowed"
+                  )}>
+                    {uploadingMobile ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    <span>{uploadingMobile ? "Enviando..." : "Enviar Arquivo"}</span>
+                    <input
+                      type="file"
+                      accept="image/webp,image/jpeg,image/png"
+                      className="hidden"
+                      disabled={uploadingMobile}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFileSelected(file, "mobile");
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+                {form.imagem_mobile_url && (
+                  <div className="relative w-32 h-16 border border-[#E9E1D2] bg-white overflow-hidden">
+                    <img src={form.imagem_mobile_url} alt="Preview Mobile" className="w-full h-full object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, imagem_mobile_url: "" })}
+                      className="absolute top-1 right-1 p-0.5 bg-red-600 text-white text-[10px] rounded"
+                      title="Remover imagem"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+                {slotMeasures && (
+                  <p className="text-[11px] text-[#8A938E]">
+                    WebP preferido, JPG aceito, PNG só com transparência real.
+                  </p>
+                )}
+              </div>
+
+              {/* Texto de orientação fixo */}
+              <div className="p-3 bg-[#FFF3CD] border border-[#FFE69C] text-[#8A6D3B] text-xs leading-relaxed">
+                No desktop o texto e os botões ocupam a metade esquerda — deixe a modelo ou o produto no terço direito da foto. No celular a imagem fica ao lado do texto conforme o layout do hero.
+              </div>
+            </>
+          )}
+
           <div>
             <label className="block text-xs text-[#8A938E] mb-1">Texto Alternativo da Imagem (Alt) *Obrigatório se houver imagem</label>
             <input
               type="text"
-              placeholder="Ex: Frasco de perfume em fundo dourado"
+              placeholder="Ex: Modelo usando máscara capilar profissional em fundo neutro"
               value={form.imagem_alt}
               onChange={(e) => setForm({ ...form, imagem_alt: e.target.value })}
               className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"

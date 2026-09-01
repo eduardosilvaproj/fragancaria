@@ -193,32 +193,34 @@ function IndexEditorial() {
               {/* Conteúdo de texto */}
               <div className="relative z-10 px-6 md:px-14 py-12 md:py-16 lg:py-[70px] w-full lg:w-auto lg:max-w-[600px]">
                 {/* Label */}
-                <div className="flex items-center gap-3.5 mb-5 md:mb-6 animate-[fadeUp_0.9s_ease_0.1s_both]">
-                  <span className="w-8 md:w-10 h-[1px] bg-[#B07B1E]" />
-                  <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
-                    {heroBanner?.kicker ? heroBanner.kicker : "Especialista em Cabelo Profissional"}
-                  </span>
-                </div>
+                {heroBanner?.kicker && (
+                  <div className="flex items-center gap-3.5 mb-5 md:mb-6 animate-[fadeUp_0.9s_ease_0.1s_both]">
+                    <span className="w-8 md:w-10 h-[1px] bg-[#B07B1E]" />
+                    <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                      {heroBanner.kicker}
+                    </span>
+                  </div>
+                )}
 
                 {/* Headline */}
                 <h1 className="font-serif font-medium text-[36px] md:text-[56px] lg:text-[80px] leading-[1] md:leading-[0.97] text-[#0F3A3E] tracking-[-0.01em] animate-[fadeUp_1s_ease_0.2s_both]">
-                  {heroBanner?.titulo ? (
-                    heroBanner.titulo.split("\n").map((line, i) => (
+                  {heroBanner?.titulo && heroBanner.titulo.trim().length > 0 ? (
+                    heroBanner.titulo.split("\n").map((line: string, i: number) => (
                       <span key={i}>
                         {line}
                         {i < heroBanner.titulo!.split("\n").length - 1 && <br />}
                       </span>
                     ))
                   ) : (
-                    <>
-                      A excelência<br />do salão na<br />sua <em className="italic text-[#B07B1E]">casa</em>.
-                    </>
+                    ""
                   )}
                 </h1>
 
                 {/* Subheadline */}
                 <p className="text-[15px] md:text-[17px] text-[#4A5C4A] mt-5 md:mt-6 leading-[1.65] md:leading-[1.7] max-w-[320px] md:max-w-[420px] animate-[fadeUp_1s_ease_0.35s_both]">
-                  {heroBanner?.subtitulo ? heroBanner.subtitulo : "Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa."}
+                  {heroBanner?.subtitulo?.trim() && heroBanner.subtitulo.trim().length > 0 && (
+                    heroBanner.subtitulo
+                  )}
                 </p>
 
                 {/* CTAs */}
