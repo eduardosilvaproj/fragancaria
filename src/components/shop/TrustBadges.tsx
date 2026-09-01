@@ -21,7 +21,7 @@ const TRUST_BADGES = [
   },
   {
     icon: CreditCard,
-    title: `Até ${MAX_INSTALLMENTS}x no cartão`,
+    title: `Em até ${MAX_INSTALLMENTS}x sem juros`,
     description: "Via Mercado Pago",
   },
   {

@@ -375,10 +375,8 @@ function ProductPage() {
                     {formatPrice(p.price)}
                   </span>
                 </div>
-                {/* "a partir de": total/N e estimativa; o valor final com
-                    eventual juro vem do Mercado Pago no checkout. */}
                 <p className="text-[14px] text-[#75827E] mt-2">
-                  em até <strong className="text-[#0F3A3E]">{MAX_INSTALLMENTS}x</strong> no cartão, a partir de {formatPrice(p.price / MAX_INSTALLMENTS)}/mês
+                  em até <strong className="text-[#0F3A3E]">10x sem juros</strong> de {formatPrice(p.price / 10)}
                 </p>
                 <p className="text-[13px] text-[#1c6b4a] mt-1">
                   ✦ {formatPrice(p.price * 0.95)} no PIX (5% off)

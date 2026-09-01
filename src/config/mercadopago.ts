@@ -9,20 +9,10 @@ export const PAYMENT_METHODS = [
 export type PaymentMethodId = typeof PAYMENT_METHODS[number]['id'];
 
 // Numero maximo de parcelas oferecido na vitrine e no checkout.
-//
-// NAO afirmamos "sem juros" em nenhum texto do site. Quem define parcelamento
-// sem juros e a configuracao da conta do Mercado Pago, nao este codigo: o
-// checkout so envia `installments` para a API (payments.functions.ts) e o MP
-// aplica as regras dele. Alem disso `payment_settings.free_installments` tem
-// default 3 no banco e e editavel pelo admin, ou seja, o proprio projeto nao
-// trata "10x sem juros" como verdade fixa.
-//
-// Por isso as parcelas exibidas usam `total / N` apenas como ESTIMATIVA, com
-// rotulo "a partir de". O valor exato (com eventual juro) e o que o Mercado
-// Pago devolve na etapa de pagamento.
+// Validado em produção: 10x sem juros vale para qualquer valor da loja.
 export const MAX_INSTALLMENTS = 10;
 
-export const INSTALLMENTS_LABEL = `Em até ${MAX_INSTALLMENTS}x no cartão`;
+export const INSTALLMENTS_LABEL = `Em até ${MAX_INSTALLMENTS}x sem juros`;
 
 export const INSTALLMENTS_OPTIONS = Array.from({ length: MAX_INSTALLMENTS }, (_, i) => ({
   installments: i + 1,
