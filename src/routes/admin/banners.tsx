@@ -54,9 +54,9 @@ function AdminBanners() {
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       if (data.id) {
-        return await updateBannerFn(data);
+        return await updateBannerFn({ data });
       }
-      return await createBannerFn(data);
+      return await createBannerFn({ data });
     },
     onSuccess: (res) => {
       if (res?.success) {
@@ -74,7 +74,7 @@ function AdminBanners() {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await deleteBannerFn(id);
+      return await deleteBannerFn({ data: id });
     },
     onSuccess: (res) => {
       if (res?.success) {
@@ -361,6 +361,8 @@ function BannerModal({
     subtitulo: banner.subtitulo || "",
     cta_texto: banner.cta_texto || "",
     cta_url: banner.cta_url || "",
+    cta2_texto: banner.cta2_texto || "",
+    cta2_url: banner.cta2_url || "",
     imagem_url: banner.imagem_url || "",
     imagem_mobile_url: banner.imagem_mobile_url || "",
     imagem_alt: banner.imagem_alt || "",
@@ -380,6 +382,8 @@ function BannerModal({
       subtitulo: form.subtitulo.trim() || null,
       cta_texto: form.cta_texto.trim() || null,
       cta_url: form.cta_url.trim() || null,
+      cta2_texto: form.cta2_texto.trim() || null,
+      cta2_url: form.cta2_url.trim() || null,
       imagem_url: form.imagem_url.trim() || null,
       imagem_mobile_url: form.imagem_mobile_url.trim() || null,
       imagem_alt: form.imagem_alt.trim() || null,
@@ -463,7 +467,7 @@ function BannerModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#8A938E] mb-1">Texto do Botão (CTA)</label>
+              <label className="block text-xs text-[#8A938E] mb-1">Texto do Botão (CTA principal)</label>
               <input
                 type="text"
                 placeholder="Ex: Comprar Agora"
@@ -487,23 +491,23 @@ function BannerModal({
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs text-[#8A938E] mb-1">URL da Imagem Desktop</label>
+              <label className="block text-xs text-[#8A938E] mb-1">Texto do Segundo Botão (Opcional)</label>
               <input
                 type="text"
-                placeholder="https://... ou /images/..."
-                value={form.imagem_url}
-                onChange={(e) => setForm({ ...form, imagem_url: e.target.value })}
+                placeholder="Ex: Ver mais"
+                value={form.cta2_texto}
+                onChange={(e) => setForm({ ...form, cta2_texto: e.target.value })}
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
               />
             </div>
 
             <div>
-              <label className="block text-xs text-[#8A938E] mb-1">URL da Imagem Mobile</label>
+              <label className="block text-xs text-[#8A938E] mb-1">URL do Segundo Botão (Opcional)</label>
               <input
                 type="text"
-                placeholder="https://... ou /images/..."
-                value={form.imagem_mobile_url}
-                onChange={(e) => setForm({ ...form, imagem_mobile_url: e.target.value })}
+                placeholder="Ex: /colecao/outono ou https://..."
+                value={form.cta2_url}
+                onChange={(e) => setForm({ ...form, cta2_url: e.target.value })}
                 className="w-full px-3 py-2 border border-[#E9E1D2] text-sm focus:outline-none focus:border-[#B07B1E]"
               />
             </div>

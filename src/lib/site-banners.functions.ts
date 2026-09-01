@@ -18,6 +18,10 @@ const baseBannerSchema = z.object({
   cta_url: z.string().refine(val => !val || val.startsWith("/") || val.startsWith("https://"), {
     message: "URL deve começar com / (relativa) ou https://"
   }).optional().nullable(),
+  cta2_texto: z.string().optional().nullable(),
+  cta2_url: z.string().refine(val => !val || val.startsWith("/") || val.startsWith("https://"), {
+    message: "URL do segundo botão deve começar com / (relativa) ou https://"
+  }).optional().nullable(),
   imagem_url: z.string().refine(val => !val || val.startsWith("/") || val.startsWith("https://"), {
     message: "URL da imagem deve começar com / (relativa) ou https://"
   }).optional().nullable(),
@@ -49,6 +53,8 @@ export type SiteBanner = {
   subtitulo?: string | null;
   cta_texto?: string | null;
   cta_url?: string | null;
+  cta2_texto?: string | null;
+  cta2_url?: string | null;
   imagem_url?: string | null;
   imagem_mobile_url?: string | null;
   imagem_alt?: string | null;
@@ -82,7 +88,16 @@ export const getBannersAtivos = createServerFn({ method: "GET" })
         return { success: false, data: [] as SiteBanner[], error: error.message };
       }
 
-      return { success: true, data: (data || []) as SiteBanner[] };
+      // Normalizar nulls para undefined no tipo retornado
+      const normalized = (data || []).map((banner: any) => ({
+        ...banner,
+        cta_texto: banner.cta_texto ?? null,
+        cta_url: banner.cta_url ?? null,
+        cta2_texto: banner.cta2_texto ?? null,
+        cta2_url: banner.cta2_url ?? null,
+      }));
+
+      return { success: true, data: normalized as SiteBanner[] };
     } catch (err: any) {
       console.error("getBannersAtivos exception:", err?.message || err);
       return { success: false, data: [] as SiteBanner[], error: err?.message || "Erro desconhecido" };

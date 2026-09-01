@@ -119,6 +119,23 @@ function IndexEditorial() {
             >
               {heroBanner?.imagem_url ? (
                 <>
+                  {/* Arco âmbar decorativo - hidden on mobile */}
+                  <div
+                    className="hidden md:block absolute -top-[180px] -right-[60px] w-[900px] h-[900px] rounded-full pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle at 34% 34%, rgba(198,163,98,0.34) 0%, rgba(198,163,98,0.14) 42%, transparent 66%)'
+                    }}
+                  />
+                  <div
+                    className="hidden md:block absolute -top-[100px] right-[20px] w-[720px] h-[720px] rounded-full border pointer-events-none"
+                    style={{ borderColor: 'rgba(190,152,78,0.26)' }}
+                  />
+                  <div
+                    className="hidden md:block absolute -top-[30px] right-[100px] w-[540px] h-[540px] rounded-full border pointer-events-none"
+                    style={{ borderColor: 'rgba(190,152,78,0.14)' }}
+                  />
+
+                  {/* Imagem do Banner - posicionada à direita, exatamente como o fallback da modelo */}
                   <picture>
                     {heroBanner.imagem_mobile_url && (
                       <source
@@ -129,13 +146,11 @@ function IndexEditorial() {
                     <img
                       src={heroBanner.imagem_url}
                       alt={heroBanner.imagem_alt ?? ""}
-                      width={1920}
-                      height={832}
-                      fetchPriority="high"
-                      className="absolute inset-0 w-full h-full object-cover object-right"
+                      className="hidden lg:block absolute bottom-0 right-0 h-[95%] w-auto object-contain animate-[heroIn_1.4s_ease_both]"
                       loading="eager"
                     />
                   </picture>
+
                   {/* Véu para legibilidade do texto */}
                   <div
                     className="absolute top-0 left-0 bottom-0 w-[48%] pointer-events-none hidden lg:block"
@@ -207,20 +222,41 @@ function IndexEditorial() {
                 </p>
 
                 {/* CTAs */}
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
-                  <Link
-                    to={heroBanner?.cta_url ?? "/produtos"}
-                    className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors"
-                  >
-                    {heroBanner?.cta_texto ?? "Explorar Coleções"}
-                  </Link>
-                  <Link
-                    to="/afiliado/login"
-                    className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto font-medium"
-                  >
-                    Já sou afiliado / Entrar
-                  </Link>
-                </div>
+                {heroBanner ? (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
+                    {heroBanner.cta_texto && (
+                      <Link
+                        to={heroBanner.cta_url ?? "/produtos"}
+                        className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors whitespace-nowrap"
+                      >
+                        {heroBanner.cta_texto}
+                      </Link>
+                    )}
+                    {heroBanner.cta2_texto && (
+                      <Link
+                        to={heroBanner.cta2_url ?? "/produtos"}
+                        className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors whitespace-nowrap"
+                      >
+                        {heroBanner.cta2_texto}
+                      </Link>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
+                    <Link
+                      to="/produtos"
+                      className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors whitespace-nowrap"
+                    >
+                      Explorar Coleções
+                    </Link>
+                    <Link
+                      to="/afiliado/login"
+                      className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto font-medium"
+                    >
+                      Já sou afiliado / Entrar
+                    </Link>
+                  </div>
+                )}
               </div>
             </section>
           );
