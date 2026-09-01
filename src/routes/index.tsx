@@ -80,16 +80,67 @@ export const Route = createFileRoute("/")({
 // (regra 4 do FASE 4: esteira renderiza a lista atual do codigo). A lista
 // real vem do loader SSR via getTopBrands (top 8 marcas com >= 20 ativos).
 const BRAND_MARQUEE_FALLBACK = [
-  "L'Oréal Professionnel",
-  "Kérastase",
+  "L'Oréal",
   "Wella",
   "Schwarzkopf",
   "Keune",
-  "Alfaparf Milano",
-  "Itallian Color",
-  "Cadiveu",
-  "Sebastian",
+  "Itallian",
+  "Kamaleão",
+  "Alfaparf",
+  "Charming",
 ];
+
+// Mapa explicito marca -> logo. Marca fora do mapa cai para tipografia
+// (nome em serif). A chave tem que bater caractere a caractere com
+// `products.brand` no banco — divergencia = logo nao aparece e nenhum
+// erro e lancado (2026-09-01, FASE 5 esteira de logos).
+//
+// Chave com acento (e.g. "L'Oréal", "Kamaleão") corresponde ao valor
+// exato gravado em products.brand. Em caso de troca de acentos no banco,
+// atualizar aqui, nao inferir normalizacao.
+const BRAND_LOGO_MAP: Record<string, string> = {
+  "Wella": "/images/brands/wella.png",
+  "Schwarzkopf": "/images/brands/schwarzkopf.png",
+  "L'Oréal": "/images/brands/loreal.png",
+  "Itallian": "/images/brands/itallian.png",
+  "Keune": "/images/brands/keune.png",
+  "Kamaleão": "/images/brands/kamaleao.png",
+  "Cadiveu": "/images/brands/cadiveu.png",
+};
+
+// Altura alvo do container do logo. Cada arquivo e 1983x793 px no disco,
+// com fundo transparente (verificado em 2026-09-01 com sharp). object-contain
+// respeita a proporcao sem cortar nada, e max-w-[160px] freia logos longos.
+const LOGO_W = 120;
+const LOGO_H = 48;
+
+function MarqueeItem({ brand }: { brand: string }) {
+  const logo = BRAND_LOGO_MAP[brand];
+  return (
+    <Link
+      to="/produtos"
+      search={{ vendor: brand }}
+      className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 flex items-center gap-6 md:gap-10 whitespace-nowrap group"
+      aria-label={`Ver produtos da marca ${brand}`}
+    >
+      <span className="inline-flex items-center justify-center h-12 md:h-14 w-auto max-w-[160px] min-w-[96px]">
+        {logo ? (
+          <img
+            src={logo}
+            alt={brand}
+            width={LOGO_W}
+            height={LOGO_H}
+            loading="lazy"
+            className="h-full w-auto max-w-[160px] object-contain opacity-85 brightness-0 invert group-hover:opacity-100 group-hover:brightness-100 group-hover:invert-0 transition-all duration-300"
+          />
+        ) : (
+          <span className="whitespace-nowrap">{brand}</span>
+        )}
+      </span>
+      <span className="text-[#B07B1E] shrink-0">✦</span>
+    </Link>
+  );
+}
 
 // Cards de necessidade - baseado nas categorias reais do catalogo. Cada
 // productType precisa bater EXATAMENTE com products.category no banco:
@@ -298,30 +349,18 @@ function IndexEditorial() {
         })()}
 
         {/* ===== BRAND MARQUEE ===== */}
-        <section className="bg-[#0F3A3E] py-6 md:py-8 overflow-hidden">
+        <section className="bg-[#0F3A3E] py-3 md:py-4 overflow-hidden">
           <div className="flex gap-0 animate-[marquee_30s_linear_infinite]">
             {/* Duplicate for seamless loop */}
             <div className="flex gap-0">
               {marqueeBrands.map((brand, i) => (
-                <span
-                  key={`a-${i}`}
-                  className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"
-                >
-                  {brand}
-                  <span className="text-[#B07B1E]">✦</span>
-                </span>
+                <MarqueeItem key={`a-${i}`} brand={brand} />
               ))}
             </div>
             {/* Duplicate for seamless loop */}
             <div className="flex gap-0" aria-hidden="true">
               {marqueeBrands.map((brand, i) => (
-                <span
-                  key={`b-${i}`}
-                  className="font-serif text-[16px] md:text-[22px] text-white/85 px-6 md:px-10 whitespace-nowrap flex items-center gap-6 md:gap-10"
-                >
-                  {brand}
-                  <span className="text-[#B07B1E]">✦</span>
-                </span>
+                <MarqueeItem key={`b-${i}`} brand={brand} />
               ))}
             </div>
           </div>
