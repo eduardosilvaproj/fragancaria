@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
@@ -116,6 +116,8 @@ const LOGO_H = 48;
 
 function MarqueeItem({ brand }: { brand: string }) {
   const logo = BRAND_LOGO_MAP[brand];
+  const [imgError, setImgError] = useState(false);
+
   return (
     <Link
       to="/produtos"
@@ -124,13 +126,14 @@ function MarqueeItem({ brand }: { brand: string }) {
       aria-label={`Ver produtos da marca ${brand}`}
     >
       <span className="inline-flex items-center justify-center h-12 md:h-14 w-auto max-w-[160px] min-w-[96px]">
-        {logo ? (
+        {logo && !imgError ? (
           <img
             src={logo}
             alt={brand}
             width={LOGO_W}
             height={LOGO_H}
             loading="lazy"
+            onError={() => setImgError(true)}
             className="h-full w-auto max-w-[160px] object-contain opacity-85 brightness-0 invert group-hover:opacity-100 group-hover:brightness-100 group-hover:invert-0 transition-all duration-300"
           />
         ) : (
