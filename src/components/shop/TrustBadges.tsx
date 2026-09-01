@@ -27,7 +27,7 @@ const TRUST_BADGES = [
   {
     icon: RotateCcw,
     title: "Troca Garantida",
-    description: "7 dias para trocar",
+    description: "7 dias para desistir · 30 para defeito",
   },
   {
     icon: Award,
