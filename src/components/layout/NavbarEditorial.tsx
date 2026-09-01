@@ -1,15 +1,17 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { Search, Heart, Menu, X, ShoppingBag, ChevronDown, ChevronRight, User } from "lucide-react";
+import { Search, Heart, Menu, X, ShoppingBag, ChevronDown, ChevronRight, User, MessageCircle } from "lucide-react";
 import { CartDrawerEditorial } from "../shop/CartDrawerEditorial";
 import { SearchAutocomplete } from "../shop/SearchAutocomplete";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { AnnouncementMarquee } from "./AnnouncementMarquee";
 import { BrandLogo } from "./BrandLogo";
 import { useCartStore } from "@/stores/cartStore";
 import { useWishlistStore } from "@/stores/wishlistStore";
 import { useProducts } from "@/hooks/useProducts";
+import { useStoreConfig } from "@/lib/use-store-config";
+import { whatsappLink } from "@/lib/store-contact";
 import type { Product } from "@/data/products";
 
 // IMPORTANTE: productType tem que ser o valor EXATO de `category` em
@@ -56,6 +58,8 @@ const CATEGORIES: Array<{ label: string; productType: string }> = [
 // Sem `count` fixo — a contagem vem de countByBrand(products, vendor).
 // `vendor` tem que ser o valor EXATO de products.brand, porque o filtro de
 // /produtos compara por igualdade sensível a acento.
+// Kérastase removida em 2026-09-01: 0 produtos ativos no catálogo (mesmo
+// motivo de Truss e Lowell, removidos anteriormente).
 const BRANDS: Array<{ label: string; vendor: string }> = [
   { label: "Wella", vendor: "Wella" },
   { label: "L'Oréal", vendor: "L'Oréal" },
@@ -67,17 +71,34 @@ const BRANDS: Array<{ label: string; vendor: string }> = [
 
 const MotionDiv = motion.div as any;
 
-export const NavbarEditorial = () => {
+interface NavbarEditorialProps {
+  /**
+   * Mensagens do slot 'ticker' de site_banners. Quando omitido,
+   * AnnouncementMarquee usa o fallback hardcoded.
+   */
+  tickerMessages?: string[];
+}
+
+export const NavbarEditorial = ({ tickerMessages }: NavbarEditorialProps = {}) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [mobileSubmenu, setMobileSubmenu] = useState<null | "produtos" | "marcas">(null);
   const navigate = useNavigate();
   const { items, setIsOpen } = useCartStore();
   const wishlistItems = useWishlistStore((state) => state.items);
-  const { products } = useProducts();
+  const { products, isLoading } = useProducts();
   const cartCount = items.reduce((sum, item) => sum + item.quantity, 0);
   const wishlistCount = wishlistItems.length;
+
+  // CTA de atendimento — reaproveita o WhatsApp configurado na store_settings.
+  // Link direto para o wa.me; se não houver número, o ícone não aparece.
+  const storeConfig = useStoreConfig();
+  const whatsappUrl = whatsappLink(
+    storeConfig?.contato.whatsapp,
+    "Olá! Preciso de ajuda com produtos capilares.",
+  );
 
   useEffect(() => {
     const handleScroll = () => {
@@ -89,8 +110,8 @@ export const NavbarEditorial = () => {
 
   return (
     <>
-      {/* Announcement Marquee */}
-      <AnnouncementMarquee />
+      {/* Announcement Marquee — ticker do site_banners ou fallback hardcoded */}
+      <AnnouncementMarquee messages={tickerMessages} />
 
       {/* Main Header */}
       <header
@@ -114,6 +135,40 @@ export const NavbarEditorial = () => {
         <Link to="/" className="flex items-center gap-3">
           <BrandLogo variant="horizontal" className="shrink-0" />
         </Link>
+
+        {/* Busca inline — desktop (≥1024px). No mobile, abre o modal. */}
+        <div className="hidden lg:flex items-center flex-1 max-w-[520px] mx-8">
+          {isSearchFocused ? (
+            <div className="relative w-full">
+              <input
+                type="search"
+                placeholder="Buscar produtos..."
+                autoFocus
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 150)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    const term = (e.target as HTMLInputElement).value.trim();
+                    if (term) {
+                      navigate({ to: "/produtos", search: { q: term } });
+                      setIsSearchFocused(false);
+                    }
+                  }
+                }}
+                className="w-full px-4 py-2.5 text-sm text-[#0F3A3E] placeholder:text-[#9AA39F]/50 outline-none border border-[#E0D8C7] hover:border-[#B07B1E] focus:border-[#B07B1E] transition-colors"
+              />
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9AA39F]" />
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsSearchOpen(true)}
+              className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[#51635F] hover:text-[#0F3A3E] hover:bg-[#F8F4EA] border border-transparent hover:border-[#B07B1E] transition-all duration-200"
+              aria-label="Pesquisar produtos"
+            >
+              <Search className="h-[15px] w-[15px] shrink-0" />
+              <span className="text-[13px] tracking-[0.1em] text-[#9AA39F]">Buscar produtos...</span>
+            </button>
+          )}
+        </div>
 
         {/* Desktop Navigation */}
         <nav className="hidden lg:flex items-center gap-8 xl:gap-9">
@@ -142,7 +197,7 @@ export const NavbarEditorial = () => {
                           className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
                           <span>{cat.label}</span>
-                          <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>
+                          {!isLoading && <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>}
                         </Link>
                       </li>
                     ))}
@@ -169,7 +224,7 @@ export const NavbarEditorial = () => {
                           className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                         >
                           <span>{brand.label}</span>
-                          <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
+                          {!isLoading && <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>}
                         </Link>
                       </li>
                     ))}
@@ -229,7 +284,7 @@ export const NavbarEditorial = () => {
                         className="flex justify-between items-baseline text-[14px] text-[#51635F] hover:text-[#0F3A3E] transition-colors"
                       >
                         <span>{brand.label}</span>
-                        <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
+                        {!isLoading && <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>}
                       </Link>
                     </li>
                   ))}
@@ -268,11 +323,11 @@ export const NavbarEditorial = () => {
           </Link>
         </nav>
 
-        {/* Actions */}
-        <div className="flex items-center gap-5 text-[#0F3A3E]">
+        {/* Actions — desktop */}
+        <div className="hidden lg:flex items-center gap-5 text-[#0F3A3E]">
           <button
             onClick={() => setIsSearchOpen(true)}
-            className="cursor-pointer hover:text-[#B07B1E] transition-colors"
+            className="cursor-pointer hover:text-[#B07B1E] transition-colors lg:hidden"
             aria-label="Pesquisar"
           >
             <Search className="h-[15px] w-[15px]" />
@@ -280,7 +335,7 @@ export const NavbarEditorial = () => {
 
           <Link
             to="/login"
-            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
+            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors"
             aria-label="Minha conta"
           >
             <User className="h-[15px] w-[15px]" />
@@ -288,7 +343,7 @@ export const NavbarEditorial = () => {
 
           <Link
             to="/favoritos"
-            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors hidden sm:block"
+            className="relative cursor-pointer hover:text-[#B07B1E] transition-colors"
             aria-label="Favoritos"
           >
             <Heart className="h-[15px] w-[15px]" />
@@ -311,6 +366,42 @@ export const NavbarEditorial = () => {
               </span>
             )}
           </button>
+
+          {/* CTA Atendimento — reaproveita WhatsApp da store_settings */}
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer hover:text-[#B07B1E] transition-colors"
+              aria-label="Atendimento via WhatsApp"
+            >
+              <MessageCircle className="h-[15px] w-[15px]" />
+            </a>
+          )}
+        </div>
+
+        {/* Actions — mobile */}
+        <div className="lg:hidden flex items-center gap-4 text-[#0F3A3E]">
+          <button
+            onClick={() => setIsSearchOpen(true)}
+            className="cursor-pointer hover:text-[#B07B1E] transition-colors"
+            aria-label="Pesquisar"
+          >
+            <Search className="h-[15px] w-[15px]" />
+          </button>
+
+          {whatsappUrl && (
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="cursor-pointer hover:text-[#B07B1E] transition-colors"
+              aria-label="Atendimento via WhatsApp"
+            >
+              <MessageCircle className="h-[15px] w-[15px]" />
+            </a>
+          )}
         </div>
       </header>
 
@@ -415,7 +506,7 @@ export const NavbarEditorial = () => {
                                   className="flex justify-between text-[14px] text-[#51635F]"
                                 >
                                   <span>{cat.label}</span>
-                                  <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>
+                                  {!isLoading && <span className="text-[12px] text-[#9AA39F]">({countByCategory(products, cat.productType)})</span>}
                                 </Link>
                               </li>
                             ))}
@@ -457,7 +548,7 @@ export const NavbarEditorial = () => {
                                   className="flex justify-between text-[14px] text-[#51635F]"
                                 >
                                   <span>{brand.label}</span>
-                                  <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>
+                                  {!isLoading && <span className="text-[12px] text-[#9AA39F]">({countByBrand(products, brand.vendor)})</span>}
                                 </Link>
                               </li>
                             ))}

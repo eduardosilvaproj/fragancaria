@@ -101,9 +101,17 @@ function IndexEditorial() {
     marketingTracking.trackPageView();
   }, []);
 
+  // Mensagens do slot ticker — renderiza no AnnouncementMarquee acima do header.
+  // Quando não há banners ativos no slot, banner.texto é null e o componente
+  // usa o fallback hardcoded.
+  const tickerMessages = (banners ?? [])
+    .filter((b) => b.slot === "ticker")
+    .map((b) => b.titulo ?? "")
+    .filter((t) => t && t.trim().length > 0);
+
   return (
     <div className="min-h-screen bg-[#F3EEE3] font-sans overflow-x-hidden">
-      <NavbarEditorial />
+      <NavbarEditorial tickerMessages={tickerMessages.length > 0 ? tickerMessages : undefined} />
 
       <main>
         {/* ===== HERO SECTION ===== */}
