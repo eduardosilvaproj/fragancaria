@@ -59,6 +59,7 @@ import { Route as AdminCrmRouteImport } from './routes/admin/crm'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin/clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
+import { Route as AdminBannersRouteImport } from './routes/admin/banners'
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as AdminAlterarSenhaRouteImport } from './routes/admin/alterar-senha'
@@ -343,6 +344,11 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/categorias',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminBannersRoute = AdminBannersRouteImport.update({
+  id: '/banners',
+  path: '/banners',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminAtendimentoIaRoute = AdminAtendimentoIaRouteImport.update({
   id: '/atendimento-ia',
   path: '/atendimento-ia',
@@ -547,6 +553,7 @@ export interface FileRoutesByFullPath {
   '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -630,6 +637,7 @@ export interface FileRoutesByTo {
   '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -714,6 +722,7 @@ export interface FileRoutesById {
   '/admin/alterar-senha': typeof AdminAlterarSenhaRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
+  '/admin/banners': typeof AdminBannersRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -801,6 +810,7 @@ export interface FileRouteTypes {
     | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/banners'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -884,6 +894,7 @@ export interface FileRouteTypes {
     | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/banners'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -967,6 +978,7 @@ export interface FileRouteTypes {
     | '/admin/alterar-senha'
     | '/admin/analytics'
     | '/admin/atendimento-ia'
+    | '/admin/banners'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -1421,6 +1433,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/banners': {
+      id: '/admin/banners'
+      path: '/banners'
+      fullPath: '/admin/banners'
+      preLoaderRoute: typeof AdminBannersRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/atendimento-ia': {
       id: '/admin/atendimento-ia'
       path: '/atendimento-ia'
@@ -1678,6 +1697,7 @@ interface AdminRouteChildren {
   AdminAlterarSenhaRoute: typeof AdminAlterarSenhaRoute
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAtendimentoIaRoute: typeof AdminAtendimentoIaRoute
+  AdminBannersRoute: typeof AdminBannersRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
@@ -1706,6 +1726,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAlterarSenhaRoute: AdminAlterarSenhaRoute,
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAtendimentoIaRoute: AdminAtendimentoIaRoute,
+  AdminBannersRoute: AdminBannersRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,

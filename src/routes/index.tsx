@@ -4,6 +4,7 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
+import { getBannersAtivos, type SiteBanner } from "@/lib/site-banners.functions";
 import type { Product } from "@/data/products";
 import { ArrowRight, Link2 } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
@@ -15,20 +16,22 @@ import { marketingTracking } from "@/lib/marketing-tracking";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
-    // 3 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
+    // 4 chamadas em paralelo. Mesmo se uma falhar (migration nao rodada),
     // a home ainda renderiza — os carrosseis sao independentes.
     //
     // Busca so os 2 slots que a home exibe. `new_arrivals` e `kits` seguem
     // existindo para o admin curar no VitrineManager, mas sairam da home
     // (ver HomeCarousels), entao buscar os 4 era varrer o catalogo 2x sem
     // ninguem consumir o resultado.
-    const [best, promo, loja] = await Promise.all([
+    const [best, promo, loja, banners] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
       listFeatured({ data: "on_sale" }),
       // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
       // (rede, server fn fora do ar) a home nao pode cair por causa da secao
       // da loja fisica. null => a secao nao renderiza.
       getPublicStoreConfig({}).catch(() => null),
+      // .catch: se site_banners falhar (tabela ainda nao existe ou erro), a home nao cai
+      getBannersAtivos().catch(() => null),
     ]);
     return {
       slots: {
@@ -36,6 +39,7 @@ export const Route = createFileRoute("/")({
         on_sale: promo.data ?? [],
       } as Partial<Record<Slot, Product[]>>,
       storeConfig: (loja?.success ? loja.data : null) as StoreConfig | null,
+      banners: (banners?.success ? banners.data : []) as SiteBanner[],
     };
   },
   head: () => ({
@@ -90,7 +94,7 @@ const NEEDS = [
 ];
 
 function IndexEditorial() {
-  const { slots, storeConfig } = Route.useLoaderData();
+  const { slots, storeConfig, banners = [] } = Route.useLoaderData();
 
   // Marketing HQ Tracking - Page View
   useEffect(() => {
@@ -103,79 +107,124 @@ function IndexEditorial() {
 
       <main>
         {/* ===== HERO SECTION ===== */}
-        <section
-          className="relative min-h-[600px] md:min-h-[720px] flex items-center overflow-hidden"
-          style={{
-            backgroundColor: '#EDE5D2',
-            backgroundImage: 'repeating-linear-gradient(45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px), repeating-linear-gradient(-45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px)'
-          }}
-        >
-          {/* Arco âmbar decorativo - hidden on mobile */}
-          <div
-            className="hidden md:block absolute -top-[180px] -right-[60px] w-[900px] h-[900px] rounded-full pointer-events-none"
-            style={{
-              background: 'radial-gradient(circle at 34% 34%, rgba(198,163,98,0.34) 0%, rgba(198,163,98,0.14) 42%, transparent 66%)'
-            }}
-          />
-          <div
-            className="hidden md:block absolute -top-[100px] right-[20px] w-[720px] h-[720px] rounded-full border pointer-events-none"
-            style={{ borderColor: 'rgba(190,152,78,0.26)' }}
-          />
-          <div
-            className="hidden md:block absolute -top-[30px] right-[100px] w-[540px] h-[540px] rounded-full border pointer-events-none"
-            style={{ borderColor: 'rgba(190,152,78,0.14)' }}
-          />
+        {(() => {
+          const heroBanner = (banners ?? []).find((b) => b.slot === "hero") ?? null;
+          return (
+            <section
+              className="relative min-h-[600px] md:min-h-[720px] flex items-center overflow-hidden"
+              style={{
+                backgroundColor: '#EDE5D2',
+                backgroundImage: 'repeating-linear-gradient(45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px), repeating-linear-gradient(-45deg, rgba(150,120,70,0.045) 0px, rgba(150,120,70,0.045) 1px, transparent 1px, transparent 14px)'
+              }}
+            >
+              {heroBanner?.imagem_url ? (
+                <>
+                  <picture>
+                    {heroBanner.imagem_mobile_url && (
+                      <source
+                        media="(max-width: 767px)"
+                        srcSet={heroBanner.imagem_mobile_url}
+                      />
+                    )}
+                    <img
+                      src={heroBanner.imagem_url}
+                      alt={heroBanner.imagem_alt ?? ""}
+                      width={1920}
+                      height={832}
+                      fetchPriority="high"
+                      className="absolute inset-0 w-full h-full object-cover object-right"
+                      loading="eager"
+                    />
+                  </picture>
+                  {/* Véu para legibilidade do texto */}
+                  <div
+                    className="absolute top-0 left-0 bottom-0 w-[48%] pointer-events-none hidden lg:block"
+                    style={{ background: 'linear-gradient(to right, rgba(237,229,210,0.46) 0%, transparent 100%)' }}
+                  />
+                </>
+              ) : (
+                <>
+                  {/* Arco âmbar decorativo - hidden on mobile */}
+                  <div
+                    className="hidden md:block absolute -top-[180px] -right-[60px] w-[900px] h-[900px] rounded-full pointer-events-none"
+                    style={{
+                      background: 'radial-gradient(circle at 34% 34%, rgba(198,163,98,0.34) 0%, rgba(198,163,98,0.14) 42%, transparent 66%)'
+                    }}
+                  />
+                  <div
+                    className="hidden md:block absolute -top-[100px] right-[20px] w-[720px] h-[720px] rounded-full border pointer-events-none"
+                    style={{ borderColor: 'rgba(190,152,78,0.26)' }}
+                  />
+                  <div
+                    className="hidden md:block absolute -top-[30px] right-[100px] w-[540px] h-[540px] rounded-full border pointer-events-none"
+                    style={{ borderColor: 'rgba(190,152,78,0.14)' }}
+                  />
 
-          {/* Modelo - posicionada à direita, imagem completa sem corte */}
-          <img
-            src="/images/hero-model-nobg.png"
-            alt="Modelo com produtos profissionais"
-            className="hidden lg:block absolute bottom-0 right-0 h-[95%] w-auto object-contain animate-[heroIn_1.4s_ease_both]"
-          />
+                  {/* Modelo - posicionada à direita, imagem completa sem corte */}
+                  <img
+                    src="/images/hero-model-nobg.png"
+                    alt="Modelo com produtos profissionais"
+                    className="hidden lg:block absolute bottom-0 right-0 h-[95%] w-auto object-contain animate-[heroIn_1.4s_ease_both]"
+                  />
 
-          {/* Véu para legibilidade do texto */}
-          <div
-            className="absolute top-0 left-0 bottom-0 w-[48%] pointer-events-none hidden lg:block"
-            style={{ background: 'linear-gradient(to right, rgba(237,229,210,0.46) 0%, transparent 100%)' }}
-          />
+                  {/* Véu para legibilidade do texto */}
+                  <div
+                    className="absolute top-0 left-0 bottom-0 w-[48%] pointer-events-none hidden lg:block"
+                    style={{ background: 'linear-gradient(to right, rgba(237,229,210,0.46) 0%, transparent 100%)' }}
+                  />
+                </>
+              )}
 
-          {/* Conteúdo de texto */}
-          <div className="relative z-10 px-6 md:px-14 py-12 md:py-16 lg:py-[70px] w-full lg:w-auto lg:max-w-[600px]">
-            {/* Label */}
-            <div className="flex items-center gap-3.5 mb-5 md:mb-6 animate-[fadeUp_0.9s_ease_0.1s_both]">
-              <span className="w-8 md:w-10 h-[1px] bg-[#B07B1E]" />
-              <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
-                Especialista em Cabelo Profissional
-              </span>
-            </div>
+              {/* Conteúdo de texto */}
+              <div className="relative z-10 px-6 md:px-14 py-12 md:py-16 lg:py-[70px] w-full lg:w-auto lg:max-w-[600px]">
+                {/* Label */}
+                <div className="flex items-center gap-3.5 mb-5 md:mb-6 animate-[fadeUp_0.9s_ease_0.1s_both]">
+                  <span className="w-8 md:w-10 h-[1px] bg-[#B07B1E]" />
+                  <span className="text-[11px] md:text-[12px] tracking-[0.25em] md:tracking-[0.3em] text-[#B07B1E] uppercase">
+                    {heroBanner?.kicker ? heroBanner.kicker : "Especialista em Cabelo Profissional"}
+                  </span>
+                </div>
 
-            {/* Headline */}
-            <h1 className="font-serif font-medium text-[36px] md:text-[56px] lg:text-[80px] leading-[1] md:leading-[0.97] text-[#0F3A3E] tracking-[-0.01em] animate-[fadeUp_1s_ease_0.2s_both]">
-              A excelência<br />do salão na<br />sua <em className="italic text-[#B07B1E]">casa</em>.
-            </h1>
+                {/* Headline */}
+                <h1 className="font-serif font-medium text-[36px] md:text-[56px] lg:text-[80px] leading-[1] md:leading-[0.97] text-[#0F3A3E] tracking-[-0.01em] animate-[fadeUp_1s_ease_0.2s_both]">
+                  {heroBanner?.titulo ? (
+                    heroBanner.titulo.split("\n").map((line, i) => (
+                      <span key={i}>
+                        {line}
+                        {i < heroBanner.titulo!.split("\n").length - 1 && <br />}
+                      </span>
+                    ))
+                  ) : (
+                    <>
+                      A excelência<br />do salão na<br />sua <em className="italic text-[#B07B1E]">casa</em>.
+                    </>
+                  )}
+                </h1>
 
-            {/* Subheadline */}
-            <p className="text-[15px] md:text-[17px] text-[#4A5C4A] mt-5 md:mt-6 leading-[1.65] md:leading-[1.7] max-w-[320px] md:max-w-[420px] animate-[fadeUp_1s_ease_0.35s_both]">
-              Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa.
-            </p>
+                {/* Subheadline */}
+                <p className="text-[15px] md:text-[17px] text-[#4A5C4A] mt-5 md:mt-6 leading-[1.65] md:leading-[1.7] max-w-[320px] md:max-w-[420px] animate-[fadeUp_1s_ease_0.35s_both]">
+                  {heroBanner?.subtitulo ? heroBanner.subtitulo : "Curadoria profissional dos melhores cosméticos para cabelos — entregue na sua casa."}
+                </p>
 
-            {/* CTAs */}
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
-              <Link
-                to="/produtos"
-                className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors"
-              >
-                Explorar Coleções
-              </Link>
-              <Link
-                to="/afiliado/login"
-                className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto font-medium"
-              >
-                Já sou afiliado / Entrar
-              </Link>
-            </div>
-          </div>
-        </section>
+                {/* CTAs */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 sm:gap-7 mt-8 md:mt-10 animate-[fadeUp_1s_ease_0.5s_both]">
+                  <Link
+                    to={heroBanner?.cta_url ?? "/produtos"}
+                    className="bg-[#0F3A3E] hover:bg-[#16504F] text-white px-8 md:px-[42px] py-4 md:py-[18px] text-[12px] md:text-[13px] tracking-[0.18em] md:tracking-[0.2em] uppercase font-medium transition-colors"
+                  >
+                    {heroBanner?.cta_texto ?? "Explorar Coleções"}
+                  </Link>
+                  <Link
+                    to="/afiliado/login"
+                    className="text-[12px] md:text-[13px] tracking-[0.16em] md:tracking-[0.18em] text-[#0F3A3E] uppercase border-b border-[#B07B1E] pb-[5px] hover:text-[#B07B1E] transition-colors self-start md:self-auto font-medium"
+                  >
+                    Já sou afiliado / Entrar
+                  </Link>
+                </div>
+              </div>
+            </section>
+          );
+        })()}
 
         {/* ===== BRAND MARQUEE ===== */}
         <section className="bg-[#0F3A3E] py-6 md:py-8 overflow-hidden">

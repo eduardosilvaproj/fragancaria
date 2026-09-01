@@ -31,6 +31,7 @@ import {
   DollarSign,
   FileText,
   LogOut,
+  Image,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAdmin } from "@/lib/admin.functions";
@@ -83,6 +84,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { label: "CRM & Email", href: "/admin/crm", icon: Mail, area: "socialPublish" },
   { label: "Loyalty", href: "/admin/loyalty", icon: Gift, area: "socialPublish" },
   { section: "Marketing" },
+  { label: "Banners Home", href: "/admin/banners", icon: Image, area: "storeSettings" },
   { label: "Redes Sociais", href: "/admin/redes-sociais", icon: Share2, area: "socialPublish" },
   { label: "Reviews", href: "/admin/reviews", icon: Star, area: "reviews" },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3, area: "financeiro" },

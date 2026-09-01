@@ -35,7 +35,10 @@ export type AuditAction =
   | "admin.user_password_reset"
   | "admin.user_welcome_resent"
   | "admin.user_delete"
-  | "whatsapp.test_send";
+  | "whatsapp.test_send"
+  | "site_banner.create"
+  | "site_banner.update"
+  | "site_banner.delete";
 
 export type AuditEntity =
   | "product"
@@ -50,7 +53,8 @@ export type AuditEntity =
   | "notification_settings"
   | "zernio_accounts"
   | "admin"
-  | "settings";
+  | "settings"
+  | "site_banner";
 
 export type AuditLogEntry = {
   user_id: string;
