@@ -20,8 +20,6 @@ export interface ProductCardEditorialProps {
   image: string;
   variants?: { name: string; value: string }[];
   badge?: string;
-  rating?: number;
-  reviewCount?: number;
   className?: string;
   variations?: ProductVariation[];
 }
@@ -34,8 +32,6 @@ export function ProductCardEditorial({
   originalPrice,
   image,
   badge,
-  rating,
-  reviewCount,
   className,
   variations,
 }: ProductCardEditorialProps) {
@@ -230,30 +226,6 @@ export function ProductCardEditorial({
           <h3 className="font-serif text-[16px] md:text-[20px] text-[#0F3A3E] leading-[1.2] md:leading-[1.25] mt-1.5 md:mt-2 line-clamp-2">
             {title}
           </h3>
-
-          {/* Rating - hidden on small mobile */}
-          {rating && (
-            <div className="hidden sm:flex items-center gap-2 mt-2">
-              <div className="flex items-center gap-0.5">
-                {[...Array(5)].map((_, i) => (
-                  <span
-                    key={i}
-                    className={cn(
-                      "text-[12px] md:text-[13px]",
-                      i < Math.floor(rating) ? "text-[#E8C25A]" : "text-[#DDD4C2]"
-                    )}
-                  >
-                    ★
-                  </span>
-                ))}
-              </div>
-              {reviewCount && (
-                <span className="text-[11px] md:text-[12px] text-[#75827E]">
-                  ({reviewCount})
-                </span>
-              )}
-            </div>
-          )}
 
           {/* Price — mt-auto cola este bloco na base do card, para que preco e
               botao fiquem alinhados entre cards de titulos de tamanhos

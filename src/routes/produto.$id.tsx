@@ -84,6 +84,7 @@ function ProductPage() {
       });
 
       // Marketing HQ Tracking
+      console.log('[MKT] trackProductView chamado', product.id);
       marketingTracking.trackProductView(product.id, product.sku || product.id, {
         name: product.name,
         price: product.price,
@@ -157,8 +158,6 @@ function ProductPage() {
     images: p.images,
     category: p.category,
     inStock: true,
-    rating: 4.5,
-    reviewCount: 42,
   }, baseUrl);
 
   const breadcrumbItems = [
@@ -363,23 +362,6 @@ function ProductPage() {
               <h1 className="font-serif text-[28px] md:text-[36px] text-[#0F3A3E] leading-[1.15] mt-3 mb-5">
                 {p.name}
               </h1>
-
-              {/* Rating */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="flex items-center gap-0.5">
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      className={`h-[18px] w-[18px] ${
-                        i < 4 ? "fill-[#E8C25A] text-[#E8C25A]" : "fill-[#DDD4C2] text-[#DDD4C2]"
-                      }`}
-                    />
-                  ))}
-                </div>
-                <span className="text-[13px] text-[#75827E]">
-                  4.5 · 48 avaliações
-                </span>
-              </div>
 
               {/* Price */}
               <div className="mb-8">
@@ -677,8 +659,6 @@ function ProductPage() {
                   price={relatedProduct.price}
                   originalPrice={relatedProduct.originalPrice}
                   image={relatedProduct.images[0]}
-                  rating={4.3}
-                  reviewCount={Math.floor(Math.random() * 50) + 5}
                 />
               ))}
             </div>

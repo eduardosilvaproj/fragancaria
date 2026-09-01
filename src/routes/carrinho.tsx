@@ -374,8 +374,6 @@ function CarrinhoPage() {
                   price={product.price}
                   originalPrice={product.originalPrice}
                   image={product.images[0]}
-                  rating={4.5}
-                  reviewCount={Math.floor(Math.random() * 50) + 10}
                 />
               ))}
             </div>
