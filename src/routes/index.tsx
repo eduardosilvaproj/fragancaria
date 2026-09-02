@@ -4,9 +4,11 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
 import { FaixaMeioSection } from "@/components/home/FaixaMeioSection";
+import { FranRecomendaSection } from "@/components/home/FranRecomendaSection";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
 import { getBannersAtivos, type SiteBanner } from "@/lib/site-banners.functions";
 import { getTopBrands, type BrandCount } from "@/lib/products.functions";
+import { getFranRecomenda, type FranRecomendaProduto } from "@/lib/fran-recomenda.functions";
 import type { Product } from "@/data/products";
 import { ArrowRight, Link2 } from "lucide-react";
 import { ScrollReveal, StaggerContainer, StaggerItem } from "@/components/ui/ScrollReveal";
@@ -15,6 +17,7 @@ import { LojaFisicaSection } from "@/components/store/LojaFisicaSection";
 import { getPublicStoreConfig, type StoreConfig } from "@/lib/store-settings.functions";
 import { TrustBadges } from "@/components/shop/TrustBadges";
 import { marketingTracking } from "@/lib/marketing-tracking";
+import { useFranChatStore } from "@/stores/franChatStore";
 
 export const Route = createFileRoute("/")({
   loader: async () => {
@@ -25,7 +28,7 @@ export const Route = createFileRoute("/")({
     // existindo para o admin curar no VitrineManager, mas sairam da home
     // (ver HomeCarousels), entao buscar os 4 era varrer o catalogo 2x sem
     // ninguem consumir o resultado.
-    const [best, promo, loja, banners, brands] = await Promise.all([
+    const [best, promo, loja, banners, brands, franRecomenda] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
       listFeatured({ data: "on_sale" }),
       // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
@@ -38,6 +41,8 @@ export const Route = createFileRoute("/")({
       // inacessivel), cai no fallback hardcoded BRAND_MARQUEE_FALLBACK. A esteira
       // de marcas nao trava a home.
       getTopBrands({ data: { minCount: 20, limit: 8 } }).catch(() => ({ success: false, data: [], error: "fallback" })),
+      // .catch: se fran_recomenda falhar (tabela nao existe ainda ou erro), a home nao cai
+      getFranRecomenda().catch(() => ({ success: false, data: [] as FranRecomendaProduto[] })),
     ]);
     return {
       slots: {
@@ -49,6 +54,8 @@ export const Route = createFileRoute("/")({
       // Lista pronta de marcas (brand + count) para o marquee e o menu do header.
       // Se o servidor falhar, chega aqui [] e cada consumidor usa seu fallback.
       brandCounts: (brands?.success ? brands.data : []) as BrandCount[],
+      // Produtos curados pela Fran (max 3 ativos). Se vazio, a secao nao renderiza
+      franRecomendaProdutos: (franRecomenda?.success ? franRecomenda.data : []) as FranRecomendaProduto[],
     };
   },
   head: () => ({
@@ -166,7 +173,8 @@ const NEEDS = [
 ];
 
 function IndexEditorial() {
-  const { slots, storeConfig, banners = [], brandCounts = [] } = Route.useLoaderData();
+  const { slots, storeConfig, banners = [], brandCounts = [], franRecomendaProdutos = [] } = Route.useLoaderData();
+  const openFranChat = useFranChatStore((state) => state.open);
 
   // Marketing HQ Tracking - Page View
   useEffect(() => {
@@ -523,6 +531,21 @@ function IndexEditorial() {
             </StaggerContainer>
           </div>
         </section>
+
+        {/* ===== FRAN RECOMENDA =====
+            Bloco escuro com curadoria de 3 produtos da consultora virtual Fran.
+            Posicionado apos o "Por Necessidade" (apos o usuario ter explorado
+            categorias) e antes dos trust badges / loja fisica, para servir como
+            ponte entre descoberta e decisao de compra.
+
+            A secao so renderiza se houver >=1 produto ativo configurado no admin
+            (FranRecomendaSection retorna null caso contrario).
+            O CTA "Falar com a Fran" reaproveita o canal existente (FranChatWidget),
+            nao cria canal novo. */}
+        <FranRecomendaSection
+          produtos={franRecomendaProdutos}
+          onFranClick={() => openFranChat()}
+        />
 
         {/* ===== TRUST BADGES ===== */}
         <TrustBadges />

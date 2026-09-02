@@ -53,6 +53,7 @@ import { Route as AdminLoyaltyRouteImport } from './routes/admin/loyalty'
 import { Route as AdminLogsRouteImport } from './routes/admin/logs'
 import { Route as AdminLogisticaRouteImport } from './routes/admin/logistica'
 import { Route as AdminIntegracoesRouteImport } from './routes/admin/integracoes'
+import { Route as AdminFranRecomendaRouteImport } from './routes/admin/fran-recomenda'
 import { Route as AdminFinanceiroRouteImport } from './routes/admin/financeiro'
 import { Route as AdminCuponsRouteImport } from './routes/admin/cupons'
 import { Route as AdminCrmRouteImport } from './routes/admin/crm'
@@ -314,6 +315,11 @@ const AdminIntegracoesRoute = AdminIntegracoesRouteImport.update({
   path: '/integracoes',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminFranRecomendaRoute = AdminFranRecomendaRouteImport.update({
+  id: '/fran-recomenda',
+  path: '/fran-recomenda',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminFinanceiroRoute = AdminFinanceiroRouteImport.update({
   id: '/financeiro',
   path: '/financeiro',
@@ -560,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/fran-recomenda': typeof AdminFranRecomendaRoute
   '/admin/integracoes': typeof AdminIntegracoesRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -644,6 +651,7 @@ export interface FileRoutesByTo {
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/fran-recomenda': typeof AdminFranRecomendaRoute
   '/admin/integracoes': typeof AdminIntegracoesRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -729,6 +737,7 @@ export interface FileRoutesById {
   '/admin/crm': typeof AdminCrmRoute
   '/admin/cupons': typeof AdminCuponsRoute
   '/admin/financeiro': typeof AdminFinanceiroRoute
+  '/admin/fran-recomenda': typeof AdminFranRecomendaRoute
   '/admin/integracoes': typeof AdminIntegracoesRoute
   '/admin/logistica': typeof AdminLogisticaRoute
   '/admin/logs': typeof AdminLogsRoute
@@ -817,6 +826,7 @@ export interface FileRouteTypes {
     | '/admin/crm'
     | '/admin/cupons'
     | '/admin/financeiro'
+    | '/admin/fran-recomenda'
     | '/admin/integracoes'
     | '/admin/logistica'
     | '/admin/logs'
@@ -901,6 +911,7 @@ export interface FileRouteTypes {
     | '/admin/crm'
     | '/admin/cupons'
     | '/admin/financeiro'
+    | '/admin/fran-recomenda'
     | '/admin/integracoes'
     | '/admin/logistica'
     | '/admin/logs'
@@ -985,6 +996,7 @@ export interface FileRouteTypes {
     | '/admin/crm'
     | '/admin/cupons'
     | '/admin/financeiro'
+    | '/admin/fran-recomenda'
     | '/admin/integracoes'
     | '/admin/logistica'
     | '/admin/logs'
@@ -1391,6 +1403,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIntegracoesRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/fran-recomenda': {
+      id: '/admin/fran-recomenda'
+      path: '/fran-recomenda'
+      fullPath: '/admin/fran-recomenda'
+      preLoaderRoute: typeof AdminFranRecomendaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/financeiro': {
       id: '/admin/financeiro'
       path: '/financeiro'
@@ -1704,6 +1723,7 @@ interface AdminRouteChildren {
   AdminCrmRoute: typeof AdminCrmRoute
   AdminCuponsRoute: typeof AdminCuponsRoute
   AdminFinanceiroRoute: typeof AdminFinanceiroRoute
+  AdminFranRecomendaRoute: typeof AdminFranRecomendaRoute
   AdminIntegracoesRoute: typeof AdminIntegracoesRoute
   AdminLogisticaRoute: typeof AdminLogisticaRoute
   AdminLogsRoute: typeof AdminLogsRoute
@@ -1733,6 +1753,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminCrmRoute: AdminCrmRoute,
   AdminCuponsRoute: AdminCuponsRoute,
   AdminFinanceiroRoute: AdminFinanceiroRoute,
+  AdminFranRecomendaRoute: AdminFranRecomendaRoute,
   AdminIntegracoesRoute: AdminIntegracoesRoute,
   AdminLogisticaRoute: AdminLogisticaRoute,
   AdminLogsRoute: AdminLogsRoute,

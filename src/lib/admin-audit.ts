@@ -38,7 +38,10 @@ export type AuditAction =
   | "whatsapp.test_send"
   | "site_banner.create"
   | "site_banner.update"
-  | "site_banner.delete";
+  | "site_banner.delete"
+  | "fran_recomenda.create"
+  | "fran_recomenda.update"
+  | "fran_recomenda.delete";
 
 export type AuditEntity =
   | "product"
@@ -54,7 +57,8 @@ export type AuditEntity =
   | "zernio_accounts"
   | "admin"
   | "settings"
-  | "site_banner";
+  | "site_banner"
+  | "fran_recomenda";
 
 export type AuditLogEntry = {
   user_id: string;
