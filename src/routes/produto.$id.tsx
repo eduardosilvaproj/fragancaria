@@ -544,15 +544,9 @@ function ProductPage() {
                   }`}
                 />
               </button>
-              {expandedSection === "descricao" && (
-                <div className="pb-6 text-[#51635F] leading-[1.75] text-[15px]">
-                  <p>
-                    {p.description ||
-                      "Este produto oferece o melhor da tecnologia capilar profissional para uso doméstico. Formulado com ingredientes de alta qualidade para resultados visíveis desde a primeira aplicação."}
-                  </p>
-                  <p className="mt-4">
-                    Ideal para quem busca cuidados profissionais em casa, com a praticidade do dia a dia.
-                  </p>
+              {expandedSection === "descricao" && p.description && (
+                <div className="pb-6 text-[#51635F] leading-[1.75] text-[15px] whitespace-pre-line">
+                  {p.description}
                 </div>
               )}
             </div>
