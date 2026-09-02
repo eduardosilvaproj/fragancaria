@@ -41,7 +41,14 @@ export type AuditAction =
   | "site_banner.delete"
   | "fran_recomenda.create"
   | "fran_recomenda.update"
-  | "fran_recomenda.delete";
+  | "fran_recomenda.delete"
+  | "campanha.create"
+  | "campanha.update"
+  | "campanha.delete"
+  | "campanha.produtos_clear"
+  | "campanha.produtos_upsert"
+  | "campanha_produtos.clear"
+  | "campanha_produtos.upsert";
 
 export type AuditEntity =
   | "product"
@@ -58,7 +65,8 @@ export type AuditEntity =
   | "admin"
   | "settings"
   | "site_banner"
-  | "fran_recomenda";
+  | "fran_recomenda"
+  | "campanha";
 
 export type AuditLogEntry = {
   user_id: string;

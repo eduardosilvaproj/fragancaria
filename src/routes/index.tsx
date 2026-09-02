@@ -4,8 +4,11 @@ import { NavbarEditorial } from "@/components/layout/NavbarEditorial";
 import { FooterEditorial } from "@/components/layout/FooterEditorial";
 import { HomeCarousels } from "@/components/home/HomeCarousels";
 import { FaixaMeioSection } from "@/components/home/FaixaMeioSection";
+import { CampanhaSection } from "@/components/home/CampanhaSection";
 import { FranRecomendaSection } from "@/components/home/FranRecomendaSection";
 import { listFeatured, type Slot } from "@/lib/home-featured.functions";
+import { getCampanhaAtiva, getProdutosCampanhaAtiva } from "@/lib/home-campanha.functions";
+import type { Campanha } from "@/lib/home-campanha.functions";
 import { getBannersAtivos, type SiteBanner } from "@/lib/site-banners.functions";
 import { getTopBrands, type BrandCount } from "@/lib/products.functions";
 import { getFranRecomenda, type FranRecomendaProduto } from "@/lib/fran-recomenda.functions";
@@ -28,7 +31,7 @@ export const Route = createFileRoute("/")({
     // existindo para o admin curar no VitrineManager, mas sairam da home
     // (ver HomeCarousels), entao buscar os 4 era varrer o catalogo 2x sem
     // ninguem consumir o resultado.
-    const [best, promo, loja, banners, brands, franRecomenda] = await Promise.all([
+    const [best, promo, loja, banners, brands, franRecomenda, campanhaResult, campanhaProdutosResult] = await Promise.all([
       listFeatured({ data: "bestsellers" }),
       listFeatured({ data: "on_sale" }),
       // .catch: getPublicStoreConfig nao lanca, mas se a chamada em si falhar
@@ -43,6 +46,11 @@ export const Route = createFileRoute("/")({
       getTopBrands({ data: { minCount: 20, limit: 8 } }).catch(() => ({ success: false, data: [], error: "fallback" })),
       // .catch: se fran_recomenda falhar (tabela nao existe ainda ou erro), a home nao cai
       getFranRecomenda().catch(() => ({ success: false, data: [] as FranRecomendaProduto[] })),
+      // .catch: se a campanha falhar (migration nao aplicada, tabela nao existe),
+      // a home nao cai — a prateleira de campanha simplesmente nao renderiza.
+      getCampanhaAtiva().catch(() => ({ success: false, data: null, error: "fallback" })),
+      // .catch: se os produtos da campanha falharem, a secao nao renderiza.
+      getProdutosCampanhaAtiva().catch(() => ({ success: false, data: [], error: "fallback" })),
     ]);
     return {
       slots: {
@@ -56,6 +64,9 @@ export const Route = createFileRoute("/")({
       brandCounts: (brands?.success ? brands.data : []) as BrandCount[],
       // Produtos curados pela Fran (max 3 ativos). Se vazio, a secao nao renderiza
       franRecomendaProdutos: (franRecomenda?.success ? franRecomenda.data : []) as FranRecomendaProduto[],
+      // Campanha ativa e seus produtos. Se vazio, a secao nao renderiza
+      campanha: (campanhaResult?.success ? campanhaResult.data : null) as Campanha | null,
+      campanhaProdutos: (campanhaProdutosResult?.success ? campanhaProdutosResult.data : []) as Product[],
     };
   },
   head: () => ({
@@ -170,10 +181,11 @@ const NEEDS = [
   { num: "05", title: "Finalizador", desc: "Definição, frizz e acabamento.", image: "/images/needs/need-finalizacao.png", productType: "Finalizador" },
   { num: "06", title: "Tratamentos", desc: "Ampolas, seruns e reparadores.", image: "/images/needs/need-tratamentos.png", productType: "Tratamentos" },
   { num: "07", title: "Óleo", desc: "Brilho e nutrição intensiva.", image: "/images/needs/need-corte.png", productType: "Óleo" },
+  { num: "08", title: "Kits", desc: "Combinações prontas para o seu ritual.", image: "/images/needs/need-protecao-solar.png", productType: "Kits" },
 ];
 
 function IndexEditorial() {
-  const { slots, storeConfig, banners = [], brandCounts = [], franRecomendaProdutos = [] } = Route.useLoaderData();
+  const { slots, storeConfig, banners = [], brandCounts = [], franRecomendaProdutos = [], campanha = null, campanhaProdutos = [] } = Route.useLoaderData();
   const openFranChat = useFranChatStore((state) => state.open);
 
   // Marketing HQ Tracking - Page View
@@ -472,6 +484,14 @@ function IndexEditorial() {
             </Link>
           </div>
         </section>
+
+        {/* ===== PRATELEIRA DE CAMPANHA =====
+            Renderiza acima do HomeCarousels. Só aparece se houver campanha
+            ativa dentro da janela de datas E com produtos válidos.
+            Produto inativo é IGNORADO silenciosamente na leitura. */}
+        {campanha && campanhaProdutos.length > 0 && (
+          <CampanhaSection campanha={campanha} produtos={campanhaProdutos} />
+        )}
 
         {/* ===== CARROSSÉIS DA VITRINE (bestsellers + novidades + promo + kits) ===== */}
         <HomeCarousels data={slots} />

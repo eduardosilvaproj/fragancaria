@@ -33,6 +33,7 @@ import {
   LogOut,
   Image,
   Sparkles,
+  Megaphone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { logoutAdmin } from "@/lib/admin.functions";
@@ -87,6 +88,7 @@ const SIDEBAR_ITEMS: SidebarItem[] = [
   { section: "Marketing" },
   { label: "Fran Recomenda", href: "/admin/fran-recomenda", icon: Sparkles, area: "storeSettings" },
   { label: "Banners Home", href: "/admin/banners", icon: Image, area: "storeSettings" },
+  { label: "Campanhas", href: "/admin/campanhas", icon: Megaphone, area: "storeSettings" },
   { label: "Redes Sociais", href: "/admin/redes-sociais", icon: Share2, area: "socialPublish" },
   { label: "Reviews", href: "/admin/reviews", icon: Star, area: "reviews" },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3, area: "financeiro" },

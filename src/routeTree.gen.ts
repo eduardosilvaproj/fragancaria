@@ -60,6 +60,7 @@ import { Route as AdminCrmRouteImport } from './routes/admin/crm'
 import { Route as AdminConfiguracoesRouteImport } from './routes/admin/configuracoes'
 import { Route as AdminClientesRouteImport } from './routes/admin/clientes'
 import { Route as AdminCategoriasRouteImport } from './routes/admin/categorias'
+import { Route as AdminCampanhasRouteImport } from './routes/admin/campanhas'
 import { Route as AdminBannersRouteImport } from './routes/admin/banners'
 import { Route as AdminAtendimentoIaRouteImport } from './routes/admin/atendimento-ia'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
@@ -350,6 +351,11 @@ const AdminCategoriasRoute = AdminCategoriasRouteImport.update({
   path: '/categorias',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminCampanhasRoute = AdminCampanhasRouteImport.update({
+  id: '/campanhas',
+  path: '/campanhas',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminBannersRoute = AdminBannersRouteImport.update({
   id: '/banners',
   path: '/banners',
@@ -560,6 +566,7 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -645,6 +652,7 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -731,6 +739,7 @@ export interface FileRoutesById {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/atendimento-ia': typeof AdminAtendimentoIaRoute
   '/admin/banners': typeof AdminBannersRoute
+  '/admin/campanhas': typeof AdminCampanhasRoute
   '/admin/categorias': typeof AdminCategoriasRoute
   '/admin/clientes': typeof AdminClientesRoute
   '/admin/configuracoes': typeof AdminConfiguracoesRoute
@@ -820,6 +829,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/banners'
+    | '/admin/campanhas'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -905,6 +915,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/banners'
+    | '/admin/campanhas'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -990,6 +1001,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/atendimento-ia'
     | '/admin/banners'
+    | '/admin/campanhas'
     | '/admin/categorias'
     | '/admin/clientes'
     | '/admin/configuracoes'
@@ -1452,6 +1464,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminCategoriasRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/campanhas': {
+      id: '/admin/campanhas'
+      path: '/campanhas'
+      fullPath: '/admin/campanhas'
+      preLoaderRoute: typeof AdminCampanhasRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/banners': {
       id: '/admin/banners'
       path: '/banners'
@@ -1717,6 +1736,7 @@ interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminAtendimentoIaRoute: typeof AdminAtendimentoIaRoute
   AdminBannersRoute: typeof AdminBannersRoute
+  AdminCampanhasRoute: typeof AdminCampanhasRoute
   AdminCategoriasRoute: typeof AdminCategoriasRoute
   AdminClientesRoute: typeof AdminClientesRoute
   AdminConfiguracoesRoute: typeof AdminConfiguracoesRoute
@@ -1747,6 +1767,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminAtendimentoIaRoute: AdminAtendimentoIaRoute,
   AdminBannersRoute: AdminBannersRoute,
+  AdminCampanhasRoute: AdminCampanhasRoute,
   AdminCategoriasRoute: AdminCategoriasRoute,
   AdminClientesRoute: AdminClientesRoute,
   AdminConfiguracoesRoute: AdminConfiguracoesRoute,
