@@ -285,7 +285,7 @@ function IndexEditorial() {
 
                   {/* Modelo - posicionada à direita, imagem completa sem corte */}
                   <img
-                    src="/images/hero-model-nobg.png"
+                    src="/images/hero-model-nobg.webp"
                     alt="Modelo com produtos profissionais"
                     className="hidden lg:block absolute bottom-0 right-0 h-[95%] w-auto object-contain animate-[heroIn_1.4s_ease_both]"
                   />
