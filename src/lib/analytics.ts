@@ -22,9 +22,11 @@ export function initGA() {
   document.head.appendChild(script);
 
   window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag(...args: unknown[]) {
-    window.dataLayer?.push(args);
-  };
+  function gtag(..._args: unknown[]) {
+    // eslint-disable-next-line prefer-rest-params
+    window.dataLayer?.push(arguments);
+  }
+  window.gtag = gtag;
   window.gtag('js', new Date());
   window.gtag('config', GA_MEASUREMENT_ID, {
     page_title: document.title,
