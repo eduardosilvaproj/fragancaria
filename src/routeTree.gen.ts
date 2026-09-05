@@ -80,6 +80,7 @@ import { Route as MinhaContaPedidosOrderIdRouteImport } from './routes/minha-con
 import { Route as ApiPublicZernioWebhookRouteImport } from './routes/api/public/zernio-webhook'
 import { Route as ApiPublicZernioStatusWebhookRouteImport } from './routes/api/public/zernio-status-webhook'
 import { Route as ApiPublicMpWebhookRouteImport } from './routes/api/public/mp-webhook'
+import { Route as ApiPublicGoogleFeedRouteImport } from './routes/api/public/google-feed'
 import { Route as ApiMarketingTrackRouteImport } from './routes/api/marketing/track'
 import { Route as ApiMarketingSessionRouteImport } from './routes/api/marketing/session'
 import { Route as ApiDebugFeaturedRouteImport } from './routes/api/debug/featured'
@@ -459,6 +460,11 @@ const ApiPublicMpWebhookRoute = ApiPublicMpWebhookRouteImport.update({
   path: '/api/public/mp-webhook',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicGoogleFeedRoute = ApiPublicGoogleFeedRouteImport.update({
+  id: '/api/public/google-feed',
+  path: '/api/public/google-feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiMarketingTrackRoute = ApiMarketingTrackRouteImport.update({
   id: '/api/marketing/track',
   path: '/api/marketing/track',
@@ -611,6 +617,7 @@ export interface FileRoutesByFullPath {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
+  '/api/public/google-feed': typeof ApiPublicGoogleFeedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -695,6 +702,7 @@ export interface FileRoutesByTo {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
+  '/api/public/google-feed': typeof ApiPublicGoogleFeedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -784,6 +792,7 @@ export interface FileRoutesById {
   '/api/debug/featured': typeof ApiDebugFeaturedRoute
   '/api/marketing/session': typeof ApiMarketingSessionRouteWithChildren
   '/api/marketing/track': typeof ApiMarketingTrackRoute
+  '/api/public/google-feed': typeof ApiPublicGoogleFeedRoute
   '/api/public/mp-webhook': typeof ApiPublicMpWebhookRoute
   '/api/public/zernio-status-webhook': typeof ApiPublicZernioStatusWebhookRoute
   '/api/public/zernio-webhook': typeof ApiPublicZernioWebhookRoute
@@ -874,6 +883,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/marketing/session'
     | '/api/marketing/track'
+    | '/api/public/google-feed'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -958,6 +968,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/marketing/session'
     | '/api/marketing/track'
+    | '/api/public/google-feed'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -1046,6 +1057,7 @@ export interface FileRouteTypes {
     | '/api/debug/featured'
     | '/api/marketing/session'
     | '/api/marketing/track'
+    | '/api/public/google-feed'
     | '/api/public/mp-webhook'
     | '/api/public/zernio-status-webhook'
     | '/api/public/zernio-webhook'
@@ -1100,6 +1112,7 @@ export interface RootRouteChildren {
   ApiDebugFeaturedRoute: typeof ApiDebugFeaturedRoute
   ApiMarketingSessionRoute: typeof ApiMarketingSessionRouteWithChildren
   ApiMarketingTrackRoute: typeof ApiMarketingTrackRoute
+  ApiPublicGoogleFeedRoute: typeof ApiPublicGoogleFeedRoute
   ApiPublicMpWebhookRoute: typeof ApiPublicMpWebhookRoute
   ApiPublicZernioStatusWebhookRoute: typeof ApiPublicZernioStatusWebhookRoute
   ApiPublicZernioWebhookRoute: typeof ApiPublicZernioWebhookRoute
@@ -1604,6 +1617,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMpWebhookRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/google-feed': {
+      id: '/api/public/google-feed'
+      path: '/api/public/google-feed'
+      fullPath: '/api/public/google-feed'
+      preLoaderRoute: typeof ApiPublicGoogleFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/marketing/track': {
       id: '/api/marketing/track'
       path: '/api/marketing/track'
@@ -1890,6 +1910,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiDebugFeaturedRoute: ApiDebugFeaturedRoute,
   ApiMarketingSessionRoute: ApiMarketingSessionRouteWithChildren,
   ApiMarketingTrackRoute: ApiMarketingTrackRoute,
+  ApiPublicGoogleFeedRoute: ApiPublicGoogleFeedRoute,
   ApiPublicMpWebhookRoute: ApiPublicMpWebhookRoute,
   ApiPublicZernioStatusWebhookRoute: ApiPublicZernioStatusWebhookRoute,
   ApiPublicZernioWebhookRoute: ApiPublicZernioWebhookRoute,
