@@ -30,9 +30,85 @@ import {
 } from "lucide-react";
 
 export const Route = createFileRoute("/produto/$id")({
-  head: () => ({
-    meta: [{ title: "Produto | Fragranciaria" }],
-  }),
+  // O loader roda no servidor (SSR / robo do Google) e tambem no navegador
+  // em navegacao interna. O client.server so existe no bundle do servidor,
+  // entao no cliente devolvemos null e o useProducts abaixo cobre a tela.
+  loader: async ({ params: { id } }) => {
+    if (typeof window !== "undefined") {
+      return { product: null };
+    }
+
+    const { supabaseAdmin } = await import(
+      "@/integrations/supabase/client.server"
+    );
+
+    // O parametro da URL pode ser o slug ou o id, dependendo de onde o
+    // link foi gerado. maybeSingle nao lanca erro quando nao encontra.
+    const { data: product } = await supabaseAdmin
+      .from("products")
+      .select("*")
+      .or(`slug.eq.${id},id.eq.${id}`)
+      .maybeSingle();
+
+    return { product };
+  },
+  head: ({ loaderData }) => {
+    const product = loaderData?.product;
+
+    if (!product) {
+      return { meta: [{ title: "Produto | Fragranciaria" }] };
+    }
+
+    const description = String(product.description ?? "")
+      .replace(/<[^>]*>/g, "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .substring(0, 155);
+
+    const canonicalPath = product.slug || product.id;
+    const titulo = `${product.name} | Fragranciaria`;
+
+    return {
+      meta: [
+        { title: titulo },
+        { name: "description", content: description },
+        { property: "og:title", content: titulo },
+        { property: "og:description", content: description },
+        { property: "og:image", content: product.images?.[0] || "" },
+        { property: "og:type", content: "product" },
+      ],
+      scripts: [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Product",
+            name: product.name,
+            image: product.images,
+            description:
+              description ||
+              `${product.name} - ${product.brand || "Fragranciaria"}`,
+            sku: product.id,
+            brand: {
+              "@type": "Brand",
+              name: product.brand || "Fragranciaria",
+            },
+            offers: {
+              "@type": "Offer",
+              url: `https://www.fragranciaria.com/produto/${canonicalPath}`,
+              priceCurrency: "BRL",
+              // price e o valor que o cliente PAGA. original_price, quando
+              // maior, e so o valor riscado na vitrine.
+              price: Number(product.price).toFixed(2),
+              availability: product.in_stock
+                ? "https://schema.org/InStock"
+                : "https://schema.org/OutOfStock",
+            },
+          }),
+        },
+      ],
+    };
+  },
   component: ProductPage,
 });
 
@@ -157,7 +233,7 @@ function ProductPage() {
     originalPrice: p.originalPrice,
     images: p.images,
     category: p.category,
-    inStock: true,
+    inStock: p.inStock,
   }, baseUrl);
 
   const breadcrumbItems = [
